@@ -49,6 +49,10 @@ warthog::offline_jump_point_locator::preproc()
 				{
 					jumpcost = (jumpcost / warthog::ROOT_TWO);
 				}
+				else
+				{
+					jumpcost = jumpcost / warthog::ONE;
+				}
 				uint32_t num_steps = (uint16_t)floor((jumpcost + 0.5));
 //				std::cout << (jumpnode_id == warthog::INF ? 0 : num_steps) << " ";
 

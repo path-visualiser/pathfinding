@@ -39,7 +39,7 @@ void
 help()
 {
 	std::cerr << "valid parameters:\n"
-	<< "--alg [astar | jps | jps2 | jps+ | jps2+ | astar | jps | sssp ]\n"
+	<< "--alg [astar | jps | jps2 | jps+ | jps2+ | jps | sssp ]\n"
 	<< "--scen [scenario filename]\n"
 	<< "--gen [map filename]\n"
 	<< "--wgm (optional)\n"

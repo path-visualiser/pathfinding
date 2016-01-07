@@ -40,24 +40,25 @@ ams <- function(series, dist, stepsize=50)
 	sval <- c() 
 	dval <- c()
 	nval <- c()
+    sdval <- c()
 
 	for(i in seq(1, max(dist), by=stepsize))         
 	{
 		targetrows <- (dist >= i & dist < i+stepsize)
 		selectedrows <- na.omit(series[targetrows])
+        selectedrows <- selectedrows[!is.nan(selectedrows)]
 		if(length(selectedrows) > 0)
 		{
-		sval <- c(sval, mean(selectedrows))
-		dval <- c(dval, mean(seq(i, i+stepsize, by=1)))
-		nval <- c(nval, 
-		length(selectedrows))
+            sval <- c(sval, mean(selectedrows))
+            dval <- c(dval, mean(seq(i, i+stepsize, by=1)))
+            nval <- c(nval, length(selectedrows))
+            sdval <- c(sdval, sd(selectedrows))
 		}
 	}
 
 	results <- as.data.frame(dval)
-	results <- cbind(results, sval)
-	results <- cbind(results, nval)
-	names(results) <- c("avgdist", "avgseries", "bucketsize")
+	results <- cbind(results, sval, nval, sdval)
+	names(results) <- c("avgdist", "avgseries", "bucketsize", "sd")
 	results
 }
 
@@ -80,11 +81,13 @@ gams <- function(series, sfac, cutoff=1, omitOutliers=FALSE)
     result <- tapply(series, INDEX=sfac, FUN=function(x)
     {
         ret <- c()
+        filter <- !is.nan(x) & !is.na(x)
+        x <- x[filter]
         if(omitOutliers)
         {
             x <- outliers.omit(x)
         }
-        ret <- c("n"=length(x), summary(x), "sdev"=sd(x))
+        ret <- c("n"=length(x), summary(x, na.rm=TRUE), "sdev"=sd(x))
     })
 
     #print(result)
@@ -128,7 +131,8 @@ myapply <- function(myx, myfactors, FUN)
 ## prints minor log ticks on plots
 ## ax is the target axis
 ## ticks_ration is the size ratio between minor and major ticks
-axis.log10 <- function(ax, ticks_ratio=0.5, ...)
+
+axis.log10 <- function(ax, ticks_ratio=0.5, power_labels=TRUE, cex.axis=1,...)
 {
   lims <- par("usr")
   print(lims)
@@ -138,15 +142,109 @@ axis.log10 <- function(ax, ticks_ratio=0.5, ...)
   mx <- ceiling(max(lims))
 
   major.ticks <- seq(mn, mx, by=1)
-  major.labels <- sapply(major.ticks, function(x) { as.expression(substitute(10^A, list(A = x))) } )
-  print(major.ticks)
-
-  axis(ax,at=major.ticks,labels=major.labels,...)
+  major.labels = 10^(major.ticks);
+  if(power_labels)
+  {
+      major.labels <- sapply(major.ticks, function(x) { as.expression(substitute(10^A, list(A = x))) } )
+  }
+  #print(major.ticks)
+  axis(ax,at=major.ticks,labels=major.labels,cex.axis=cex.axis, ...)
 
   minor.ticks <- log10(seq(1, 10, by=1))
   minor.ticks <- c(outer(minor.ticks, major.ticks,`+`)) 
   #print(minor.ticks)
   axis(ax,at=minor.ticks,tcl=par("tcl")*ticks_ratio,labels=FALSE)
+  if(ax == 2)
+  {
+      abline(h=minor.ticks, col="grey91")
+  }
+  if(ax == 1)
+  {
+      abline(v=minor.ticks, col="grey91")
+  }
+}
+
+axis.draw <- function(ax, ticks_ratio=0.5, power_labels=TRUE, logaxis=FALSE, cex.axis=1,...)
+{
+  lims <- par("usr")
+  print(lims)
+  if(ax %in%c(1,3)) lims <- lims[1:2] else lims <- lims[3:4]
+  print(lims)
+  mn <- floor(min(lims))
+  mx <- ceiling(max(lims))
+
+  major.ticks <- seq(mn, mx, by=1)
+  major.labels = 10^(major.ticks);
+  if(power_labels)
+  {
+      major.labels <- sapply(major.ticks, function(x) { as.expression(substitute(10^A, list(A = x))) } )
+  }
+  #print(major.ticks)
+  axis(ax,at=major.ticks,labels=major.labels,cex.axis=cex.axis, ...)
+
+  minor.ticks <- seq(1, 10, by=1)
+  if(logaxis == TRUE)
+  {
+      minor.ticks <- log10(minor.ticks)
+  }
+  minor.ticks <- c(outer(minor.ticks, major.ticks,`+`)) 
+  #print(minor.ticks)
+  axis(ax,at=minor.ticks,tcl=par("tcl")*ticks_ratio,labels=FALSE)
+  if(ax == 2)
+  {
+      abline(h=minor.ticks, col="grey91")
+  }
+  if(ax == 1)
+  {
+      abline(v=minor.ticks, col="grey91")
+  }
+}
+
+logplot <- function(x, y, 
+                    xlim=c(min(x), max(x)), 
+                    ylim=c(min(floor(log10(y))), max(ceiling(log10(y)))),
+                    x_power_labels=FALSE, y_power_labels=FALSE, cex=1, cex.axis=1,
+                    las=1, type="b", col="black",...)
+{
+    print(ylim)
+    y <- log10(y)
+    plot(NULL, xlim=xlim, yaxt="n", ylim=ylim, ...)
+    axis.draw(2, power_labels=y_power_labels,las=las, logaxis=TRUE, cex.axis=cex.axis)
+    axis.draw(1, power_labels=x_power_labels,las=las)
+    if(type == "l" || type=="b")
+    {
+        lines(y ~ x, cex=cex, col=col)
+    }
+
+    if(type == "p" || type=="b")
+    {
+        points(y ~ x, cex=cex, col=col)
+    }
+}
+
+loglogplot <- function(x, y, 
+                    xlim=c(min(floor(log10(x))), max(ceiling(log10(x)))),
+                    ylim=c(min(floor(log10(y))), max(ceiling(log10(y)))),
+                    x_power_labels=FALSE, y_power_labels=FALSE, cex=1, cex.axis=1, 
+                    las=1, type="b", col="black", ...)
+{
+    print(ylim)
+    print(xlim)
+    y <- log10(y)
+    x <- log10(x)
+    plot(NULL, xlim=xlim, yaxt="n", xaxt="n", ylim=ylim, ...)
+    axis.draw(2, power_labels=y_power_labels,las=las, logaxis=TRUE, cex.axis=cex.axis)
+    axis.draw(1, power_labels=x_power_labels,las=las, logaxis=TRUE, cex.axis=cex.axis)
+    if(type == "l" || type=="b")
+    {
+        lines(y ~ x, cex=cex, col=col)
+    }
+
+    if(type == "p" || type=="b")
+    {
+        points(y ~ x, cex=cex, col=col)
+    }
+
 }
 
 # omit any points outsidde the range [Q1 - 1.5*IQR, Q3 + 1.5IQR]
