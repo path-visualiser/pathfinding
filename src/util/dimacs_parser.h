@@ -21,7 +21,6 @@ namespace warthog
 class dimacs_parser
 {
     public:
-
         struct node
         {
             uint32_t id_;
@@ -34,12 +33,30 @@ class dimacs_parser
             uint32_t tail_id_;
             uint32_t head_id_;
             int32_t weight_;
+
+            bool 
+            operator<(warthog::dimacs_parser::edge& other)
+            {
+                return head_id_ < other.head_id_;
+            }
         };
+
+        typedef std::vector<warthog::dimacs_parser::node>::iterator 
+            node_iterator;
+        typedef  std::vector<warthog::dimacs_parser::edge>::iterator 
+            edge_iterator;
 
         dimacs_parser();
         dimacs_parser(const char* gr_file);
         dimacs_parser(const char* co_file, const char* gr_file);
         ~dimacs_parser();
+        
+        // load up a DIMACS file (gr or co)
+        // NB: upon invocation, this operation will discard all current nodes
+        // (or edges, depending on the type of file passed for loading) and 
+        // THEN attempt to load new data.
+        bool 
+        load(const char* dimacs_file);
 
         inline int
         get_num_nodes() 
@@ -53,22 +70,37 @@ class dimacs_parser
            return n_edges_;
         }
 
+        inline warthog::dimacs_parser::node_iterator
+        nodes_begin()
+        {
+            return nodes_->begin();
+        }
+
+        inline warthog::dimacs_parser::node_iterator
+        nodes_end()
+        {
+            return nodes_->end();
+        }
+
+        inline warthog::dimacs_parser::edge_iterator
+        edges_begin()
+        {
+            return edges_->begin();
+        }
+        
+        inline warthog::dimacs_parser::edge_iterator
+        edges_end()
+        {
+            return edges_->end();
+        }
+
         void
         print(std::ostream&);
-
-        // load up a DIMACS file (gr or co)
-        // NB: upon invocation, this operation will discard all current nodes
-        // (or edges, depending on the type of file passed for loading) and 
-        // THEN attempt to load new data.
-        bool 
-        load(const char* dimacs_file);
 
     private:
         void init();
         bool load_co_file(std::istream& fdimacs);
         bool load_gr_file(std::istream& fdimacs);
-        
-
 
        uint32_t n_nodes_; // number of nodes
        uint32_t n_edges_;

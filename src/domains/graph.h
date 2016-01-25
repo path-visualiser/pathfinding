@@ -15,32 +15,31 @@
 // @created: 2015-01-07
 //
 
+#include <ostream>
 #include <unordered_map>
 #include <vector>
 
 namespace warthog
 {
 
-// nodes store only enough information to identify
-// where the list of incoming and outgoing edges
-// begin in the edges array. the index of the last
-// edge is not kept and we rely instead on detecting a 
-// terminator character.
-struct node
-{
-    uint32_t edge_idx_; // first edge
-    uint32_t degree_;   // number of (incoming and outgoing) edges
-} ;
-
-struct edge
-{
-    uint32_t node_idx_; // the (other) endpoint of this edge
-    uint32_t wt_;       // the edge weight
-};
 
 class gridmap;
 class graph
 {
+    struct node
+    {
+        int32_t x_;
+        int32_t y_;
+        uint32_t begin_;    // index of first edge
+        uint32_t degree_;   // number of (incoming and outgoing) edges
+    } ;
+
+    struct edge
+    {
+        uint32_t head_idx_; // the node pointed to
+        uint32_t wt_;       // the edge weight
+    };
+
     public:
         graph();
         ~graph();
@@ -58,11 +57,15 @@ class graph
         bool
         load_dimacs(char*, char*);
 
+        void
+        print_dimacs(std::ostream& oss);
+
+
     private:
         void init();
 
-        std::vector<warthog::node>* nodes_;
-        std::vector<warthog::edge>* edges_;
+        std::vector<warthog::graph::node>* nodes_;
+        std::vector<warthog::graph::edge>* edges_;
         std::vector<uint32_t>* lat_lng_;
         std::string* filename_;
 
@@ -71,5 +74,4 @@ class graph
 }
 
 #endif
-
 

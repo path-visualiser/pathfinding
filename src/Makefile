@@ -39,6 +39,10 @@ dev: main
 profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES) 
 profile: main
 
+.PHONY: dimacs
+dimacs: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
+dimacs: dimacs
+
 .PHONY: tags
 tags:
 	ctags -R .
@@ -55,6 +59,11 @@ main: makedirs warthog
 	@echo "linking..."
 	$(CC) warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+
+.PHONY: dimacs
+dimacs: makedirs warthog 
+	@echo "linking..."
+	$(CC) dimacs.cpp -o ./bin/dimacs -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: makedirs
 makedirs:

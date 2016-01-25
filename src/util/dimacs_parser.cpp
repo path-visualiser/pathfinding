@@ -50,7 +50,7 @@ warthog::dimacs_parser::load(const char* filename)
 		exit(1);
 	}
 
-	uint32_t retval = 1;
+	uint32_t retval = 0;
 	char* buf = new char[1024];
 	const char* delim = " \t";
 	uint32_t line = 0;
@@ -63,11 +63,11 @@ warthog::dimacs_parser::load(const char* filename)
 			type = strtok(NULL, delim);
 			if(!strcmp(type, "sp"))
 			{
-				retval = load_gr_file(*fdimacs);
+				retval |= load_gr_file(*fdimacs);
 			}
 			else if(!strcmp(type, "aux"))
 			{
-				retval = load_co_file(*fdimacs);
+				retval |= load_co_file(*fdimacs);
 			}
 			else
 			{
@@ -80,7 +80,7 @@ warthog::dimacs_parser::load(const char* filename)
 	}
 
     delete fdimacs;
-	delete buf;
+	delete [] buf;
 	return retval;
 }
 
@@ -129,8 +129,8 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 		line++;
 	}
 
-	delete buf;
-	return 0;
+	delete [] buf;
+	return 0 | early_abort;
 
 }
 
@@ -179,8 +179,8 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 		line++;
 	}
 
-	delete buf;
-	return 0;
+	delete [] buf;
+	return 0 | early_abort;
 }
 
 void
