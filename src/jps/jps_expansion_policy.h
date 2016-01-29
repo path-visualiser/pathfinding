@@ -18,7 +18,7 @@
 // @author: dharabor
 // @created: 06/01/2010
 
-#include "blocklist.h"
+#include "expansion_policy.h"
 #include "gridmap.h"
 #include "helpers.h"
 #include "jps.h"
@@ -31,86 +31,28 @@
 namespace warthog
 {
 
-class jps_expansion_policy 
+class jps_expansion_policy : public expansion_policy
 {
 	public:
 		jps_expansion_policy(warthog::gridmap* map);
-		~jps_expansion_policy();
+		virtual ~jps_expansion_policy();
 
-		// create a warthog::search_node object from a state description
-		// (in this case, an id)
-		inline warthog::search_node*
-		generate(uint32_t node_id)
-		{
-			return nodepool_->generate(node_id);
-		}
-
-
-		// reset the policy and discard all generated nodes
-		inline void
-		clear()
-		{
-			reset();
-			nodepool_->clear();
-		}
-
-
-		void 
+		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
-		inline void
-		first(warthog::search_node*& ret, warthog::cost_t& cost)
-		{
-			which_ = 0;
-			ret = neighbours_[which_];
-			cost = costs_[which_];
-		}
+        virtual void
+        get_xy(warthog::search_node* n, int32_t& x, int32_t& y); 
 
-		inline bool
-		has_next()
-		{
-			if((which_+1) < num_neighbours_) { return true; }
-			return false;
-		}
-
-		inline void
-		n(warthog::search_node*& ret, warthog::cost_t& cost)
-		{
-			ret = neighbours_[which_];
-			cost = costs_[which_];
-		}
-
-		inline void
-		next(warthog::search_node*& ret, warthog::cost_t& cost)
-		{
-			if(which_ < num_neighbours_)
-			{
-				which_++;
-			}
-			ret = neighbours_[which_];
-			cost = costs_[which_];
-		}
-
-		inline uint32_t
+		virtual uint32_t
 		mem()
 		{
-			return sizeof(*this) + map_->mem() + nodepool_->mem() + jpl_->mem();
-		}
-
-		uint32_t 
-		mapwidth()
-		{
-			return map_->width();
+            return expansion_policy::mem() +
+                sizeof(*this) + map_->mem() + jpl_->mem();
 		}
 
 	private:
 		warthog::gridmap* map_;
-		warthog::blocklist* nodepool_;
 		warthog::online_jump_point_locator* jpl_;
-		uint32_t which_;
-		uint32_t num_neighbours_;
-		warthog::search_node* neighbours_[9];
-		warthog::cost_t costs_[9];
 
 		// computes the direction of travel; from a node n1
 		// to a node n2.
@@ -151,15 +93,6 @@ class jps_expansion_policy
 			assert(dir != warthog::jps::NONE);
 			return dir;
 		}
-
-		inline void
-		reset()
-		{
-			which_ = 0;
-			num_neighbours_ = 0;
-			neighbours_[0] = 0;
-		}
-
 };
 
 }

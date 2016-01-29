@@ -11,103 +11,54 @@
 // Further details in: 
 // (to appear)
 //
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+// EXPERIMENTAL AND CRAP! DOES NOT WORK
+//
 // @author: dharabor
 // @created: 2014-09-22
 //
 
-#include "blocklist.h"
-#include "weighted_gridmap.h"
+#include "expansion_policy.h"
 #include "helpers.h"
 #include "jps.h"
 #include "jps_wgm.h"
 #include "online_jump_point_locator_wgm.h"
 #include "problem_instance.h"
 #include "search_node.h"
+#include "weighted_gridmap.h"
 
 #include "stdint.h"
 
 namespace warthog
 {
-class jps_expansion_policy_wgm
+class jps_expansion_policy_wgm : public expansion_policy
 {
 	public:
 		jps_expansion_policy_wgm(warthog::weighted_gridmap* map);
-		~jps_expansion_policy_wgm();
+		virtual ~jps_expansion_policy_wgm();
 
-		// create a warthog::search_node object from a state description
-		// (in this case, an id)
-		inline warthog::search_node*
-		generate(uint32_t node_id)
-		{
-			return nodepool_->generate(node_id);
-		}
-
-
-		// reset the policy and discard all generated nodes
-		inline void
-		clear()
-		{
-			reset();
-			nodepool_->clear();
-		}
-
-
-		void 
+		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
-		inline void
-		first(warthog::search_node*& ret, warthog::cost_t& cost)
-		{
-			which_ = 0;
-			ret = neighbours_[which_];
-			cost = costs_[which_];
-		}
-
-		inline bool
-		has_next()
-		{
-			if((which_+1) < num_neighbours_) { return true; }
-			return false;
-		}
-
-		inline void
-		n(warthog::search_node*& ret, warthog::cost_t& cost)
-		{
-			ret = neighbours_[which_];
-			cost = costs_[which_];
-		}
-
-		inline void
-		next(warthog::search_node*& ret, warthog::cost_t& cost)
-		{
-			if(which_ < num_neighbours_)
-			{
-				which_++;
-			}
-			ret = neighbours_[which_];
-			cost = costs_[which_];
-		}
-
-		inline uint32_t
+		virtual inline uint32_t
 		mem()
 		{
-			return sizeof(*this) + map_->mem() + nodepool_->mem() + jpl_->mem();
+			return expansion_policy::mem() + 
+                sizeof(*this) + map_->mem() + jpl_->mem();
 		}
 
-		uint32_t 
-		mapwidth()
-		{
-			return map_->width();
-		}
+        virtual void
+        get_xy(warthog::search_node*, int32_t& x, int32_t& y);
 
 	private:
 		warthog::weighted_gridmap* map_;
-		warthog::blocklist* nodepool_;
 		warthog::online_jump_point_locator_wgm* jpl_;
-		uint32_t which_;
-		uint32_t num_neighbours_;
-		warthog::search_node* neighbours_[9];
-		warthog::cost_t costs_[9];
 
 		// computes the direction of travel; from a node n1
 		// to a node n2.
@@ -149,13 +100,6 @@ class jps_expansion_policy_wgm
 			return dir;
 		}
 
-		inline void
-		reset()
-		{
-			which_ = 0;
-			num_neighbours_ = 0;
-			neighbours_[0] = 0;
-		}
 };
 }
 

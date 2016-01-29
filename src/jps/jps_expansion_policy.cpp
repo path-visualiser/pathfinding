@@ -1,9 +1,9 @@
 #include "jps_expansion_policy.h"
 
 warthog::jps_expansion_policy::jps_expansion_policy(warthog::gridmap* map)
+    : expansion_policy(map->height()*map->width())
 {
 	map_ = map;
-	nodepool_ = new warthog::blocklist(map->height(), map->width());
 	jpl_ = new warthog::online_jump_point_locator(map);
 	reset();
 }
@@ -11,7 +11,6 @@ warthog::jps_expansion_policy::jps_expansion_policy(warthog::gridmap* map)
 warthog::jps_expansion_policy::~jps_expansion_policy()
 {
 	delete jpl_;
-	delete nodepool_;
 }
 
 void 
@@ -33,6 +32,7 @@ warthog::jps_expansion_policy::expand(
 	// and forced neighbour
 	uint32_t succ_dirs = warthog::jps::compute_successors(dir_c, c_tiles);
 	uint32_t goal_id = problem->get_goal();
+    //uint32_t search_id = problem->get_searchid();
 	for(uint32_t i = 0; i < 8; i++)
 	{
 		warthog::jps::direction d = (warthog::jps::direction) (1 << i);
@@ -44,12 +44,17 @@ warthog::jps_expansion_policy::expand(
 
 			if(succ_id != warthog::INF)
 			{
-				neighbours_[num_neighbours_] = nodepool_->generate(succ_id);
-				costs_[num_neighbours_] = jumpcost;
-				// move terminator character as we go
-				neighbours_[++num_neighbours_] = 0;
+                warthog::search_node* jp_succ = this->generate(succ_id);
+                //if(jp_succ->get_searchid() != search_id) { jp_succ->reset(search_id); }
+                add_neighbour(jp_succ, jumpcost);
 			}
 		}
 	}
 }
 
+void
+warthog::jps_expansion_policy::get_xy(
+        warthog::search_node* n, int32_t& x, int32_t& y)
+{
+    map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
+}

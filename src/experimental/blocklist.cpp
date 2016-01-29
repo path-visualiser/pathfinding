@@ -5,7 +5,19 @@
 warthog::blocklist::blocklist(uint32_t mapheight, uint32_t mapwidth)
 	: blocks_(0), pool_(0)
 {
-	num_blocks_ = ((mapwidth*mapheight) >> warthog::blocklist_ns::LOG2_NBS)+1;
+    init(mapheight*mapwidth);
+}
+
+warthog::blocklist::blocklist(uint32_t num_nodes)
+	: blocks_(0), pool_(0)
+{
+    init(num_nodes);
+}
+
+void
+warthog::blocklist::init(uint32_t num_nodes)
+{
+	num_blocks_ = ((num_nodes) >> warthog::blocklist_ns::LOG2_NBS)+1;
 	blocks_ = new warthog::search_node**[num_blocks_];
 	for(uint32_t i=0; i < num_blocks_; i++)
 	{

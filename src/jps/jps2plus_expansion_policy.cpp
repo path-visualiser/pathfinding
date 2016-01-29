@@ -1,13 +1,12 @@
 #include "jps2plus_expansion_policy.h"
 
 warthog::jps2plus_expansion_policy::jps2plus_expansion_policy(warthog::gridmap* map)
+    : expansion_policy(map->height() * map->width())
 {
 	map_ = map;
-	nodepool_ = new warthog::blocklist2(map->height(), map->width());
 	jpl_ = new warthog::offline_jump_point_locator2(map);
 	reset();
 
-	neighbours_.reserve(100);
 	costs_.reserve(100);
 	jp_ids_.reserve(100);
 }
@@ -15,7 +14,6 @@ warthog::jps2plus_expansion_policy::jps2plus_expansion_policy(warthog::gridmap* 
 warthog::jps2plus_expansion_policy::~jps2plus_expansion_policy()
 {
 	delete jpl_;
-	delete nodepool_;
 }
 
 void 
@@ -55,9 +53,9 @@ warthog::jps2plus_expansion_policy::expand(
 		uint32_t jp_id = jp_ids_.at(i);
 		warthog::jps::direction pdir = (warthog::jps::direction)*(((uint8_t*)(&jp_id))+3);
 
-		warthog::search_node* mynode = nodepool_->generate(jp_id & id_mask);
-		neighbours_.push_back(mynode);
+		warthog::search_node* mynode = generate(jp_id & id_mask);
 		if(mynode->get_searchid() != searchid) { mynode->reset(searchid); }
+        add_neighbour(mynode, costs_.at(i));
 
 		// stupid hack
 		if((current->get_g() + costs_.at(i)) < mynode->get_g())
@@ -65,14 +63,12 @@ warthog::jps2plus_expansion_policy::expand(
 			mynode->set_pdir(pdir);
 		}
 	}
-	//if(problem->get_start() == current_id && neighbours_.size() == 0)
-	//{
-	//	std::cerr << "stop plz.." << std::endl;
-	//}
-	num_neighbours_ = neighbours_.size();
+}
 
-	// terminator (historical; yeah, this code is stupid)
-	neighbours_.push_back(0);
-	costs_.push_back(0);
+void
+warthog::jps2plus_expansion_policy::get_xy(
+        warthog::search_node* n, int32_t& x, int32_t& y)
+{
+    map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
 }
 

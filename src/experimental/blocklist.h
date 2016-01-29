@@ -40,6 +40,7 @@ class blocklist
 {
 	public:
 		blocklist(uint32_t mapwidth, uint32_t mapheight);
+        blocklist(uint32_t num_nodes);
 		~blocklist();
 
 		// return a warthog::search_node object corresponding to the given id.
@@ -55,6 +56,9 @@ class blocklist
 		mem();
 
 	private:
+        void init(uint32_t nblocks);
+
+
 		uint32_t num_blocks_;
 		warthog::search_node*** blocks_;
 		warthog::mem::cpool* blockspool_;

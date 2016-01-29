@@ -1,17 +1,11 @@
-#include "blocklist.h"
 #include "gridmap_expansion_policy.h"
 #include "helpers.h"
 #include "problem_instance.h"
 
 warthog::gridmap_expansion_policy::gridmap_expansion_policy(
-		warthog::gridmap* map) : map_(map)
+		warthog::gridmap* map)
+: expansion_policy(map->height()*map->width()), map_(map)
 {
-	nodepool_ = new warthog::blocklist(map->height(), map->width());
-}
-
-warthog::gridmap_expansion_policy::~gridmap_expansion_policy()
-{
-	delete nodepool_;
 }
 
 void 
@@ -45,58 +39,50 @@ warthog::gridmap_expansion_policy::expand(warthog::search_node* current,
 
 	if((tiles & 514) == 514) // N
 	{  
-		neis_[num_neis_] = nodepool_->generate(nid_m_w);
-		costs_[num_neis_] = warthog::ONE;
-		num_neis_++;
+		add_neighbour(this->generate(nid_m_w), warthog::ONE);
 	} 
 
 	if((tiles & 1542) == 1542) // NE
 	{ 
-		neis_[num_neis_] = nodepool_->generate(nid_m_w + 1);
-		costs_[num_neis_] = warthog::ROOT_TWO;
-		num_neis_++;
+        add_neighbour(this->generate(nid_m_w + 1), warthog::ROOT_TWO);
 	}
 
 	if((tiles & 1536) == 1536) // E
 	{
-		neis_[num_neis_] = nodepool_->generate(nodeid + 1);
-		costs_[num_neis_] = warthog::ONE;
-		num_neis_++;
+		add_neighbour(this->generate(nodeid + 1), warthog::ONE);
 	}
 	
 	if((tiles & 394752) == 394752) // SE
 	{	
-		neis_[num_neis_] = nodepool_->generate(nid_p_w + 1);
-		costs_[num_neis_] = warthog::ROOT_TWO;
-		num_neis_++;
+        add_neighbour(this->generate(nid_p_w + 1), warthog::ROOT_TWO);
 	}
 
 	if((tiles & 131584) == 131584) // S
 	{ 
-		neis_[num_neis_] = nodepool_->generate(nid_p_w);
-		costs_[num_neis_] = warthog::ONE;
-		num_neis_++;
+		add_neighbour(this->generate(nid_p_w), warthog::ONE);
 	}
 
 	if((tiles & 197376) == 197376) // SW
 	{ 
-		neis_[num_neis_] = nodepool_->generate(nid_p_w - 1);
-		costs_[num_neis_] = warthog::ROOT_TWO;
-		num_neis_++;
+        add_neighbour(this->generate(nid_p_w - 1), warthog::ROOT_TWO);
 	}
 
 	if((tiles & 768) == 768) // W
 	{ 
-		neis_[num_neis_] = nodepool_->generate(nodeid - 1);
-		costs_[num_neis_] = warthog::ONE;
-		num_neis_++;
+		add_neighbour(this->generate(nodeid - 1), warthog::ONE);
 	}
 
 	if((tiles & 771) == 771) // NW
 	{ 
-		neis_[num_neis_] = nodepool_->generate(nid_m_w - 1);
-		costs_[num_neis_] = warthog::ROOT_TWO;
-		num_neis_++;
+		add_neighbour(this->generate(nid_m_w - 1), warthog::ROOT_TWO);
 	}
+}
+
+void
+warthog::gridmap_expansion_policy::get_xy(warthog::search_node* n,
+        int32_t& x, int32_t& y)
+{
+    
+    map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
 }
 

@@ -1,25 +1,21 @@
 #include "jpsplus_expansion_policy.h"
 
 warthog::jpsplus_expansion_policy::jpsplus_expansion_policy(warthog::gridmap* map)
+    : expansion_policy(map->width() * map->height())
 {
 	map_ = map;
-	nodepool_ = new warthog::blocklist(map->height(), map->width());
 	jpl_ = new warthog::offline_jump_point_locator(map);
-	reset();
 }
 
 warthog::jpsplus_expansion_policy::~jpsplus_expansion_policy()
 {
 	delete jpl_;
-	delete nodepool_;
 }
 
 void 
 warthog::jpsplus_expansion_policy::expand(
 		warthog::search_node* current, warthog::problem_instance* problem)
 {
-	reset();
-
 	// compute the direction of travel used to reach the current node.
 	warthog::jps::direction dir_c =
 	   	this->compute_direction(current->get_parent(), current);
@@ -44,10 +40,7 @@ warthog::jpsplus_expansion_policy::expand(
 
 			if(succ_id != warthog::INF)
 			{
-				neighbours_[num_neighbours_] = nodepool_->generate(succ_id);
-				costs_[num_neighbours_] = jumpcost;
-				// move terminator character as we go
-				neighbours_[++num_neighbours_] = 0;
+				add_neighbour(this->generate(succ_id), jumpcost);
 			}
 		}
 	}

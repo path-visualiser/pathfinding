@@ -1,26 +1,22 @@
 #include "jps_expansion_policy_wgm.h"
 
 warthog::jps_expansion_policy_wgm::jps_expansion_policy_wgm(
-        warthog::weighted_gridmap* map)
+        warthog::weighted_gridmap* map) 
+    : expansion_policy(map->height() * map->width())
 {
 	map_ = map;
-	nodepool_ = new warthog::blocklist(map->height(), map->width());
 	jpl_ = new warthog::online_jump_point_locator_wgm(map);
-	reset();
 }
 
 warthog::jps_expansion_policy_wgm::~jps_expansion_policy_wgm()
 {
 	delete jpl_;
-	delete nodepool_;
 }
 
 void 
 warthog::jps_expansion_policy_wgm::expand(
 		warthog::search_node* current, warthog::problem_instance* problem)
 {
-	reset();
-
 	// compute the direction of travel used to reach the current node.
 	warthog::jps::direction dir_c =
 	   	this->compute_direction(current->get_parent(), current);
@@ -51,12 +47,16 @@ warthog::jps_expansion_policy_wgm::expand(
 
 			if(succ_id != warthog::INF)
 			{
-				neighbours_[num_neighbours_] = nodepool_->generate(succ_id);
-				costs_[num_neighbours_] = jumpcost;
-				// move terminator character as we go
-				neighbours_[++num_neighbours_] = 0;
+                add_neighbour(generate(succ_id), jumpcost);
 			}
 		}
 	}
+}
+
+void
+warthog::jps_expansion_policy_wgm::get_xy(
+        warthog::search_node* n, int32_t& x, int32_t& y)
+{
+    map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
 }
 
