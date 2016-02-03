@@ -5,10 +5,10 @@ warthog::jps2plus_expansion_policy::jps2plus_expansion_policy(warthog::gridmap* 
 {
 	map_ = map;
 	jpl_ = new warthog::offline_jump_point_locator2(map);
-	reset();
 
 	costs_.reserve(100);
 	jp_ids_.reserve(100);
+    reset();
 }
 
 warthog::jps2plus_expansion_policy::~jps2plus_expansion_policy()
@@ -21,6 +21,8 @@ warthog::jps2plus_expansion_policy::expand(
 		warthog::search_node* current, warthog::problem_instance* problem)
 {
 	reset();
+    costs_.clear();
+    jp_ids_.clear();
 
 	// compute the direction of travel used to reach the current node.
 	warthog::jps::direction dir_c = current->get_pdir();

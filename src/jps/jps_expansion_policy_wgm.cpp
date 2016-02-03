@@ -17,6 +17,8 @@ void
 warthog::jps_expansion_policy_wgm::expand(
 		warthog::search_node* current, warthog::problem_instance* problem)
 {
+    reset();
+
 	// compute the direction of travel used to reach the current node.
 	warthog::jps::direction dir_c =
 	   	this->compute_direction(current->get_parent(), current);

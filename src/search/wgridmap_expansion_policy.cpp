@@ -16,6 +16,8 @@ void
 warthog::wgridmap_expansion_policy::expand(warthog::search_node* current,
 		warthog::problem_instance* problem)
 {
+    reset();
+
 	// get terrain type of each tile in the 3x3 square around (x, y)
     uint32_t tile_ids[9];
     warthog::dbword tiles[9];

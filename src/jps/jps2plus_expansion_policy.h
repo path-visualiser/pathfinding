@@ -48,14 +48,6 @@ class jps2plus_expansion_policy : public expansion_policy
 		offline_jump_point_locator2* jpl_;
 		std::vector<warthog::cost_t> costs_;
 		std::vector<uint32_t> jp_ids_;
-
-		inline void
-		reset()
-		{
-			costs_.clear();
-			jp_ids_.clear();
-		}
-
 };
 
 }

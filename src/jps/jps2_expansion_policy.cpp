@@ -17,7 +17,9 @@ void
 warthog::jps2_expansion_policy::expand(
 		warthog::search_node* current, warthog::problem_instance* problem)
 {
+    reset();
     jp_ids_.clear();
+    jp_costs_.clear();
 
 	// compute the direction of travel used to reach the current node.
 	warthog::jps::direction dir_c = current->get_pdir();
@@ -37,7 +39,7 @@ warthog::jps2_expansion_policy::expand(
 		warthog::jps::direction d = (warthog::jps::direction) (1 << i);
 		if(succ_dirs & d)
 		{
-			jpl_->jump(d, current_id, goal_id, jp_ids_, costs_);
+			jpl_->jump(d, current_id, goal_id, jp_ids_, jp_costs_);
 		}
 	}
 
@@ -48,7 +50,7 @@ warthog::jps2_expansion_policy::expand(
 		// bits 0-23 store the id of the jump point
 		// bits 24-31 store the direction to the parent
 		uint32_t jp_id = jp_ids_.at(i);
-        warthog::cost_t jp_cost = costs_.at(i);
+        warthog::cost_t jp_cost = jp_costs_.at(i);
 
 		warthog::jps::direction pdir = (warthog::jps::direction)*(((uint8_t*)(&jp_id))+3);
 		warthog::search_node* mynode = generate(jp_id & id_mask);
@@ -56,7 +58,7 @@ warthog::jps2_expansion_policy::expand(
 		add_neighbour(mynode, jp_cost);
 
 		// stupid hack
-		if((current->get_g() + costs_.at(i)) < mynode->get_g())
+		if((current->get_g() + jp_costs_.at(i)) < mynode->get_g())
 		{
 			mynode->set_pdir(pdir);
 		}
