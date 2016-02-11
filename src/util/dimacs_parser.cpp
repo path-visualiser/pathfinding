@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "dimacs_parser.h"
 
 #include <cstdlib>
@@ -15,21 +16,22 @@ warthog::dimacs_parser::dimacs_parser()
 warthog::dimacs_parser::dimacs_parser(const char* gr_file)
 {
     init();
-    load(gr_file);
+    load_graph(gr_file);
 }
 
 warthog::dimacs_parser::dimacs_parser(const char* co_file, 
         const char* gr_file)
 {
     init();
-    load(co_file);
-    load(gr_file);
+    load_graph(co_file);
+    load_graph(gr_file);
 }
 
 warthog::dimacs_parser::~dimacs_parser()
 {
     delete nodes_;
     delete edges_;
+    delete experiments_;
 }
 
 void
@@ -37,10 +39,11 @@ warthog::dimacs_parser::init()
 {
     nodes_ = new std::vector<warthog::dimacs_parser::node>();
     edges_ = new std::vector<warthog::dimacs_parser::edge>();
+    experiments_ = new std::vector<warthog::dimacs_parser::experiment>();
 }
 
 bool
-warthog::dimacs_parser::load(const char* filename)
+warthog::dimacs_parser::load_graph(const char* filename)
 {
     std::fstream* fdimacs = new std::fstream(filename, std::fstream::in);
 	if(!fdimacs->is_open())
@@ -208,4 +211,85 @@ warthog::dimacs_parser::print(std::ostream& oss)
         }
     }
 
+}
+
+bool
+warthog::dimacs_parser::load_instance(const char* dimacs_file)
+{
+	std::ifstream infile;
+	infile.open(dimacs_file,std::ios::in);
+
+
+    bool p2p;
+    char buf[1024];
+    while(infile.good())
+    {
+        infile.getline(buf, 1024);
+        // skip comment lines
+        if(buf[0] == 'c')
+        {
+            continue;
+        }
+        if(strstr(buf, "p aux sp p2p") != 0)
+        {
+            p2p = true;
+            break;
+        }
+        else if(strstr(buf, "p aux sp ss") != 0)
+        {
+            p2p = false;
+            break;
+        }
+    }
+        
+    infile.getline(buf, 1024);
+    while(infile.good())
+    {
+        if(buf[0] == 'c')
+        {
+            infile.getline(buf, 1024);
+            continue;
+        }
+
+        char* tok = strtok(buf, " \t\n");
+        if(strcmp(tok, "q") == 0)
+        {
+            warthog::dimacs_parser::experiment exp;
+
+            tok = strtok(0, " \t\n");
+            if(tok == 0)
+            {
+                std::cerr << "skipping invalid query in problem file:  " 
+                    << buf << "\n";
+                continue;
+
+            }
+            exp.source = atoi(tok);
+            exp.p2p = p2p;
+
+            if(p2p)
+            {
+                tok = strtok(0, " \t\n");
+                if(tok == 0)
+                {
+                    std::cerr << "invalid query in problem file:  " << buf << "\n";
+                }
+                exp.target = atoi(tok);
+            }
+            else
+            {
+                exp.target = warthog::INF;
+            }
+            experiments_->push_back(exp);
+        } 
+        else
+        {
+            std::cerr << "skipping invalid query in problem file: " 
+                << buf << std::endl;
+        }
+        infile.getline(buf, 1024);
+    }
+
+    std::cerr << "loaded "<<experiments_->size() << " queries\n";
+    return true;
 }

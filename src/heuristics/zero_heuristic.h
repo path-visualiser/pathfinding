@@ -18,7 +18,7 @@ namespace warthog
 class zero_heuristic
 {
 	public:
-		zero_heuristic(unsigned int mapwidth, unsigned int mapheight) {}
+		zero_heuristic() {}
 		~zero_heuristic() {}
 
 		inline warthog::cost_t

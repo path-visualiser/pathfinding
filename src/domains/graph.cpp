@@ -1,7 +1,9 @@
+#include "constants.h"
 #include "dimacs_parser.h"
 #include "graph.h"
 
 #include <algorithm>
+#include <cassert>
 #include <functional>
 #include <iostream>
 #include <string>
@@ -11,24 +13,23 @@ warthog::graph::graph()
     filename_ = new std::string("");
     nodes_ = new std::vector<warthog::graph::node>();
     edges_ = new std::vector<warthog::graph::edge>();
-    lat_lng_ = new std::vector<uint32_t>();
 }
 
 warthog::graph::~graph()
 {
     delete nodes_;
     delete edges_;
-    delete lat_lng_;
     delete filename_;
 }
 
 bool
-warthog::graph::load_dimacs(char* gr_file, char* co_file)
+warthog::graph::load_dimacs(const char* gr_file, const char* co_file, 
+        bool backward_graph)
 {
     //warthog::dimacs_parser dimacs(gr_file, co_file);
     warthog::dimacs_parser dimacs;
-    dimacs.load(gr_file);
-    dimacs.load(co_file);
+    dimacs.load_graph(gr_file);
+    dimacs.load_graph(co_file);
     std::cout << "loaded" << std::endl;
 
     nodes_->reserve(dimacs.get_num_nodes());
@@ -36,11 +37,24 @@ warthog::graph::load_dimacs(char* gr_file, char* co_file)
 
 
     // sort the edges by their tail indexes
-    bool (*edge_comparator)
-         (warthog::dimacs_parser::edge, warthog::dimacs_parser::edge) =
-            [](warthog::dimacs_parser::edge e1,
+    // (or head indexes, for a backward graph)
+    std::sort(dimacs.edges_begin(), dimacs.edges_end(), 
+            [=](warthog::dimacs_parser::edge e1,
                warthog::dimacs_parser::edge e2) -> bool 
                 {
+                    if(backward_graph)
+                    {
+                        if(e1.head_id_ < e2.head_id_)
+                        {
+                            return true;
+                        }
+                        if(e1.head_id_ == e2.head_id_)
+                        {
+                            return e1.head_id_ <= e2.head_id_;
+                        }
+                        return false;
+                    }
+
                     if(e1.tail_id_ < e2.tail_id_)
                     {
                         return true;
@@ -50,8 +64,8 @@ warthog::graph::load_dimacs(char* gr_file, char* co_file)
                         return e1.head_id_ <= e2.head_id_;
                     }
                     return false;
-                };
-    std::sort(dimacs.edges_begin(), dimacs.edges_end(), edge_comparator); 
+                }
+    );
     std::cout << "edges, sorted" << std::endl;
   
     // sort nodes by their ids
@@ -66,6 +80,14 @@ warthog::graph::load_dimacs(char* gr_file, char* co_file)
     std::cout << "nodes, sorted" << std::endl;
 
     // convert nodes to graph format
+    // first, insert a dummy element at index0. that way all the id
+    // of each node is equal to its index in nodes_
+    warthog::graph::node n;
+    n.x_ = warthog::INF;
+    n.y_ = warthog::INF;
+    n.begin_ = n.degree_ = 0;
+    nodes_->push_back(n);
+
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)
     {
@@ -74,6 +96,7 @@ warthog::graph::load_dimacs(char* gr_file, char* co_file)
        n.begin_ = 0;
        n.x_ = (*it).x_;
        n.y_ = (*it).y_;
+       assert((*it).id_ == nodes_->size());
        nodes_->push_back(n);
     }
     std::cout << "nodes, converted" << std::endl;
@@ -85,12 +108,17 @@ warthog::graph::load_dimacs(char* gr_file, char* co_file)
         //std::cout << "debug; tail_id = " << (*it).tail_id_ << 
         //    " head_id = " << (*it).head_id_ << std::endl;
         warthog::graph::edge e;
-        e.head_idx_ =  (*it).head_id_;
+        e.head_idx_ = backward_graph ? 
+            ((*it).tail_id_) :
+            ((*it).head_id_);
         e.wt_ = (*it).weight_;
         edges_->push_back(e);
 
         // while we're at it, update node degree info
-        int node_id = (*it).tail_id_ - 1; // because nodes_ is 0-indexed
+        // (NB: nodes_ is 0-indexed; DIMACS format is 1-indexed)
+        int node_id = backward_graph ? 
+                        ((*it).head_id_) :
+                        ((*it).tail_id_);
         if((*nodes_)[node_id].degree_ == 0)
         {
             (*nodes_)[node_id].begin_ = it - dimacs.edges_begin();
@@ -102,7 +130,7 @@ warthog::graph::load_dimacs(char* gr_file, char* co_file)
 }
 
 bool
-warthog::graph::load_grid(char* file)
+warthog::graph::load_grid(const char* file)
 {
     std::cerr << "not yet!";
     return 1;

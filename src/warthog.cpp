@@ -5,7 +5,10 @@
 //
 
 #include "cfg.h"
+#include "dimacs_parser.h"
 #include "flexible_astar.h"
+#include "graph.h"
+#include "graph_expansion_policy.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
 #include "jps_expansion_policy.h"
@@ -32,18 +35,29 @@ int checkopt = 0;
 int verbose = 0;
 // display program help on startup
 int print_help = 0;
-// treat the map as a weighted-cost grid
-int wgm = 0;
+
+// 0: map is a unweighted grid
+// 1: map is a weighted grid
+// 2: map is a directed graph in DIMACS format
+int format;
 
 void
 help()
 {
 	std::cerr << "valid parameters:\n"
-	<< "--alg [astar | jps | jps2 | jps+ | jps2+ | jps | sssp ]\n"
-	<< "--scen [scenario filename]\n"
-	<< "--gen [map filename]\n"
-	<< "--wgm (optional)\n"
-	<< "--checkopt (optional)\n"
+    << "--format [ grid | wgm ]; followed by\n"
+	<< "\t--alg [astar | jps | jps2 | jps+ | jps2+ | jps | sssp ]\n"
+	<< "\t--map [map filename] (only with dimacs format)\n"
+	<< "\t--scen [scenario filename]\n"
+	<< "\t--gen [map filename] (only with grid format)\n"
+	<< "\t--checkopt (optional)\n"
+    << "\n OR \n\n"
+    << "--format [dimacs]; followed by\n"
+    << "\t--gr [graph filename]\n"
+    << "\t--co [coordinates filename]\n"
+    << "\t--problem [ss or p2p problem file]\n"
+    << "\t--alg [astar | dijkstra]\n"
+    << "\n AND \n\n"
 	<< "--verbose (optional)\n";
 }
 
@@ -343,7 +357,7 @@ run_wgm_sssp(warthog::scenario_manager& scenmgr)
 {
     warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::wgridmap_expansion_policy expander(&map);
-	warthog::zero_heuristic heuristic(map.width(), map.height());
+	warthog::zero_heuristic heuristic;
 
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
@@ -412,35 +426,69 @@ run_jps_wgm(warthog::scenario_manager& scenmgr)
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
-int 
-main(int argc, char** argv)
+void
+run_dimacs(warthog::util::cfg& cfg)
 {
-	// parse arguments
-	warthog::util::param valid_args[] = 
-	{
-		{"scen",  required_argument, 0, 0},
-		{"alg",  required_argument, 0, 1},
-		{"gen", required_argument, 0, 3},
-		{"help", no_argument, &print_help, 1},
-		{"checkopt",  no_argument, &checkopt, 1},
-		{"verbose",  no_argument, &verbose, 1},
-		{"wgm",  no_argument, &wgm, 1}
-	};
 
-	warthog::util::cfg cfg;
-	cfg.parse_args(argc, argv, valid_args);
+    std::string grfile = cfg.get_param_value("gr");
+    std::string cofile = cfg.get_param_value("co");
+    std::string problemfile = cfg.get_param_value("problem");
+    std::string alg = cfg.get_param_value("alg");
 
-    if(print_help)
+
+    if((problemfile == "") || (grfile == "") || (cofile == "") | (alg == ""))
     {
-		help();
-        exit(0);
+        std::cerr << "at least one required parameter is missing: --gr --co --problem --alg\n";
+        return;
     }
 
-	std::string sfile = cfg.get_param_value("scen");
-	std::string alg = cfg.get_param_value("alg");
-	std::string gen = cfg.get_param_value("gen");
+    if(alg == "dijkstra")
+    {
+        warthog::graph* g = new warthog::graph();
+        g->load_dimacs(grfile.c_str(), cofile.c_str());
 
-    // generate scenarios
+        warthog::dimacs_parser parser;
+        parser.load_instance(problemfile.c_str());
+
+        warthog::graph_expansion_policy expander(g);
+        warthog::zero_heuristic h;
+        warthog::flexible_astar<warthog::zero_heuristic, warthog::graph_expansion_policy>
+            astar(&h, &expander);
+        astar.set_verbose(verbose);
+
+        int i = 0;
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = astar.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i <<"\t" << "dijkstra" << "\t" 
+            << astar.get_nodes_expanded() << "\t" 
+            << astar.get_nodes_generated() << "\t"
+            << astar.get_nodes_touched() << "\t"
+            << astar.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
+
+    }
+    else
+    {
+        std::cerr << "invalid search algorithm\n";
+    }
+
+
+
+}
+
+void
+run_grid(warthog::util::cfg& cfg)
+{
+    std::string sfile = cfg.get_param_value("scen");
+    std::string alg = cfg.get_param_value("alg");
+    std::string gen = cfg.get_param_value("gen");
+
 	if(gen != "")
 	{
 		warthog::scenario_manager sm;
@@ -459,22 +507,23 @@ main(int argc, char** argv)
 
 	warthog::scenario_manager scenmgr;
 	scenmgr.load_scenario(sfile.c_str());
+
+    int wgm = cfg.get_param_value("format") == "wgm";
     std::cerr << "wgm: " << (wgm ? "true" : "false") << std::endl;
+    if(alg == "jps+")
+    {
+        run_jpsplus(scenmgr);
+    }
 
-	if(alg == "jps+")
-	{
-		run_jpsplus(scenmgr);
-	}
+    if(alg == "jps2")
+    {
+        run_jps2(scenmgr);
+    }
 
-	if(alg == "jps2")
-	{
-		run_jps2(scenmgr);
-	}
-
-	if(alg == "jps2+")
-	{
-		run_jps2plus(scenmgr);
-	}
+    if(alg == "jps2+")
+    {
+        run_jps2plus(scenmgr);
+    }
 
     if(alg == "jps")
     {
@@ -488,8 +537,8 @@ main(int argc, char** argv)
         }
     }
 
-	if(alg == "astar")
-	{
+    if(alg == "astar")
+    {
         if(wgm) 
         { 
             run_wgm_astar(scenmgr); 
@@ -498,10 +547,10 @@ main(int argc, char** argv)
         { 
             run_astar(scenmgr); 
         }
-	}
+    }
 
-	if(alg == "sssp")
-	{
+    if(alg == "sssp")
+    {
         if(wgm) 
         { 
             run_wgm_sssp(scenmgr); 
@@ -510,6 +559,45 @@ main(int argc, char** argv)
         { 
             //run_astar(scenmgr); 
         }
-	}
+    }
+}
+
+int 
+main(int argc, char** argv)
+{
+	// parse arguments
+	warthog::util::param valid_args[] = 
+	{
+		{"scen",  required_argument, 0, 0},
+		{"alg",  required_argument, 0, 1},
+		{"gen", required_argument, 0, 3},
+		{"help", no_argument, &print_help, 1},
+		{"checkopt",  no_argument, &checkopt, 1},
+		{"verbose",  no_argument, &verbose, 1},
+		{"gr",  required_argument, 0, 1},
+		{"co",  required_argument, 0, 1},
+		{"problem",  required_argument, 0, 1},
+		{"format",  required_argument, 0, 1}
+	};
+
+	warthog::util::cfg cfg;
+	cfg.parse_args(argc, argv, valid_args);
+
+    if(print_help)
+    {
+		help();
+        exit(0);
+    }
+
+
+    std::string format = cfg.get_param_value("format");
+    if(format == "dimacs")
+    {
+        run_dimacs(cfg);
+    }
+    if((format == "grid") || (format == "wgm"))
+    {
+        run_grid(cfg);
+    }
 }
 

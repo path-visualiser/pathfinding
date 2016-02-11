@@ -8,7 +8,7 @@ static uint32_t head_offset = 0;
 static uint32_t tail_offset = 0;
 static const int MAXTRIES=10000000;
 
-warthog::scenario_manager::scenario_manager() : version_(1)
+warthog::scenario_manager::scenario_manager() 
 {
 }
 
@@ -121,36 +121,26 @@ warthog::scenario_manager::load_scenario(const char* filelocation)
 
 	sfile_ = filelocation;
 
-
-	// Check if a version number is given
-	float version=0;
-	std::string first;
-	infile >> first;
-	if(first != "version")
+    char buf[1024];
+    infile.getline(buf, 1024);
+    if(strstr(buf, "version 1"))
 	{
-		version = 0.0;
-		infile.seekg(0,std::ios::beg);
-	}
-
-	infile >> version;
-	if(version == 1.0 || version == 0)
-	{
-		load_v1_scenario(infile);
+        // GPPC format scenarios
+		load_gppc_scenario(infile);
 	}
 	else
 	{
 		std::cerr << "err; scenario_manager::load_scenario "
-			<< " scenario has invalid version number. \n";
+			<< " scenario file not in GPPC format\n";
 		infile.close();
 		exit(1);
 	}
-
 	infile.close();
 }
 
 // V1.0 is the version officially supported by HOG
 void 
-warthog::scenario_manager::load_v1_scenario(std::ifstream& infile)
+warthog::scenario_manager::load_gppc_scenario(std::ifstream& infile)
 {
 	int sizeX = 0, sizeY = 0; 
 	int bucket;
@@ -184,7 +174,7 @@ warthog::scenario_manager::write_scenario(std::ostream& scenariofile)
 	//std::ofstream scenariofile;
 	scenariofile.precision(16);
 	//scenariofile.open(filelocation, std::ios::out);
-	scenariofile << "version " << version_<<std::endl;
+	scenariofile << "version 1" << std::endl;
 
 	for(unsigned int i=0; i<experiments_.size(); i++)
 	{	

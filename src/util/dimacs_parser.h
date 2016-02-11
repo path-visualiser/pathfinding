@@ -41,10 +41,17 @@ class dimacs_parser
             }
         };
 
-        typedef std::vector<warthog::dimacs_parser::node>::iterator 
-            node_iterator;
-        typedef  std::vector<warthog::dimacs_parser::edge>::iterator 
-            edge_iterator;
+        struct experiment
+        {
+            uint32_t source;
+            uint32_t target;
+            bool p2p; // true indicates point-to-point instance; else SSSP
+        };
+
+
+        typedef  std::vector<warthog::dimacs_parser::node>::iterator node_iterator;
+        typedef  std::vector<warthog::dimacs_parser::edge>::iterator edge_iterator;
+        typedef  std::vector<warthog::dimacs_parser::experiment>::iterator experiment_iterator;
 
         dimacs_parser();
         dimacs_parser(const char* gr_file);
@@ -56,7 +63,10 @@ class dimacs_parser
         // (or edges, depending on the type of file passed for loading) and 
         // THEN attempt to load new data.
         bool 
-        load(const char* dimacs_file);
+        load_graph(const char* dimacs_file);
+
+        bool
+        load_instance(const char* dimacs_file);
 
         inline int
         get_num_nodes() 
@@ -94,6 +104,19 @@ class dimacs_parser
             return edges_->end();
         }
 
+        inline warthog::dimacs_parser::experiment_iterator
+        experiments_begin()
+        {
+            return experiments_->begin();
+        }
+
+
+        inline warthog::dimacs_parser::experiment_iterator
+        experiments_end()
+        {
+            return experiments_->end();
+        }
+
         void
         print(std::ostream&);
 
@@ -106,6 +129,7 @@ class dimacs_parser
        uint32_t n_edges_;
        std::vector<warthog::dimacs_parser::node>* nodes_;
        std::vector<warthog::dimacs_parser::edge>* edges_;
+       std::vector<warthog::dimacs_parser::experiment>* experiments_;
 
 };
 
