@@ -1,6 +1,7 @@
 #include "constants.h"
 #include "dimacs_parser.h"
-#include "graph.h"
+#include "euclidean_heuristic.h"
+#include "planar_graph.h"
 
 #include <algorithm>
 #include <cassert>
@@ -8,14 +9,14 @@
 #include <iostream>
 #include <string>
 
-warthog::graph::graph()
+warthog::planar_graph::planar_graph()
 {
     filename_ = new std::string("");
-    nodes_ = new std::vector<warthog::graph::node>();
-    edges_ = new std::vector<warthog::graph::edge>();
+    nodes_ = new std::vector<warthog::planar_graph::node>();
+    edges_ = new std::vector<warthog::planar_graph::edge>();
 }
 
-warthog::graph::~graph()
+warthog::planar_graph::~planar_graph()
 {
     delete nodes_;
     delete edges_;
@@ -23,7 +24,7 @@ warthog::graph::~graph()
 }
 
 bool
-warthog::graph::load_dimacs(const char* gr_file, const char* co_file, 
+warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file, 
         bool backward_graph)
 {
     //warthog::dimacs_parser dimacs(gr_file, co_file);
@@ -82,7 +83,7 @@ warthog::graph::load_dimacs(const char* gr_file, const char* co_file,
     // convert nodes to graph format
     // first, insert a dummy element at index0. that way all the id
     // of each node is equal to its index in nodes_
-    warthog::graph::node n;
+    warthog::planar_graph::node n;
     n.x_ = warthog::INF;
     n.y_ = warthog::INF;
     n.begin_ = n.degree_ = 0;
@@ -91,7 +92,7 @@ warthog::graph::load_dimacs(const char* gr_file, const char* co_file,
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)
     {
-       warthog::graph::node n;
+       warthog::planar_graph::node n;
        n.degree_ = 0;
        n.begin_ = 0;
        n.x_ = (*it).x_;
@@ -107,7 +108,7 @@ warthog::graph::load_dimacs(const char* gr_file, const char* co_file,
     {
         //std::cout << "debug; tail_id = " << (*it).tail_id_ << 
         //    " head_id = " << (*it).head_id_ << std::endl;
-        warthog::graph::edge e;
+        warthog::planar_graph::edge e;
         e.head_idx_ = backward_graph ? 
             ((*it).tail_id_) :
             ((*it).head_id_);
@@ -130,7 +131,7 @@ warthog::graph::load_dimacs(const char* gr_file, const char* co_file,
 }
 
 bool
-warthog::graph::load_grid(const char* file)
+warthog::planar_graph::load_grid(const char* file)
 {
     std::cerr << "not yet!";
     return 1;
@@ -138,7 +139,7 @@ warthog::graph::load_grid(const char* file)
 
 
 void
-warthog::graph::print_dimacs(std::ostream& oss)
+warthog::planar_graph::print_dimacs(std::ostream& oss)
 {
     uint32_t nnodes = nodes_->size();
     if(nnodes > 0)
@@ -148,11 +149,11 @@ warthog::graph::print_dimacs(std::ostream& oss)
             << std::endl;
         for(uint32_t i = 0; i < nnodes; i++)
         {
-            warthog::graph::node n = nodes_->at(i);
+            warthog::planar_graph::node n = nodes_->at(i);
             oss << "v " << (i+1) << " " << n.x_ << " " << n.y_ << std::endl;
             for(uint32_t j = n.begin_; j < n.begin_ + n.degree_; j++)
             {
-                warthog::graph::edge e = edges_->at(j);
+                warthog::planar_graph::edge e = edges_->at(j);
                 oss << "a " << (i+1) << " " << e.head_idx_ << " " << e.wt_
                     << std::endl;
             }

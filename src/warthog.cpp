@@ -6,8 +6,9 @@
 
 #include "cfg.h"
 #include "dimacs_parser.h"
+#include "euclidean_heuristic.h"
 #include "flexible_astar.h"
-#include "graph.h"
+#include "planar_graph.h"
 #include "graph_expansion_policy.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
@@ -433,53 +434,72 @@ run_dimacs(warthog::util::cfg& cfg)
     std::string grfile = cfg.get_param_value("gr");
     std::string cofile = cfg.get_param_value("co");
     std::string problemfile = cfg.get_param_value("problem");
-    std::string alg = cfg.get_param_value("alg");
+    std::string alg_name = cfg.get_param_value("alg");
 
 
-    if((problemfile == "") || (grfile == "") || (cofile == "") | (alg == ""))
+    if((problemfile == "") || (grfile == "") || (cofile == "") | (alg_name == ""))
     {
         std::cerr << "at least one required parameter is missing: --gr --co --problem --alg\n";
         return;
     }
 
-    if(alg == "dijkstra")
+    warthog::dimacs_parser parser;
+    warthog::planar_graph* g = new warthog::planar_graph();
+    g->load_dimacs(grfile.c_str(), cofile.c_str());
+    parser.load_instance(problemfile.c_str());
+    warthog::graph_expansion_policy expander(g);
+
+    if(alg_name == "dijkstra")
     {
-        warthog::graph* g = new warthog::graph();
-        g->load_dimacs(grfile.c_str(), cofile.c_str());
-
-        warthog::dimacs_parser parser;
-        parser.load_instance(problemfile.c_str());
-
-        warthog::graph_expansion_policy expander(g);
         warthog::zero_heuristic h;
         warthog::flexible_astar<warthog::zero_heuristic, warthog::graph_expansion_policy>
-            astar(&h, &expander);
-        astar.set_verbose(verbose);
+            alg(&h, &expander);
+        alg.set_verbose(verbose);
 
         int i = 0;
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
             warthog::dimacs_parser::experiment exp = (*it);
-            double len = astar.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
 
-            std::cout << i <<"\t" << "dijkstra" << "\t" 
-            << astar.get_nodes_expanded() << "\t" 
-            << astar.get_nodes_generated() << "\t"
-            << astar.get_nodes_touched() << "\t"
-            << astar.get_search_time()  << "\t"
+            std::cout << i <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
             << len << "\t" 
             << grfile << " " << problemfile << std::endl;
         }
+    }
 
+    else if(alg_name == "astar")
+    {
+        warthog::euclidean_heuristic h(g);
+        warthog::flexible_astar<warthog::euclidean_heuristic, warthog::graph_expansion_policy>
+            alg(&h, &expander);
+        alg.set_verbose(verbose);
+
+        int i = 0;
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
     }
     else
     {
         std::cerr << "invalid search algorithm\n";
     }
-
-
-
 }
 
 void

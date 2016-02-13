@@ -223,7 +223,7 @@ class flexible_astar
 				{
 					int32_t x, y;
                     expander_->get_xy(current, x, y);
-					std::cerr << "expanding ("<<x<<", "<<y<<")...";
+					std::cerr << this->nodes_expanded_ << ". expanding ("<<x<<", "<<y<<")...";
 					current->print(std::cerr);
 					std::cerr << std::endl;
 				}
@@ -242,6 +242,24 @@ class flexible_astar
 					if(n->get_expanded())
 					{
 						// skip neighbours already expanded
+                        if(verbose_)
+                        {
+                            int32_t x, y;
+                            expander_->get_xy(n, x, y);
+                            std::cerr << "  closed; (edgecost=" << cost_to_n << ") ("<<x<<", "<<y<<")...";
+                            n->print(std::cerr);
+                            std::cerr << std::endl;
+
+                            //warthog::cost_t gval = current->get_g() + cost_to_n;
+                            //double hval = heuristic_->h(n->get_id(), goalid) * hscale_;
+                            //warthog::cost_t fval = gval + hval;
+                            //std::cerr << "  alt g: " << gval << " h: " << hval << " f: " << fval << std::endl;
+                            //if(gval < n->get_g())
+                            //{
+                            //    assert(gval >= n->get_g());
+                            //}
+
+                        }
 						continue;
 					}
 
@@ -258,7 +276,7 @@ class flexible_astar
 							{
 								int32_t x, y;
                                 expander_->get_xy(n, x, y);
-								std::cerr << "  updating ("<<x<<", "<<y<<")...";
+								std::cerr << "  open; updating (edgecost="<< cost_to_n<<") ("<<x<<", "<<y<<")...";
 								n->print(std::cerr);
 								std::cerr << std::endl;
 							}
@@ -271,7 +289,7 @@ class flexible_astar
 							{
 								int32_t x, y;
                                 expander_->get_xy(n, x, y);
-								std::cerr << "  updating ("<<x<<", "<<y<<")...";
+								std::cerr << "  open; not updating (edgecost=" << cost_to_n<< ") ("<<x<<", "<<y<<")...";
 								n->print(std::cerr);
 								std::cerr << std::endl;
 							}
@@ -291,7 +309,7 @@ class flexible_astar
 						{
 							int32_t x, y;
                             expander_->get_xy(n, x, y);
-							std::cerr << "  generating ("<<x<<", "<<y<<")...";
+							std::cerr << "  generating (edgecost=" << cost_to_n<<") ("<<x<<", "<<y<<")...";
 							n->print(std::cerr);
 							std::cerr << std::endl;
 						}
@@ -299,16 +317,16 @@ class flexible_astar
 						nodes_generated_++;
 					}
 				}
-				#ifndef NDEBUG
-				if(verbose_)
-				{
-					int32_t x, y;
-                    expander_->get_xy(current, x, y);
-					std::cerr <<"closing ("<<x<<", "<<y<<")...";
-					current->print(std::cerr);
-					std::cerr << std::endl;
-			}
-			#endif
+//				#ifndef NDEBUG
+//				if(verbose_)
+//				{
+//					int32_t x, y;
+//                    expander_->get_xy(current, x, y);
+//					std::cerr <<"closing ("<<x<<", "<<y<<")...";
+//					current->print(std::cerr);
+//					std::cerr << std::endl;
+//			    }
+//			    #endif
 			}
 
 			mytimer.stop();

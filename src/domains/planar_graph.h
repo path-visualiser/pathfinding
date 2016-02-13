@@ -1,9 +1,10 @@
-#ifndef WARTHOG_GRAPH_H
+#ifndef WARTHOG_PLANAR_GRAPH_H
+#define WARTHOG_PLANAR_GRAPH_H
 
-// graph.h
+// planar_graph.h
 // 
 // A simple general purpose data structure for directed 
-// weighted graphs. Supported input types are:
+// weighted planar graphs. Supported input types are:
 //  - warthog::gridmap objects
 //  - road network graphs in the format of the 9th DIMACS competition
 //
@@ -22,9 +23,8 @@
 namespace warthog
 {
 
-
 class gridmap;
-class graph
+class planar_graph
 {
     public:
         struct node
@@ -41,8 +41,8 @@ class graph
             uint32_t wt_;       // the edge weight
         };
 
-        graph();
-        ~graph();
+        planar_graph();
+        ~planar_graph();
 
         // read in a grid map in the format used at the 
         // international Grid-based Path Planning Competition
@@ -80,19 +80,19 @@ class graph
         {
             if(id < nodes_->size()) 
             {
-                warthog::graph::node n = nodes_->at(id);
+                warthog::planar_graph::node n = nodes_->at(id);
                 x = n.x_;
                 y = n.y_; 
             }
         }
 
-        inline warthog::graph::node
+        inline warthog::planar_graph::node
         get_node(uint32_t id)
         {
            return nodes_->at(id) ;
         }
 
-        inline warthog::graph::edge
+        inline warthog::planar_graph::edge
         get_edge(uint32_t id)
         {
             return edges_->at(id);
@@ -102,8 +102,8 @@ class graph
         mem()
         {
             return 
-                sizeof(warthog::graph::node)*nodes_->size() +
-                sizeof(warthog::graph::edge)*edges_->size() +
+                sizeof(warthog::planar_graph::node)*nodes_->size() +
+                sizeof(warthog::planar_graph::edge)*edges_->size() +
                 sizeof(char)*filename_->size() +
                 sizeof(*this);
         }
@@ -112,8 +112,8 @@ class graph
     private:
         void init();
 
-        std::vector<warthog::graph::node>* nodes_;
-        std::vector<warthog::graph::edge>* edges_;
+        std::vector<warthog::planar_graph::node>* nodes_;
+        std::vector<warthog::planar_graph::edge>* edges_;
         std::string* filename_;
 };
 
