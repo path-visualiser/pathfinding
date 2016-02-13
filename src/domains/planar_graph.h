@@ -16,6 +16,8 @@
 // @created: 2015-01-07
 //
 
+#include "constants.h"
+
 #include <ostream>
 #include <unordered_map>
 #include <vector>
@@ -38,7 +40,7 @@ class planar_graph
         struct edge
         {
             uint32_t head_idx_; // the node pointed to
-            uint32_t wt_;       // the edge weight
+            double wt_;       // the edge weight
         };
 
         planar_graph();
@@ -58,7 +60,9 @@ class planar_graph
         // setting this to true swaps the head and tail of every
         // arc (the default is false)
         bool
-        load_dimacs(const char*, const char*, bool backward=false);
+        load_dimacs(const char*, const char*, 
+                bool backward=false, 
+                bool enforce_euclidean=true);
 
         void
         print_dimacs(std::ostream& oss);
@@ -83,6 +87,10 @@ class planar_graph
                 warthog::planar_graph::node n = nodes_->at(id);
                 x = n.x_;
                 y = n.y_; 
+            }
+            else
+            {
+                x = y = warthog::INF;
             }
         }
 

@@ -463,7 +463,7 @@ run_dimacs(warthog::util::cfg& cfg)
             warthog::dimacs_parser::experiment exp = (*it);
             double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
 
-            std::cout << i <<"\t" << alg_name << "\t" 
+            std::cout << i++ <<"\t" << alg_name << "\t" 
             << alg.get_nodes_expanded() << "\t" 
             << alg.get_nodes_generated() << "\t"
             << alg.get_nodes_touched() << "\t"
@@ -487,7 +487,7 @@ run_dimacs(warthog::util::cfg& cfg)
             warthog::dimacs_parser::experiment exp = (*it);
             double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
 
-            std::cout << i <<"\t" << alg_name << "\t" 
+            std::cout << i++ <<"\t" << alg_name << "\t" 
             << alg.get_nodes_expanded() << "\t" 
             << alg.get_nodes_generated() << "\t"
             << alg.get_nodes_touched() << "\t"

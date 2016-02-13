@@ -25,7 +25,7 @@ warthog::planar_graph::~planar_graph()
 
 bool
 warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file, 
-        bool backward_graph)
+        bool backward_graph, bool enforce_euclidean)
 {
     //warthog::dimacs_parser dimacs(gr_file, co_file);
     warthog::dimacs_parser dimacs;
@@ -102,6 +102,8 @@ warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file,
     }
     std::cout << "nodes, converted" << std::endl;
 
+    warthog::euclidean_heuristic h(0);
+
     // convert edges to graph format
     for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
             it != dimacs.edges_end(); it++)
@@ -113,6 +115,19 @@ warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file,
             ((*it).tail_id_) :
             ((*it).head_id_);
         e.wt_ = (*it).weight_;
+
+        // in a euclidean consistent graph the edge costs are at least
+        // as large as the euclidean norm between the edge endpoints
+        if(enforce_euclidean)
+        {
+            warthog::planar_graph::node head = nodes_->at((*it).head_id_);
+            warthog::planar_graph::node tail = nodes_->at((*it).tail_id_);
+            double hdist = h.h(tail.x_, tail.y_, head.x_, head.y_);
+            if(e.wt_ < hdist)
+            {
+                e.wt_ = ceil(hdist);
+            } 
+        }
         edges_->push_back(e);
 
         // while we're at it, update node degree info

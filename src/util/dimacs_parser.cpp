@@ -220,7 +220,7 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
 	infile.open(dimacs_file,std::ios::in);
 
 
-    bool p2p;
+    bool p2p = true;
     char buf[1024];
     while(infile.good())
     {
