@@ -289,7 +289,6 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
         }
         infile.getline(buf, 1024);
     }
-
-    std::cerr << "loaded "<<experiments_->size() << " queries\n";
+    //std::cerr << "loaded "<<experiments_->size() << " queries\n";
     return true;
 }

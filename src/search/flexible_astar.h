@@ -19,6 +19,7 @@
 #include "cpool.h"
 #include "pqueue.h"
 #include "problem_instance.h"
+#include "search.h"
 #include "search_node.h"
 #include "timer.h"
 
@@ -32,7 +33,7 @@ namespace warthog
 // H is a heuristic function
 // E is an expansion policy
 template <class H, class E>
-class flexible_astar 
+class flexible_astar : public warthog::search
 {
 	public:
 		flexible_astar(H* heuristic, E* expander)
@@ -43,7 +44,7 @@ class flexible_astar
             hscale_ = 1.0;
 		}
 
-		~flexible_astar()
+		virtual ~flexible_astar()
 		{
 			cleanup();
 			delete open_;
@@ -110,7 +111,7 @@ class flexible_astar
 			return len / (double)warthog::ONE;
 		}
 
-		inline size_t
+		virtual inline size_t
 		mem()
 		{
 			size_t bytes = 
@@ -122,25 +123,6 @@ class flexible_astar
 				sizeof(*this);
 			return bytes;
 		}
-
-		inline uint32_t 
-		get_nodes_expanded() { return nodes_expanded_; }
-
-		inline uint32_t
-		get_nodes_generated() { return nodes_generated_; }
-
-		inline uint32_t
-		get_nodes_touched() { return nodes_touched_; }
-
-		inline double
-		get_search_time() { return search_time_; }
-
-
-		inline bool
-		get_verbose() { return verbose_; }
-
-		inline void
-		set_verbose(bool verbose) { verbose_ = verbose; } 
 
         inline double
         get_hscale() { return hscale_; } 
@@ -154,12 +136,6 @@ class flexible_astar
 		H* heuristic_;
 		E* expander_;
 		warthog::pqueue* open_;
-		bool verbose_;
-		static uint32_t searchid_;
-		uint32_t nodes_expanded_;
-		uint32_t nodes_generated_;
-		uint32_t nodes_touched_;
-		double search_time_;
         double hscale_; // heuristic scaling factor
 
 		// no copy
@@ -187,7 +163,7 @@ class flexible_astar
 			warthog::problem_instance instance;
 			instance.set_goal(goalid);
 			instance.set_start(startid);
-			instance.set_searchid(searchid_++);
+			instance.set_searchid(++warthog::search::searchid_);
 
 			warthog::search_node* goal = 0;
 			warthog::search_node* start = expander_->generate(startid);
@@ -343,9 +319,6 @@ class flexible_astar
 
 
 };
-
-template <class H, class E>
-uint32_t warthog::flexible_astar<H, E>::searchid_ = 0;
 
 }
 

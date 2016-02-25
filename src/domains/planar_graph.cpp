@@ -18,6 +18,8 @@ warthog::planar_graph::planar_graph()
 
 warthog::planar_graph::~planar_graph()
 {
+    nodes_->clear();
+    edges_->clear();
     delete nodes_;
     delete edges_;
     delete filename_;
@@ -31,7 +33,7 @@ warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file,
     warthog::dimacs_parser dimacs;
     dimacs.load_graph(gr_file);
     dimacs.load_graph(co_file);
-    std::cout << "loaded" << std::endl;
+    //std::cout << "loaded" << std::endl;
 
     nodes_->reserve(dimacs.get_num_nodes());
     edges_->reserve(dimacs.get_num_edges());
@@ -67,7 +69,7 @@ warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file,
                     return false;
                 }
     );
-    std::cout << "edges, sorted" << std::endl;
+    //std::cout << "edges, sorted" << std::endl;
   
     // sort nodes by their ids
     bool (*node_comparator) 
@@ -78,7 +80,7 @@ warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file,
                     return n1.id_ < n2.id_;
                 };
     std::sort(dimacs.nodes_begin(), dimacs.nodes_end(), node_comparator);
-    std::cout << "nodes, sorted" << std::endl;
+    //std::cout << "nodes, sorted" << std::endl;
 
     // convert nodes to graph format
     // first, insert a dummy element at index0. that way all the id
@@ -100,7 +102,7 @@ warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file,
        assert((*it).id_ == nodes_->size());
        nodes_->push_back(n);
     }
-    std::cout << "nodes, converted" << std::endl;
+    //std::cout << "nodes, converted" << std::endl;
 
     warthog::euclidean_heuristic h(0);
 
@@ -141,7 +143,7 @@ warthog::planar_graph::load_dimacs(const char* gr_file, const char* co_file,
         }
         (*nodes_)[node_id].degree_++;
     }
-    std::cout << "edges, converted" << std::endl;
+    //std::cout << "edges, converted" << std::endl;
     return true;
 }
 

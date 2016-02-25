@@ -16,10 +16,11 @@
 namespace warthog
 {
 
+typedef void (*xyFn)(uint32_t id, int32_t& x, int32_t& y);
 class euclidean_heuristic
 {
     public:
-        euclidean_heuristic(warthog::planar_graph* g) : g_(g) { }
+        euclidean_heuristic(warthog::planar_graph* g) : g_(g) { hscale_ = 1; }
         ~euclidean_heuristic() { }
 
 		inline warthog::cost_t
@@ -29,7 +30,7 @@ class euclidean_heuristic
             // NB: precision loss when warthog::cost_t is an integer
 			double dx = x-x2;
 			double dy = y-y2;
-            return sqrt(dx*dx + dy*dy);
+            return sqrt(dx*dx + dy*dy) * hscale_;
 		}
 
 		inline warthog::cost_t
@@ -42,8 +43,23 @@ class euclidean_heuristic
 			return this->h(x, y, x2, y2);
 		}
 
+        inline void
+        set_hscale(double hscale)
+        {
+            if(hscale > 0)
+            {
+                hscale_ = hscale;
+            }
+        }
+
+        inline double
+        get_hscale() { return hscale_; }
+
+
+
 	private:
         warthog::planar_graph* g_;
+        double hscale_;
 
 };
 

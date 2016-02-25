@@ -6,6 +6,7 @@
 namespace warthog
 {
 
+class planar_graph;
 class search_node;
 class problem_instance;
 class graph_expansion_policy : public expansion_policy
@@ -22,12 +23,7 @@ class graph_expansion_policy : public expansion_policy
         get_xy(warthog::search_node* n, int32_t& x, int32_t& y);
 
 		uint32_t
-		mem()
-		{
-			return 
-                sizeof(*this) +
-                g_->mem();
-		}
+		mem();
 
 	private:
         warthog::planar_graph* g_;

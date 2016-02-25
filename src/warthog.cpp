@@ -4,6 +4,7 @@
 // @created: August 2012
 //
 
+#include "bidirectional_search.h"
 #include "cfg.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
@@ -444,10 +445,10 @@ run_dimacs(warthog::util::cfg& cfg)
     }
 
     warthog::dimacs_parser parser;
-    warthog::planar_graph* g = new warthog::planar_graph();
-    g->load_dimacs(grfile.c_str(), cofile.c_str());
+    warthog::planar_graph g;
+    g.load_dimacs(grfile.c_str(), cofile.c_str());
     parser.load_instance(problemfile.c_str());
-    warthog::graph_expansion_policy expander(g);
+    warthog::graph_expansion_policy expander(&g);
 
     if(alg_name == "dijkstra")
     {
@@ -472,12 +473,62 @@ run_dimacs(warthog::util::cfg& cfg)
             << grfile << " " << problemfile << std::endl;
         }
     }
-
     else if(alg_name == "astar")
     {
-        warthog::euclidean_heuristic h(g);
-        warthog::flexible_astar<warthog::euclidean_heuristic, warthog::graph_expansion_policy>
-            alg(&h, &expander);
+        warthog::euclidean_heuristic h(&g);
+        warthog::flexible_astar<
+            warthog::euclidean_heuristic, 
+            warthog::graph_expansion_policy> alg(&h, &expander);
+        alg.set_verbose(verbose);
+
+        int i = 0;
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i++ <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
+    }
+    else if(alg_name == "bi-dijkstra")
+    {
+        warthog::planar_graph backward_g;
+        backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
+        warthog::zero_heuristic h;
+        warthog::bidirectional_search<warthog::zero_heuristic>
+            alg(&g, &backward_g, &h);
+        alg.set_verbose(verbose);
+
+        int i = 0;
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i++ <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
+    }
+    else if(alg_name == "bi-astar")
+    {
+        warthog::planar_graph backward_g;
+        backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
+        warthog::euclidean_heuristic h(&g);
+        warthog::bidirectional_search<warthog::euclidean_heuristic>
+            alg(&g, &backward_g, &h);
         alg.set_verbose(verbose);
 
         int i = 0;

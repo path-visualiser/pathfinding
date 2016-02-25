@@ -6,12 +6,11 @@
 warthog::graph_expansion_policy::graph_expansion_policy(warthog::planar_graph* g)
     : expansion_policy(g->get_num_nodes())
 {
-    this->g_ = g;
+    g_ = g;
 }
 
 warthog::graph_expansion_policy::~graph_expansion_policy()
 {
-    delete g_;
 }
 
 void
@@ -36,4 +35,12 @@ warthog::graph_expansion_policy::get_xy(warthog::search_node* n,
         int32_t& x, int32_t& y)
 {
     g_->get_xy(n->get_id(), x, y);
+}
+
+uint32_t
+warthog::graph_expansion_policy::mem()
+{
+    return 
+        sizeof(*this) +
+        g_->mem();
 }
