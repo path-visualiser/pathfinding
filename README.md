@@ -1,10 +1,12 @@
 ## About ##
 
-In this repository you will find implementations of various algorithms I have studied as part of my doctoral research into path-finding. This includes Jump Point Search and Rectangular Symmetry Reduction.
+You have reached Daniel Harabor's Code Repository. If you would like to know about me or my work (or if are simply looking for copies of published papers) please visit my [homepage](http://harabor.net/daniel).
 
-If you would like more information about my work, or are looking for copies of published papers, please visit my [ANU homepage](http://users.rsise.anu.edu.au/~dharabor).
+Among other things, this repository hosts the Warthog Pathfinding Library. Warthog is a collection of shortest-path algorithms I have developed as part of my research at NICTA and elsewhere. Included are some efficient implementations of the methods known as Jump Point Search and JPS+.  Warthog is written in C++ and has been built from the ground up. It is named for (and at one time based on) Nathan Sturtevant's open-source library [Hierarchical Open Graph](http://hog2.googlecode.com). 
 
-The code hosted here is written in C++. Much of it is built from the ground up. Some is built on top of Nathan Sturtevant's open-source pathfinding library [Hierarchical Open Graph](http://hog2.googlecode.com). All of it is made available under the terms of the GNU GPL Version 2. 
+My development environment is OSX 10.8.4. As such the code is best compiled on that platform using GCC 4.8.1. From time to time I have successfully compiled and executed Warthog on Ubuntu 13.10. 
 
-The code is best compiled with GCC 4.8.1. I have tested it on OSX 10.8.4 and Ubuntu 13.10.
-I make it available in the interest of scientific research and without any guarantees.
+The current "release" is tagged [apr2016](https://bitbucket.org/dharabor/pathfinding/commits/tag/apr2016).
+
+Warthog is licensed under the terms of the GNU GPL Version 2. I make it available in the interest of scientific research and without any guarantees. 
+
