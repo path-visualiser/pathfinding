@@ -1,6 +1,6 @@
 ## About ##
 
-You have reached Daniel Harabor's Code Repository. If you would like to know about me or my work (or if are simply looking for copies of published papers) please visit my [homepage](http://harabor.net/daniel).
+You have reached Daniel Harabor's Code Repository. If you would like to know about me or my work (or are simply looking for copies of published papers) please visit my [homepage](http://harabor.net/daniel).
 
 Some things that are hosted in this repository:
 
