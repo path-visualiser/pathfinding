@@ -3,6 +3,7 @@
 You have reached Daniel Harabor's Code Repository. If you would like to know about me or my work (or if are simply looking for copies of published papers) please visit my [homepage](http://harabor.net/daniel).
 
 Some things that are hosted in this repository:
+
 * Implementations of Jump Point Search and JPS+ algorithms.
 * An implementation of the Anya algorithm.
 * Other algorithms (often search algorithms) that I have found useful or interesting.
@@ -12,5 +13,4 @@ My development platform is OSX 10.8.4 with most of the code here being written i
 
 The current "release" is tagged [may2016](https://bitbucket.org/dharabor/pathfinding/commits/tag/may2016).
 
-Warthog is licensed under the terms of the GNU GPL Version 2. I make it available in the interest of scientific research and without any guarantees. 
-
+Warthog is licensed under the terms of the GNU GPL Version 2. I make it available in the interest of scientific research and without any guarantees.
