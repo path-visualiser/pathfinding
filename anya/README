@@ -84,7 +84,7 @@ map - [string] the name of the map on which the experiment was run
 Examples
 ------------------------------------------------------------------------------
 
-> java -cp ./ ScenarioRunner -ANYA [scenario file]
+> java -cp ./ ScenarioRunner -ANYA AcrossTheCape.map.scen
 
 exp;alg;wallt_micro;runt_micro;expanded;generated;heapops;start;target; gridcost;realcost;map
 0;AnyaSearch;2453;2392;2;6;7;(283,492);(286,497); 6.24264;5.830951894845301; AcrosstheCape.map
