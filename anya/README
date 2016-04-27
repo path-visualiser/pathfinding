@@ -1,17 +1,14 @@
 ------------------------------------------------------------------------------
 About
 ------------------------------------------------------------------------------
+2016-04-27
+
 This file describes how to configure and run an implementation of the Anya 
-pathfinding algorithm. The code is in java and written by Daniel Harabor and 
-Dindar Oz. 
+pathfinding algorithm. The program is written Java by Daniel Harabor and 
+Dindar Oz. It is provided in the interest of scientific research under 
+the terms of the GNU GPL V2 and without any guarantees.
 
-This file was created on 2016-04-27
-
-------------------------------------------------------------------------------
-Theoretical Details
-------------------------------------------------------------------------------
-Anya: An Optimal Any-angle Pathfinding Algorithm
-For details see:
+If you find code useful, please cite our paper:
 
 D. Harabor, A. Grastien, D. Oz and V. Aksakalli, 2016
 Any-angle Pathfinding in Practice, In
