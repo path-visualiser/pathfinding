@@ -13,4 +13,4 @@ My development platform is OSX 10.8.4 with most of the code here being written i
 
 The current "release" is tagged [may2016](https://bitbucket.org/dharabor/pathfinding/commits/tag/may2016).
 
-Warthog is licensed under the terms of the GNU GPL Version 2. I make it available in the interest of scientific research and without any guarantees.
+All code is licensed under the terms of the GNU GPL Version 2. I make it available in the interest of scientific research and without any guarantees.
