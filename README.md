@@ -4,8 +4,8 @@ You have reached Daniel Harabor's Code Repository. If you would like to know abo
 
 Some things that are hosted in this repository:
 
-* Implementations of Jump Point Search and JPS+ algorithms.
-* An implementation of the Anya algorithm.
+* Implementations of Jump Point Search and JPS+.
+* An implementation of the Anya search algorithm.
 * Other algorithms (often search algorithms) that I have found useful or interesting.
 
 My development platform is OSX 10.8.4 with most of the code here being written in C++. When compiling I recommend that platform together with GCC 4.8.1. In the past I have successfully compiled and executed the same code on Linux (most recently Ubuntu 13.10). 
