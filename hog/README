@@ -8,7 +8,7 @@ Directory:  ./hog
 
 This directory contains a modified version of Nathan Sturtevant's pathfinding
 library Hierarchical Open Graph (HOG).  In the period 2009-2011 I used HOG as
-a development testbed to for the algorithms known as Jump Point Search and
+a development testbed for the algorithms known as Jump Point Search and
 Rectangular Symmetry Reduction. 
 
 Please note:
