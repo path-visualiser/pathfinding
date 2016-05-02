@@ -6,5 +6,8 @@ If you would like more information about my work, or are looking for copies of p
 
 The code hosted here is written in C++. Much of it is built from the ground up. Some is built on top of Nathan Sturtevant's open-source pathfinding library [Hierarchical Open Graph](http://hog2.googlecode.com). All of it is made available under the terms of the GNU GPL Version 2. 
 
-The code is best compiled with GCC 4.8.1. I have tested it on OSX 10.8.4 and Ubuntu 13.10.
-I make it available in the interest of scientific research and without any guarantees.
+My development platform is OSX 10.8.4 with most of the code here being written in C++. When compiling I recommend that platform together with GCC 4.8.1. In the past I have successfully compiled and executed the same code on Linux (most recently Ubuntu 13.10). 
+
+The current "release" is tagged [may2016](https://bitbucket.org/dharabor/pathfinding/commits/tag/may2016).
+
+All code is licensed under the terms of the GNU GPL Version 2. I make it available in the interest of scientific research and without any guarantees.
