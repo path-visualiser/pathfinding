@@ -60,7 +60,7 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)
     {
-       uint32_t index = it - dimacs.nodes_begin();
+       uint32_t index = it - dimacs.nodes_begin() + 1;
        xy_[index*2] = (*it).x_;
        xy_[index*2+1] = (*it).y_;
     }
@@ -73,6 +73,12 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     {
         uint32_t hid = (*it).head_id_;
         uint32_t tid = (*it).tail_id_;
+        if(tid == 260284)
+        {
+            uint32_t tmp = 32;
+            tmp = tmp;
+            tmp = hid;
+        }
         if(reverse_arcs)
         {
             uint32_t tmp = hid;
