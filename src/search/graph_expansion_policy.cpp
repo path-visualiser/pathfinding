@@ -3,7 +3,7 @@
 #include "problem_instance.h"
 #include "search_node.h"
 
-warthog::graph_expansion_policy::graph_expansion_policy(warthog::planar_graph* g)
+warthog::graph_expansion_policy::graph_expansion_policy(warthog::graph::planar_graph* g)
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
@@ -20,13 +20,14 @@ warthog::graph_expansion_policy::expand(
     reset();
 
     uint32_t current_id = current->get_id();
-    warthog::planar_graph::node n = g_->get_node(current_id);
+    warthog::graph::node* n = g_->get_node(current_id);
     
-    for(uint32_t i = n.begin_; i < n.begin_ + n.degree_; i++)
+    for(warthog::graph::edge_iter it = n->outgoing_begin();
+            it != n->outgoing_end(); it++)
     {
-        warthog::planar_graph::edge e = g_->get_edge(i);
-        assert(e.head_idx_ < g_->get_num_nodes());
-        this->add_neighbour(this->generate(e.head_idx_), e.wt_);
+        warthog::graph::edge& e = *it;
+        assert(e.node_id_ < g_->get_num_nodes());
+        this->add_neighbour(this->generate(e.node_id_), e.wt_);
     }
 }
 
@@ -41,6 +42,7 @@ uint32_t
 warthog::graph_expansion_policy::mem()
 {
     return 
-        sizeof(*this) +
-        g_->mem();
+        expansion_policy::mem() + 
+        g_->mem() +
+        sizeof(g_);
 }

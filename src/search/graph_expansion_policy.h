@@ -3,17 +3,22 @@
 
 #include "expansion_policy.h"
 
+
 namespace warthog
 {
 
-class planar_graph;
+namespace graph
+{
+    class planar_graph;
+}
+
 class search_node;
 class problem_instance;
 class graph_expansion_policy : public expansion_policy
 {
 
     public:
-        graph_expansion_policy(warthog::planar_graph* g);
+        graph_expansion_policy(warthog::graph::planar_graph* g);
         virtual ~graph_expansion_policy();
 
 		virtual void 
@@ -26,7 +31,7 @@ class graph_expansion_policy : public expansion_policy
 		mem();
 
 	private:
-        warthog::planar_graph* g_;
+        warthog::graph::planar_graph* g_;
 };
 
 }

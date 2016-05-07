@@ -27,8 +27,12 @@
 namespace warthog
 {
 
+namespace graph
+{
+    class planar_graph;
+}
+
 class expansion_policy;
-class planar_graph;
 class pqueue;
 class search_node;
 
@@ -40,8 +44,8 @@ class bidirectional_search : public warthog::search
 {
     public:
         bidirectional_search(
-                warthog::planar_graph* fwd_g,
-                warthog::planar_graph* bwd_g,
+                warthog::graph::planar_graph* fwd_g,
+                warthog::graph::planar_graph* bwd_g,
                 H* heuristic) 
             : heuristic_(heuristic)
         {

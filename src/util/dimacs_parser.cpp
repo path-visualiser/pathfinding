@@ -141,7 +141,6 @@ bool
 warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 {
     edges_->clear();
-    this->n_edges_ = 0;
 
     uint32_t line = 1;
 	char* buf = new char[1024];

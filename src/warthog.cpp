@@ -487,7 +487,7 @@ run_dimacs(warthog::util::cfg& cfg)
     }
 
     warthog::dimacs_parser parser;
-    warthog::planar_graph g;
+    warthog::graph::planar_graph g;
     g.load_dimacs(grfile.c_str(), cofile.c_str());
     parser.load_instance(problemfile.c_str());
     warthog::graph_expansion_policy expander(&g);
@@ -541,7 +541,7 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "bi-dijkstra")
     {
-        warthog::planar_graph backward_g;
+        warthog::graph::planar_graph backward_g;
         backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
         warthog::zero_heuristic h;
         warthog::bidirectional_search<warthog::zero_heuristic>
@@ -566,7 +566,7 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "bi-astar")
     {
-        warthog::planar_graph backward_g;
+        warthog::graph::planar_graph backward_g;
         backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
         warthog::euclidean_heuristic h(&g);
         warthog::bidirectional_search<warthog::euclidean_heuristic>
@@ -701,7 +701,7 @@ main(int argc, char** argv)
 	warthog::util::cfg cfg;
 	cfg.parse_args(argc, argv, valid_args);
 
-    if(print_help)
+    if(argc == 1 || print_help)
     {
 		help();
         exit(0);

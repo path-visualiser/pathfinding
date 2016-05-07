@@ -71,13 +71,13 @@ class dimacs_parser
         inline int
         get_num_nodes() 
         {
-           return n_nodes_;
+           return nodes_->size();
         }
 
         inline int
         get_num_edges()
         {
-           return n_edges_;
+            return edges_->size();
         }
 
         inline warthog::dimacs_parser::node_iterator
@@ -125,8 +125,6 @@ class dimacs_parser
         bool load_co_file(std::istream& fdimacs);
         bool load_gr_file(std::istream& fdimacs);
 
-       uint32_t n_nodes_; // number of nodes
-       uint32_t n_edges_;
        std::vector<warthog::dimacs_parser::node>* nodes_;
        std::vector<warthog::dimacs_parser::edge>* edges_;
        std::vector<warthog::dimacs_parser::experiment>* experiments_;

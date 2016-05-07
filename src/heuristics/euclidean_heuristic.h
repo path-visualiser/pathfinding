@@ -20,7 +20,7 @@ typedef void (*xyFn)(uint32_t id, int32_t& x, int32_t& y);
 class euclidean_heuristic
 {
     public:
-        euclidean_heuristic(warthog::planar_graph* g) : g_(g) { hscale_ = 1; }
+        euclidean_heuristic(warthog::graph::planar_graph* g) : g_(g) { hscale_ = 1; }
         ~euclidean_heuristic() { }
 
 		inline warthog::cost_t
@@ -58,7 +58,7 @@ class euclidean_heuristic
 
 
 	private:
-        warthog::planar_graph* g_;
+        warthog::graph::planar_graph* g_;
         double hscale_;
 
 };

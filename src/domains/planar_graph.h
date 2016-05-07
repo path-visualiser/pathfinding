@@ -17,6 +17,7 @@
 //
 
 #include "constants.h"
+#include "graph.h"
 
 #include <ostream>
 #include <unordered_map>
@@ -24,24 +25,13 @@
 
 namespace warthog
 {
+namespace graph
+{
 
 class gridmap;
 class planar_graph
 {
     public:
-        struct node
-        {
-            int32_t x_;
-            int32_t y_;
-            uint32_t begin_;    // index of first edge
-            uint32_t degree_;   // number of (incoming and outgoing) edges
-        } ;
-
-        struct edge
-        {
-            uint32_t head_idx_; // the node pointed to
-            double wt_;       // the edge weight
-        };
 
         planar_graph();
         ~planar_graph();
@@ -56,12 +46,14 @@ class planar_graph
         // using two files: (i) a gr file which defines edge
         // weights and endpoints and; (ii) a co file which defines 
         // node ids and planar coordinates
-        // @param backward is used to control arc direction.
-        // setting this to true swaps the head and tail of every
-        // arc (the default is false)
+        //
+        // @param reverse_arcs: reverses the direction of each edge
+        // @param duplicate_edges: store edges with both head and tail node
+        // @param enforce_euclidean: arc lengths must be >= euclidean distance
         bool
         load_dimacs(const char*, const char*, 
-                bool backward=false, 
+                bool reverse_arcs =false, 
+//                bool duplicate_edges = false,
                 bool enforce_euclidean=true);
 
         void
@@ -70,23 +62,27 @@ class planar_graph
         inline uint32_t
         get_num_nodes()
         {
-            return nodes_->size();
+            return nodes_sz_;
         }
 
         inline uint32_t 
         get_num_edges()
         {
-            return edges_->size();
+            uint32_t num_edges = 0;
+            for(uint32_t i = 0; i < nodes_sz_; i++)
+            {
+                num_edges += nodes_[i].out_degree();
+            }
+            return num_edges;
         }
 
         inline void
         get_xy(uint32_t id, int32_t& x, int32_t& y)
         {
-            if(id < nodes_->size()) 
+            if(id < nodes_sz_)
             {
-                warthog::planar_graph::node n = nodes_->at(id);
-                x = n.x_;
-                y = n.y_; 
+                x = xy_[id*2];
+                y = xy_[id*2+1];
             }
             else
             {
@@ -94,37 +90,52 @@ class planar_graph
             }
         }
 
-        inline warthog::planar_graph::node
+        inline warthog::graph::node* 
         get_node(uint32_t id)
         {
-           return nodes_->at(id) ;
+            if(id < nodes_sz_)
+            {
+                return &nodes_[id];
+            }
+            return 0;
         }
 
-        inline warthog::planar_graph::edge
-        get_edge(uint32_t id)
-        {
-            return edges_->at(id);
-        }
+        inline void 
+        set_verbose(bool verbose) { verbose_ = verbose; } 
 
-        size_t
+        inline bool
+        get_verbose() { return verbose_; }
+
+        inline size_t
         mem()
         {
-            return 
-                sizeof(warthog::planar_graph::node)*nodes_->size() +
-                sizeof(warthog::planar_graph::edge)*edges_->size() +
-                sizeof(char)*filename_->size() +
+            size_t mem = 0;
+            for(uint32_t i = 0; i < nodes_sz_; i++)
+            {
+                mem += nodes_[i].mem();
+            }
+            mem += sizeof(*xy_) * nodes_sz_ * 2;
+            mem += sizeof(char)*filename_.length() +
                 sizeof(*this);
+            return mem;
         }
 
 
     private:
-        void init();
+        std::string filename_;
+        
+        // the set of nodes that comprise the graph
+        uint32_t nodes_sz_;
+        warthog::graph::node* nodes_;
 
-        std::vector<warthog::planar_graph::node>* nodes_;
-        std::vector<warthog::planar_graph::edge>* edges_;
-        std::string* filename_;
+        // planar coordinates stored as adjacent pairs (x, then y)
+        int32_t* xy_;
+
+        bool verbose_;
+
 };
 
+}
 }
 
 #endif
