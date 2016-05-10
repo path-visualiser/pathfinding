@@ -6,6 +6,7 @@
 
 #include "bidirectional_search.h"
 #include "cfg.h"
+#include "contraction.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "flexible_astar.h"
@@ -26,6 +27,7 @@
 
 #include "getopt.h"
 
+#include <fstream>
 #include <iomanip>
 #include <sstream>
 #include <tr1/unordered_map>
@@ -58,7 +60,7 @@ help()
     << "\t--gr [graph filename]\n"
     << "\t--co [coordinates filename]\n"
     << "\t--problem [ss or p2p problem file]\n"
-    << "\t--alg [astar | dijkstra]\n"
+    << "\t--alg [astar | dijkstra | bi-astar | bi-dijkstra | ch]\n"
     << "\n AND \n\n"
 	<< "--verbose (optional)\n";
 }
@@ -587,6 +589,29 @@ run_dimacs(warthog::util::cfg& cfg)
             << alg.get_search_time()  << "\t"
             << len << "\t" 
             << grfile << " " << problemfile << std::endl;
+        }
+    }
+    else if(alg_name == "ch")
+    {
+        warthog::graph::planar_graph g;
+        if(grfile.find(".input.ch") != std::string::npos)
+        {
+            // load up existing contraction hierarchy
+            g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+        }
+        else
+        {
+            // create a new contraction hierarchy (and save the result)
+            g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+            warthog::contraction::contract(g);
+            grfile.append(".input.ch");
+            std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+            g.print_dimacs_gr(ch_out);
+            if(!ch_out.good())
+            {
+                std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+            }
+            ch_out.close();
         }
     }
     else

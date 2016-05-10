@@ -17,6 +17,23 @@ warthog::graph::planar_graph::planar_graph()
     verbose_ = false;
 }
 
+warthog::graph::planar_graph::planar_graph(
+        warthog::graph::planar_graph& other)
+{
+    verbose_ = other.verbose_;
+    filename_ = other.filename_;
+    nodes_sz_ = other.nodes_sz_;
+    nodes_ = new warthog::graph::node[nodes_sz_];
+    xy_ = new int32_t[nodes_sz_*2];
+
+    for(uint32_t i = 0; i < nodes_sz_; i++)
+    {
+        nodes_[i] = other.nodes_[i];
+        xy_[2*i] = other.xy_[2*i];
+        xy_[2*i+1] = other.xy_[2*i+1];
+    }
+}
+
 warthog::graph::planar_graph::~planar_graph()
 {
     delete [] xy_;
@@ -27,7 +44,7 @@ warthog::graph::planar_graph::~planar_graph()
 bool
 warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_file, 
         bool reverse_arcs, 
-        //bool duplicate_edges, 
+        bool duplicate_edges, 
         bool enforce_euclidean)
 {
     //warthog::dimacs_parser dimacs(gr_file, co_file);
@@ -73,12 +90,9 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     {
         uint32_t hid = (*it).head_id_;
         uint32_t tid = (*it).tail_id_;
-        if(tid == 260284)
-        {
-            uint32_t tmp = 32;
-            tmp = tmp;
-            tmp = hid;
-        }
+
+        // in a reverse graph the head and tail of every 
+        // edge are swapped
         if(reverse_arcs)
         {
             uint32_t tmp = hid;
@@ -107,18 +121,21 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
 
         // duplicate edges are stored twice: once as an incoming edge 
         // and once as an outgoing edge
-//        if(duplicate_edges)
-//        {
-//            e.node_id_ = tid;
-//            nodes_[hid].add_incoming(e);
-//
-//            // sanity check
-//            warthog::graph::edge sanity = 
-//                *(nodes_[tid].outgoing_end()-1);
-//            assert(sanity.node_id_ == hid);
-//        }
+        if(duplicate_edges)
+        {
+            e.node_id_ = tid;
+            nodes_[hid].add_incoming(e);
+
+            // sanity check
+#ifndef NDEBUG
+            warthog::graph::edge sanity = 
+                *(nodes_[tid].outgoing_end()-1);
+            assert(sanity.node_id_ == hid);
+#endif
+        }
     }
-    //std::cout << "edges, converted" << std::endl;
+
+    if(verbose_) { std::cout << "edges, converted" << std::endl; }
     return true;
 }
 
@@ -147,6 +164,41 @@ warthog::graph::planar_graph::print_dimacs(std::ostream& oss)
                 oss << "a " << i << " " << (*it).node_id_<< " " 
                     << (*it).wt_ << std::endl;
             }
+        }
+    }
+}
+
+void
+warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss)
+{
+    if(nodes_sz_ > 0)
+    {
+        // -1 because dimacs ids are 1-indexed and we use 0-indexed arrays
+        oss << "p sp " << (nodes_sz_-1) << " " << 
+            this->get_num_edges() << std::endl;
+        for(uint32_t i = 1; i < nodes_sz_; i++)
+        {
+            warthog::graph::node n = nodes_[i];
+            for(warthog::graph::edge_iter it = n.outgoing_begin(); it != n.outgoing_end(); it++)
+            {
+                oss << "a " << i << " " << (*it).node_id_<< " " 
+                    << (*it).wt_ << std::endl;
+            }
+        }
+    }
+}
+
+void
+warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss)
+{
+    if(nodes_sz_ > 0)
+    {
+        // -1 because dimacs ids are 1-indexed and we use 0-indexed arrays
+        oss << "p aux sp co " << (nodes_sz_-1) << std::endl;
+        for(uint32_t i = 1; i < nodes_sz_; i++)
+        {
+            warthog::graph::node n = nodes_[i];
+            oss << "v " << i << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
         }
     }
 }

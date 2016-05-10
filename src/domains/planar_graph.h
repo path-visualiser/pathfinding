@@ -34,6 +34,7 @@ class planar_graph
     public:
 
         planar_graph();
+        planar_graph(planar_graph&);
         ~planar_graph();
 
         // read in a grid map in the format used at the 
@@ -53,11 +54,17 @@ class planar_graph
         bool
         load_dimacs(const char*, const char*, 
                 bool reverse_arcs =false, 
-//                bool duplicate_edges = false,
+                bool duplicate_edges = false,
                 bool enforce_euclidean=true);
 
         void
         print_dimacs(std::ostream& oss);
+
+        void
+        print_dimacs_gr(std::ostream& oss);
+
+        void
+        print_dimacs_co(std::ostream& oss);
 
         inline uint32_t
         get_num_nodes()
@@ -105,6 +112,9 @@ class planar_graph
 
         inline bool
         get_verbose() { return verbose_; }
+
+        inline const char* 
+        get_filename() { return filename_.c_str(); }
 
         inline size_t
         mem()
