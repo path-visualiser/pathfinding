@@ -71,7 +71,7 @@ class flexible_astar : public warthog::search
 			return path;
 		}
 
-		double
+		cost_t
 		get_length(uint32_t startid, uint32_t goalid)
 		{
 			warthog::search_node* goal = search(startid, goalid);
@@ -108,7 +108,7 @@ class flexible_astar : public warthog::search
 			}
 #endif
 			cleanup();
-			return len / (double)warthog::ONE;
+			return len;
 		}
 
 		virtual inline size_t
@@ -218,6 +218,7 @@ class flexible_astar : public warthog::search
 					if(n->get_expanded())
 					{
 						// skip neighbours already expanded
+                        #ifndef NDEBUG
                         if(verbose_)
                         {
                             int32_t x, y;
@@ -236,6 +237,7 @@ class flexible_astar : public warthog::search
                             //}
 
                         }
+                        #endif
 						continue;
 					}
 

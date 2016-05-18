@@ -32,7 +32,7 @@ warthog::graph_expansion_policy::expand(
         assert(e.node_id_ < g_->get_num_nodes());
         
         uint32_t index = e.node_id_ >> warthog::LOG2_DBWORD_BITS;
-        warthog::dbword mask = 1 << e.node_id_ & warthog::DBWORD_BITS_MASK;
+        warthog::dbword mask = 1 << (e.node_id_ & warthog::DBWORD_BITS_MASK);
         if(! (filter_[index] & mask))
         {
              this->add_neighbour(this->generate(e.node_id_), e.wt_);
