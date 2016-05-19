@@ -23,7 +23,7 @@ class euclidean_heuristic
         euclidean_heuristic(warthog::graph::planar_graph* g) : g_(g) { hscale_ = 1; }
         ~euclidean_heuristic() { }
 
-		inline warthog::cost_t
+		inline double
 		h(int32_t x, int32_t y, 
 				int32_t x2, int32_t y2)
 		{
@@ -33,7 +33,7 @@ class euclidean_heuristic
             return sqrt(dx*dx + dy*dy) * hscale_;
 		}
 
-		inline warthog::cost_t
+		inline double
 		h(uint32_t id, uint32_t id2)
 		{
 			int32_t x, x2;
@@ -54,8 +54,6 @@ class euclidean_heuristic
 
         inline double
         get_hscale() { return hscale_; }
-
-
 
 	private:
         warthog::graph::planar_graph* g_;

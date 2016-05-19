@@ -41,7 +41,7 @@ class flexible_astar : public warthog::search
 		{
 			open_ = new warthog::pqueue(1024, true);
 			verbose_ = false;
-            hscale_ = 1.0;
+            cost_cutoff_ = warthog::INF;
 		}
 
 		virtual ~flexible_astar()
@@ -111,6 +111,15 @@ class flexible_astar : public warthog::search
 			return len;
 		}
 
+        // set a cost-cutoff to run a bounded-cost A* search.
+        // the search terminates when the goal is found or the f-cost 
+        // limit is reached.
+        inline void
+        set_cost_cutoff(warthog::cost_t cutoff) { cost_cutoff_ = cutoff; }
+
+        inline warthog::cost_t
+        get_cost_cutoff() { return cost_cutoff_; }
+
 		virtual inline size_t
 		mem()
 		{
@@ -124,19 +133,12 @@ class flexible_astar : public warthog::search
 			return bytes;
 		}
 
-        inline double
-        get_hscale() { return hscale_; } 
-
-        inline void
-        set_hscale(double hscale) { hscale_ = hscale; } 
-
-
 
 	private:
 		H* heuristic_;
 		E* expander_;
 		warthog::pqueue* open_;
-        double hscale_; // heuristic scaling factor
+        warthog::cost_t cost_cutoff_; // early termination
 
 		// no copy
 		flexible_astar(const flexible_astar& other) { } 
@@ -169,7 +171,7 @@ class flexible_astar : public warthog::search
 			warthog::search_node* start = expander_->generate(startid);
 			start->reset(instance.get_searchid());
 			start->set_g(0);
-			start->set_f(heuristic_->h(startid, goalid) * hscale_);
+			start->set_f(heuristic_->h(startid, goalid));
 			open_->push(start);
 
 			while(open_->size())
@@ -191,9 +193,13 @@ class flexible_astar : public warthog::search
 					goal = open_->peek();
 					break;
 				}
-				nodes_expanded_++;
+                // bounded-cost search runs until the goal is found or until
+                // a maximum cost limit is reached
+                if(open_->peek()->get_f() > cost_cutoff_) { break; } 
 
+				nodes_expanded_++;
 				warthog::search_node* current = open_->pop();
+
 				#ifndef NDEBUG
 				if(verbose_)
 				{
@@ -279,7 +285,7 @@ class flexible_astar : public warthog::search
 						// add a new node to the fringe
 						warthog::cost_t gval = current->get_g() + cost_to_n;
 						n->set_g(gval);
-						n->set_f(gval + heuristic_->h(n->get_id(), goalid) * hscale_);
+						n->set_f(gval + heuristic_->h(n->get_id(), goalid));
 					   	n->set_parent(current);
 						open_->push(n);
 						#ifndef NDEBUG

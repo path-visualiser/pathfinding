@@ -21,7 +21,7 @@ class octile_heuristic
 {
 	public:
 		octile_heuristic(unsigned int mapwidth, unsigned int mapheight) 
-	    	: mapwidth_(mapwidth), mapheight_(mapheight) { }
+	    	: mapwidth_(mapwidth), mapheight_(mapheight), hscale_(1.0) { }
 		~octile_heuristic() { }
 
 		inline warthog::cost_t
@@ -33,9 +33,9 @@ class octile_heuristic
 			double dy = abs(y-y2);
 			if(dx < dy)
 			{
-				return dx * warthog::ROOT_TWO + (dy - dx) * warthog::ONE;
+				return dx * warthog::ROOT_TWO + (dy - dx) * warthog::ONE * hscale_;
 			}
-			return dy * warthog::ROOT_TWO + (dx - dy) * warthog::ONE;
+			return dy * warthog::ROOT_TWO + (dx - dy) * warthog::ONE * hscale_;
 		}
 
 		inline warthog::cost_t
@@ -48,9 +48,16 @@ class octile_heuristic
 			return this->h(x, y, x2, y2);
 		}
 
+        inline void
+        set_hscale(double hscale) { hscale_ = hscale; }
+
+        inline double
+        get_hscale() { return hscale_; }
+
 	private:
 		unsigned int mapwidth_;
 		unsigned int mapheight_;
+        double hscale_;
 };
 
 }
