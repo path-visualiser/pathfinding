@@ -15,6 +15,7 @@ warthog::graph::planar_graph::planar_graph()
     nodes_ = 0;
     nodes_sz_ = 0;
     verbose_ = false;
+    ID_OFFSET=0;
 }
 
 warthog::graph::planar_graph::planar_graph(
@@ -25,6 +26,7 @@ warthog::graph::planar_graph::planar_graph(
     nodes_sz_ = other.nodes_sz_;
     nodes_ = new warthog::graph::node[nodes_sz_];
     xy_ = new int32_t[nodes_sz_*2];
+    ID_OFFSET = other.ID_OFFSET;
 
     for(uint32_t i = 0; i < nodes_sz_; i++)
     {
@@ -66,18 +68,24 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     std::sort(dimacs.nodes_begin(), dimacs.nodes_end(), node_comparator);
     if(verbose_) { std::cerr << "nodes, sorted" << std::endl; }
     
-    // convert nodes (NB: dimacs format specifies that node ids should be
-    // 1-indexed; we keep an extra dummy node to maintain compatibility)
     delete [] xy_;
     delete [] nodes_;
-    nodes_sz_ = dimacs.get_num_nodes() + 1;
+
+    // convert nodes. NB:
+    // DIMACS format specifies that node ids should be 1-indexed but
+    // our internal representation is 0-indexed. We add dummy elements
+    // to the front of the node arrays so we can use the 1-indexed ids
+    // without any internal conversion
+    ID_OFFSET = 1;
+    nodes_sz_ = dimacs.get_num_nodes() + ID_OFFSET;
     xy_ = new int32_t[nodes_sz_*2];
     nodes_ = new node[nodes_sz_];
+    xy_[0] = xy_[1] = INT32_MAX;
 
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)
     {
-       uint32_t index = it - dimacs.nodes_begin() + 1;
+       uint32_t index = (*it).id_;
        xy_[index*2] = (*it).x_;
        xy_[index*2+1] = (*it).y_;
     }
@@ -151,17 +159,18 @@ warthog::graph::planar_graph::print_dimacs(std::ostream& oss)
 {
     if(nodes_sz_ > 0)
     {
-        // -1 because dimacs ids are 1-indexed and we use 0-indexed arrays
-        oss << "p aux sp co " << (nodes_sz_-1) << std::endl;
-        oss << "p sp " << (nodes_sz_-1) << " " << 
+        // we add +1 to all ids because dimacs ids are 1-indexed and our
+        // internal representation is 0-indexed
+        oss << "p aux sp co " << (nodes_sz_) << std::endl;
+        oss << "p sp " << (nodes_sz_) << " " << 
             this->get_num_edges() << std::endl;
-        for(uint32_t i = 1; i < nodes_sz_; i++)
+        for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
         {
             warthog::graph::node n = nodes_[i];
             oss << "v " << i << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
             for(warthog::graph::edge_iter it = n.outgoing_begin(); it != n.outgoing_end(); it++)
             {
-                oss << "a " << i << " " << (*it).node_id_<< " " 
+                oss << "a " << i << " " << (*it).node_id_ << " " 
                     << (*it).wt_ << std::endl;
             }
         }
@@ -174,14 +183,14 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss)
     if(nodes_sz_ > 0)
     {
         // -1 because dimacs ids are 1-indexed and we use 0-indexed arrays
-        oss << "p sp " << (nodes_sz_-1) << " " << 
+        oss << "p sp " << (nodes_sz_ - ID_OFFSET) << " " << 
             this->get_num_edges() << std::endl;
-        for(uint32_t i = 1; i < nodes_sz_; i++)
+        for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
         {
             warthog::graph::node n = nodes_[i];
             for(warthog::graph::edge_iter it = n.outgoing_begin(); it != n.outgoing_end(); it++)
             {
-                oss << "a " << i << " " << (*it).node_id_<< " " 
+                oss << "a " << i << " " << (*it).node_id_ << " " 
                     << (*it).wt_ << std::endl;
             }
         }
@@ -194,8 +203,8 @@ warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss)
     if(nodes_sz_ > 0)
     {
         // -1 because dimacs ids are 1-indexed and we use 0-indexed arrays
-        oss << "p aux sp co " << (nodes_sz_-1) << std::endl;
-        for(uint32_t i = 1; i < nodes_sz_; i++)
+        oss << "p aux sp co " << (nodes_sz_ - ID_OFFSET) << std::endl;
+        for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
         {
             warthog::graph::node n = nodes_[i];
             oss << "v " << i << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;

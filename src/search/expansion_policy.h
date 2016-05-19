@@ -49,14 +49,14 @@ class expansion_policy
 		}
 
 		inline void
-		first(warthog::search_node*& ret, warthog::cost_t& cost)
+		first(warthog::search_node*& ret, double& cost)
 		{
             current_ = 0;
             n(ret, cost);
 		}
 
 		inline void
-		n(warthog::search_node*& ret, warthog::cost_t& cost)
+		n(warthog::search_node*& ret, double& cost)
 		{
             if(current_ < neis_->size())
             {
@@ -71,7 +71,7 @@ class expansion_policy
 		}
 
 		inline void
-		next(warthog::search_node*& ret, warthog::cost_t& cost)
+		next(warthog::search_node*& ret, double& cost)
 		{
             current_++;
             n(ret, cost);
@@ -88,7 +88,7 @@ class expansion_policy
 		{
 			return sizeof(*this) + 
             sizeof(warthog::search_node*) * neis_->capacity() + 
-            sizeof(warthog::cost_t) * costs_->capacity() +
+            sizeof(double) * costs_->capacity() +
             nodepool_->mem();
 		}
 
@@ -100,7 +100,7 @@ class expansion_policy
 
     protected:
         inline void 
-        add_neighbour(warthog::search_node* nei, warthog::cost_t cost)
+        add_neighbour(warthog::search_node* nei, double cost)
         {
             neis_->push_back(nei);
             costs_->push_back(cost);
@@ -111,7 +111,7 @@ class expansion_policy
     private:
         warthog::blocklist* nodepool_;
         std::vector<warthog::search_node*>* neis_;
-        std::vector<warthog::cost_t>* costs_;
+        std::vector<double>* costs_;
         uint32_t current_;
 };
 

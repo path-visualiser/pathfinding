@@ -29,6 +29,7 @@
 //
 
 #include <cstdint>
+#include <fstream>
 #include <vector>
 
 namespace warthog
@@ -41,13 +42,19 @@ namespace graph
 
 namespace contraction
 {
-    // default contraction order (input order)
-    void
-    contract(warthog::graph::planar_graph& g);
-
-    // user-specified contraction order
+    // contract a graph using a specified node ordering 
     void 
     contract(warthog::graph::planar_graph& g, std::vector<uint32_t>& order, bool verbose = false);
+
+    // the simplest contraction node order
+    void
+    make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order);
+
+    // helper functions
+    void 
+    load_node_order(const char* filename, std::vector<uint32_t>& order);
+    void
+    write_node_order(const char* filename, std::vector<uint32_t>& order);
 }
 
 }

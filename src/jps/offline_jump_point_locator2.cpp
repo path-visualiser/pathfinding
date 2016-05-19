@@ -51,18 +51,18 @@ warthog::offline_jump_point_locator2::preproc()
 					(warthog::jps::direction)(1 << i);
 //				std::cout << dir << ": ";
 				uint32_t jumpnode_id;
-				warthog::cost_t jumpcost;
+				double jumpcost;
 				jpl.jump(dir, mapid,
 						warthog::INF, jumpnode_id, jumpcost);
 				
 				// convert from cost to number of steps
 				if(dir > 8)
 				{
-					jumpcost = (jumpcost / warthog::ROOT_TWO);
+					jumpcost = (jumpcost / warthog::DBL_ROOT_TWO);
 				}
 				else
 				{
-					jumpcost = jumpcost / warthog::ONE;
+					jumpcost = jumpcost;
 				}
 				uint32_t num_steps = (uint16_t)floor((jumpcost + 0.5));
 //				std::cout << (jumpnode_id == warthog::INF ? 0 : num_steps) << " ";
@@ -144,7 +144,7 @@ warthog::offline_jump_point_locator2::save(const char* filename)
 void
 warthog::offline_jump_point_locator2::jump(warthog::jps::direction d, 
 		uint32_t node_id, uint32_t goal_id, 
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 {
 	switch(d)
 	{
@@ -180,7 +180,7 @@ warthog::offline_jump_point_locator2::jump(warthog::jps::direction d,
 void
 warthog::offline_jump_point_locator2::jump_northwest(uint32_t node_id,
 	  	uint32_t goal_id,
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 
 {
 	uint16_t label = 0;
@@ -207,7 +207,7 @@ warthog::offline_jump_point_locator2::jump_northwest(uint32_t node_id,
 			uint32_t jp_id = jump_from - mapw *  jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::NORTH;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		// west of jump_from
 		uint16_t label_straight2 = db_[8*jump_from+3]; // west of next jp
@@ -217,7 +217,7 @@ warthog::offline_jump_point_locator2::jump_northwest(uint32_t node_id,
 			uint32_t jp_id = jump_from - jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::WEST;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		label = db_[8*jump_from + 5];
 		num_steps += label & 32767;
@@ -238,13 +238,13 @@ warthog::offline_jump_point_locator2::jump_northwest(uint32_t node_id,
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				uint32_t jp_id = node_id - diag_step_delta * ydelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * ydelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_west(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
 				uint32_t jp_id = node_id - diag_step_delta * xdelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * xdelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_north(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 		}
@@ -254,7 +254,7 @@ warthog::offline_jump_point_locator2::jump_northwest(uint32_t node_id,
 void
 warthog::offline_jump_point_locator2::jump_northeast(uint32_t node_id,
 	  	uint32_t goal_id, 
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 {
 	uint16_t label = 0;
 	uint16_t num_steps = 0;
@@ -277,7 +277,7 @@ warthog::offline_jump_point_locator2::jump_northeast(uint32_t node_id,
 			uint32_t jp_id = jump_from - mapw *  jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::NORTH;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		// east of jump_from
 		uint16_t label_straight2 = db_[8*jump_from+2]; 
@@ -287,7 +287,7 @@ warthog::offline_jump_point_locator2::jump_northeast(uint32_t node_id,
 			uint32_t jp_id = jump_from + jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::EAST;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		label = db_[8*jump_from + 4];
 		num_steps += label & 32767;
@@ -308,13 +308,13 @@ warthog::offline_jump_point_locator2::jump_northeast(uint32_t node_id,
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				uint32_t jp_id = node_id - diag_step_delta * ydelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * ydelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_east(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
 				uint32_t jp_id = node_id - diag_step_delta * xdelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * xdelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_north(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 		}
@@ -324,7 +324,7 @@ warthog::offline_jump_point_locator2::jump_northeast(uint32_t node_id,
 void
 warthog::offline_jump_point_locator2::jump_southwest(uint32_t node_id,
 	  	uint32_t goal_id, 
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 {
 	uint32_t mapw = map_->width();
 	uint32_t diag_step_delta = (mapw - 1);
@@ -346,7 +346,7 @@ warthog::offline_jump_point_locator2::jump_southwest(uint32_t node_id,
 			uint32_t jp_id = jump_from + mapw *  jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::SOUTH;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		// west of jump_from
 		uint16_t label_straight2 = db_[8*jump_from+3]; 
@@ -356,7 +356,7 @@ warthog::offline_jump_point_locator2::jump_southwest(uint32_t node_id,
 			uint32_t jp_id = jump_from - jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::WEST;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		label = db_[8*jump_from + 7];
 		num_steps += label & 32767;
@@ -377,13 +377,13 @@ warthog::offline_jump_point_locator2::jump_southwest(uint32_t node_id,
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				uint32_t jp_id = node_id + diag_step_delta * ydelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * ydelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_west(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
 				uint32_t jp_id = node_id + diag_step_delta * xdelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * xdelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_south(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 		}
@@ -393,7 +393,7 @@ warthog::offline_jump_point_locator2::jump_southwest(uint32_t node_id,
 void
 warthog::offline_jump_point_locator2::jump_southeast(uint32_t node_id,
 	  	uint32_t goal_id, 
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 	
 {
 	uint16_t label = 0;
@@ -417,7 +417,7 @@ warthog::offline_jump_point_locator2::jump_southeast(uint32_t node_id,
 			uint32_t jp_id = jump_from + mapw * jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::SOUTH;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		// east of jump_from
 		uint16_t label_straight2 = db_[8*jump_from + 2]; 
@@ -427,7 +427,7 @@ warthog::offline_jump_point_locator2::jump_southeast(uint32_t node_id,
 			uint32_t jp_id = jump_from + jp_cost;
 			*(((uint8_t*)&jp_id)+3) = warthog::jps::EAST;
 			neighbours.push_back(jp_id);
-			costs.push_back(jp_cost * warthog::ONE + num_steps * warthog::ROOT_TWO);
+			costs.push_back(jp_cost + num_steps * warthog::DBL_ROOT_TWO);
 		}
 		// step diagonally to an intermediate location jump_from
 		label = db_[8*jump_from + 6];
@@ -449,13 +449,13 @@ warthog::offline_jump_point_locator2::jump_southeast(uint32_t node_id,
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				uint32_t jp_id = node_id + diag_step_delta * ydelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * ydelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * ydelta;
 				jump_east(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 			else if(xdelta <= num_steps)
 			{
 				uint32_t jp_id = node_id + diag_step_delta * xdelta;
-				warthog::cost_t jp_cost = warthog::ROOT_TWO * xdelta;
+				double jp_cost = warthog::DBL_ROOT_TWO * xdelta;
 				jump_south(jp_id, goal_id, jp_cost, neighbours, costs);
 			}
 		}
@@ -464,8 +464,8 @@ warthog::offline_jump_point_locator2::jump_southeast(uint32_t node_id,
 
 void
 warthog::offline_jump_point_locator2::jump_north(uint32_t node_id,
-	  	uint32_t goal_id, warthog::cost_t cost_to_node_id,
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+	  	uint32_t goal_id, double cost_to_node_id,
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 {
 	uint16_t label = db_[8*node_id];
 	uint16_t num_steps = label & 32767;
@@ -481,7 +481,7 @@ warthog::offline_jump_point_locator2::jump_north(uint32_t node_id,
 		{ 
 			*(((uint8_t*)&goal_id)+3) = warthog::jps::NORTH;
 			neighbours.push_back(goal_id);
-			costs.push_back((goal_delta / map_->width() * warthog::ONE) + cost_to_node_id);
+			costs.push_back((goal_delta / map_->width()) + cost_to_node_id);
 			return;
 		}
 	}
@@ -492,14 +492,14 @@ warthog::offline_jump_point_locator2::jump_north(uint32_t node_id,
 		uint32_t jp_id = node_id - id_delta;
 		*(((uint8_t*)&jp_id)+3) = warthog::jps::NORTH;
 		neighbours.push_back(jp_id);
-		costs.push_back(num_steps * warthog::ONE + cost_to_node_id);
+		costs.push_back(num_steps + cost_to_node_id);
 	}
 }
 
 void
 warthog::offline_jump_point_locator2::jump_south(uint32_t node_id,
-	  	uint32_t goal_id, warthog::cost_t cost_to_node_id, 
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+	  	uint32_t goal_id, double cost_to_node_id, 
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 {
 	uint16_t label = db_[8*node_id + 1];
 	uint16_t num_steps = label & 32767;
@@ -515,7 +515,7 @@ warthog::offline_jump_point_locator2::jump_south(uint32_t node_id,
 		{ 
 			*(((uint8_t*)&goal_id)+3) = warthog::jps::SOUTH;
 			neighbours.push_back(goal_id);
-			costs.push_back((goal_delta / map_->width() * warthog::ONE) + cost_to_node_id);
+			costs.push_back((goal_delta / map_->width() ) + cost_to_node_id);
 			return;
 		}
 	}
@@ -526,14 +526,14 @@ warthog::offline_jump_point_locator2::jump_south(uint32_t node_id,
 		uint32_t jp_id = (node_id + id_delta);
 		*(((uint8_t*)&jp_id)+3) = warthog::jps::SOUTH;
 		neighbours.push_back(jp_id);
-		costs.push_back(num_steps * warthog::ONE + cost_to_node_id);
+		costs.push_back(num_steps + cost_to_node_id);
 	}
 }
 
 void
 warthog::offline_jump_point_locator2::jump_east(uint32_t node_id,
-	  	uint32_t goal_id, warthog::cost_t cost_to_node_id,
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+	  	uint32_t goal_id, double cost_to_node_id,
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 {
 	uint16_t label = db_[8*node_id + 2];
 	uint32_t num_steps = label & 32767;
@@ -544,7 +544,7 @@ warthog::offline_jump_point_locator2::jump_east(uint32_t node_id,
 	{
 		*(((uint8_t*)&goal_id)+3) = warthog::jps::EAST;
 		neighbours.push_back(goal_id);
-		costs.push_back(goal_delta * warthog::ONE + cost_to_node_id);
+		costs.push_back(goal_delta + cost_to_node_id);
 		return;
 	}
 
@@ -554,14 +554,14 @@ warthog::offline_jump_point_locator2::jump_east(uint32_t node_id,
 		uint32_t jp_id = (node_id + num_steps);
 		*(((uint8_t*)&jp_id)+3) = warthog::jps::EAST;
 		neighbours.push_back(jp_id);
-		costs.push_back(num_steps * warthog::ONE + cost_to_node_id);
+		costs.push_back(num_steps + cost_to_node_id);
 	}
 }
 
 void
 warthog::offline_jump_point_locator2::jump_west(uint32_t node_id,
-	  	uint32_t goal_id, warthog::cost_t cost_to_node_id,
-		std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs)
+	  	uint32_t goal_id, double cost_to_node_id,
+		std::vector<uint32_t>& neighbours, std::vector<double>& costs)
 {
 	uint16_t label = db_[8*node_id + 3];
 	uint32_t num_steps = label & 32767;
@@ -572,7 +572,7 @@ warthog::offline_jump_point_locator2::jump_west(uint32_t node_id,
 	{
 		*(((uint8_t*)&goal_id)+3) = warthog::jps::WEST;
 		neighbours.push_back(goal_id);
-		costs.push_back(goal_delta * warthog::ONE + cost_to_node_id);
+		costs.push_back(goal_delta + cost_to_node_id);
 		return;
 	}
 
@@ -582,7 +582,7 @@ warthog::offline_jump_point_locator2::jump_west(uint32_t node_id,
 		uint32_t jp_id = node_id - num_steps;
 		*(((uint8_t*)&jp_id)+3) = warthog::jps::WEST;
 		neighbours.push_back(jp_id);
-		costs.push_back(num_steps * warthog::ONE + cost_to_node_id);
+		costs.push_back(num_steps + cost_to_node_id);
 	}
 }
 

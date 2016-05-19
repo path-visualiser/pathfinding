@@ -6,6 +6,7 @@
 
 #include "bidirectional_search.h"
 #include "cfg.h"
+#include "ch_expansion_policy.h"
 #include "contraction.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
@@ -74,30 +75,18 @@ check_optimality(double len, warthog::experiment* exp)
 	}
 
 	uint32_t precision = 1;
-	int epsilon = (warthog::ONE / (int)pow(10, precision)) / 2;
+	double epsilon = (1 / (int)pow(10, precision)) / 2;
 
-	warthog::cost_t int_len = len * warthog::ONE;
-	warthog::cost_t int_opt = exp->distance() * warthog::ONE;
-
-	for(int i = 10; i <= pow(10, precision); i = i*10)
-	{
-		int last_digit = int_len % i;
-		if(last_digit >= (i/2))
-		{
-			int_len += (i - last_digit);
-		}
-	}
-
-	int delta = abs(int_len - int_opt);
+	int delta = abs(len - exp->distance());
 	if( abs(delta - epsilon) > epsilon)
 	{
 		std::stringstream strpathlen;
 		strpathlen << std::fixed << std::setprecision(exp->precision());
-		strpathlen << len*warthog::ONE;
+		strpathlen << len;
 
 		std::stringstream stroptlen;
 		stroptlen << std::fixed << std::setprecision(exp->precision());
-		stroptlen << exp->distance() * warthog::ONE;
+		stroptlen << exp->distance();
 
 		std::cerr << std::setprecision(exp->precision());
 		std::cerr << "optimality check failed!" << std::endl;
@@ -360,15 +349,16 @@ run_wgm_astar(warthog::scenario_manager& scenmgr)
     warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::wgridmap_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    
+    // cheapest terrain (movingai benchmarks) has ascii value '.'; we scale
+    // all heuristic values accordingly (otherwise the heuristic doesn't 
+    // impact f-values much and search starts to behave like dijkstra)
+    heuristic.set_hscale('.');
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::wgridmap_expansion_policy> astar(&heuristic, &expander);
 	astar.set_verbose(verbose);
-    // cheapest terrain (movingai benchmarks) has ascii value '.'; we scale
-    // all heuristic values accordingly (otherwise the heuristic doesn't 
-    // impact f-values much and search starts to behave like dijkstra)
-    astar.set_hscale('.');  
 
 	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
@@ -434,15 +424,15 @@ run_jps_wgm(warthog::scenario_manager& scenmgr)
     warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::jps_expansion_policy_wgm expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    // cheapest terrain (movingai benchmarks) has ascii value '.'; we scale
+    // all heuristic values accordingly (otherwise the heuristic doesn't 
+    // impact f-values much and search starts to behave like dijkstra)
+    heuristic.set_hscale('.');  
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps_expansion_policy_wgm> astar(&heuristic, &expander);
 	astar.set_verbose(verbose);
-    // cheapest terrain (movingai benchmarks) has ascii value '.'; we scale
-    // all heuristic values accordingly (otherwise the heuristic doesn't 
-    // impact f-values much and search starts to behave like dijkstra)
-    astar.set_hscale('.');  
 
 	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
@@ -489,13 +479,14 @@ run_dimacs(warthog::util::cfg& cfg)
     }
 
     warthog::dimacs_parser parser;
-    warthog::graph::planar_graph g;
-    g.load_dimacs(grfile.c_str(), cofile.c_str());
     parser.load_instance(problemfile.c_str());
-    warthog::graph_expansion_policy expander(&g);
 
     if(alg_name == "dijkstra")
     {
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str());
+        warthog::graph_expansion_policy expander(&g);
+
         warthog::zero_heuristic h;
         warthog::flexible_astar<warthog::zero_heuristic, warthog::graph_expansion_policy>
             alg(&h, &expander);
@@ -519,6 +510,10 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "astar")
     {
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str());
+        warthog::graph_expansion_policy expander(&g);
+
         warthog::euclidean_heuristic h(&g);
         warthog::flexible_astar<
             warthog::euclidean_heuristic, 
@@ -543,11 +538,17 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "bi-dijkstra")
     {
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str());
+        warthog::graph_expansion_policy fexp(&g);
+
         warthog::graph::planar_graph backward_g;
         backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
+        warthog::graph_expansion_policy bexp(&backward_g);
+
         warthog::zero_heuristic h;
         warthog::bidirectional_search<warthog::zero_heuristic>
-            alg(&g, &backward_g, &h);
+            alg(&fexp, &bexp, &h);
         alg.set_verbose(verbose);
 
         int i = 0;
@@ -568,11 +569,17 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "bi-astar")
     {
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+        warthog::graph_expansion_policy fexp(&g);
+
         warthog::graph::planar_graph backward_g;
         backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
+        warthog::graph_expansion_policy bexp(&g);
+
         warthog::euclidean_heuristic h(&g);
         warthog::bidirectional_search<warthog::euclidean_heuristic>
-            alg(&g, &backward_g, &h);
+            alg(&fexp, &bexp, &h);
         alg.set_verbose(verbose);
 
         int i = 0;
@@ -593,25 +600,64 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "ch")
     {
+        // load up (or create) the contraction hierarchy
         warthog::graph::planar_graph g;
-        if(grfile.find(".input.ch") != std::string::npos)
+        warthog::graph::planar_graph backward_g;
+        std::vector<uint32_t> node_order;
+
+        if(grfile.find(".ch", grfile.length()-3) != std::string::npos)
         {
             // load up existing contraction hierarchy
             g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+            backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
+            std::string orderfile = grfile + ".input_order";
+            warthog::contraction::load_node_order(orderfile.c_str(), node_order);
         }
         else
         {
-            // create a new contraction hierarchy (and save the result)
+            // create a new contraction hierarchy 
             g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
-            warthog::contraction::contract(g);
-            grfile.append(".input.ch");
+            warthog::contraction::make_input_order(g, node_order);
+            warthog::contraction::contract(g, node_order, false);
+
+            // save the result
+            grfile.append(".ch");
             std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-            g.print_dimacs_gr(ch_out);
             if(!ch_out.good())
             {
                 std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
             }
+            g.print_dimacs_gr(ch_out);
             ch_out.close();
+
+            // save the node order
+            std::string orderfile = grfile + ".input_order";
+            warthog::contraction::write_node_order(orderfile.c_str(), node_order);
+            
+            // load'er up again but with the arcs reversed
+            backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
+        }
+
+        warthog::zero_heuristic h;
+        warthog::ch_expansion_policy fexp(&g, &node_order);
+        warthog::ch_expansion_policy bexp (&backward_g, &node_order);
+        warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+        alg.set_verbose(verbose);
+
+        int i = 0;
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i++ <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
         }
     }
     else

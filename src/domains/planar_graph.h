@@ -31,10 +31,10 @@ namespace graph
 class gridmap;
 class planar_graph
 {
-    public:
 
+    public:
         planar_graph();
-        planar_graph(planar_graph&);
+        planar_graph(warthog::graph::planar_graph& other);
         ~planar_graph();
 
         // read in a grid map in the format used at the 
@@ -66,6 +66,8 @@ class planar_graph
         void
         print_dimacs_co(std::ostream& oss);
 
+        // returns number of nodes + ID_OFFSET number of
+        // dummy elements located at the start of the nodes array
         inline uint32_t
         get_num_nodes()
         {
@@ -76,7 +78,7 @@ class planar_graph
         get_num_edges()
         {
             uint32_t num_edges = 0;
-            for(uint32_t i = 0; i < nodes_sz_; i++)
+            for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
             {
                 num_edges += nodes_[i].out_degree();
             }
@@ -143,6 +145,10 @@ class planar_graph
 
         bool verbose_;
 
+        // DIMACS-fomat node ids are specified as 1-indexed. Our internal
+        // representation is zero indexed. We convert between them by 
+        // adding an offset
+        uint32_t ID_OFFSET; 
 };
 
 }

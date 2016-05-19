@@ -32,53 +32,53 @@ warthog::wgridmap_expansion_policy::expand(warthog::search_node* current,
     if(tiles[1]) // N neighbour
     {
         warthog::search_node* n = generate(tile_ids[1]);
-        warthog::cost_t cost = ((tiles[1] + tiles[4]) * warthog::ONE) >> 1; 
+        double cost = ((tiles[1] + tiles[4]) ) * 0.5;
         add_neighbour(n, cost);
     }
     if(tiles[1] & tiles[2] & tiles[5]) // NE neighbour
     {
         warthog::search_node* n =  generate(tile_ids[2]);
-        warthog::cost_t cost = ((tiles[1] + tiles[2] + tiles[4] + tiles[5]) * 
-                warthog::ROOT_TWO) >> 2; 
+        double cost = ((tiles[1] + tiles[2] + tiles[4] + tiles[5]) * 
+                warthog::DBL_ROOT_TWO) * 0.25;
         add_neighbour(n, cost);
     }
     if(tiles[5]) // E
     {
         warthog::search_node* n = generate(tile_ids[5]);
-		warthog::cost_t cost = ((tiles[5] + tiles[4]) * warthog::ONE) >> 1; 
+		double cost = ((tiles[5] + tiles[4]) ) * 0.5;
         add_neighbour(n, cost);
     }
     if(tiles[5] & tiles[7] & tiles[8]) // SE
     {
         warthog::search_node* n = generate(tile_ids[8]);
-        warthog::cost_t cost = ((tiles[4] + tiles[5] + tiles[7] + tiles[8]) * 
-                warthog::ROOT_TWO) >> 2; 
+        double cost = ((tiles[4] + tiles[5] + tiles[7] + tiles[8]) * 
+                warthog::DBL_ROOT_TWO) * 0.25;
         add_neighbour(n, cost);
     }
     if(tiles[7]) // S
     {
         warthog::search_node* n = generate(tile_ids[7]);
-        warthog::cost_t cost = ((tiles[7] + tiles[4]) * warthog::ONE) >> 1; 
+        double cost = ((tiles[7] + tiles[4]) ) * 0.5;
         add_neighbour(n, cost);
     }
     if(tiles[3] & tiles[6] & tiles[7]) // SW
     {
         warthog::search_node* n = generate(tile_ids[6]);
-        warthog::cost_t cost =  ((tiles[3] + tiles[4] + tiles[6] + tiles[7]) * 
-                warthog::ROOT_TWO) >> 2; 
+        double cost =  ((tiles[3] + tiles[4] + tiles[6] + tiles[7]) * 
+                warthog::DBL_ROOT_TWO) * 0.25;
         add_neighbour(n, cost);
     }
     if(tiles[3]) // W
     {
         warthog::search_node* n = generate(tile_ids[3]);
-        warthog::cost_t cost = ((tiles[3] + tiles[4]) * warthog::ONE) >> 1; 
+        double cost = ((tiles[3] + tiles[4]) ) * 0.5;
         add_neighbour(n, cost);
     }
     if(tiles[0] & tiles[1] & tiles[3]) // NW neighbour
     {
         warthog::search_node* n = generate(tile_ids[0]);
-        warthog::cost_t cost = ((tiles[0] + tiles[1] + tiles[3] + tiles[4]) * 
-                warthog::ROOT_TWO) >> 2; 
+        double cost = ((tiles[0] + tiles[1] + tiles[3] + tiles[4]) * 
+                warthog::DBL_ROOT_TWO) * 0.25;
         add_neighbour(n, cost);
     }
 }
@@ -87,6 +87,5 @@ void
 warthog::wgridmap_expansion_policy::get_xy(warthog::search_node* n,
         int32_t& x, int32_t& y)
 {
-    
     map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
 }

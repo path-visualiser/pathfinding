@@ -24,7 +24,7 @@ class offline_jump_point_locator
 
 		void
 		jump(warthog::jps::direction d, uint32_t node_id, uint32_t goalid, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 
 		uint32_t
 		mem()
@@ -46,35 +46,35 @@ class offline_jump_point_locator
 
 		void
 		jump_northwest(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 		void
 		jump_northeast(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 		void
 		jump_southwest(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 		void
 		jump_southeast(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 		void
 		jump_north(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 		void
 		jump_south(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 		void
 		jump_east(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 		void
 		jump_west(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, warthog::cost_t& jumpcost);
+				uint32_t& jumpnode_id, double& jumpcost);
 
 		warthog::gridmap* map_;
 		uint32_t dbsize_;
 		uint16_t* db_;	
 
 		uint32_t jumppoints_[3];
-		warthog::cost_t costs_[3];
+		double costs_[3];
 		uint32_t max_;
 		uint32_t current_;
 };

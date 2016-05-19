@@ -22,14 +22,14 @@ class manhattan_heuristic
 		 : mapwidth_(mapwidth), mapheight_(mapheight) {}
 		~manhattan_heuristic() {}
 
-		inline warthog::cost_t
+		inline double
 		h(unsigned int x, unsigned int y, unsigned int x2, unsigned int y2)
 		{
-            // NB: precision loss when warthog::cost_t is an integer
-			return (abs(x-x2) + abs(y-y2)) * warthog::ONE;
+            // NB: precision loss when double is an integer
+			return (abs(x-x2) + abs(y-y2));
 		}
 
-		inline warthog::cost_t
+		inline double
 		h(unsigned int id, unsigned int id2)
 		{
 			unsigned int x, x2;

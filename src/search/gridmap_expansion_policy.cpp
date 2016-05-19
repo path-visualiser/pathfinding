@@ -39,42 +39,42 @@ warthog::gridmap_expansion_policy::expand(warthog::search_node* current,
 
 	if((tiles & 514) == 514) // N
 	{  
-		add_neighbour(this->generate(nid_m_w), warthog::ONE);
+		add_neighbour(this->generate(nid_m_w), 1);
 	} 
 
 	if((tiles & 1542) == 1542) // NE
 	{ 
-        add_neighbour(this->generate(nid_m_w + 1), warthog::ROOT_TWO);
+        add_neighbour(this->generate(nid_m_w + 1), warthog::DBL_ROOT_TWO);
 	}
 
 	if((tiles & 1536) == 1536) // E
 	{
-		add_neighbour(this->generate(nodeid + 1), warthog::ONE);
+		add_neighbour(this->generate(nodeid + 1), 1);
 	}
 	
 	if((tiles & 394752) == 394752) // SE
 	{	
-        add_neighbour(this->generate(nid_p_w + 1), warthog::ROOT_TWO);
+        add_neighbour(this->generate(nid_p_w + 1), warthog::DBL_ROOT_TWO);
 	}
 
 	if((tiles & 131584) == 131584) // S
 	{ 
-		add_neighbour(this->generate(nid_p_w), warthog::ONE);
+		add_neighbour(this->generate(nid_p_w), 1);
 	}
 
 	if((tiles & 197376) == 197376) // SW
 	{ 
-        add_neighbour(this->generate(nid_p_w - 1), warthog::ROOT_TWO);
+        add_neighbour(this->generate(nid_p_w - 1), warthog::DBL_ROOT_TWO);
 	}
 
 	if((tiles & 768) == 768) // W
 	{ 
-		add_neighbour(this->generate(nodeid - 1), warthog::ONE);
+		add_neighbour(this->generate(nodeid - 1), 1);
 	}
 
 	if((tiles & 771) == 771) // NW
 	{ 
-		add_neighbour(this->generate(nid_m_w - 1), warthog::ROOT_TWO);
+		add_neighbour(this->generate(nid_m_w - 1), warthog::DBL_ROOT_TWO);
 	}
 }
 

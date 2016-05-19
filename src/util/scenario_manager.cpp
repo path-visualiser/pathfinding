@@ -87,7 +87,7 @@ warthog::scenario_manager::generate_single_experiment(warthog::gridmap* map)
 	int id1 = map->to_padded_id(id1_);
 	int id2 = map->to_padded_id(id2_);
 	double dist = astar.get_length(map->to_padded_id(id1), map->to_padded_id(id2));
-	double inf = warthog::INF / (double) warthog::ONE;
+	double inf = warthog::INF;
 
 	if(dist == inf)
 	{

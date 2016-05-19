@@ -71,11 +71,11 @@ class flexible_astar : public warthog::search
 			return path;
 		}
 
-		cost_t
+		double
 		get_length(uint32_t startid, uint32_t goalid)
 		{
 			warthog::search_node* goal = search(startid, goalid);
-			warthog::cost_t len = warthog::INF;
+			double len = warthog::INF;
 			if(goal)
 			{
 				assert(goal->get_id() == goalid);
@@ -115,9 +115,9 @@ class flexible_astar : public warthog::search
         // the search terminates when the goal is found or the f-cost 
         // limit is reached.
         inline void
-        set_cost_cutoff(warthog::cost_t cutoff) { cost_cutoff_ = cutoff; }
+        set_cost_cutoff(double cutoff) { cost_cutoff_ = cutoff; }
 
-        inline warthog::cost_t
+        inline double
         get_cost_cutoff() { return cost_cutoff_; }
 
 		virtual inline size_t
@@ -138,7 +138,7 @@ class flexible_astar : public warthog::search
 		H* heuristic_;
 		E* expander_;
 		warthog::pqueue* open_;
-        warthog::cost_t cost_cutoff_; // early termination
+        double cost_cutoff_; // early termination
 
 		// no copy
 		flexible_astar(const flexible_astar& other) { } 
@@ -215,7 +215,7 @@ class flexible_astar : public warthog::search
 				expander_->expand(current, &instance);
 
 				warthog::search_node* n = 0;
-				warthog::cost_t cost_to_n = warthog::INF;
+				double cost_to_n = warthog::INF;
 				for(expander_->first(n, cost_to_n); 
 						n != 0;
 					   	expander_->next(n, cost_to_n))
@@ -233,9 +233,9 @@ class flexible_astar : public warthog::search
                             n->print(std::cerr);
                             std::cerr << std::endl;
 
-                            //warthog::cost_t gval = current->get_g() + cost_to_n;
+                            //double gval = current->get_g() + cost_to_n;
                             //double hval = heuristic_->h(n->get_id(), goalid) * hscale_;
-                            //warthog::cost_t fval = gval + hval;
+                            //double fval = gval + hval;
                             //std::cerr << "  alt g: " << gval << " h: " << hval << " f: " << fval << std::endl;
                             //if(gval < n->get_g())
                             //{
@@ -250,7 +250,7 @@ class flexible_astar : public warthog::search
 					if(open_->contains(n))
 					{
 						// update a node from the fringe
-						warthog::cost_t gval = current->get_g() + cost_to_n;
+						double gval = current->get_g() + cost_to_n;
 						if(gval < n->get_g())
 						{
 							n->relax(gval, current);
@@ -283,7 +283,7 @@ class flexible_astar : public warthog::search
 					else
 					{
 						// add a new node to the fringe
-						warthog::cost_t gval = current->get_g() + cost_to_n;
+						double gval = current->get_g() + cost_to_n;
 						n->set_g(gval);
 						n->set_f(gval + heuristic_->h(n->get_id(), goalid));
 					   	n->set_parent(current);

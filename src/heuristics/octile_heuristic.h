@@ -24,21 +24,21 @@ class octile_heuristic
 	    	: mapwidth_(mapwidth), mapheight_(mapheight), hscale_(1.0) { }
 		~octile_heuristic() { }
 
-		inline warthog::cost_t
+		inline double
 		h(unsigned int x, unsigned int y, 
 				unsigned int x2, unsigned int y2)
 		{
-            // NB: precision loss when warthog::cost_t is an integer
+            // NB: precision loss when double is an integer
 			double dx = abs(x-x2);
 			double dy = abs(y-y2);
 			if(dx < dy)
 			{
-				return dx * warthog::ROOT_TWO + (dy - dx) * warthog::ONE * hscale_;
+				return (dx * warthog::DBL_ROOT_TWO + (dy - dx)) * hscale_;
 			}
-			return dy * warthog::ROOT_TWO + (dx - dy) * warthog::ONE * hscale_;
+			return (dy * warthog::DBL_ROOT_TWO + (dx - dy)) * hscale_;
 		}
 
-		inline warthog::cost_t
+		inline double
 		h(unsigned int id, unsigned int id2)
 		{
 			unsigned int x, x2;

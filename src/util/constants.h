@@ -18,7 +18,6 @@ namespace warthog
 	// in a uniform-cost grid map each dbword is a contiguous set
 	// of nodes s.t. every bit represents a node.
 	typedef unsigned char dbword;
-	typedef uint32_t cost_t;
 
 	// gridmap constants
 	static const uint32_t DBWORD_BITS = sizeof(warthog::dbword)*8;
@@ -32,13 +31,7 @@ namespace warthog
 	static const double DBL_ONE_OVER_TWO = 0.5;
 	static const double DBL_ONE_OVER_ROOT_TWO = 1.0/DBL_ROOT_TWO;//0.707106781f;
 	static const double DBL_ROOT_TWO_OVER_FOUR = DBL_ROOT_TWO*0.25;
-	static const warthog::cost_t ONE = 10000;
-	static const warthog::cost_t TWO = 20000;
-	static const warthog::cost_t ROOT_TWO = DBL_ROOT_TWO * ONE;
-	static const warthog::cost_t ONE_OVER_TWO = DBL_ONE_OVER_TWO * ONE;
-	static const warthog::cost_t ONE_OVER_ROOT_TWO = DBL_ONE_OVER_ROOT_TWO * ONE;
-	static const warthog::cost_t ROOT_TWO_OVER_FOUR = DBL_ROOT_TWO * ONE;
-	static const warthog::cost_t INF = 0xffffffff;
+    static const int32_t INF = INT32_MAX;
 
 	// hashing constants
 	static const uint32_t FNV32_offset_basis = 2166136261;

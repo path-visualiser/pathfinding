@@ -47,7 +47,7 @@ class jps2_expansion_policy : public expansion_policy
 		warthog::gridmap* map_;
 		online_jump_point_locator2* jpl_;
 		std::vector<uint32_t> jp_ids_;
-        std::vector<warthog::cost_t> jp_costs_;
+        std::vector<double> jp_costs_;
 };
 
 }

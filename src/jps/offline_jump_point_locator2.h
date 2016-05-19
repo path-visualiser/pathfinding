@@ -27,7 +27,7 @@ class offline_jump_point_locator2
 
 		void
 		jump(warthog::jps::direction d, uint32_t node_id, uint32_t goalid, 
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 
 		uint32_t
 		mem()
@@ -49,28 +49,28 @@ class offline_jump_point_locator2
 
 		void
 		jump_northwest(uint32_t node_id, uint32_t goal_id, 
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 		void
 		jump_northeast(uint32_t node_id, uint32_t goal_id, 
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 		void
 		jump_southwest(uint32_t node_id, uint32_t goal_id, 
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 		void
 		jump_southeast(uint32_t node_id, uint32_t goal_id, 
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 		void
-		jump_north(uint32_t node_id, uint32_t goal_id, warthog::cost_t cost_to_node_id,
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+		jump_north(uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 		void
-		jump_south(uint32_t node_id, uint32_t goal_id, warthog::cost_t cost_to_node_id,
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+		jump_south(uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 		void
-		jump_east(uint32_t node_id, uint32_t goal_id, warthog::cost_t cost_to_node_id,
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+		jump_east(uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 		void
-		jump_west(uint32_t node_id, uint32_t goal_id, warthog::cost_t cost_to_node_id,
-				std::vector<uint32_t>& neighbours, std::vector<warthog::cost_t>& costs);
+		jump_west(uint32_t node_id, uint32_t goal_id, double cost_to_node_id,
+				std::vector<uint32_t>& neighbours, std::vector<double>& costs);
 
 		warthog::gridmap* map_;
 		uint32_t dbsize_;

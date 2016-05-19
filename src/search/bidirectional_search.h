@@ -44,14 +44,12 @@ class bidirectional_search : public warthog::search
 {
     public:
         bidirectional_search(
-                warthog::graph::planar_graph* fwd_g,
-                warthog::graph::planar_graph* bwd_g,
+                warthog::expansion_policy* fexp,
+                warthog::expansion_policy* bexp,
                 H* heuristic) 
-            : heuristic_(heuristic)
+            : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
             verbose_ = false;
-            fexpander_ = new warthog::graph_expansion_policy(fwd_g);
-            bexpander_ = new warthog::graph_expansion_policy(bwd_g);
             fopen_ = new pqueue(512, true);
             bopen_ = new pqueue(512, true);
             
@@ -66,8 +64,6 @@ class bidirectional_search : public warthog::search
         {
             delete fopen_;
             delete bopen_;
-            delete fexpander_;
-            delete bexpander_;
         }
 
         double 
@@ -79,7 +75,7 @@ class bidirectional_search : public warthog::search
 
 #endif
             cleanup();
-            return best_cost_ / (double)warthog::ONE;
+            return best_cost_;
         }
             
 		inline bool
@@ -109,7 +105,7 @@ class bidirectional_search : public warthog::search
         // some temporary variables used during search
         warthog::search_node* v_;
         warthog::search_node* w_;
-        warthog::cost_t best_cost_;
+        double best_cost_;
         warthog::problem_instance instance_;
 
         void 
@@ -267,7 +263,7 @@ class bidirectional_search : public warthog::search
 
             // generate all neighbours
             warthog::search_node* n = 0;
-            warthog::cost_t cost_to_n = warthog::INF;
+            double cost_to_n = warthog::INF;
             for(expander->first(n, cost_to_n); n != 0; expander->next(n, cost_to_n))
             {
                 nodes_touched_++;
@@ -290,7 +286,7 @@ class bidirectional_search : public warthog::search
                 }
 
                 // relax (or generate) each neighbour
-                warthog::cost_t gval = current->get_g() + cost_to_n;
+                double gval = current->get_g() + cost_to_n;
                 if(open->contains(n))
                 {
                     // update a node from the fringe

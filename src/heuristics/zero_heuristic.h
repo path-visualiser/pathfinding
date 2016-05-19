@@ -21,13 +21,13 @@ class zero_heuristic
 		zero_heuristic() {}
 		~zero_heuristic() {}
 
-		inline warthog::cost_t
+		inline double
 		h(unsigned int x, unsigned int y, unsigned int x2, unsigned int y2)
 		{
             return 0;
 		}
 
-		inline warthog::cost_t
+		inline double
 		h(unsigned int id, unsigned int id2)
 		{
             return 0;
