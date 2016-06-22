@@ -46,7 +46,7 @@ warthog::graph::planar_graph::~planar_graph()
 bool
 warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_file, 
         bool reverse_arcs, 
-        bool duplicate_edges, 
+        bool store_incoming_edges, 
         bool enforce_euclidean)
 {
     //warthog::dimacs_parser dimacs(gr_file, co_file);
@@ -127,9 +127,9 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
         // add edge to the graph
         nodes_[tid].add_outgoing(e);
 
-        // duplicate edges are stored twice: once as an incoming edge 
+        // edges can be stored twice: once as an incoming edge 
         // and once as an outgoing edge
-        if(duplicate_edges)
+        if(store_incoming_edges)
         {
             e.node_id_ = tid;
             nodes_[hid].add_incoming(e);

@@ -8,7 +8,7 @@ main(int argv, char** argc)
     if(argv < 4)
     {
         std::cout << "Usage: ./closure [gr file] [co file] [source id]"
-            << "[optional exclude ids] " << std::endl;
+            << " [optional exclude ids] " << std::endl;
         return 0;
     }
 

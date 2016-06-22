@@ -32,6 +32,9 @@ class zero_heuristic
 		{
             return 0;
 		}
+
+        size_t
+        mem() { return sizeof(this); } 
 };
 
 }

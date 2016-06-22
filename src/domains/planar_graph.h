@@ -54,7 +54,7 @@ class planar_graph
         bool
         load_dimacs(const char*, const char*, 
                 bool reverse_arcs =false, 
-                bool duplicate_edges = false,
+                bool store_incoming_edges = false,
                 bool enforce_euclidean=true);
 
         void

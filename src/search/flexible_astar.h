@@ -128,6 +128,8 @@ class flexible_astar : public warthog::search
 				open_->mem() + 
 				// gridmap size and other stuff needed to expand nodes
 				expander_->mem() +
+                // heuristic uses some memory too
+                heuristic_->mem() +
 				// misc
 				sizeof(*this);
 			return bytes;
@@ -312,6 +314,17 @@ class flexible_astar : public warthog::search
 //			    }
 //			    #endif
 			}
+
+#ifndef NDEBUG
+            if(verbose_)
+            {
+                if(goal == 0) 
+                {
+                    std::cerr << "search failed; no solution exists " << std::endl;
+                }
+            }
+#endif
+
 
 			mytimer.stop();
 			search_time_ = mytimer.elapsed_time_micro();

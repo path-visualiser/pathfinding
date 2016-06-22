@@ -55,6 +55,9 @@ class euclidean_heuristic
         inline double
         get_hscale() { return hscale_; }
 
+        size_t
+        mem() { return sizeof(this); } 
+
 	private:
         warthog::graph::planar_graph* g_;
         double hscale_;

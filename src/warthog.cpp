@@ -10,8 +10,8 @@
 #include "contraction.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
+#include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
-#include "planar_graph.h"
 #include "graph_expansion_policy.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
@@ -20,7 +20,9 @@
 #include "jps2_expansion_policy.h"
 #include "jpsplus_expansion_policy.h"
 #include "jps2plus_expansion_policy.h"
+#include "lazy_graph_contraction.h"
 #include "octile_heuristic.h"
+#include "planar_graph.h"
 #include "scenario_manager.h"
 #include "weighted_gridmap.h"
 #include "wgridmap_expansion_policy.h"
@@ -470,6 +472,7 @@ run_dimacs(warthog::util::cfg& cfg)
     std::string cofile = cfg.get_param_value("co");
     std::string problemfile = cfg.get_param_value("problem");
     std::string alg_name = cfg.get_param_value("alg");
+    std::string orderfile = cfg.get_param_value("order");
 
 
     if((problemfile == "") || (grfile == "") || (cofile == "") | (alg_name == ""))
@@ -512,6 +515,7 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         warthog::graph::planar_graph g;
         g.load_dimacs(grfile.c_str(), cofile.c_str());
+
         warthog::graph_expansion_policy expander(&g);
 
         warthog::euclidean_heuristic h(&g);
@@ -602,23 +606,29 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         // load up (or create) the contraction hierarchy
         warthog::graph::planar_graph g;
-        warthog::graph::planar_graph backward_g;
-        std::vector<uint32_t> node_order;
+        std::vector<uint32_t> order;
 
-        if(grfile.find(".ch", grfile.length()-3) != std::string::npos)
+        if(!(orderfile == ""))
         {
             // load up existing contraction hierarchy
             g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
-            backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
-            std::string orderfile = grfile + ".input_order";
-            warthog::contraction::load_node_order(orderfile.c_str(), node_order);
+            warthog::ch::load_node_order(orderfile.c_str(), order);
+            warthog::ch::fixed_graph_contraction contractor(&g, &order);
+            contractor.set_verbose(verbose);
+            contractor.contract();
         }
         else
         {
             // create a new contraction hierarchy 
             g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
-            warthog::contraction::make_input_order(g, node_order);
-            warthog::contraction::contract(g, node_order, false);
+            warthog::ch::lazy_graph_contraction contractor(&g);
+            contractor.set_verbose(verbose);
+            contractor.contract();
+
+            // save the node order
+            contractor.get_order(&order);
+            std::string orderfile = grfile + ".lazy_order";
+            warthog::ch::write_node_order(orderfile.c_str(), order);
 
             // save the result
             grfile.append(".ch");
@@ -629,18 +639,11 @@ run_dimacs(warthog::util::cfg& cfg)
             }
             g.print_dimacs_gr(ch_out);
             ch_out.close();
-
-            // save the node order
-            std::string orderfile = grfile + ".input_order";
-            warthog::contraction::write_node_order(orderfile.c_str(), node_order);
-            
-            // load'er up again but with the arcs reversed
-            backward_g.load_dimacs(grfile.c_str(), cofile.c_str(), true, true);
         }
 
         warthog::zero_heuristic h;
-        warthog::ch_expansion_policy fexp(&g, &node_order);
-        warthog::ch_expansion_policy bexp (&backward_g, &node_order);
+        warthog::ch_expansion_policy fexp(&g, &order);
+        warthog::ch_expansion_policy bexp (&g, &order, true);
         warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
         alg.set_verbose(verbose);
 

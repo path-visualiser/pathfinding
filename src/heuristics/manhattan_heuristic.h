@@ -39,6 +39,9 @@ class manhattan_heuristic
 			return this->h(x, y, x2, y2);
 		}
 
+        size_t
+        mem() { return sizeof(this); }
+
 	private:
 		unsigned int mapwidth_, mapheight_;
 };

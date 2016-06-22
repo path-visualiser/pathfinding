@@ -59,6 +59,7 @@ main: makedirs warthog
 	@echo "linking..."
 	$(CC) warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) closure.cpp -o ./bin/closure -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: dimacs
 dimacs: makedirs warthog 

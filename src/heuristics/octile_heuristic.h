@@ -54,6 +54,9 @@ class octile_heuristic
         inline double
         get_hscale() { return hscale_; }
 
+        size_t
+        mem() { return sizeof(this); }
+
 	private:
 		unsigned int mapwidth_;
 		unsigned int mapheight_;
