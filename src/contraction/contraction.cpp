@@ -1,11 +1,9 @@
 #include "contraction.h"
-#include "euclidean_heuristic.h"
-#include "flexible_astar.h"
-#include "graph_expansion_policy.h"
 #include "planar_graph.h"
+#include <stack>
 
 void
-warthog::contraction::make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order)
+warthog::ch::make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order)
 {
     order.clear();
     order.reserve(g.get_num_nodes());
@@ -16,7 +14,7 @@ warthog::contraction::make_input_order(warthog::graph::planar_graph& g, std::vec
 }
 
 void 
-warthog::contraction::write_node_order(const char* filename, std::vector<uint32_t>& order)
+warthog::ch::write_node_order(const char* filename, std::vector<uint32_t>& order)
 {
     std::ofstream ofs(filename, std::ios_base::out | std::ios_base::trunc);
     if(ofs.good())
@@ -30,7 +28,7 @@ warthog::contraction::write_node_order(const char* filename, std::vector<uint32_
 }
 
 void 
-warthog::contraction::load_node_order(const char* filename, std::vector<uint32_t>& order)
+warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order)
 {
     order.clear();
     std::ifstream ifs(filename, std::ios_base::in);
@@ -51,104 +49,32 @@ warthog::contraction::load_node_order(const char* filename, std::vector<uint32_t
     ifs.close();
 }
 
+typedef std::set<uint32_t>::iterator set_iter;
 void
-warthog::contraction::contract(warthog::graph::planar_graph& g,
-        std::vector<uint32_t>& lexord, bool verbose)
+warthog::ch::compute_closure(uint32_t source, 
+        warthog::graph::planar_graph* g, std::set<uint32_t>* closure)
 {
-    assert(g.get_num_nodes() == lexord.size());
-
-    // sort the nodes for contraction using their
-    // associated lexical order
-    std::vector<uint32_t> conord;
-    conord.reserve(lexord.size());
-    //FIXME!!! NO SORTING HERE!!!
-    for(uint32_t i = 0; i < lexord.size(); i++)
+    std::stack<uint32_t> stack; // stack of node ids
+    stack.push(source);
+    while(stack.size() != 0)
     {
-        conord.push_back(lexord[i]);
-    }
+        uint32_t next_id = stack.top();
+        std::pair<std::set<uint32_t>::iterator, bool> ret 
+            = closure->insert(next_id);
+        stack.pop();
+        if(ret.second == false) 
+        { 
+            continue;  // already in the closure
+        }
 
-    warthog::graph_expansion_policy expander(&g);
-    warthog::euclidean_heuristic h(&g);
-    warthog::flexible_astar<warthog::euclidean_heuristic, 
-        warthog::graph_expansion_policy> astar(&h, &expander);
-
-    std::cerr << "contracting graph " << g.get_filename() << std::endl;
-    uint32_t total_searches = 0;
-    uint32_t total_expansions = 0;
-    uint32_t edges_before = g.get_num_edges();
-    for(std::vector<uint32_t>::iterator it = conord.begin(); 
-            it != conord.end(); it++)
-    {
-        uint32_t cid = (*it);
-        assert(cid < g.get_num_nodes());
-        warthog::graph::node* n = g.get_node(cid);
-        std::cerr << "processing node " << (it - conord.begin()) 
-            << "/" << conord.size() << " local searches: " << total_searches
-            << " total expansions: " << total_expansions << "\r";
-
-        expander.filter(cid); // never expand this node again
-        for(int i = 0; i < n->out_degree(); i++)
+        // add all outgoing neighbours to the stack
+        warthog::graph::node* n = g->get_node(next_id);
+        for( warthog::graph::edge_iter it = n->outgoing_begin(); 
+                it != n->outgoing_end(); 
+                it++)
         {
-            warthog::graph::edge out = *(n->outgoing_begin() + i);
-            if(lexord[out.node_id_] < lexord[cid]) { continue; }
-
-            for(int j = 0; j < n->in_degree(); j++)
-            {
-                warthog::graph::edge in = *(n->incoming_begin() + j);
-                if(lexord[out.node_id_] < lexord[cid]) { continue; }
-
-                if(out.node_id_ == in.node_id_) { continue; }
-
-                double via_len = in.wt_ + out.wt_;
-                double witness_len = warthog::INF;
-
-                // terminate when we prove no witness with len < via_len
-                astar.set_cost_cutoff(via_len);
-                witness_len = astar.get_length(
-                        in.node_id_, out.node_id_);
-                total_expansions += astar.get_nodes_expanded();
-                total_searches++;
-
-//                std::cerr << " node " << cid << " in-deg " << n->in_degree() << " out-deg " << n->out_degree() << " neis " << in.node_id_ 
-//                    << " " << out.node_id_ << " via_len " << via_len <<
-//                    " expansions " << astar.get_nodes_expanded() << std::endl;
-
-                // also: if <= is used below, and two alternatives exist
-                // two shortcuts will be added (??) -- only if we allow 
-                // redundant edges though... so
-                // do not add redundant (>= existing cost) edges
-                //std::cout << "witness_len " << witness_len << " via-len " << via_len << std::endl;
-                if(witness_len >= via_len)
-                {
-                    if(verbose)
-                    {
-                        std::cerr << "shortcut " << in.node_id_ << " -> "
-                            << cid << " -> " << out.node_id_;
-                        std::cerr << " via-len " << via_len;
-                        std::cerr << " witness-len " << witness_len << std::endl;
-                    }
-                    if(via_len > 10000 && astar.get_nodes_expanded() <= 2)
-                    {
-                        witness_len = astar.get_length(in.node_id_, out.node_id_);
-                    }
-
-//                    std::cerr << " shortcut! node " << cid << " in-deg " << n->in_degree() << " out-deg " 
-//                        << n->out_degree() << " shortcut " << in.node_id_ 
-//                        << " " << out.node_id_ << " via_len " << via_len <<
-//                        " expansions " << astar.get_nodes_expanded() << std::endl;
-//                    
-                    warthog::graph::node* tail = g.get_node(in.node_id_);
-                    tail->add_outgoing(
-                            warthog::graph::edge(out.node_id_, via_len));
-                    warthog::graph::node* head = g.get_node(out.node_id_);
-                    head->add_incoming(
-                            warthog::graph::edge(in.node_id_, via_len));
-                }
-            }
+            stack.push((*it).node_id_);
         }
     }
-    std::cerr << "graph, contracted";
-    std::cerr << "edges before " << edges_before 
-        << "; edges after " << g.get_num_edges() << std::endl;
 }
 

@@ -31,8 +31,12 @@ class ch_expansion_policy : public  expansion_policy
 {
     public:
         ch_expansion_policy(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* order)
-            : expansion_policy(g->get_num_nodes()), g_(g), order_(order) { }
+                std::vector<uint32_t>* order, bool backward=false)
+            : expansion_policy(g->get_num_nodes()), g_(g)
+        {
+            order_ = order;
+            backward_ = backward;
+        }
 
         virtual 
         ~ch_expansion_policy() { }
@@ -50,6 +54,7 @@ class ch_expansion_policy : public  expansion_policy
         mem();
 
     private:
+        bool backward_;
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* order_;
 };
