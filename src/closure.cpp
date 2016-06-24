@@ -26,7 +26,7 @@ main(int argv, char** argc)
             closure.insert(atoi(argc[i]));
         }
     }
-    warthog::ch::compute_closure(node_id, &g, &closure);
+    warthog::ch::compute_closure(node_id, &g, &closure, 1);
 
     std::cout << "closure: \n";
     for(std::set<uint32_t>::iterator it = closure.begin(); 

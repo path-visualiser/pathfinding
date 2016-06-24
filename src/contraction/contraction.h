@@ -10,6 +10,7 @@
 // @created: 2016-06-14
 //
 
+#include "constants.h"
 #include <cstdint>
 #include <fstream>
 #include <set>
@@ -47,7 +48,7 @@ make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order);
 // compute the out-arc closure of @param source 
 void
 compute_closure(uint32_t source, warthog::graph::planar_graph* g, 
-        std::set<uint32_t>* closure);
+        std::set<uint32_t>* closure, uint32_t maxdepth=warthog::INF);
 }
 
 }

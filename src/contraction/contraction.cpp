@@ -24,6 +24,10 @@ warthog::ch::write_node_order(const char* filename, std::vector<uint32_t>& order
             ofs << order.at(i) << "\n";
         }
     }
+    else
+    {
+        std::cerr << "err; cannot write to file " << filename << std::endl;
+    }
     ofs.close();
 }
 
@@ -52,13 +56,17 @@ warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order)
 typedef std::set<uint32_t>::iterator set_iter;
 void
 warthog::ch::compute_closure(uint32_t source, 
-        warthog::graph::planar_graph* g, std::set<uint32_t>* closure)
+        warthog::graph::planar_graph* g, std::set<uint32_t>* closure, 
+        uint32_t maxdepth)
 {
-    std::stack<uint32_t> stack; // stack of node ids
-    stack.push(source);
+    std::stack<std::pair<uint32_t, uint32_t>> stack; // stack of node ids
+    stack.push(std::pair<uint32_t, uint32_t>(source, 0));
     while(stack.size() != 0)
     {
-        uint32_t next_id = stack.top();
+        // add top element to the closure
+        std::pair<uint32_t, uint32_t> top = stack.top();
+        uint32_t next_id = top.first;
+        uint32_t depth = top.second;
         std::pair<std::set<uint32_t>::iterator, bool> ret 
             = closure->insert(next_id);
         stack.pop();
@@ -67,13 +75,18 @@ warthog::ch::compute_closure(uint32_t source,
             continue;  // already in the closure
         }
 
+        if(depth >= maxdepth)
+        { 
+            continue; // limited depth closure
+        }
+
         // add all outgoing neighbours to the stack
         warthog::graph::node* n = g->get_node(next_id);
         for( warthog::graph::edge_iter it = n->outgoing_begin(); 
                 it != n->outgoing_end(); 
                 it++)
         {
-            stack.push((*it).node_id_);
+            stack.push(std::pair<uint32_t, uint32_t>((*it).node_id_, depth+1));
         }
     }
 }

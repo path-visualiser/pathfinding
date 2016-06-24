@@ -30,13 +30,17 @@ warthog::ch::graph_contraction::contract()
 
     preliminaries();
 
+    if(done_) { return; }
+
+    uint32_t total_nodes = g_->get_num_nodes();
     uint32_t num_contractions = 0;
     warthog::node_filter* filter = get_filter();
     for(uint32_t cid = next(); cid != warthog::INF; cid = next())
     {
+        std::cerr << "\rcontracting " << num_contractions++ << " /  " << total_nodes << "; current: " << cid;
         if(verbose_)
         {
-            std::cerr << num_contractions++ << "contracting node " << cid << std::endl;
+            std::cerr << std::endl;
         }
 
         warthog::graph::node* n = g_->get_node(cid);
@@ -85,6 +89,7 @@ warthog::ch::graph_contraction::contract()
             }
         }
     }
+
     if(verbose_)
     {
 
@@ -92,6 +97,8 @@ warthog::ch::graph_contraction::contract()
         std::cerr << "edges before " << edges_before 
             << "; edges after " << g_->get_num_edges() << std::endl;
     }
+
+    postliminaries();
 }
 
 size_t

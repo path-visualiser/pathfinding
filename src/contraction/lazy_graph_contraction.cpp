@@ -5,6 +5,9 @@
 #include "lazy_graph_contraction.h"
 #include "node_filter.h"
 
+#include <algorithm>
+#include <functional>
+
 bool
 warthog::ch::operator<(const ch_pair& first, const ch_pair& second)
 {
@@ -49,28 +52,30 @@ warthog::ch::lazy_graph_contraction::~lazy_graph_contraction()
 void
 warthog::ch::lazy_graph_contraction::preliminaries()
 {
-    if(get_verbose())
-    {
-        std::cerr << "creating initial contraction order" << std::endl;
-    }
+    std::cerr << "creating initial contraction order" << std::endl;
 
     total_searches_ = 0;
     total_expansions_ = 0;
+    total_lazy_updates_ = 0;
+   
     for(uint32_t i = 0; i < get_graph()->get_num_nodes(); i++)
     {
-        if(get_verbose())
-        {
-            std::cerr << i << " / " << get_graph()->get_num_nodes() << "\r";
-        }
+        std::cerr << i << " / " << get_graph()->get_num_nodes() << "\r";
         int32_t edval = edge_difference(i);
         hn_pool_[i] = heap_node<ch_pair>(ch_pair(i, edval));
         heap_->push(&hn_pool_[i]);
     }
-    if(get_verbose())
-    {
-        std::cerr << "all " << get_graph()->get_num_nodes() 
-            << " nodes contracted " << std::endl;
-    }
+    std::cerr << "all " << get_graph()->get_num_nodes() 
+        << " nodes contracted " << std::endl;
+}
+
+void
+warthog::ch::lazy_graph_contraction::postliminaries()
+{
+    std::cout << "lazy contraction summary:" << std::endl
+        << "\twitness searches: " << total_searches_ << std::endl 
+        << "\tlazy updates: "<< total_lazy_updates_ << std::endl
+        << "\tnode expansions " << total_expansions_ << std::endl;
 }
 
 // return the node that should be contracted next NB: nodes are ranked in a
@@ -84,6 +89,7 @@ warthog::ch::lazy_graph_contraction::next()
 {   
     uint32_t iter = 0;
     uint32_t max_iter = (uint32_t)(heap_->size() * 0.1);
+    uint32_t num_searches = total_searches_;
     heap_node<ch_pair>* best = heap_->pop();
     if(heap_->size() > 0)
     {
@@ -97,14 +103,17 @@ warthog::ch::lazy_graph_contraction::next()
             best = heap_->pop();
         }
     }
+    total_lazy_updates_ += iter;
 
-    if(get_verbose() && iter > max_iter)
+    std::cerr << "; lazy_iters: " << iter <<
+        "; num_searches: " << (total_searches_-num_searches) << std::endl;
+
+    if(iter > max_iter)
     {
-        std::cerr << "warthog::dynamic_node_order "
+        std::cerr << "\nwarthog::dynamic_node_order "
             << "#iters: "<<iter<<"; max_iter: " << max_iter 
             << std::endl;
     }
-    order_.push_back(best->get_element().node_id_);
     return best->get_element().node_id_;
 }
 
@@ -166,13 +175,23 @@ warthog::ch::lazy_graph_contraction::edge_difference(uint32_t node_id)
     filter->unfilter(node_id);
     return ediff;
 }
+
 void
 warthog::ch::lazy_graph_contraction::get_order(std::vector<uint32_t>* order)
 {
+    // grab the current node priorities and order them accordingly
+    // (assumes the order has been settled)
     order->clear();
-    for(uint32_t i = 0; i < order_.size(); i++)
+    std::vector<ch_pair> tmp;
+    for(uint32_t i = 0; i < get_graph()->get_num_nodes(); i++)
     {
-        order->push_back(order_.at(i));
+        tmp.push_back(hn_pool_[i].get_element());
+    }
+    std::sort(tmp.begin(), tmp.end(), std::less<ch_pair>());
+
+    for(uint32_t i = 0; i < get_graph()->get_num_nodes(); i++)
+    {
+        order->push_back(tmp.at(i).node_id_);
     }
 }
 
@@ -184,6 +203,5 @@ warthog::ch::lazy_graph_contraction::mem()
         heap_->mem() +
         alg_->mem() + 
         sizeof(*hn_pool_)*get_graph()->get_num_nodes() +
-        sizeof(uint32_t)*order_.capacity() + 
         sizeof(this);
 }

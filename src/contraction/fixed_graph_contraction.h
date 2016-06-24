@@ -53,6 +53,9 @@ class fixed_graph_contraction : public warthog::ch::graph_contraction
         virtual void
         preliminaries();
 
+        virtual void
+        postliminaries() { } 
+
         virtual uint32_t
         next();
 

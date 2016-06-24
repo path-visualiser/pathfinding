@@ -628,10 +628,12 @@ run_dimacs(warthog::util::cfg& cfg)
             // save the node order
             contractor.get_order(&order);
             std::string orderfile = grfile + ".lazy_order";
+            std::cout << "saving order to file " << orderfile << std::endl;
             warthog::ch::write_node_order(orderfile.c_str(), order);
 
             // save the result
             grfile.append(".ch");
+            std::cout << "saving contracted graph to file " << grfile << std::endl;
             std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
             if(!ch_out.good())
             {

@@ -61,6 +61,9 @@ class graph_contraction
         // before doing anything else
         virtual void
         preliminaries() = 0;
+
+        virtual void
+        postliminaries() = 0;
         
         // return the id of the node that should be contracted next
         // and the value warthog::INF if all nodes have been contracted

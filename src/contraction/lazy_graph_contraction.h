@@ -84,12 +84,17 @@ class lazy_graph_contraction : public graph_contraction
         virtual size_t
         mem();
 
+        // the order of the nodes at the time the function
+        // is called 
         void
         get_order(std::vector<uint32_t>* order);
 
     protected:
         virtual void
         preliminaries();
+
+        virtual void
+        postliminaries();
 
         virtual uint32_t
         next();
@@ -101,7 +106,6 @@ class lazy_graph_contraction : public graph_contraction
         // node order stuff
         warthog::heap<ch_pair>* heap_;
         warthog::heap_node<ch_pair>* hn_pool_;
-        std::vector<uint32_t> order_;
 
         // witness search stuff
         warthog::euclidean_heuristic* heuristic_;
@@ -109,10 +113,10 @@ class lazy_graph_contraction : public graph_contraction
         euc_astar* alg_;
         uint32_t total_expansions_;
         uint32_t total_searches_;
+        uint32_t total_lazy_updates_;
         
         int32_t 
         edge_difference(uint32_t node_id);
-
 
 };
 
