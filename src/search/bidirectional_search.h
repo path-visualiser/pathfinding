@@ -102,7 +102,10 @@ class bidirectional_search : public warthog::search
         H* heuristic_;
         bool dijkstra_;
 
-        // some temporary variables used during search
+        // v is the section of the path in the forward
+        // direction and w is the section of the path
+        // in the backward direction. need parent pointers
+        // of both to extract the actual path
         warthog::search_node* v_;
         warthog::search_node* w_;
         double best_cost_;

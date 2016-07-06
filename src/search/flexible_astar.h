@@ -42,6 +42,7 @@ class flexible_astar : public warthog::search
 			open_ = new warthog::pqueue(1024, true);
 			verbose_ = false;
             cost_cutoff_ = warthog::INF;
+            exp_cutoff_ = warthog::INF;
 		}
 
 		virtual ~flexible_astar()
@@ -120,6 +121,15 @@ class flexible_astar : public warthog::search
         inline double
         get_cost_cutoff() { return cost_cutoff_; }
 
+        // set a cutoff on the maximum number of node expansions.
+        // the search terminates when the goal is found or when
+        // the limit is reached
+        inline void
+        set_max_expansions_cutoff(uint32_t cutoff) { exp_cutoff_ = cutoff; }
+
+        inline uint32_t 
+        get_max_expansions_cutoff() { return exp_cutoff_; }  
+
 		virtual inline size_t
 		mem()
 		{
@@ -141,6 +151,7 @@ class flexible_astar : public warthog::search
 		E* expander_;
 		warthog::pqueue* open_;
         double cost_cutoff_; // early termination
+        uint32_t exp_cutoff_;
 
 		// no copy
 		flexible_astar(const flexible_astar& other) { } 
@@ -198,6 +209,8 @@ class flexible_astar : public warthog::search
                 // bounded-cost search runs until the goal is found or until
                 // a maximum cost limit is reached
                 if(open_->peek()->get_f() > cost_cutoff_) { break; } 
+
+                if(nodes_expanded_ >= exp_cutoff_) { break; }
 
 				nodes_expanded_++;
 				warthog::search_node* current = open_->pop();
