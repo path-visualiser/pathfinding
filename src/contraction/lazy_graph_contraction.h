@@ -37,6 +37,7 @@
 #include "heap.h"
 
 #include <cstdint>
+#include <unordered_map>
 
 using namespace warthog::ch;
 
@@ -58,18 +59,18 @@ class ch_pair
 {
     public:
         ch_pair() 
-            : node_id_(0), edval_(warthog::INF) { } 
+            : node_id_(0), cval_(warthog::INF) { } 
 
-        ch_pair(uint32_t node_id, int32_t edval)
-            : node_id_(node_id), edval_(edval) { }
+        ch_pair(uint32_t node_id, int32_t cval)
+            : node_id_(node_id), cval_(cval) { }
 
         ch_pair(const ch_pair& other)
-        { node_id_ = other.node_id_; edval_ = other.edval_; }
+        { node_id_ = other.node_id_; cval_ = other.cval_; }
 
         ~ch_pair() { } 
 
         uint32_t node_id_; 
-        int32_t edval_; // edge difference from contracting n_
+        int32_t cval_; // 'value' of contracting this node (lower is better)
 };
 
 bool
@@ -106,6 +107,22 @@ class lazy_graph_contraction : public graph_contraction
         // node order stuff
         warthog::heap<ch_pair>* heap_;
         warthog::heap_node<ch_pair>* hn_pool_;
+        uint32_t ws_max_expansions_; 
+
+        struct node_order_terms
+        {
+            node_order_terms()
+            {
+                depth_ = 0; 
+                nc_ = 0;
+            }
+
+            int32_t ed_; // edge difference 
+            uint32_t depth_; // max search space depth
+            uint32_t nc_; // neis contracted
+        };
+        node_order_terms* terms_;
+
 
         // witness search stuff
         warthog::euclidean_heuristic* heuristic_;
@@ -114,9 +131,20 @@ class lazy_graph_contraction : public graph_contraction
         uint32_t total_expansions_;
         uint32_t total_searches_;
         uint32_t total_lazy_updates_;
+        //struct cache_entry
+        //{
+        //    uint32_t from;
+        //    uint32_t to;
+        //    double dist;
+        //};
+        //std::vector<cache_entry> dist_cache_;
+        
         
         int32_t 
-        edge_difference(uint32_t node_id);
+        edge_difference(uint32_t node_id, bool estimate);
+
+        int32_t
+        compute_contraction_value(uint32_t node_id);
 
 };
 

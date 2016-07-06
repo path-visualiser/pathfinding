@@ -628,12 +628,12 @@ run_dimacs(warthog::util::cfg& cfg)
             // save the node order
             contractor.get_order(&order);
             std::string orderfile = grfile + ".lazy_order";
-            std::cout << "saving order to file " << orderfile << std::endl;
+            std::cerr << "saving order to file " << orderfile << std::endl;
             warthog::ch::write_node_order(orderfile.c_str(), order);
 
             // save the result
             grfile.append(".ch");
-            std::cout << "saving contracted graph to file " << grfile << std::endl;
+            std::cerr << "saving contracted graph to file " << grfile << std::endl;
             std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
             if(!ch_out.good())
             {
@@ -643,12 +643,14 @@ run_dimacs(warthog::util::cfg& cfg)
             ch_out.close();
         }
 
+        std::cerr << "preparing to search\n";
         warthog::zero_heuristic h;
         warthog::ch_expansion_policy fexp(&g, &order);
         warthog::ch_expansion_policy bexp (&g, &order, true);
         warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
         alg.set_verbose(verbose);
 
+        std::cerr << "running experiments\n";
         int i = 0;
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
