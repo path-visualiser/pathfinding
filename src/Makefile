@@ -25,7 +25,7 @@ endif
 
 
 .PHONY: all
-all: dev
+all: fast
 
 .PHONY: fast
 fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
