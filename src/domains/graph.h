@@ -227,6 +227,20 @@ class node
                 std::cerr << "warthog::graph::node edge-capacity reached!\n";
                 return;
             }
+         
+            // don't add redundant edges; we only want one:
+            // the one with lowest cost
+            for(uint32_t i = 0; i < deg; i++)
+            {
+                if(elts[i].node_id_ == e.node_id_)
+                {
+                    if(e.wt_ < elts[i].wt_)
+                    {
+                        elts[i].wt_ = e.wt_;
+                    }
+                    return;
+                }
+            }
 
             if(deg == max_elts)
             {
