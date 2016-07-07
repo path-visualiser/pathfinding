@@ -63,9 +63,9 @@ help()
     << "\t--gr [graph filename]\n"
     << "\t--co [coordinates filename]\n"
     << "\t--problem [ss or p2p problem file]\n"
-    << "\t--alg [astar | dijkstra | bi-astar | bi-dijkstra | ch]\n"
-    << "\n AND \n\n"
-	<< "--verbose (optional)\n";
+    << "\t--alg [astar | dijkstra | bi-astar | bi-dijkstra | ch ]\n"
+	<< "\t--order [order-of-contraction file] (only with --alg ch)\n"
+	<< "\t--verbose (optional)\n";
 }
 
 void
@@ -472,12 +472,26 @@ run_dimacs(warthog::util::cfg& cfg)
     std::string cofile = cfg.get_param_value("co");
     std::string problemfile = cfg.get_param_value("problem");
     std::string alg_name = cfg.get_param_value("alg");
-    std::string orderfile = cfg.get_param_value("order");
 
 
-    if((problemfile == "") || (grfile == "") || (cofile == "") | (alg_name == ""))
+    if((problemfile == ""))
     {
-        std::cerr << "at least one required parameter is missing: --gr --co --problem --alg\n";
+        std::cerr << "parameter is missing: --problem\n";
+        return;
+    }
+    if((grfile == ""))
+    {
+        std::cerr << "parameter is missing: --gr\n";
+        return;
+    }
+    if((cofile == ""))
+    {
+        std::cerr << "parameter is missing: --co\n";
+        return;
+    }
+    if((alg_name == ""))
+    {
+        std::cerr << "parameter is missing: --alg\n";
         return;
     }
 
@@ -604,44 +618,15 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "ch")
     {
-        // load up (or create) the contraction hierarchy
+        std::string orderfile = cfg.get_param_value("order");
+
+        // load up the graph 
         warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+        // load up the node order
         std::vector<uint32_t> order;
-
-        if(!(orderfile == ""))
-        {
-            // load up existing contraction hierarchy
-            g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
-            warthog::ch::load_node_order(orderfile.c_str(), order);
-            warthog::ch::fixed_graph_contraction contractor(&g, &order);
-            contractor.set_verbose(verbose);
-            contractor.contract();
-        }
-        else
-        {
-            // create a new contraction hierarchy 
-            g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
-            warthog::ch::lazy_graph_contraction contractor(&g);
-            contractor.set_verbose(verbose);
-            contractor.contract();
-
-            // save the node order
-            contractor.get_order(&order);
-            std::string orderfile = grfile + ".lazy_order";
-            std::cerr << "saving order to file " << orderfile << std::endl;
-            warthog::ch::write_node_order(orderfile.c_str(), order);
-
-            // save the result
-            grfile.append(".ch");
-            std::cerr << "saving contracted graph to file " << grfile << std::endl;
-            std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-            if(!ch_out.good())
-            {
-                std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
-            }
-            g.print_dimacs_gr(ch_out);
-            ch_out.close();
-        }
+        warthog::ch::load_node_order(orderfile.c_str(), order);
 
         std::cerr << "preparing to search\n";
         warthog::zero_heuristic h;
@@ -773,7 +758,8 @@ main(int argc, char** argv)
 		{"gr",  required_argument, 0, 1},
 		{"co",  required_argument, 0, 1},
 		{"problem",  required_argument, 0, 1},
-		{"format",  required_argument, 0, 1}
+		{"format",  required_argument, 0, 1},
+		{"order",  required_argument, 0, 1}
 	};
 
 	warthog::util::cfg cfg;
