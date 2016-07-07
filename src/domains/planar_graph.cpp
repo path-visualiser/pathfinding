@@ -125,7 +125,15 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
         }
 
         // add edge to the graph
+#ifndef NDEBUG
+        uint32_t deg_before = nodes_[tid].out_degree();
+#endif
+
         nodes_[tid].add_outgoing(e);
+
+#ifndef NDEBUG
+        uint32_t deg_after = nodes_[tid].out_degree();
+#endif
 
         // edges can be stored twice: once as an incoming edge 
         // and once as an outgoing edge
@@ -134,11 +142,14 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
             e.node_id_ = tid;
             nodes_[hid].add_incoming(e);
 
-            // sanity check
 #ifndef NDEBUG
+            // sanity check: either the edge was a duplicate (and nothing
+            // was added) or the added was added in which case it should
+            // be the last element in the outgoing list of the tail node
             warthog::graph::edge sanity = 
                 *(nodes_[tid].outgoing_end()-1);
-            assert(sanity.node_id_ == hid);
+            assert(deg_before == deg_after || 
+                    sanity.node_id_ == hid);
 #endif
         }
     }

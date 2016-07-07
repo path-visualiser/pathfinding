@@ -26,7 +26,6 @@ namespace graph
 typedef uint16_t ECAP_T;
 const uint16_t ECAP_MAX = UINT16_MAX;
 
-
 class edge
 {
     public:
