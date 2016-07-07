@@ -29,19 +29,18 @@ all: fast
 
 .PHONY: fast
 fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
-fast: main
+fast: main ch
 
 .PHONY: dev
 dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
-dev: main
+dev: main ch
 
 .PHONY: profile
 profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES) 
 profile: main
 
-.PHONY: dimacs
-dimacs: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
-dimacs: dimacs
+.PHONY: ch
+ch: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
 
 .PHONY: tags
 tags:
@@ -61,10 +60,10 @@ main: makedirs warthog
 	$(CC) tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) closure.cpp -o ./bin/closure -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
-.PHONY: dimacs
-dimacs: makedirs warthog 
+.PHONY: ch
+ch: makedirs warthog 
 	@echo "linking..."
-	$(CC) dimacs.cpp -o ./bin/dimacs -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: makedirs
 makedirs:
