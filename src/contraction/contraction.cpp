@@ -19,6 +19,7 @@ warthog::ch::write_node_order(const char* filename, std::vector<uint32_t>& order
     std::ofstream ofs(filename, std::ios_base::out | std::ios_base::trunc);
     if(ofs.good())
     {
+        ofs << "# node ids, in order of contraction\n";
         for(uint32_t i = 0; i < order.size(); i++)
         {
             ofs << order.at(i) << "\n";
@@ -44,10 +45,17 @@ warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order)
         return;
     }
 
-    while(ifs.good())
+    while(true)
     {
+        // skip comment lines
+        while(ifs.peek() == '#')
+        {
+            while(ifs.get() != '\n');
+        }
+
         uint32_t tmp;
         ifs >> tmp;
+        if(!ifs.good()) { break; }
         order.push_back(tmp);
     }
     ifs.close();

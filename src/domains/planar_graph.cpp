@@ -80,7 +80,10 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     nodes_sz_ = dimacs.get_num_nodes() + ID_OFFSET;
     xy_ = new int32_t[nodes_sz_*2];
     nodes_ = new node[nodes_sz_];
-    xy_[0] = xy_[1] = INT32_MAX;
+    for(uint32_t i = 0; i < ID_OFFSET*2; i++)
+    {
+        xy_[i] = xy_[i+1] = INT32_MAX;
+    }
 
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)

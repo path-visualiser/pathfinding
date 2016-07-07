@@ -9,7 +9,7 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
     reset();
 
     uint32_t current_id = current->get_id();
-    uint32_t current_rank = order_->at(current_id);
+    uint32_t current_rank = rank_.at(current_id);
     warthog::graph::node* n = g_->get_node(current_id);
    
     warthog::graph::edge_iter begin, end;
@@ -29,7 +29,7 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
         
-        if(order_->at(e.node_id_) > current_rank)
+        if(rank_.at(e.node_id_) > current_rank)
         {
              this->add_neighbour(this->generate(e.node_id_), e.wt_);
         }

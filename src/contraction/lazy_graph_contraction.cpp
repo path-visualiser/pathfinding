@@ -65,7 +65,8 @@ warthog::ch::lazy_graph_contraction::preliminaries()
     total_expansions_ = 0;
     total_lazy_updates_ = 0;
    
-    for(uint32_t i = 0; i < get_graph()->get_num_nodes(); i++)
+    for(uint32_t i = get_graph()->id_offset(); 
+        i < get_graph()->get_num_nodes(); i++)
     {
         std::cerr << i << " / " << get_graph()->get_num_nodes() << "\r";
         terms_[i].ed_ = edge_difference(i,true); // contraction value
@@ -184,6 +185,7 @@ warthog::ch::lazy_graph_contraction::next()
         "; PRIORITY " << compute_contraction_value(best_id) <<
         std::endl;
 
+    order_.push_back(best_id);
     return best_id;
 }
 
@@ -254,22 +256,10 @@ warthog::ch::lazy_graph_contraction::edge_difference(uint32_t node_id, bool esti
 }
 
 void
-warthog::ch::lazy_graph_contraction::get_order(std::vector<uint32_t>* order)
+warthog::ch::lazy_graph_contraction::get_order(std::vector<uint32_t>& order)
 {
-    // grab the current node priorities and order them accordingly
-    // (assumes the order has been settled)
-    order->clear();
-    std::vector<ch_pair> tmp;
-    for(uint32_t i = 0; i < get_graph()->get_num_nodes(); i++)
-    {
-        tmp.push_back(hn_pool_[i].get_element());
-    }
-    std::sort(tmp.begin(), tmp.end(), std::less<ch_pair>());
+    order = order_;
 
-    for(uint32_t i = 0; i < get_graph()->get_num_nodes(); i++)
-    {
-        order->push_back(tmp.at(i).node_id_);
-    }
 }
 
 size_t

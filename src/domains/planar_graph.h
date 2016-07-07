@@ -74,6 +74,11 @@ class planar_graph
             return nodes_sz_;
         }
 
+        // returns the number of dummy nodes at the start 
+        // of the nodes array
+        inline uint32_t
+        id_offset() { return ID_OFFSET; }
+
         inline uint32_t 
         get_num_edges()
         {
