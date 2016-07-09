@@ -101,6 +101,7 @@ class bidirectional_search : public warthog::search
         warthog::expansion_policy* bexpander_;
         H* heuristic_;
         bool dijkstra_;
+        bool forward_;
 
         // v is the section of the path in the forward
         // direction and w is the section of the path
@@ -110,6 +111,16 @@ class bidirectional_search : public warthog::search
         warthog::search_node* w_;
         double best_cost_;
         warthog::problem_instance instance_;
+
+        // modify this function to balance the search
+        // by default the search expands one node in
+        // each direction then switches to the other direction
+        bool
+        expand_forward()
+        {
+            forward_ = !forward_;
+            return forward_;
+        }
 
         void 
         search(uint32_t startid, uint32_t goalid)
@@ -147,43 +158,59 @@ class bidirectional_search : public warthog::search
             goal->set_f(heuristic_->h(startid, goalid));
             bopen_->push(goal);
 
-            // these variables can be used to balance the backward and
-            // forward expansion. set bwd_modulo higher to expand nodes
-            // less often in the backward direction
-            int fwd_expansions = 0;
-            int bwd_modulo = 1;
-
-            // interleave search by expanding one node in the forward 
-            // direction followed by a node in the backward direction
+            // interleave search 
+            forward_ = false;
             while(fopen_->size() > 0 && bopen_->size() > 0)
             {
-                // expand in the forward direction
-                warthog::search_node* current = fopen_->pop();
-                if(current->get_f() >= best_cost_)
+                // ok, we still have hope. let's keep expanding. 
+                // NB: if we can't improve in any one direction we expand a 
+                // node in the other direction instead (regardless of 
+                // interleave policy)
+                if(this->expand_forward())
                 {
-                    // early terminate if we cannot improve the best path
-                    break;
-                }
-                expand(current, fopen_, fexpander_, bexpander_, goalid);
-                //fwd_expansions++;
-
-                if(dijkstra_ || !(fwd_expansions % bwd_modulo))
-                {
-                    // expand in the backward direction
-                    current = bopen_->pop();
-                    if(current->get_f() >= best_cost_)
+                    if(fopen_->peek()->get_f() < best_cost_)
                     {
-                        // early terminate if we cannot improve the best path
-                        break;
+                        warthog::search_node* current = fopen_->pop();
+                        expand(current, fopen_, fexpander_, bexpander_, goalid);
                     }
-                    expand(current, bopen_, bexpander_, fexpander_, startid);
+                    else
+                    {
+                        warthog::search_node* current = bopen_->pop();
+                        expand(current, bopen_, bexpander_, fexpander_, startid);
+                    }
+                }
+                else 
+                {
+                    if(bopen_->peek()->get_f() < best_cost_)
+                    {
+                        warthog::search_node* current = bopen_->pop();
+                        expand(current, bopen_, bexpander_, fexpander_, startid);
+                    }
+                    else
+                    {
+                        warthog::search_node* current = fopen_->pop();
+                        expand(current, fopen_, fexpander_, bexpander_, goalid);
+                    }
                 }
 
-                // special case for dijkstra; terminate when fringes meet
-                if(dijkstra_ && best_cost_ < warthog::INF)
+                uint32_t f_bound = fopen_->peek()->get_f();
+                uint32_t b_bound = bopen_->peek()->get_f();
+                uint32_t best_bound_ = dijkstra_ ? 
+                    (f_bound + b_bound) : (std::min(f_bound, b_bound));
+
+                // terminate if we cannot improve the best solution found so far
+                if(best_bound_ > best_cost_)
                 {
+#ifndef NDEBUG
+                    if(verbose_)
+                    {
+                        std::cerr << "provably-best solution found; cost=" << 
+                            best_cost_ << std::endl;
+                    }
+#endif
                     break;
                 }
+
             }
 
             assert(best_cost_ != warthog::INF ||
@@ -227,43 +254,6 @@ class bidirectional_search : public warthog::search
             }
             #endif
             
-            // prune the search if current is already expanded in the
-            // reverse direction
-            warthog::search_node* reverse_current = 
-                reverse_expander->generate(current->get_id());
-            if(reverse_current->get_searchid() == current->get_searchid() &&
-               reverse_current->get_expanded())
-            {
-                // relax the best path if necessary
-                if((current->get_g() + reverse_current->get_g()) < best_cost_)
-                {
-                    v_ = current;
-                    w_ = reverse_current;
-                    best_cost_ = current->get_g() + reverse_current->get_g();
-
-                    #ifndef NDEBUG
-                    if(verbose_)
-                    {
-                        int32_t x, y;
-                        expander->get_xy(current, x, y);
-                        std::cerr <<"new best solution!  cost=" << best_cost_<<std::endl;
-                    }
-                    #endif
-                }
-                #ifndef NDEBUG
-                if(verbose_)
-                {
-                    int32_t x, y;
-                    expander->get_xy(current, x, y);
-                    std::cerr <<"closing ("<<x<<", "<<y<<")...";
-                    current->print(std::cerr);
-                    std::cerr << std::endl;
-                }
-                #endif
-                return;
-            }
-
-
             // generate all neighbours
             warthog::search_node* n = 0;
             double cost_to_n = warthog::INF;
@@ -347,6 +337,29 @@ class bidirectional_search : public warthog::search
                     }
                     #endif
                     nodes_generated_++;
+                }
+
+                // update the best solution if possible
+                warthog::search_node* reverse_n = 
+                    reverse_expander->generate(n->get_id());
+                if(reverse_n->get_searchid() == n->get_searchid() &&
+                   reverse_n->get_expanded())
+                {
+                    if((current->get_g() + cost_to_n + reverse_n->get_g()) < best_cost_)
+                    {
+                        v_ = current;
+                        w_ = reverse_n;
+                        best_cost_ = current->get_g() + cost_to_n + reverse_n->get_g();
+
+                        #ifndef NDEBUG
+                        if(verbose_)
+                        {
+                            int32_t x, y;
+                            expander->get_xy(current, x, y);
+                            std::cerr <<"new best solution!  cost=" << best_cost_<<std::endl;
+                        }
+                        #endif
+                    }
                 }
             }
 
