@@ -629,10 +629,12 @@ run_dimacs(warthog::util::cfg& cfg)
         warthog::ch::load_node_order(orderfile.c_str(), order);
 
         std::cerr << "preparing to search\n";
-        warthog::zero_heuristic h;
+        //warthog::zero_heuristic h;
+        warthog::euclidean_heuristic h(&g);
         warthog::ch_expansion_policy fexp(&g, &order);
         warthog::ch_expansion_policy bexp (&g, &order, true);
-        warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+        //warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+        warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
         alg.set_verbose(verbose);
 
         std::cerr << "running experiments\n";
