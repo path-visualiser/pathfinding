@@ -200,7 +200,7 @@ warthog::online_jump_point_locator2::__jump_east(uint32_t node_id,
 		// is in the low byte of the middle row
 		mymap->get_neighbours_32bit(jumpnode_id, neis);
 
-		// identity forced neighbours and deadend tiles. 
+		// identify forced neighbours and deadend tiles. 
 		// forced neighbours are found in the top or bottom row. they 
 		// can be identified as a non-obstacle tile that follows
 		// immediately  after an obstacle tile. A dead-end tile is
