@@ -38,7 +38,8 @@ warthog::ch::fixed_graph_contraction::init()
     order_index_ = 0;
 
     expander_ = new warthog::graph_expansion_policy(get_graph());
-    expander_->set_filter(get_filter());
+    //warthog::apriori_filter* af = get_filter();
+    //expander_->set_filter(af);
 
     heuristic_ = new warthog::euclidean_heuristic(get_graph());
     alg_ = new euc_astar(heuristic_, expander_);

@@ -1,12 +1,12 @@
 #include "graph_contraction.h"
-#include "node_filter.h"
+#include "apriori_filter.h"
 #include "planar_graph.h"
 
 warthog::ch::graph_contraction::graph_contraction(
         warthog::graph::planar_graph* g) 
 {
     g_ = g;
-    filter_ = new warthog::node_filter(g_->get_num_nodes());
+    filter_ = new warthog::apriori_filter(g_->get_num_nodes());
     done_ = false;
     verbose_ = false;
 }
@@ -32,7 +32,7 @@ warthog::ch::graph_contraction::contract()
 
     uint32_t total_nodes = g_->get_num_nodes();
     uint32_t num_contractions = 0;
-    warthog::node_filter* filter = get_filter();
+    warthog::apriori_filter* filter = get_filter();
     for(uint32_t cid = next(); cid != warthog::INF; cid = next())
     {
         std::cerr << "\rcontracting " << ++num_contractions << " /  " << total_nodes;
@@ -49,14 +49,14 @@ warthog::ch::graph_contraction::contract()
             warthog::graph::edge& out = *(n->outgoing_begin() + i);
 
             // skip already-contracted neighbours
-            if(filter->get_filter_flag(out.node_id_)) { continue; }
+            if(filter->filter(out.node_id_)) { continue; }
 
             for(int j = 0; j < n->in_degree(); j++)
             {
                 warthog::graph::edge& in = *(n->incoming_begin() + j);
 
                 // skip already-contracted neighbours
-                if(filter->get_filter_flag(in.node_id_)) { continue; }
+                if(filter->filter(in.node_id_)) { continue; }
 
                 // no reflexive arcs please
                 if(out.node_id_ == in.node_id_) { continue; }

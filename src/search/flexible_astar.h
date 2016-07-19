@@ -350,8 +350,6 @@ class flexible_astar : public warthog::search
 			open_->clear();
 			expander_->clear();
 		}
-
-
 };
 
 }

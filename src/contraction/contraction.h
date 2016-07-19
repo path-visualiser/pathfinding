@@ -45,6 +45,17 @@ write_node_order(const char* filename, std::vector<uint32_t>& order);
 void
 make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order);
 
+// An order-of-contraction is a sequential list of node-ids that indicates
+// the order in which nodes should be contracted. e.g. 
+// 5, 7, 4, 1, 3, 2, 6  (etc)
+//
+// This function takes an OOC and turns it into a ranked list, indexed by 
+// node-id. Given a node-id, x, rank[x] indicates the position of node-id 
+// x in the OOC; e.g. for the OOC above, rank[1] = 5
+void
+convert_order_of_contraction_to_ranked_list(std::vector<uint32_t>& ooc, 
+        std::vector<uint32_t>& rank);
+
 // compute the out-arc closure of @param source 
 void
 compute_closure(uint32_t source, warthog::graph::planar_graph* g, 

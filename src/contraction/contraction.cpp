@@ -1,5 +1,6 @@
 #include "contraction.h"
 #include "planar_graph.h"
+#include <algorithm>
 #include <stack>
 
 void
@@ -97,5 +98,27 @@ warthog::ch::compute_closure(uint32_t source,
             stack.push(std::pair<uint32_t, uint32_t>((*it).node_id_, depth+1));
         }
     }
+}
+
+void
+warthog::ch::convert_order_of_contraction_to_ranked_list(
+        std::vector<uint32_t>& ooc, std::vector<uint32_t>& rank)
+{
+    uint32_t min_id = *(std::min_element(ooc.begin(), ooc.end()));
+    rank.clear();
+    rank.resize(ooc.size() + min_id);
+
+    // because DIMACS graphs are stupid and 1-indexed 
+    // we need to insert extra elements for padding
+    for(uint32_t i = 0; i < min_id; i++)
+    {
+        rank.at(i) = 0;
+    }
+
+    for(uint32_t i = 0; i < ooc.size(); i++)
+    {
+        rank.at(ooc.at(i)) = i + min_id;
+    }
+
 }
 

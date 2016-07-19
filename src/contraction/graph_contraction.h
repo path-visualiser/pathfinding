@@ -16,7 +16,7 @@
 namespace warthog
 {
 
-class node_filter;
+class apriori_filter;
    
 namespace graph
 {
@@ -39,7 +39,7 @@ class graph_contraction
         void
         contract();
 
-        inline warthog::node_filter*
+        inline warthog::apriori_filter*
         get_filter() { return filter_; }
 
         inline warthog::graph::planar_graph*
@@ -79,7 +79,7 @@ class graph_contraction
     private:
         bool verbose_;
         bool done_;
-        warthog::node_filter* filter_;
+        warthog::apriori_filter* filter_;
         warthog::graph::planar_graph* g_;
 };
 

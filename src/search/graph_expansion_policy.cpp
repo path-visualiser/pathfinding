@@ -8,7 +8,7 @@ warthog::graph_expansion_policy::graph_expansion_policy(warthog::graph::planar_g
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
-    filter_ = 0;
+    nf_ = 0;
 }
 
 warthog::graph_expansion_policy::~graph_expansion_policy()
@@ -30,8 +30,7 @@ warthog::graph_expansion_policy::expand(
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
         
-        if(!filter_||
-            (filter_ && !(filter_->get_filter_flag(e.node_id_))))
+        if(!nf_ || !(nf_->filter(e.node_id_)))
         {
              this->add_neighbour(this->generate(e.node_id_), e.wt_);
         }
@@ -51,7 +50,7 @@ warthog::graph_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + 
-        filter_->mem() +
+        nf_->mem() +
         g_->mem() +
         sizeof(this);
 }

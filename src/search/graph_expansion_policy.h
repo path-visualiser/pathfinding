@@ -32,7 +32,6 @@ class search_node;
 
 class graph_expansion_policy : public expansion_policy
 {
-
     public:
         graph_expansion_policy(warthog::graph::planar_graph* g);
         virtual ~graph_expansion_policy();
@@ -44,17 +43,17 @@ class graph_expansion_policy : public expansion_policy
         get_xy(warthog::search_node* n, int32_t& x, int32_t& y);
 
         inline void 
-        set_filter(warthog::node_filter* filter) { filter_ = filter; }
+        set_filter(warthog::node_filter* filter) { nf_ = filter; }
 
         inline warthog::node_filter* 
-        get_filter() { return filter_; }
+        get_filter() { return nf_; }
 
 		uint32_t
 		mem();
 
 	private:
         warthog::graph::planar_graph* g_;
-        warthog::node_filter* filter_;
+        warthog::node_filter* nf_;
 };
 
 }

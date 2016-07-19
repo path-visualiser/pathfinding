@@ -31,32 +31,7 @@ class ch_expansion_policy : public  expansion_policy
 {
     public:
         ch_expansion_policy(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* ooc, bool backward=false)
-            : expansion_policy(g->get_num_nodes()), g_(g)
-        {
-            backward_ = backward;
-
-            // we convert the order of contraction into a ranked 
-            // list s.t. rank[i] gives the contraction index of
-            // node i
-            assert(g->get_num_nodes() - g->id_offset() == ooc->size());
-
-            // because DIMACS graphs are stupid and 1-indexed the 
-            // planar_graph adds padding to the front of the array.
-            // we need to account for the padding when assigning
-            // ranks to indexes
-            rank_.resize(g->get_num_nodes());
-            for(uint32_t i = 0; i < g->id_offset(); i++)
-            {
-                rank_.at(i) = 0;
-            }
-
-            for(uint32_t i = 0; i < ooc->size(); i++)
-            {
-                rank_.at(ooc->at(i)) = i + g->id_offset();
-            }
-        }
-
+                std::vector<uint32_t>* ooc, bool backward=false);
         virtual 
         ~ch_expansion_policy() { }
 
@@ -76,6 +51,13 @@ class ch_expansion_policy : public  expansion_policy
         bool backward_;
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t> rank_;
+
+        inline uint32_t
+        get_rank(uint32_t id)
+        {
+            return rank_.at(id);
+        }
+
 };
 
 }
