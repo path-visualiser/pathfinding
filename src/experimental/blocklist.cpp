@@ -81,6 +81,20 @@ warthog::blocklist::generate(uint32_t node_id)
 	return mynode;
 }
 
+warthog::search_node*
+warthog::blocklist::get_ptr(uint32_t node_id)
+{
+	uint32_t block_id = node_id >> warthog::blocklist_ns::LOG2_NBS;
+	uint32_t list_id = node_id &  warthog::blocklist_ns::NBS_MASK;
+	assert(block_id <= num_blocks_);
+
+	if(!blocks_[block_id])
+    {
+        return 0;
+    }
+    return blocks_[block_id][list_id];
+}
+
 void
 warthog::blocklist::clear()
 {

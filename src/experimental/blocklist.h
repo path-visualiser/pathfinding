@@ -49,6 +49,12 @@ class blocklist
 		warthog::search_node*
 		generate(uint32_t node_id);
 
+        // return a pre-allocated pointer. if the corresponding node hasn not
+        // been allocated yet, return null
+        warthog::search_node*
+        get_ptr(uint32_t node_id);
+
+        // reclaim all allocated memory
 		void
 		clear();
 
@@ -57,7 +63,6 @@ class blocklist
 
 	private:
         void init(uint32_t nblocks);
-
 
 		uint32_t num_blocks_;
 		warthog::search_node*** blocks_;
