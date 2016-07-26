@@ -2,6 +2,7 @@
 
 warthog::expansion_policy::expansion_policy(uint32_t num_nodes)
 {
+    num_nodes_ = num_nodes;
     nodepool_ = new warthog::blocklist(num_nodes);
     costs_ = new std::vector<double>();
     neis_ = new std::vector<warthog::search_node*>();

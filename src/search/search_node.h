@@ -26,6 +26,7 @@ class search_node
 			priority_(warthog::INF), searchid_(0)
 		{
 			assert(this->get_id() < ((1ul<<31)-1));
+            set_pdir(warthog::jps::direction::NONE);
 			refcount_++;
 		}
 
@@ -35,15 +36,14 @@ class search_node
 		}
 
 		inline void
-		reset(uint32_t searchid)
+		init(uint32_t searchid, warthog::search_node* parent, double g, double f)
 		{
 			id_and_status_ &= ~1;
-			f_ = g_ = warthog::INF;
-			parent_ = 0;
-			priority_ = warthog::INF;
-			set_pdir(warthog::jps::NONE);
-			assert(get_pdir () == 0);
+            parent_ = parent;
+            f_ = f;
+            g_ = g;
 			searchid_ = searchid;
+            set_pdir(warthog::jps::direction::NONE);
 		}
 
 		inline uint32_t

@@ -34,7 +34,8 @@ warthog::ch::write_node_order(const char* filename, std::vector<uint32_t>& order
 }
 
 void 
-warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order)
+warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order,
+        bool lex_order)
 {
     order.clear();
     std::ifstream ifs(filename, std::ios_base::in);
@@ -60,6 +61,11 @@ warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order)
         order.push_back(tmp);
     }
     ifs.close();
+
+    if(lex_order)
+    {
+        warthog::ch::value_index_swap_dimacs(order);
+    }
 }
 
 typedef std::set<uint32_t>::iterator set_iter;
@@ -101,24 +107,30 @@ warthog::ch::compute_closure(uint32_t source,
 }
 
 void
-warthog::ch::convert_order_of_contraction_to_ranked_list(
-        std::vector<uint32_t>& ooc, std::vector<uint32_t>& rank)
+warthog::ch::value_index_swap_dimacs(
+        std::vector<uint32_t>& vec)
 {
-    uint32_t min_id = *(std::min_element(ooc.begin(), ooc.end()));
-    rank.clear();
-    rank.resize(ooc.size() + min_id);
+    // re-maps @param vec s.t. for each x and i
+    // v[i] = x becomes v[x] = i
+    std::vector<uint32_t> tmp;
+    tmp.resize(vec.size());
+    for(uint32_t i = 0; i < vec.size(); i++)
+    {
+        tmp.at(i) = vec.at(i);
+    }
 
     // because DIMACS graphs are stupid and 1-indexed 
     // we need to insert extra elements for padding
+    uint32_t min_id = *(std::min_element(tmp.begin(), tmp.end()));
+    vec.clear();
+    vec.resize(tmp.size() + min_id);
     for(uint32_t i = 0; i < min_id; i++)
     {
-        rank.at(i) = 0;
+        vec.at(i) = 0;
     }
 
-    for(uint32_t i = 0; i < ooc.size(); i++)
+    for(uint32_t i = 0; i < tmp.size(); i++)
     {
-        rank.at(ooc.at(i)) = i + min_id;
+        vec.at(tmp.at(i)) = i + min_id;
     }
-
 }
-

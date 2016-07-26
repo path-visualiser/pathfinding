@@ -24,13 +24,16 @@ class expansion_policy
     public:
         expansion_policy(uint32_t num_nodes);
         virtual ~expansion_policy();
+
+        uint32_t
+        get_num_nodes() { return num_nodes_; } 
        
 		// create a warthog::search_node object from a state description
 		// (in this case, an id)
 		inline warthog::search_node*
 		generate(uint32_t node_id)
 		{
-			return nodepool_->generate(node_id);
+            return nodepool_->generate(node_id);
 		}
 
         inline void
@@ -98,6 +101,20 @@ class expansion_policy
         virtual void
         get_xy(warthog::search_node*, int32_t& x, int32_t& y) = 0;
 
+        // return a pointer to the memory allocated for node @param node_id
+        // during search @param search_id. if the node was not generated 
+        // during this search, or if the id is invalid, return 0
+        warthog::search_node*
+        get_ptr(uint32_t node_id, uint32_t search_id)
+        {
+            warthog::search_node* tmp = nodepool_->get_ptr(node_id);
+            if(tmp && tmp->get_searchid() == search_id) 
+            {
+                return tmp;
+            }
+            return 0;
+        }
+
     protected:
         inline void 
         add_neighbour(warthog::search_node* nei, double cost)
@@ -113,6 +130,7 @@ class expansion_policy
         std::vector<warthog::search_node*>* neis_;
         std::vector<double>* costs_;
         uint32_t current_;
+        uint32_t num_nodes_;
 };
 
 }

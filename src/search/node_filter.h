@@ -13,11 +13,12 @@
 namespace warthog
 {
 
+class search_node;
 class node_filter
 {
     public:
         virtual 
-        bool filter(uint32_t) = 0;
+        bool filter(warthog::search_node*) = 0;
 
         uint32_t
         mem() { return 0; }

@@ -9,6 +9,7 @@
 #include "ch_expansion_policy.h"
 #include "contraction.h"
 #include "dimacs_parser.h"
+#include "down_distance_filter.h"
 #include "dummy_filter.h"
 #include "euclidean_heuristic.h"
 #include "fixed_graph_contraction.h"
@@ -65,7 +66,7 @@ help()
     << "\t--gr [graph filename]\n"
     << "\t--co [coordinates filename]\n"
     << "\t--problem [ss or p2p problem file]\n"
-    << "\t--alg [astar | dijkstra | bi-astar | bi-dijkstra | ch ]\n"
+    << "\t--alg [astar | dijkstra | bi-astar | bi-dijkstra | ch | chf | chf-dd ]\n"
 	<< "\t--order [order-of-contraction file] (only with --alg ch)\n"
 	<< "\t--verbose (optional)\n";
 }
@@ -507,8 +508,8 @@ run_dimacs(warthog::util::cfg& cfg)
         warthog::graph_expansion_policy expander(&g);
 
         warthog::zero_heuristic h;
-        warthog::flexible_astar<warthog::zero_heuristic, warthog::graph_expansion_policy>
-            alg(&h, &expander);
+        warthog::flexible_astar<warthog::zero_heuristic, 
+            warthog::graph_expansion_policy> alg(&h, &expander);
         alg.set_verbose(verbose);
 
         int i = 0;
@@ -629,6 +630,7 @@ run_dimacs(warthog::util::cfg& cfg)
         // load up the node order
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order);
+        warthog::ch::value_index_swap_dimacs(order);
 
         std::cerr << "preparing to search\n";
         //warthog::zero_heuristic h;
@@ -656,9 +658,13 @@ run_dimacs(warthog::util::cfg& cfg)
             << grfile << " " << problemfile << std::endl;
         }
     }
-    else if(alg_name == "ch-astar")
+    else if(alg_name == "chf")
     {
         std::string orderfile = cfg.get_param_value("order");
+        std::string arclabels = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels << std::endl;
+        std::string arclabels_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels_file << std::endl;
 
         // load up the graph 
         warthog::graph::planar_graph g;
@@ -667,14 +673,61 @@ run_dimacs(warthog::util::cfg& cfg)
         // load up the node order
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order);
+        warthog::ch::value_index_swap_dimacs(order);
 
         std::cerr << "preparing to search\n";
-        warthog::dummy_filter nf;
-        warthog::fwd_ch_expansion_policy fexp(&g, &order, &nf);
-
+        warthog::fwd_ch_expansion_policy fexp(&g, &order); 
         warthog::euclidean_heuristic h(&g);
+
+
         warthog::flexible_astar< warthog::euclidean_heuristic, 
-            warthog::fwd_ch_expansion_policy> alg(&h, &fexp);
+            warthog::fwd_ch_expansion_policy>
+                alg(&h, &fexp);
+        alg.set_verbose(verbose);
+
+        std::cerr << "running experiments\n";
+        int i = 0;
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i++ <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
+    }
+    else if(alg_name == "chf-dd")
+    {
+        std::string orderfile = cfg.get_param_value("order");
+        std::string arclabels = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels << std::endl;
+        std::string arclabels_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels_file << std::endl;
+
+        // load up the graph 
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+        // load up the node order
+        std::vector<uint32_t> order;
+        warthog::ch::load_node_order(orderfile.c_str(), order);
+        warthog::ch::value_index_swap_dimacs(order);
+
+        std::cerr << "preparing to search\n";
+        warthog::fwd_ch_expansion_policy fexp(&g, &order); 
+        warthog::euclidean_heuristic h(&g);
+        warthog::down_distance_filter filter(arclabels_file.c_str(), &g, &order);
+
+
+        warthog::flexible_astar< warthog::euclidean_heuristic, 
+            warthog::fwd_ch_expansion_policy, warthog::down_distance_filter> 
+                alg(&h, &fexp, &filter);
         alg.set_verbose(verbose);
 
         std::cerr << "running experiments\n";
@@ -801,11 +854,12 @@ main(int argc, char** argv)
 		{"co",  required_argument, 0, 1},
 		{"problem",  required_argument, 0, 1},
 		{"format",  required_argument, 0, 1},
-		{"order",  required_argument, 0, 1}
+		{"order",  required_argument, 0, 1},
+        {"filter", required_argument, 0, 1}
 	};
 
 	warthog::util::cfg cfg;
-	cfg.parse_args(argc, argv, valid_args);
+	cfg.parse_args(argc, argv, "-f", valid_args);
 
     if(argc == 1 || print_help)
     {

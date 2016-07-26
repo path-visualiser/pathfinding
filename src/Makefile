@@ -64,6 +64,7 @@ main: makedirs warthog
 ch: makedirs warthog 
 	@echo "linking..."
 	$(CC) ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) arclabels.cpp -o ./bin/arclabels -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: makedirs
 makedirs:

@@ -20,8 +20,9 @@ using namespace warthog::ch;
 namespace warthog
 {
 
-class graph_expansion_policy;
+class apriori_filter;
 class euclidean_heuristic;
+class graph_expansion_policy;
 
 namespace graph
 {
@@ -72,7 +73,11 @@ class fixed_graph_contraction : public warthog::ch::graph_contraction
         // witness search stuff
         warthog::euclidean_heuristic* heuristic_;
         warthog::graph_expansion_policy* expander_;
-        euc_astar* alg_;
+        warthog::apriori_filter* filter_;
+        warthog::flexible_astar<
+           warthog::euclidean_heuristic,
+           warthog::graph_expansion_policy,
+           warthog::apriori_filter>* alg_;
         uint32_t total_expansions_;
         uint32_t total_searches_;
 };

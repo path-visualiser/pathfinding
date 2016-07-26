@@ -147,15 +147,13 @@ class bidirectional_search : public warthog::search
             instance_.set_searchid(++warthog::search::searchid_);
 
             warthog::search_node* start = fexpander_->generate(startid);
-            start->reset(instance_.get_searchid());
-            start->set_g(0);
-            start->set_f(heuristic_->h(startid, goalid));
+            start->init(instance_.get_searchid(), 0, 0, 
+                    heuristic_->h(startid, goalid));
             fopen_->push(start);
 
             warthog::search_node* goal = bexpander_->generate(goalid);
-            goal->reset(instance_.get_searchid());
-            goal->set_g(0);
-            goal->set_f(heuristic_->h(startid, goalid));
+            goal->init(instance_.get_searchid(), 0, 0, 
+                    heuristic_->h(startid, goalid));
             bopen_->push(goal);
 
             // interleave search 
@@ -323,10 +321,10 @@ class bidirectional_search : public warthog::search
                 else
                 {
                     // add a new node to the fringe
-                    n->set_g(gval);
-                    n->set_f(gval + heuristic_->h(n->get_id(), tmp_goalid));
-                    n->set_parent(current);
-                    n->set_searchid(current->get_searchid());
+                    n->init(current->get_searchid(), 
+                            current, 
+                            gval,
+                            gval + heuristic_->h(n->get_id(), tmp_goalid));
                     open->push(n);
                     #ifndef NDEBUG
                     if(verbose_)

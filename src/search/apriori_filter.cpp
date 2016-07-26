@@ -1,8 +1,8 @@
 #include "apriori_filter.h"
+#include "search_node.h"
 #include <cassert>
 
 warthog::apriori_filter::apriori_filter(uint32_t num_elements) 
-    : node_filter()
 {
     filter_sz_ = (num_elements >> warthog::LOG2_DBWORD_BITS)+1;
     filter_ = new warthog::dbword[filter_sz_];
@@ -39,7 +39,13 @@ warthog::apriori_filter::reset_filter()
 }
 
 bool
-warthog::apriori_filter::filter(uint32_t id) 
+warthog::apriori_filter::filter(warthog::search_node* n)
+{
+    return get_flag(n->get_id());
+}
+
+bool
+warthog::apriori_filter::get_flag(uint32_t id) 
 {
    assert((id / warthog::DBWORD_BITS) < filter_sz_);
    uint32_t word = id / warthog::DBWORD_BITS;

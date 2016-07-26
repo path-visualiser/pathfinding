@@ -17,6 +17,7 @@
 //
 
 #include "cpool.h"
+#include "dummy_filter.h"
 #include "pqueue.h"
 #include "problem_instance.h"
 #include "search.h"
@@ -32,12 +33,14 @@ namespace warthog
 
 // H is a heuristic function
 // E is an expansion policy
-template <class H, class E>
+// F is a node filtering (== pruning) policy
+template <class H, class E, class F = warthog::dummy_filter>
 class flexible_astar : public warthog::search
 {
 	public:
-		flexible_astar(H* heuristic, E* expander)
-			: heuristic_(heuristic), expander_(expander)
+		flexible_astar(H* heuristic, E* expander, 
+                F* filter = new warthog::dummy_filter())
+			: heuristic_(heuristic), expander_(expander), nf_(filter)
 		{
 			open_ = new warthog::pqueue(1024, true);
 			verbose_ = false;
@@ -63,15 +66,44 @@ class flexible_astar : public warthog::search
 				for(warthog::search_node* cur = goal;
 						cur != 0;
 					    cur = cur->get_parent())
-				{
+                {
 					path.push(cur->get_id());
 				}
 				assert(path.top() == startid);
 			}
-			cleanup();
+			//cleanup();
 			return path;
 		}
+        
+        // return a list of the nodes expanded during the last search
+        // @param coll: an empty list
+        void
+        closed_list(std::vector<warthog::search_node*>& coll)
+        {
+            for(uint32_t i = 0; i < expander_->get_num_nodes(); i++)
+            {
+                warthog::search_node* current = expander_->get_ptr(i, searchid_);
+                if(current) { coll.push_back(current); }
+            }
+        }
 
+        // TODO: need a better and more general way to interact with the closed list
+        double
+        max_g_on_closed()
+        {
+            double max = 0;
+            for(uint32_t i = 0; i < expander_->get_num_nodes(); i++)
+            {
+                warthog::search_node* current = expander_->get_ptr(i, searchid_);
+                if(current && current->get_g() > max)
+                {
+                    max = current->get_g();
+                }
+            }
+            return max;
+        }
+
+        // no cleanup after search
 		double
 		get_length(uint32_t startid, uint32_t goalid)
 		{
@@ -108,7 +140,7 @@ class flexible_astar : public warthog::search
 				}
 			}
 #endif
-			cleanup();
+            //cleanup();
 			return len;
 		}
 
@@ -149,9 +181,11 @@ class flexible_astar : public warthog::search
 	private:
 		H* heuristic_;
 		E* expander_;
+        F* nf_;
 		warthog::pqueue* open_;
         double cost_cutoff_; // early termination
         uint32_t exp_cutoff_;
+        uint32_t last_searchid_;
 
 		// no copy
 		flexible_astar(const flexible_astar& other) { } 
@@ -161,30 +195,31 @@ class flexible_astar : public warthog::search
 		warthog::search_node*
 		search(uint32_t startid, uint32_t goalid)
 		{
+            cleanup();
 			nodes_expanded_ = nodes_generated_ = nodes_touched_ = 0;
 			search_time_ = 0;
 
 			warthog::timer mytimer;
 			mytimer.start();
 
-			#ifndef NDEBUG
-			if(verbose_)
-			{
-				std::cerr << "search: startid="<<startid<<" goalid=" <<goalid
-					<< std::endl;
-			}
-			#endif
-
 			warthog::problem_instance instance;
 			instance.set_goal(goalid);
 			instance.set_start(startid);
 			instance.set_searchid(++warthog::search::searchid_);
 
+			#ifndef NDEBUG
+			if(verbose_)
+			{
+				std::cerr << "search: startid="<<startid<<" goalid=" <<goalid 
+                    << " (searchid: " << instance.get_searchid() 
+                    << ")" << std::endl;
+			}
+			#endif
+
 			warthog::search_node* goal = 0;
 			warthog::search_node* start = expander_->generate(startid);
-			start->reset(instance.get_searchid());
-			start->set_g(0);
-			start->set_f(heuristic_->h(startid, goalid));
+			start->init(instance.get_searchid(), 0, 0, 
+                    heuristic_->h(startid, goalid));
 			open_->push(start);
 
 			while(open_->size())
@@ -299,21 +334,38 @@ class flexible_astar : public warthog::search
 					{
 						// add a new node to the fringe
 						double gval = current->get_g() + cost_to_n;
-						n->set_g(gval);
-						n->set_f(gval + heuristic_->h(n->get_id(), goalid));
-					   	n->set_parent(current);
-						open_->push(n);
-						#ifndef NDEBUG
-						if(verbose_)
-						{
-							int32_t x, y;
+                        n->init(instance.get_searchid(), current, 
+                            gval, gval + heuristic_->h(n->get_id(), goalid));
+                        
+                        // but only if the node is not provably redundant
+                        if(nf_->filter(n))
+                        {
+#ifndef NDEBUG
+                            if(verbose_)
+                            {
+                                int32_t x, y;
+                                expander_->get_xy(n, x, y);
+                                std::cerr << "  filtered-out (edgecost=" << cost_to_n<<") ("<<x<<", "<<y<<")...";
+                                n->print(std::cerr);
+                                std::cerr << std::endl;
+                            }
+#endif
+                            continue;
+                        }
+
+                        open_->push(n);
+                        nodes_generated_++;
+
+                        #ifndef NDEBUG
+                        if(verbose_)
+                        {
+                            int32_t x, y;
                             expander_->get_xy(n, x, y);
-							std::cerr << "  generating (edgecost=" << cost_to_n<<") ("<<x<<", "<<y<<")...";
-							n->print(std::cerr);
-							std::cerr << std::endl;
-						}
-						#endif
-						nodes_generated_++;
+                            std::cerr << "  generating (edgecost=" << cost_to_n<<") ("<<x<<", "<<y<<")...";
+                            n->print(std::cerr);
+                            std::cerr << std::endl;
+                        }
+                        #endif
 					}
 				}
 //				#ifndef NDEBUG

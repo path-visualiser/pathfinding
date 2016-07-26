@@ -6,14 +6,14 @@ warthog::ch::graph_contraction::graph_contraction(
         warthog::graph::planar_graph* g) 
 {
     g_ = g;
-    filter_ = new warthog::apriori_filter(g_->get_num_nodes());
+    //filter_ = new warthog::apriori_filter(g_->get_num_nodes());
     done_ = false;
     verbose_ = false;
 }
 
 warthog::ch::graph_contraction::~graph_contraction()
 {
-    delete filter_;
+    //delete filter_;
 }
 
 void
@@ -32,7 +32,7 @@ warthog::ch::graph_contraction::contract()
 
     uint32_t total_nodes = g_->get_num_nodes();
     uint32_t num_contractions = 0;
-    warthog::apriori_filter* filter = get_filter();
+//    warthog::apriori_filter* filter = get_filter();
     for(uint32_t cid = next(); cid != warthog::INF; cid = next())
     {
         std::cerr << "\rcontracting " << ++num_contractions << " /  " << total_nodes;
@@ -42,21 +42,21 @@ warthog::ch::graph_contraction::contract()
         }
 
         warthog::graph::node* n = g_->get_node(cid);
-        filter->filter(cid); // never expand this node again
+        //filter->filter(cid); // never expand this node again
 
         for(int i = 0; i < n->out_degree(); i++)
         {
             warthog::graph::edge& out = *(n->outgoing_begin() + i);
 
             // skip already-contracted neighbours
-            if(filter->filter(out.node_id_)) { continue; }
+//            if(filter->filter(out.node_id_)) { continue; }
 
             for(int j = 0; j < n->in_degree(); j++)
             {
                 warthog::graph::edge& in = *(n->incoming_begin() + j);
 
                 // skip already-contracted neighbours
-                if(filter->filter(in.node_id_)) { continue; }
+//                if(filter->filter(in.node_id_)) { continue; }
 
                 // no reflexive arcs please
                 if(out.node_id_ == in.node_id_) { continue; }
@@ -97,5 +97,7 @@ warthog::ch::graph_contraction::contract()
 size_t
 warthog::ch::graph_contraction::mem()
 {
-    return filter_->mem() + sizeof(this);
+    return 
+       // filter_->mem() + 
+        sizeof(this);
 }

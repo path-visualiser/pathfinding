@@ -1,6 +1,6 @@
 #include "planar_graph.h"
 #include "graph_expansion_policy.h"
-#include "node_filter.h"
+//#include "node_filter.h"
 #include "problem_instance.h"
 #include "search_node.h"
 
@@ -30,10 +30,10 @@ warthog::graph_expansion_policy::expand(
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
         
-        if(!nf_ || !(nf_->filter(e.node_id_)))
-        {
+//        if(!nf_ || !(nf_->filter(e.node_id_)))
+//        {
              this->add_neighbour(this->generate(e.node_id_), e.wt_);
-        }
+//        }
     }
 }
 
@@ -50,7 +50,7 @@ warthog::graph_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + 
-        nf_->mem() +
+        //nf_->mem() +
         g_->mem() +
         sizeof(this);
 }

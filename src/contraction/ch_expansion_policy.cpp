@@ -5,20 +5,18 @@
 
 warthog::ch_expansion_policy::ch_expansion_policy(
         warthog::graph::planar_graph* g, 
-        std::vector<uint32_t>* ooc, bool backward) 
-    : expansion_policy(g->get_num_nodes()), g_(g)
+        std::vector<uint32_t>* rank, 
+        bool backward,
+        warthog::ch::search_direction sd)
+    : expansion_policy(g->get_num_nodes())
 {
+    g_ = g;
+    rank_ = rank;
     backward_ = backward;
+    sd_ = sd;
 
-    assert(g->get_num_nodes() - g->id_offset() == ooc->size());
-
-    // we convert the order of contraction into a ranked 
-    // list s.t. rank[i] gives the contraction index of
-    // node i
-    warthog::ch::convert_order_of_contraction_to_ranked_list(
-            *ooc, rank_);
+    assert(g->get_num_nodes() == rank->size());
 }
-
 
 void
 warthog::ch_expansion_policy::expand(warthog::search_node* current,
@@ -46,8 +44,14 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
     {
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
-        
-        if(get_rank(e.node_id_) > current_rank)
+       
+        if(sd_ == warthog::ch::UP && get_rank(e.node_id_) > current_rank)
+        {
+             this->add_neighbour(this->generate(e.node_id_), e.wt_);
+             continue;
+        }
+
+        if(sd_ == warthog::ch::DOWN && get_rank(e.node_id_) < current_rank)
         {
              this->add_neighbour(this->generate(e.node_id_), e.wt_);
         }

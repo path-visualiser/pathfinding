@@ -1,9 +1,9 @@
+#include "apriori_filter.h"
 #include "euclidean_heuristic.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
 #include "heap.h"
 #include "lazy_graph_contraction.h"
-#include "apriori_filter.h"
 
 #include <algorithm>
 #include <functional>
@@ -20,10 +20,14 @@ warthog::ch::lazy_graph_contraction::lazy_graph_contraction(
 
 {
     expander_ = new warthog::graph_expansion_policy(g);
-    expander_->set_filter(get_filter());
+    //expander_->set_filter(get_filter());
 
     heuristic_ = new warthog::euclidean_heuristic(g);
-    alg_ = new euc_astar(heuristic_, expander_);
+    filter_ = new apriori_filter(get_graph()->get_num_nodes());
+    alg_ = new flexible_astar<
+        warthog::euclidean_heuristic,
+         warthog::graph_expansion_policy,
+         warthog::apriori_filter>(heuristic_, expander_, filter_);
 
     uint32_t sz_g = get_graph()->get_num_nodes();
     heap_ = new warthog::heap<ch_pair>(sz_g, true);
@@ -47,6 +51,9 @@ warthog::ch::lazy_graph_contraction::~lazy_graph_contraction()
 
     delete alg_;
     alg_ = 0;
+
+    delete filter_;
+    filter_ = 0;
 
     delete heuristic_;
     heuristic_ = 0;
@@ -135,7 +142,7 @@ warthog::ch::lazy_graph_contraction::next()
             it != bn->outgoing_end(); it++)
     {
         uint32_t neighbour_id = (*it).node_id_;
-        if(get_filter()->filter(neighbour_id)) { continue; }
+        if(filter_->get_flag(neighbour_id)) { continue; }
         updateset.insert(neighbour_id);
     }
 
@@ -143,7 +150,7 @@ warthog::ch::lazy_graph_contraction::next()
             it != bn->incoming_end(); it++)
     {
         uint32_t neighbour_id = (*it).node_id_;
-        if(get_filter()->filter(neighbour_id)) { continue; }
+        if(filter_->get_flag(neighbour_id)) { continue; }
         updateset.insert(neighbour_id);
     }
 
@@ -155,9 +162,9 @@ warthog::ch::lazy_graph_contraction::next()
         node_order_terms& nb_not = terms_[neighbour_id];
 
         // re-compute the edge difference estimate
-        get_filter()->set_flag_true(best_id);
+        filter_->set_flag_true(best_id);
         nb_not.ed_ = edge_difference(neighbour_id,true);
-        get_filter()->set_flag_false(best_id);
+        filter_->set_flag_false(best_id);
 
         // update the "search space size" estimate
         terms_[neighbour_id].depth_ = 
@@ -185,14 +192,20 @@ warthog::ch::lazy_graph_contraction::next()
         "; PRIORITY " << compute_contraction_value(best_id) <<
         std::endl;
 
+    filter_->set_flag_true(best_id); // mark as contracted
     order_.push_back(best_id);
     return best_id;
 }
 
+// NB: assumes the via-node is already marked as contracted
+// (and will thus not be expanded)
 double
 warthog::ch::lazy_graph_contraction::witness_search(
         uint32_t from_id, uint32_t to_id, double via_len)
 {
+    // only search for witness paths between uncontracted neighbours
+    if(filter_->get_flag(from_id) || filter_->get_flag(to_id)) { return 0; }
+
     alg_->set_cost_cutoff(via_len);
     alg_->set_max_expansions_cutoff(ws_max_expansions_);
     double witness_len = alg_->get_length(from_id, to_id);
@@ -215,23 +228,22 @@ warthog::ch::lazy_graph_contraction::edge_difference(uint32_t node_id, bool esti
     ws_max_expansions_ = (estimate ? 1000 : warthog::INF);
     int32_t eadd = 0;
     warthog::graph::node* n = get_graph()->get_node(node_id);
-    warthog::apriori_filter* nf = get_filter();
 
     std::set<uint64_t> deleted;
-    nf->set_flag_true(node_id);
+    filter_->set_flag_true(node_id);
     for(int i = 0; i < n->out_degree(); i++)
     {
         warthog::graph::edge& out = *(n->outgoing_begin() + i);
 
         // skip contracted neighbours
-        if(nf->filter(out.node_id_)) { continue; }
+        if(filter_->get_flag(out.node_id_)) { continue; }
 
         for(int j = 0; j < n->in_degree(); j++)
         {
             warthog::graph::edge& in = *(n->incoming_begin() + j);
 
             // skip contracted neighbours
-            if(nf->filter(in.node_id_)) { continue; }
+            if(filter_->get_flag(in.node_id_)) { continue; }
 
             // skip reflexive arcs
             if(out.node_id_ == in.node_id_) { continue; }
@@ -250,7 +262,7 @@ warthog::ch::lazy_graph_contraction::edge_difference(uint32_t node_id, bool esti
         }
         deleted.insert((uint64_t)&out);
     }
-    nf->set_flag_false(node_id);
+    filter_->set_flag_false(node_id);
     int32_t retval = eadd - deleted.size();
     return retval;
 }

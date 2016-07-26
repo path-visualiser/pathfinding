@@ -19,9 +19,10 @@
 namespace warthog
 {
 
+class dummy_filter;
 class euclidean_heuristic;
 class graph_expansion_policy;
-template<typename H, typename E>
+template<typename H, typename E, typename F>
 class flexible_astar;
 
 namespace graph
@@ -32,12 +33,20 @@ class planar_graph;
 namespace ch
 {
 
-typedef warthog::flexible_astar<
-            warthog::euclidean_heuristic, 
-            warthog::graph_expansion_policy> euc_astar;
+enum search_direction { UP, DOWN };
 
+// load a node order-of-contraction file. such files comprise a list of
+// node ids in the order each node was contracted. thus, the first value
+// in the file is the identifier of the first node to be contracted.
+//
+// @param filename: the file containing the order
+// @param order: the container in which to load the node order
+// @param lex_order: (default: false) when true, the contraction order is 
+// converted into a lexical order. This is equivalent to calling 
+// ::value_index_swap_dimacs after loading the contraction order
 void 
-load_node_order(const char* filename, std::vector<uint32_t>& order);
+load_node_order(const char* filename, 
+        std::vector<uint32_t>& order, bool lex_order=false);
 
 void
 write_node_order(const char* filename, std::vector<uint32_t>& order);
@@ -52,9 +61,10 @@ make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order);
 // This function takes an OOC and turns it into a ranked list, indexed by 
 // node-id. Given a node-id, x, rank[x] indicates the position of node-id 
 // x in the OOC; e.g. for the OOC above, rank[1] = 5
+//
+// NB: min{vec[i]} elements are added to the front of @param vec
 void
-convert_order_of_contraction_to_ranked_list(std::vector<uint32_t>& ooc, 
-        std::vector<uint32_t>& rank);
+value_index_swap_dimacs(std::vector<uint32_t>& vec);
 
 // compute the out-arc closure of @param source 
 void

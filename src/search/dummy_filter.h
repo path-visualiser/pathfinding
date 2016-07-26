@@ -15,14 +15,15 @@
 namespace warthog
 {
 
-class dummy_filter : public node_filter
+class search_node;
+class dummy_filter 
 {
     public:
         dummy_filter() { } 
-        virtual ~dummy_filter() { } 
+        ~dummy_filter() { } 
 
-        virtual bool
-        filter(uint32_t node_id) { return false; }
+        bool
+        filter(warthog::search_node*) { return false; }
 };
 
 }

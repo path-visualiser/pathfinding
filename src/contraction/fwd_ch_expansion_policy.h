@@ -33,14 +33,15 @@ namespace graph
 class planar_graph;
 }
 
-class node_filter;
+//class node_filter;
 class problem_instance;
 class search_node;
 class fwd_ch_expansion_policy : public expansion_policy
 {
     public:
         fwd_ch_expansion_policy(warthog::graph::planar_graph* graph,
-                std::vector<uint32_t>* ooc, warthog::node_filter*);
+                std::vector<uint32_t>* rank);
+                //warthog::node_filter*);
         ~fwd_ch_expansion_policy();
 
 		virtual void 
@@ -49,24 +50,23 @@ class fwd_ch_expansion_policy : public expansion_policy
         virtual void
         get_xy(warthog::search_node*, int32_t& x, int32_t& y);
 
-        inline void 
-        set_filter(warthog::node_filter* filter) { nf_ = filter; }
-
-        inline warthog::node_filter* 
-        get_filter() { return nf_; }
+//        inline void 
+//        set_filter(warthog::node_filter* filter) { nf_ = filter; }
+//
+//        inline warthog::node_filter* 
+//        get_filter() { return nf_; }
 
         virtual uint32_t
         mem()
         {
             return expansion_policy::mem() +
-                sizeof(uint32_t)*rank_->size() +  // roughly
                 sizeof(this);
         }
 
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
-        warthog::node_filter* nf_;
+        //warthog::node_filter* nf_;
 
         inline uint32_t
         get_rank(uint32_t id)

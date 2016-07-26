@@ -3,7 +3,7 @@
 
 // search.h
 //
-// A base class for some functionality necessary for all
+// A base class for functionality common to all
 // search algorithms.
 //
 // @author: dharabor
@@ -22,6 +22,7 @@ class search
 
         search()
         {
+            searchid_ = 0;
             reset_metrics();
         }
 
@@ -51,19 +52,17 @@ class search
 			nodes_expanded_ = nodes_generated_ = nodes_touched_ = 0;
 			search_time_ = 0;
         }
-
+        
         virtual size_t
         mem() = 0;
 
-
     protected:
-		static uint32_t searchid_;
+		uint32_t searchid_;
 		uint32_t nodes_expanded_;
 		uint32_t nodes_generated_;
 		uint32_t nodes_touched_;
 		double search_time_;
         bool verbose_;
-
 };
 
 

@@ -44,6 +44,7 @@ using namespace warthog::ch;
 namespace warthog
 {
 
+class apriori_filter;
 class euclidean_heuristic;
 class graph_expansion_policy;
 
@@ -124,10 +125,14 @@ class lazy_graph_contraction : public graph_contraction
         node_order_terms* terms_;
 
         // witness search stuff
+        uint32_t ws_max_expansions_; 
         warthog::euclidean_heuristic* heuristic_;
         warthog::graph_expansion_policy* expander_;
-        euc_astar* alg_;
-        uint32_t ws_max_expansions_; 
+        warthog::apriori_filter* filter_;
+        warthog::flexible_astar<
+            warthog::euclidean_heuristic,
+            warthog::graph_expansion_policy, 
+            warthog::apriori_filter>* alg_;
 
         // metrics
         uint32_t total_expansions_;

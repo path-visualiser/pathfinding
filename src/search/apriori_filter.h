@@ -21,7 +21,7 @@
 namespace warthog
 {
 
-class apriori_filter : public node_filter
+class apriori_filter 
 {
     public:
         apriori_filter(uint32_t num_nodes);
@@ -29,14 +29,17 @@ class apriori_filter : public node_filter
 
         // returns true if the node with identifier @param node_id 
         // is being filtered; otherwise false
-        virtual bool
-        filter(uint32_t node_id);
+        bool
+        filter(warthog::search_node* n);
 
         void
         set_flag_true(uint32_t node_id);
 
         void
         set_flag_false(uint32_t node_id);
+
+        bool
+        get_flag(uint32_t node_id);
 
         // clear all filter flags
         void
