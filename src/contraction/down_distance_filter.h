@@ -32,6 +32,9 @@ class down_distance_filter
         bool 
         filter(warthog::search_node* n);
 
+        double
+        get_down_distance(uint32_t);
+
         void
         print(std::ostream& out);
 
@@ -39,13 +42,7 @@ class down_distance_filter
         compute_down_distance(uint32_t startid, uint32_t endid);
 
         inline void
-        compute_down_distance()
-        {
-            if(g_ && rank_)
-            {
-                compute_down_distance(0, g_->get_num_nodes());
-            }
-        }
+        compute_down_distance();
 
 
     private:

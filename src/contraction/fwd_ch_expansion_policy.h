@@ -36,12 +36,18 @@ class planar_graph;
 //class node_filter;
 class problem_instance;
 class search_node;
+class euclidean_heuristic;
+class down_distance_filter;
 class fwd_ch_expansion_policy : public expansion_policy
 {
     public:
-        fwd_ch_expansion_policy(warthog::graph::planar_graph* graph,
-                std::vector<uint32_t>* rank);
+        fwd_ch_expansion_policy(
+                warthog::graph::planar_graph* graph,
+                std::vector<uint32_t>* rank, 
+                warthog::down_distance_filter* nf=0,
+                warthog::euclidean_heuristic* heuristic=0);
                 //warthog::node_filter*);
+
         ~fwd_ch_expansion_policy();
 
 		virtual void 
@@ -67,6 +73,9 @@ class fwd_ch_expansion_policy : public expansion_policy
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
         //warthog::node_filter* nf_;
+        warthog::down_distance_filter* nf_;
+        warthog::euclidean_heuristic* heuristic_;
+        //warthog::apriori_filter* stalled_;
 
         inline uint32_t
         get_rank(uint32_t id)

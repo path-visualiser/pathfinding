@@ -720,14 +720,16 @@ run_dimacs(warthog::util::cfg& cfg)
         warthog::ch::value_index_swap_dimacs(order);
 
         std::cerr << "preparing to search\n";
-        warthog::fwd_ch_expansion_policy fexp(&g, &order); 
-        warthog::euclidean_heuristic h(&g);
         warthog::down_distance_filter filter(arclabels_file.c_str(), &g, &order);
-
+        warthog::euclidean_heuristic h(&g);
+        warthog::fwd_ch_expansion_policy fexp(&g, &order, &filter, &h);
 
         warthog::flexible_astar< warthog::euclidean_heuristic, 
-            warthog::fwd_ch_expansion_policy, warthog::down_distance_filter> 
-                alg(&h, &fexp, &filter);
+           warthog::fwd_ch_expansion_policy>
+           // warthog::fwd_ch_expansion_policy,
+           // warthog::down_distance_filter> 
+        //alg(&h, &fexp, &filter);
+        alg(&h, &fexp);
         alg.set_verbose(verbose);
 
         std::cerr << "running experiments\n";

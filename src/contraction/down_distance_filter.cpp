@@ -34,6 +34,16 @@ warthog::down_distance_filter::~down_distance_filter()
     delete ddist_;
 }
 
+double
+warthog::down_distance_filter::get_down_distance(uint32_t node_id)
+{
+    if(node_id < start_id_ || node_id > last_id_)
+    {
+        return warthog::INF;
+    }
+    return ddist_->at(node_id);
+}
+
 bool
 warthog::down_distance_filter::filter(warthog::search_node* n)
 {
@@ -55,6 +65,15 @@ warthog::down_distance_filter::filter(warthog::search_node* n)
     if((n->get_g() + ddist_->at(node_id - start_id_))
             < n->get_f()) { return true; } 
     return false;
+}
+
+void
+warthog::down_distance_filter::compute_down_distance()
+{
+    if(g_ && rank_)
+    {
+        compute_down_distance(0, g_->get_num_nodes());
+    }
 }
 
 void
