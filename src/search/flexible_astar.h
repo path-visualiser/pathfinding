@@ -196,7 +196,8 @@ class flexible_astar : public warthog::search
 		search(uint32_t startid, uint32_t goalid)
 		{
             cleanup();
-			nodes_expanded_ = nodes_generated_ = nodes_touched_ = 0;
+			nodes_expanded_ = nodes_generated_ = 0;
+            nodes_touched_ = heap_ops_ = 0;
 			search_time_ = 0;
 
 			warthog::timer mytimer;
@@ -247,8 +248,9 @@ class flexible_astar : public warthog::search
 
                 if(nodes_expanded_ >= exp_cutoff_) { break; }
 
-				nodes_expanded_++;
 				warthog::search_node* current = open_->pop();
+                heap_ops_++;
+				nodes_expanded_++;
 
 				#ifndef NDEBUG
 				if(verbose_)
@@ -305,6 +307,7 @@ class flexible_astar : public warthog::search
 						{
 							n->relax(gval, current);
 							open_->decrease_key(n);
+                            heap_ops_++;
 							#ifndef NDEBUG
 							if(verbose_)
 							{
@@ -355,6 +358,7 @@ class flexible_astar : public warthog::search
 
                         open_->push(n);
                         nodes_generated_++;
+                        heap_ops_++;
 
                         #ifndef NDEBUG
                         if(verbose_)

@@ -40,6 +40,9 @@ class search
 		inline double
 		get_search_time() { return search_time_; }
 
+        inline uint32_t
+        get_heap_ops() { return heap_ops_; }
+
 		inline bool
 		get_verbose() { return verbose_; }
 
@@ -61,6 +64,7 @@ class search
 		uint32_t nodes_expanded_;
 		uint32_t nodes_generated_;
 		uint32_t nodes_touched_;
+        uint32_t heap_ops_;
 		double search_time_;
         bool verbose_;
 };
