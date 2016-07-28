@@ -24,6 +24,7 @@
 #include "search_node.h"
 #include "timer.h"
 
+#include <functional>
 #include <iostream>
 #include <memory>
 #include <stack>
@@ -88,7 +89,7 @@ class flexible_astar : public warthog::search
         }
 
         // TODO: need a better and more general way to interact with the closed list
-        double
+        double 
         max_g_on_closed()
         {
             double max = 0;
@@ -101,6 +102,18 @@ class flexible_astar : public warthog::search
                 }
             }
             return max;
+        }
+
+        // apply @param fn to every node on the closed list
+        void
+        apply_on_closed(std::function<void(warthog::search_node*)>& fn)
+        {
+            for(uint32_t i = 0; i < expander_->get_num_nodes(); i++)
+            {
+                warthog::search_node* current = 
+                    expander_->get_ptr(i, searchid_);
+                if(current) { fn(current); }
+            }
         }
 
         // no cleanup after search

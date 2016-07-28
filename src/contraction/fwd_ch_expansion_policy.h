@@ -77,6 +77,7 @@ class fwd_ch_expansion_policy : public expansion_policy
         warthog::euclidean_heuristic* heuristic_;
         //warthog::apriori_filter* stalled_;
 
+
         inline uint32_t
         get_rank(uint32_t id)
         {
