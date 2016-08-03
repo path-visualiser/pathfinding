@@ -206,7 +206,7 @@ class search_node
 		print(std::ostream&  out) const
 		{
 			out << "search_node id:" << get_id();
-            out << " p_id: " 
+            out << " p_id: ";
             if(parent_)
             {
                 out << parent_->get_id();
