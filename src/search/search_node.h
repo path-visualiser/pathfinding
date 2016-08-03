@@ -205,10 +205,19 @@ class search_node
 		inline void 
 		print(std::ostream&  out) const
 		{
-			out << "search_node id:" << get_id() << " g: "<<g_ 
-				<<" f: "<<this->get_f() 
-				<< " expanded: " << get_expanded() << " " 
-				<< " pdir: "<< get_pdir() << " ";
+			out << "search_node id:" << get_id();
+            out << " p_id: " 
+            if(parent_)
+            {
+                out << parent_->get_id();
+            }
+            else
+            {
+                out << -1;
+            }
+            out << " g: "<<g_ <<" f: "<<this->get_f() 
+            << " expanded: " << get_expanded() << " " 
+            << " pdir: "<< get_pdir() << " ";
 		}
 
 		static uint32_t 

@@ -44,20 +44,18 @@ warthog::down_distance_filter::get_down_distance(uint32_t node_id)
     return ddist_->at(node_id);
 }
 
+// @param n: the node we are trying to prune
+// @param edge_id: used to indicate that @param n is the nth 
+// child of its parent
+//
+// NB: this function assumes @param n is reached via a down-edge 
 bool
-warthog::down_distance_filter::filter(warthog::search_node* n)
+warthog::down_distance_filter::filter(
+        warthog::search_node* n, uint32_t edge_id)
+
 {
     uint32_t node_id = n->get_id();
-    if(node_id < start_id_ || node_id > last_id_)
-    {
-        return warthog::INF;
-    }
-
-    if(rank_->at(n->get_parent()->get_id()) < rank_->at(node_id))
-    {
-        // cannot prune up successors
-        return false; 
-    }
+    assert((last_id_ - node_id) >= start_id_);
 
     // the optimal distance to the target cannot be further
     // than f(n). If g(n) + down-distance < f(n) then the
@@ -68,17 +66,16 @@ warthog::down_distance_filter::filter(warthog::search_node* n)
 }
 
 void
-warthog::down_distance_filter::compute_down_distance()
+warthog::down_distance_filter::compute()
 {
     if(g_ && rank_)
     {
-        compute_down_distance(0, g_->get_num_nodes());
+        compute(0, g_->get_num_nodes());
     }
 }
 
 void
-warthog::down_distance_filter::compute_down_distance(
-        uint32_t startid, uint32_t endid)
+warthog::down_distance_filter::compute(uint32_t startid, uint32_t endid)
 {
     if(!g_ || !rank_) { return; } 
 
@@ -100,12 +97,26 @@ warthog::down_distance_filter::compute_down_distance(
         warthog::zero_heuristic,
         warthog::ch_expansion_policy> dijkstra(&heuristic, &expander);
 
+
     ddist_->clear();
     for(uint32_t i = startid; i < endid; i++)
     {
         std::cerr << "\rprogress: " << (i+1) << " / " << endid;
         dijkstra.get_length(i, warthog::INF);
-        ddist_->push_back(dijkstra.max_g_on_closed());
+
+        // scan the closed list and get the max g-value
+        double max = 0;
+        std::function<void(warthog::search_node*)> fn_max_g =
+            [&max](warthog::search_node* n) -> void
+            {
+                assert(n);
+                if(n->get_g() > max)
+                {
+                    max = n->get_g();
+                }
+            };
+        dijkstra.apply_to_closed(fn_max_g);
+        ddist_->push_back(max);
     }
     std::cerr << "\nall done\n"<< std::endl;
 }

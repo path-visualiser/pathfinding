@@ -4,6 +4,7 @@
 // @created: August 2012
 //
 
+#include "bbox_filter.h"
 #include "bidirectional_search.h"
 #include "cfg.h"
 #include "ch_expansion_policy.h"
@@ -15,6 +16,8 @@
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "fwd_ch_expansion_policy.h"
+#include "fwd_ch_dd_expansion_policy.h"
+#include "fwd_ch_bb_expansion_policy.h"
 #include "graph_expansion_policy.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
@@ -722,13 +725,10 @@ run_dimacs(warthog::util::cfg& cfg)
         std::cerr << "preparing to search\n";
         warthog::down_distance_filter filter(arclabels_file.c_str(), &g, &order);
         warthog::euclidean_heuristic h(&g);
-        warthog::fwd_ch_expansion_policy fexp(&g, &order, &filter, &h);
+        warthog::fwd_ch_dd_expansion_policy fexp(&g, &order, &filter, &h);
 
         warthog::flexible_astar< warthog::euclidean_heuristic, 
-           warthog::fwd_ch_expansion_policy>
-           // warthog::fwd_ch_expansion_policy,
-           // warthog::down_distance_filter> 
-        //alg(&h, &fexp, &filter);
+           warthog::fwd_ch_dd_expansion_policy>
         alg(&h, &fexp);
         alg.set_verbose(verbose);
 
@@ -749,6 +749,51 @@ run_dimacs(warthog::util::cfg& cfg)
             << grfile << " " << problemfile << std::endl;
         }
     }
+    else if(alg_name == "chf-bb")
+    {
+        std::string orderfile = cfg.get_param_value("order");
+        std::string arclabels = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels << std::endl;
+        std::string arclabels_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels_file << std::endl;
+
+        // load up the graph 
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+        // load up the node order
+        std::vector<uint32_t> order;
+        warthog::ch::load_node_order(orderfile.c_str(), order);
+        warthog::ch::value_index_swap_dimacs(order);
+
+        std::cerr << "preparing to search\n";
+        warthog::bbox_filter filter(arclabels_file.c_str(), &g, &order);
+        warthog::euclidean_heuristic h(&g);
+        warthog::fwd_ch_bb_expansion_policy fexp(&g, &order, &filter);
+
+        warthog::flexible_astar< warthog::euclidean_heuristic, 
+           warthog::fwd_ch_bb_expansion_policy>
+        alg(&h, &fexp);
+        alg.set_verbose(verbose);
+
+        std::cerr << "running experiments\n";
+        int i = 0;
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i++ <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
+    }
+
     else
     {
         std::cerr << "invalid search algorithm\n";

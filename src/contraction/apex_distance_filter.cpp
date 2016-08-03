@@ -85,16 +85,16 @@ warthog::apex_distance_filter::filter(warthog::search_node* n)
 }
 
 void
-warthog::apex_distance_filter::compute_apex_distance()
+warthog::apex_distance_filter::compute()
 {
     if(g_ && rank_)
     {
-        compute_apex_distance(0, g_->get_num_nodes());
+        compute(0, g_->get_num_nodes());
     }
 }
 
 void
-warthog::apex_distance_filter::compute_apex_distance(
+warthog::apex_distance_filter::compute(
         uint32_t startid, uint32_t endid)
 {
     if(!g_ || !rank_) { return; } 
@@ -110,7 +110,7 @@ warthog::apex_distance_filter::compute_apex_distance(
     last_id_ = endid;
 
     warthog::down_distance_filter ddf(g_, rank_);
-    ddf.compute_down_distance();
+    ddf.compute();
 
     std::cerr << "computing apex-distance labels\n";
     warthog::zero_heuristic heuristic;
@@ -138,7 +138,7 @@ warthog::apex_distance_filter::compute_apex_distance(
         std::cerr << "\rprogress: " << (i+1) << " / " << endid;
         dijkstra.get_length(i, warthog::INF);
         max_apex = 0;
-        dijkstra.apply_on_closed(fn);
+        dijkstra.apply_to_closed(fn);
         apex_dist_->push_back(max_apex);
         ddist_->push_back(ddf.get_down_distance(i));
     }

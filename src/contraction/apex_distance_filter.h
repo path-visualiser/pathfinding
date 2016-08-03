@@ -47,10 +47,10 @@ class apex_distance_filter
         print(std::ostream& out);
 
         void
-        compute_apex_distance(uint32_t startid, uint32_t endid);
+        compute(uint32_t startid, uint32_t endid);
 
         inline void
-        compute_apex_distance();
+        compute();
 
 
     private:

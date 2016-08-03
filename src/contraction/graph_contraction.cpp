@@ -88,7 +88,7 @@ warthog::ch::graph_contraction::contract()
         }
     }
 
-    std::cerr << "\ngraph, contracted";
+    std::cerr << "\ngraph, contracted. ";
     std::cerr << "edges before " << edges_before 
         << "; edges after " << g_->get_num_edges() << std::endl;
     postliminaries();

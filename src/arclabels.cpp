@@ -1,4 +1,5 @@
 #include "apex_distance_filter.h"
+#include "bbox_filter.h"
 #include "cfg.h"
 #include "ch_expansion_policy.h"
 #include "dimacs_parser.h"
@@ -69,10 +70,10 @@ compute_down_distance()
             grfile.append(".");
             grfile.append(first);
             grfile.append(".");
-            grfile.append(std::to_string(lastid-1));
+            grfile.append(std::to_string(lastid));
         }
         warthog::down_distance_filter ddfilter(&g, &order);
-        ddfilter.compute_down_distance(firstid, lastid);
+        ddfilter.compute(firstid, lastid);
         
         // save the result
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -135,7 +136,7 @@ compute_apex_distance()
             grfile.append(std::to_string(lastid-1));
         }
         warthog::apex_distance_filter apexfilter(&g, &order);
-        apexfilter.compute_apex_distance(firstid, lastid);
+        apexfilter.compute(firstid, lastid);
         
         // save the result
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -154,6 +155,70 @@ compute_apex_distance()
     }
     std::cerr << "all done!\n";
 }
+
+void
+compute_bbox_labels()
+{
+    std::string grfile = cfg.get_param_value("dimacs");
+    std::string cofile = cfg.get_param_value("dimacs");
+    std::cerr << "param values " << std::endl;
+    std::string orderfile = cfg.get_param_value("order");
+    cfg.print_values("dimacs", std::cerr);
+
+    std::cerr << "grfile: "<< grfile << " cofile " << cofile << std::endl;
+
+    // load up (or create) the contraction hierarchy
+    warthog::graph::planar_graph g;
+    std::vector<uint32_t> order;
+
+    if(orderfile.compare("") != 0)
+    {
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+        warthog::ch::load_node_order(orderfile.c_str(), order, true);
+
+        // compute down_distance
+        grfile.append(".bbox.arclabel");
+        uint32_t firstid = 0;
+        uint32_t lastid = g.get_num_nodes();
+        if(cfg.get_num_values("arclabels") == 2)
+        {
+            std::string first = cfg.get_param_value("arclabels");
+            std::string last = cfg.get_param_value("arclabels");
+
+            if(strtol(first.c_str(), 0, 10) != 0)
+            {
+                firstid = strtol(first.c_str(), 0, 10);
+            }
+            if(strtol(last.c_str(), 0, 10) != 0)
+            {
+                lastid = strtol(last.c_str(), 0, 10);
+            }
+            grfile.append(".");
+            grfile.append(first);
+            grfile.append(".");
+            grfile.append(std::to_string(lastid-1));
+        }
+        warthog::bbox_filter filter(&g, &order);
+        filter.compute(firstid, lastid);
+        
+        // save the result
+        std::cerr << "saving contracted graph to file " << grfile << std::endl;
+        std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+        if(!out.good())
+        {
+            std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        }
+        filter.print(out);
+        out.close();
+    }
+    else
+    {
+        std::cerr << "required: node order file. aborting.\n";
+        return;
+    }
+    std::cerr << "all done!\n";
+}
+
 
 int main(int argc, char** argv)
 {
@@ -190,6 +255,10 @@ int main(int argc, char** argv)
     if(arclabel.compare("apexdist") == 0)
     {
         compute_apex_distance();
+    }
+    if(arclabel.compare("bbox") == 0)
+    {
+        compute_bbox_labels();
     }
     else
     {

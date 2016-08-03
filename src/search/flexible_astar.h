@@ -47,6 +47,7 @@ class flexible_astar : public warthog::search
 			verbose_ = false;
             cost_cutoff_ = warthog::INF;
             exp_cutoff_ = warthog::INF;
+            on_relax_fn_ = [](warthog::search_node*){ };
 		}
 
 		virtual ~flexible_astar()
@@ -88,25 +89,9 @@ class flexible_astar : public warthog::search
             }
         }
 
-        // TODO: need a better and more general way to interact with the closed list
-        double 
-        max_g_on_closed()
-        {
-            double max = 0;
-            for(uint32_t i = 0; i < expander_->get_num_nodes(); i++)
-            {
-                warthog::search_node* current = expander_->get_ptr(i, searchid_);
-                if(current && current->get_g() > max)
-                {
-                    max = current->get_g();
-                }
-            }
-            return max;
-        }
-
         // apply @param fn to every node on the closed list
         void
-        apply_on_closed(std::function<void(warthog::search_node*)>& fn)
+        apply_to_closed(std::function<void(warthog::search_node*)>& fn)
         {
             for(uint32_t i = 0; i < expander_->get_num_nodes(); i++)
             {
@@ -114,6 +99,13 @@ class flexible_astar : public warthog::search
                     expander_->get_ptr(i, searchid_);
                 if(current) { fn(current); }
             }
+        }
+
+        // apply @param fn every time a node is successfully relaxed
+        void
+        apply_on_relax(std::function<void(warthog::search_node*)>& fn)
+        {
+            on_relax_fn_ = fn;
         }
 
         // no cleanup after search
@@ -199,6 +191,7 @@ class flexible_astar : public warthog::search
         double cost_cutoff_; // early termination
         uint32_t exp_cutoff_;
         uint32_t last_searchid_;
+        std::function<void(warthog::search_node*)> on_relax_fn_;
 
 		// no copy
 		flexible_astar(const flexible_astar& other) { } 
@@ -285,7 +278,7 @@ class flexible_astar : public warthog::search
 						n != 0;
 					   	expander_->next(n, cost_to_n))
 				{
-					nodes_touched_++;
+                    nodes_touched_++;
 					if(n->get_expanded())
 					{
 						// skip neighbours already expanded
@@ -321,6 +314,7 @@ class flexible_astar : public warthog::search
 							n->relax(gval, current);
 							open_->decrease_key(n);
                             heap_ops_++;
+
 							#ifndef NDEBUG
 							if(verbose_)
 							{
@@ -331,6 +325,8 @@ class flexible_astar : public warthog::search
 								std::cerr << std::endl;
 							}
 							#endif
+
+                            on_relax_fn_(n);
 						}
 						else
 						{
@@ -383,6 +379,8 @@ class flexible_astar : public warthog::search
                             std::cerr << std::endl;
                         }
                         #endif
+
+                        on_relax_fn_(n);
 					}
 				}
 //				#ifndef NDEBUG

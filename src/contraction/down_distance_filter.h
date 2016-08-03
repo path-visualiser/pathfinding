@@ -30,7 +30,7 @@ class down_distance_filter
         ~down_distance_filter();
 
         bool 
-        filter(warthog::search_node* n);
+        filter(warthog::search_node* n, uint32_t succ_num);
 
         double
         get_down_distance(uint32_t);
@@ -39,10 +39,10 @@ class down_distance_filter
         print(std::ostream& out);
 
         void
-        compute_down_distance(uint32_t startid, uint32_t endid);
-
+        compute(uint32_t startid, uint32_t endid);
+                
         void
-        compute_down_distance();
+        compute();
 
 
     private:
