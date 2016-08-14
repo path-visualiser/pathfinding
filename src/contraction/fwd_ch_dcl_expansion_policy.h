@@ -1,7 +1,7 @@
-#ifndef WARTHOG_FWD_CH_BB_EXPANSION_POLICY
-#define WARTHOG_FWD_CH_BB_EXPANSION_POLICY
+#ifndef WARTHOG_FWD_CH_DCL_EXPANSION_POLICY
+#define WARTHOG_FWD_CH_DCL_EXPANSION_POLICY
 
-// contraction/fwd_ch_bb_expansion_policy.h
+// contraction/fwd_ch_dcl_expansion_policy.h
 //
 // An expansion policy for forward-driven
 // search in contraction hiearchies combined 
@@ -25,17 +25,17 @@ class planar_graph;
 class problem_instance;
 class search_node;
 class euclidean_heuristic;
-class bbox_filter;
+class dcl_filter;
 
-class fwd_ch_bb_expansion_policy : public expansion_policy
+class fwd_ch_dcl_expansion_policy : public expansion_policy
 {
     public:
-        fwd_ch_bb_expansion_policy(
+        fwd_ch_dcl_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::bbox_filter* nf);
+                warthog::dcl_filter* nf);
 
-        ~fwd_ch_bb_expansion_policy();
+        ~fwd_ch_dcl_expansion_policy();
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
@@ -60,7 +60,7 @@ class fwd_ch_bb_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
-        warthog::bbox_filter* nf_;
+        warthog::dcl_filter* nf_;
         uint32_t apex_;
         bool apex_reached_;
 

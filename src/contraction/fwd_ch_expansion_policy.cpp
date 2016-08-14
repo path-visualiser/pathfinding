@@ -37,7 +37,7 @@ warthog::fwd_ch_expansion_policy::expand(
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
         
-        if((up_travel || (get_rank(e.node_id_) < current_rank)))
+        if(up_travel || (get_rank(e.node_id_) < current_rank))
         {
             this->add_neighbour(this->generate(e.node_id_), e.wt_);
         }

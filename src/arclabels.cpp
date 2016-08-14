@@ -3,6 +3,7 @@
 #include "cfg.h"
 #include "ch_expansion_policy.h"
 #include "dimacs_parser.h"
+#include "dcl_filter.h"
 #include "down_distance_filter.h"
 #include "fixed_graph_contraction.h"
 #include "graph.h"
@@ -26,7 +27,7 @@ help()
 	std::cerr << "valid parameters:\n"
     << "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	<< "\t--order [order-of-contraction file]\n"
-    << "\t--arclabels [downdist | arcflags | bbox]\n"
+    << "\t--arclabels [downdist | arcflags | bbox | dcl ]\n"
 	<< "\t--verbose (optional)\n";
 }
 
@@ -83,6 +84,49 @@ compute_down_distance()
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
         ddfilter.print(out);
+        out.close();
+    }
+    else
+    {
+        std::cerr << "required: node order file. aborting.\n";
+        return;
+    }
+    std::cerr << "all done!\n";
+}
+
+void 
+compute_dcl_labels()
+{
+    std::string grfile = cfg.get_param_value("dimacs");
+    std::string cofile = cfg.get_param_value("dimacs");
+    std::cerr << "param values " << std::endl;
+    std::string orderfile = cfg.get_param_value("order");
+    cfg.print_values("dimacs", std::cerr);
+
+    std::cerr << "grfile: "<< grfile << " cofile " << cofile << std::endl;
+
+    // load up (or create) the contraction hierarchy
+    warthog::graph::planar_graph g;
+    std::vector<uint32_t> order;
+
+    if(orderfile.compare("") != 0)
+    {
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+        warthog::ch::load_node_order(orderfile.c_str(), order, true);
+
+        // compute down closure
+        grfile.append(".dcl.arclabel");
+        warthog::dcl_filter filter(&g, &order);
+        filter.compute();
+        
+        // save the result
+        std::cerr << "saving contracted graph to file " << grfile << std::endl;
+        std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+        if(!out.good())
+        {
+            std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        }
+        filter.print(out);
         out.close();
     }
     else
@@ -259,6 +303,10 @@ int main(int argc, char** argv)
     if(arclabel.compare("bbox") == 0)
     {
         compute_bbox_labels();
+    }
+    if(arclabel.compare("dcl") == 0)
+    {
+        compute_dcl_labels();
     }
     else
     {

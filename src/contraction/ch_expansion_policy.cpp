@@ -44,14 +44,14 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
     {
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
-       
-        if(sd_ == warthog::ch::UP && get_rank(e.node_id_) > current_rank)
+
+        if((sd_ & warthog::ch::UP) && get_rank(e.node_id_) > current_rank)
         {
-             this->add_neighbour(this->generate(e.node_id_), e.wt_);
-             continue;
+            this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            continue;
         }
 
-        if(sd_ == warthog::ch::DOWN && get_rank(e.node_id_) < current_rank)
+        if((sd_ & warthog::ch::DOWN) && get_rank(e.node_id_) < current_rank)
         {
              this->add_neighbour(this->generate(e.node_id_), e.wt_);
         }

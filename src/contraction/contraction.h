@@ -33,7 +33,7 @@ class planar_graph;
 namespace ch
 {
 
-enum search_direction { UP, DOWN };
+enum search_direction { UP = 1, DOWN = 2, ANY = 3 };
 
 // load a node order-of-contraction file. such files comprise a list of
 // node ids in the order each node was contracted. thus, the first value
@@ -70,6 +70,7 @@ value_index_swap_dimacs(std::vector<uint32_t>& vec);
 void
 compute_closure(uint32_t source, warthog::graph::planar_graph* g, 
         std::set<uint32_t>* closure, uint32_t maxdepth=warthog::INF);
+
 }
 
 }

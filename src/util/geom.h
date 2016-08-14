@@ -33,6 +33,14 @@ struct rectangle
         this->x2 = x2; this->y2 = y2;
     }
 
+    rectangle(const rectangle& other)
+    {
+        x1 = other.x1;
+        x2 = other.x2;
+        y1 = other.y1;
+        y2 = other.y2;
+    }
+
     int32_t
     get_width() { return x2 - x1; }
 
@@ -46,6 +54,15 @@ struct rectangle
         if(y < y1) { y1 = y; }
         if(x > x2) { x2 = x; }
         if(y > y2) { y2 = y; }
+    }
+
+    void
+    grow(warthog::geom::rectangle& r)
+    {
+        if(r.x1 < x1) { x1 = r.x1; }
+        if(r.y1 < y1) { y1 = r.y1; }
+        if(r.x2 > x2) { x2 = r.x2; } 
+        if(r.y2 > y2) { y2 = r.y2; } 
     }
 
     bool 

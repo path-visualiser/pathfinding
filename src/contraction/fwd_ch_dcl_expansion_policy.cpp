@@ -1,15 +1,15 @@
 #include "contraction.h"
-#include "bbox_filter.h"
+#include "dcl_filter.h"
 #include "euclidean_heuristic.h"
-#include "fwd_ch_bb_expansion_policy.h"
+#include "fwd_ch_dcl_expansion_policy.h"
 #include "planar_graph.h"
 #include "search_node.h"
 #include "node_filter.h"
 
-warthog::fwd_ch_bb_expansion_policy::fwd_ch_bb_expansion_policy(
+warthog::fwd_ch_dcl_expansion_policy::fwd_ch_dcl_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank,
-        warthog::bbox_filter* nf)
+        warthog::dcl_filter* nf)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
@@ -18,12 +18,12 @@ warthog::fwd_ch_bb_expansion_policy::fwd_ch_bb_expansion_policy(
     apex_reached_ = false;
 }
 
-warthog::fwd_ch_bb_expansion_policy::~fwd_ch_bb_expansion_policy()
+warthog::fwd_ch_dcl_expansion_policy::~fwd_ch_dcl_expansion_policy()
 {
 }
 
 void
-warthog::fwd_ch_bb_expansion_policy::expand(
+warthog::fwd_ch_dcl_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
@@ -46,6 +46,7 @@ warthog::fwd_ch_bb_expansion_policy::expand(
     // determine whether current was reached via an up edge or a down edge
     bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
     //std::cerr << (up_travel ? "(UPTRAVEL) " : "(DNTRAVEL) ");
+    int32_t num_down_succ = -1;
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;
@@ -55,7 +56,8 @@ warthog::fwd_ch_bb_expansion_policy::expand(
         // wheter the parent was reached by an up edge or a
         // down edge
         bool down_succ = get_rank(e.node_id_) < current_rank;
-        if(down_succ && !nf_->filter__(current_id, (it - begin)))
+        num_down_succ += down_succ;
+        if(down_succ && !nf_->filter(current_id, num_down_succ, current->get_g()))
         {
             // prune down successors before the apex is reached
             if(apex_ != warthog::INF && !apex_reached_) { continue; }
@@ -88,7 +90,7 @@ warthog::fwd_ch_bb_expansion_policy::expand(
 }
 
 void
-warthog::fwd_ch_bb_expansion_policy::get_xy(
+warthog::fwd_ch_dcl_expansion_policy::get_xy(
         warthog::search_node* n, int32_t& x, int32_t& y)
 {
     g_->get_xy(n->get_id(), x, y);

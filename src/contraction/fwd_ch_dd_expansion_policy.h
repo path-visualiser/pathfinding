@@ -51,11 +51,19 @@ class fwd_ch_dd_expansion_policy : public expansion_policy
                 sizeof(this);
         }
 
+        inline void
+        reset_metrics()
+        {
+            up_expansions_ = 0;
+        }
+
+
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
         warthog::down_distance_filter* nf_;
         warthog::euclidean_heuristic* heuristic_;
+        uint32_t up_expansions_;
 
         inline uint32_t
         get_rank(uint32_t id)

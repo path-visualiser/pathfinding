@@ -10,12 +10,14 @@
 #include "ch_expansion_policy.h"
 #include "contraction.h"
 #include "dimacs_parser.h"
+#include "dcl_filter.h"
 #include "down_distance_filter.h"
 #include "dummy_filter.h"
 #include "euclidean_heuristic.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "fwd_ch_expansion_policy.h"
+#include "fwd_ch_dcl_expansion_policy.h"
 #include "fwd_ch_dd_expansion_policy.h"
 #include "fwd_ch_bb_expansion_policy.h"
 #include "graph_expansion_policy.h"
@@ -37,6 +39,7 @@
 #include "getopt.h"
 
 #include <fstream>
+#include <functional>
 #include <iomanip>
 #include <sstream>
 #include <tr1/unordered_map>
@@ -470,6 +473,63 @@ run_jps_wgm(warthog::scenario_manager& scenmgr)
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
+uint32_t
+get_apex(std::vector<uint32_t>& order, warthog::search_node* goal)
+{
+    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+        [&order] (warthog::search_node* n) -> uint32_t
+        {
+            if(n == 0) { return warthog::INF; } 
+
+            while(true)
+            {
+                warthog::search_node* p = n->get_parent();
+                if(!p || order.at(p->get_id()) < order.at(n->get_id()))
+                { break; }
+                n = p;
+            }
+            return order.at(n->get_id());
+        };
+
+    return fn_get_apex(goal);
+}
+
+// extra junk not used currently
+//
+//        std::function<uint32_t(uint32_t)> fn_redundant_expansions = 
+//            [&fexp, &order, &alg] (uint32_t apex) -> uint32_t
+//            {
+//                std::set<uint32_t> tmp;
+//                for(uint32_t i = 0; i < order.size(); i++)
+//                {
+//                    warthog::search_node* n = fexp.get_ptr(i, alg.get_searchid());
+//                    if(n && order.at(n->get_id()) > apex)
+//                    { 
+//                        tmp.insert(n->get_id());
+//                    }
+//                }
+//
+//                for(uint32_t j = 0; j < order.size(); j++)
+//                {
+//                    warthog::search_node* n = fexp.get_ptr(j, alg.get_searchid());
+//                    warthog::search_node* m = n;
+//                    while(m)
+//                    {
+//                        if(tmp.find(m->get_id()) != tmp.end())
+//                        {
+//                            while(tmp.find(n->get_id()) == tmp.end())
+//                            {
+//                                tmp.insert(n->get_id());
+//                                n = n->get_parent();
+//                            }
+//                            break;
+//                        }
+//                        m = m->get_parent();
+//                    }
+//                }
+//                return tmp.size();
+//            };
+
 void
 run_dimacs(warthog::util::cfg& cfg)
 {
@@ -545,6 +605,7 @@ run_dimacs(warthog::util::cfg& cfg)
         alg.set_verbose(verbose);
 
         int i = 0;
+        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -576,6 +637,7 @@ run_dimacs(warthog::util::cfg& cfg)
         alg.set_verbose(verbose);
 
         int i = 0;
+        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -646,6 +708,7 @@ run_dimacs(warthog::util::cfg& cfg)
 
         std::cerr << "running experiments\n";
         int i = 0;
+        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -690,6 +753,7 @@ run_dimacs(warthog::util::cfg& cfg)
 
         std::cerr << "running experiments\n";
         int i = 0;
+        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -732,8 +796,58 @@ run_dimacs(warthog::util::cfg& cfg)
         alg(&h, &fexp);
         alg.set_verbose(verbose);
 
+        std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+            [&order] (warthog::search_node* n) -> uint32_t
+            {
+                while(true)
+                {
+                    warthog::search_node* p = n->get_parent();
+                    if(!p || order.at(p->get_id()) < order.at(n->get_id()))
+                    { break; }
+                    n = p;
+                }
+                return order.at(n->get_id());
+            };
+
+        std::function<uint32_t(uint32_t)> fn_redundant_expansions = 
+            [&fexp, &order, &alg] (uint32_t apex) -> uint32_t
+            {
+                std::set<uint32_t> tmp;
+                for(uint32_t i = 0; i < order.size(); i++)
+                {
+                    warthog::search_node* n = fexp.get_ptr(i, alg.get_searchid());
+                    if(n && order.at(n->get_id()) > apex)
+                    { 
+                        tmp.insert(n->get_id());
+                    }
+                }
+
+                for(uint32_t j = 0; j < order.size(); j++)
+                {
+                    warthog::search_node* n = fexp.get_ptr(j, alg.get_searchid());
+                    warthog::search_node* m = n;
+                    while(m)
+                    {
+                        if(tmp.find(m->get_id()) != tmp.end())
+                        {
+                            while(tmp.find(n->get_id()) == tmp.end())
+                            {
+                                tmp.insert(n->get_id());
+                                n = n->get_parent();
+                            }
+                            break;
+                        }
+                        m = m->get_parent();
+                    }
+                }
+                return tmp.size();
+            };
+
+
         std::cerr << "running experiments\n";
         int i = 0;
+        //std::cout << "id\texp\tgen\ttouch\tmicros\tplen\textra_exps\tmap\n";
+        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -746,6 +860,11 @@ run_dimacs(warthog::util::cfg& cfg)
             << alg.get_nodes_touched() << "\t"
             << alg.get_search_time()  << "\t"
             << len << "\t" 
+//            << fn_redundant_expansions(
+//                    fn_get_apex(
+//                        fexp.get_ptr(
+//                            exp.target, 
+//                            alg.get_searchid()))) << "\t"
             << grfile << " " << problemfile << std::endl;
         }
     }
@@ -778,22 +897,100 @@ run_dimacs(warthog::util::cfg& cfg)
 
         std::cerr << "running experiments\n";
         int i = 0;
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
             warthog::dimacs_parser::experiment exp = (*it);
-            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
 
-            std::cout << i++ <<"\t" << alg_name << "\t" 
+            fexp.set_apex(warthog::INF);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+            std::cout << i <<"\t" << alg_name << "\t" 
             << alg.get_nodes_expanded() << "\t" 
             << alg.get_nodes_generated() << "\t"
             << alg.get_nodes_touched() << "\t"
             << alg.get_search_time()  << "\t"
-            << len << "\t" 
-            << grfile << " " << problemfile << std::endl;
+            << len << "\t";
+            std::cout << problemfile << std::endl;
+
+            // run the experiment again but now suppose we have an 
+            // oracle that tells us the apex of the path. this search
+            // never expands down nodes before the apex and never expands
+            // any up nodes after the apex
+            fexp.set_apex(get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())));
+            len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+            std::cout << i <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t";
+            std::cout << problemfile << std::endl;
+
+            i++;
         }
     }
+    else if(alg_name == "chf-dcl")
+    {
+        std::string orderfile = cfg.get_param_value("order");
+        std::string arclabels = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels << std::endl;
+        std::string arclabels_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels_file << std::endl;
 
+        // load up the graph 
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+        // load up the node order
+        std::vector<uint32_t> order;
+        warthog::ch::load_node_order(orderfile.c_str(), order);
+        warthog::ch::value_index_swap_dimacs(order);
+
+        std::cerr << "preparing to search\n";
+        warthog::dcl_filter filter(arclabels_file.c_str(), &g, &order);
+        warthog::euclidean_heuristic h(&g);
+        warthog::fwd_ch_dcl_expansion_policy fexp(&g, &order, &filter);
+
+        warthog::flexible_astar< warthog::euclidean_heuristic, 
+           warthog::fwd_ch_dcl_expansion_policy>
+        alg(&h, &fexp);
+        alg.set_verbose(verbose);
+
+        std::cerr << "running experiments\n";
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            fexp.set_apex(warthog::INF);
+
+            int i = (it - parser.experiments_begin());
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+            std::cout << i <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t";
+            std::cout << problemfile << std::endl;
+
+            // run the experiment again but now suppose we have an 
+            // oracle that tells us the apex of the path. this search
+            // never expands down nodes before the apex and never expands
+            // any up nodes after the apex
+        //    fexp.set_apex(get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())));
+        //    len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        //    std::cout << i <<"\t" << alg_name << "\t" 
+        //    << alg.get_nodes_expanded() << "\t" 
+        //    << alg.get_nodes_generated() << "\t"
+        //    << alg.get_nodes_touched() << "\t"
+        //    << alg.get_search_time()  << "\t"
+        //    << len << "\t";
+        //    std::cout << problemfile << std::endl;
+
+        }
+    }
     else
     {
         std::cerr << "invalid search algorithm\n";
@@ -925,4 +1122,5 @@ main(int argc, char** argv)
         run_grid(cfg);
     }
 }
+
 

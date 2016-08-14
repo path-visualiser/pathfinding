@@ -190,7 +190,6 @@ class flexible_astar : public warthog::search
 		warthog::pqueue* open_;
         double cost_cutoff_; // early termination
         uint32_t exp_cutoff_;
-        uint32_t last_searchid_;
         std::function<void(warthog::search_node*)> on_relax_fn_;
 
 		// no copy

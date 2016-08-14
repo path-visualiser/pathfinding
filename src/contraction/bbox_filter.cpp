@@ -42,8 +42,8 @@ warthog::bbox_filter::filter(warthog::search_node* n, uint32_t edge_id)
 bool
 warthog::bbox_filter::filter__(uint32_t node_id, uint32_t edge_id)
 {
-    // prune any node whose down-bb does not 
-    // contain the target
+    // prune any node whose bounding-box 
+    // does not contain the target
     if(labels_.at(node_id).at(edge_id).contains(tx, ty))
     {
         return false;
@@ -193,7 +193,7 @@ warthog::bbox_filter::load_bbox_values(const char* filename)
     
     if(!ifs.good())
     {
-        std::cerr << "\nerror trying to load down-distance values from file " 
+        std::cerr << "\nerror trying to load bbox values from file " 
             << filename << std::endl;
         ifs.close();
         return;
