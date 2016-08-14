@@ -31,6 +31,7 @@ namespace graph
 {
 
 class planar_graph;
+class edge;
 
 } 
 
@@ -47,7 +48,7 @@ class dcl_filter
             ddist_ = 0;
         }
 
-        std::vector<warthog::geom::rectangle> edgebb_;
+        //std::vector<warthog::geom::rectangle> edgebb_;
         warthog::geom::rectangle bbox_;
         uint32_t min_lvl_;
         double ddist_;
@@ -74,7 +75,7 @@ class dcl_filter
         // of node @param n does not appear on any optimal path
         // to the target location
         bool 
-        filter(uint32_t node_id, uint32_t succ_num, double g_value);
+        filter(uint32_t node_id, warthog::graph::edge* e, double g_value);
 
 
         uint32_t
@@ -108,18 +109,16 @@ class dcl_filter
         load_dcl_file(const char* filename);
 
         bool 
-        dd_filter(uint32_t node_id, uint32_t succ_num, double g_value);
+        dd_filter(uint32_t node_id, warthog::graph::edge* e, double g_value);
 
         bool
-        bb_filter(uint32_t node_id, uint32_t succ_num);
+        bb_filter(uint32_t node_id, warthog::graph::edge* e);
 
         bool
-        lvl_filter(uint32_t node_id, uint32_t succ_num);
+        lvl_filter(uint32_t node_id, warthog::graph::edge* e);
 
         bool
-        edgebb_filter(uint32_t node_id, uint32_t edge_id);
-
-
+        edgebb_filter(uint32_t node_id, warthog::graph::edge* e);
 };
 
 }

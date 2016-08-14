@@ -46,7 +46,7 @@ warthog::fwd_ch_dcl_expansion_policy::expand(
     // determine whether current was reached via an up edge or a down edge
     bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
     //std::cerr << (up_travel ? "(UPTRAVEL) " : "(DNTRAVEL) ");
-    int32_t num_down_succ = -1;
+    //int32_t num_down_succ = -1;
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;
@@ -56,8 +56,9 @@ warthog::fwd_ch_dcl_expansion_policy::expand(
         // wheter the parent was reached by an up edge or a
         // down edge
         bool down_succ = get_rank(e.node_id_) < current_rank;
-        num_down_succ += down_succ;
-        if(down_succ && !nf_->filter(current_id, num_down_succ, current->get_g()))
+        //num_down_succ += down_succ;
+        //if(down_succ && !nf_->filter(current_id, num_down_succ, current->get_g()))
+        if(down_succ && !nf_->filter(current_id, &(*it), current->get_g() + e.wt_))
         {
             // prune down successors before the apex is reached
             if(apex_ != warthog::INF && !apex_reached_) { continue; }
