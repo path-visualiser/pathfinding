@@ -44,14 +44,14 @@ class dcl_filter
     {
         dcl_label()
         {
-            min_lvl_ = 0;
-            ddist_ = 0;
+//            min_lvl_ = 0;
+//            ddist_ = 0;
         }
 
         //std::vector<warthog::geom::rectangle> edgebb_;
         warthog::geom::rectangle bbox_;
-        uint32_t min_lvl_;
-        double ddist_;
+//        uint32_t min_lvl_;
+//        double ddist_;
     };
 
     public:
@@ -108,14 +108,14 @@ class dcl_filter
         void
         load_dcl_file(const char* filename);
 
-        bool 
-        dd_filter(uint32_t node_id, warthog::graph::edge* e, double g_value);
-
-        bool
-        bb_filter(uint32_t node_id, warthog::graph::edge* e);
-
-        bool
-        lvl_filter(uint32_t node_id, warthog::graph::edge* e);
+//        bool 
+//        dd_filter(uint32_t node_id, warthog::graph::edge* e, double g_value);
+//
+//        bool
+//        bb_filter(uint32_t node_id, warthog::graph::edge* e);
+//
+//        bool
+//        lvl_filter(uint32_t node_id, warthog::graph::edge* e);
 
         bool
         edgebb_filter(uint32_t node_id, warthog::graph::edge* e);
