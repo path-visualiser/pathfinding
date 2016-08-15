@@ -58,7 +58,7 @@ warthog::fwd_ch_dcl_expansion_policy::expand(
         bool down_succ = get_rank(e.node_id_) < current_rank;
         //num_down_succ += down_succ;
         //if(down_succ && !nf_->filter(current_id, num_down_succ, current->get_g()))
-        if(down_succ && !nf_->filter(current_id, &(*it), current->get_g() + e.wt_))
+        if(down_succ && !nf_->filter(current, &(*it)))
         {
             // prune down successors before the apex is reached
             if(apex_ != warthog::INF && !apex_reached_) { continue; }

@@ -66,17 +66,11 @@ class dcl_filter
 
         ~dcl_filter();
 
-        // return true if the node @param n odes not appear 
-        // on any optimal path to the target location
-        bool
-        filter(warthog::search_node* n);
-
         // return true if the ith successor (@param succ_index)
         // of node @param n does not appear on any optimal path
         // to the target location
         bool 
-        filter(uint32_t node_id, warthog::graph::edge* e, double g_value);
-
+        filter(warthog::search_node* n, warthog::graph::edge* e);
 
         uint32_t
         get_level(uint32_t);

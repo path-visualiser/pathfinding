@@ -37,17 +37,10 @@ warthog::dcl_filter::~dcl_filter()
     delete h_;
 }
 
-bool 
-warthog::dcl_filter::filter(warthog::search_node* n)
-{
-    return filter(n->get_id(), 0, n->get_g());
-}
-
 bool
-warthog::dcl_filter::filter(uint32_t node_id, warthog::graph::edge* e, 
-        double g_value)
+warthog::dcl_filter::filter(warthog::search_node* n, warthog::graph::edge* e)
 {
-    return edgebb_filter(node_id, e);
+    return edgebb_filter(n->get_id(), e);
 }
 
 // prune a node based on the maximum down distance
