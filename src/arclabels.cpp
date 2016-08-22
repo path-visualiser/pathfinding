@@ -1,4 +1,5 @@
 #include "apex_distance_filter.h"
+#include "arcflags_filter.h"
 #include "bbox_filter.h"
 #include "cfg.h"
 #include "ch_expansion_policy.h"
@@ -7,6 +8,7 @@
 #include "down_distance_filter.h"
 #include "fixed_graph_contraction.h"
 #include "graph.h"
+#include "helpers.h"
 #include "lazy_graph_contraction.h"
 #include "planar_graph.h"
 
@@ -27,7 +29,7 @@ help()
 	std::cerr << "valid parameters:\n"
     << "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	<< "\t--order [order-of-contraction file]\n"
-    << "\t--arclabels [downdist | arcflags | bbox | dcl ]\n"
+    << "\t--type [downdist | arcflags | bbox | dcl | chaf ]\n"
 	<< "\t--verbose (optional)\n";
 }
 
@@ -55,10 +57,10 @@ compute_down_distance()
         grfile.append(".ddist.arclabel");
         uint32_t firstid = 0;
         uint32_t lastid = g.get_num_nodes();
-        if(cfg.get_num_values("arclabels") == 2)
+        if(cfg.get_num_values("type") == 2)
         {
-            std::string first = cfg.get_param_value("arclabels");
-            std::string last = cfg.get_param_value("arclabels");
+            std::string first = cfg.get_param_value("type");
+            std::string last = cfg.get_param_value("type");
 
             if(strtol(first.c_str(), 0, 10) != 0)
             {
@@ -161,10 +163,10 @@ compute_apex_distance()
         grfile.append(".apex.arclabel");
         uint32_t firstid = 0;
         uint32_t lastid = g.get_num_nodes();
-        if(cfg.get_num_values("arclabels") == 2)
+        if(cfg.get_num_values("type") == 2)
         {
-            std::string first = cfg.get_param_value("arclabels");
-            std::string last = cfg.get_param_value("arclabels");
+            std::string first = cfg.get_param_value("type");
+            std::string last = cfg.get_param_value("type");
 
             if(strtol(first.c_str(), 0, 10) != 0)
             {
@@ -224,10 +226,10 @@ compute_bbox_labels()
         grfile.append(".bbox.arclabel");
         uint32_t firstid = 0;
         uint32_t lastid = g.get_num_nodes();
-        if(cfg.get_num_values("arclabels") == 2)
+        if(cfg.get_num_values("type") == 2)
         {
-            std::string first = cfg.get_param_value("arclabels");
-            std::string last = cfg.get_param_value("arclabels");
+            std::string first = cfg.get_param_value("type");
+            std::string last = cfg.get_param_value("type");
 
             if(strtol(first.c_str(), 0, 10) != 0)
             {
@@ -263,6 +265,74 @@ compute_bbox_labels()
     std::cerr << "all done!\n";
 }
 
+void
+compute_chaf_labels()
+{
+    std::cerr << "computing arcflags" << std::endl;
+    std::string grfile = cfg.get_param_value("dimacs");
+    std::string cofile = cfg.get_param_value("dimacs");
+    std::cerr << "param values " << std::endl;
+    std::string orderfile = cfg.get_param_value("order");
+    std::string partfile = cfg.get_param_value("part");
+    cfg.print_values("dimacs", std::cerr);
+
+    std::cerr << "grfile: "<< grfile << " cofile " << cofile << std::endl;
+
+    // load up (or create) the contraction hierarchy
+    warthog::graph::planar_graph g;
+    std::vector<uint32_t> order;
+    std::vector<uint32_t> part;
+
+    if(orderfile.compare("") != 0)
+    {
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+        warthog::ch::load_node_order(orderfile.c_str(), order, true);
+        warthog::helpers::load_integer_labels_dimacs(partfile.c_str(), part);
+
+        // output filename reflects the type and scope of the labeling
+        grfile.append(".af.arclabel");
+        uint32_t firstid = 0;
+        uint32_t lastid = g.get_num_nodes();
+        if(cfg.get_num_values("type") == 2)
+        {
+            std::string first = cfg.get_param_value("type");
+            std::string last = cfg.get_param_value("type");
+
+            if(strtol(first.c_str(), 0, 10) != 0)
+            {
+                firstid = strtol(first.c_str(), 0, 10);
+            }
+            if(strtol(last.c_str(), 0, 10) != 0)
+            {
+                lastid = strtol(last.c_str(), 0, 10);
+            }
+            grfile.append(".");
+            grfile.append(first);
+            grfile.append(".");
+            grfile.append(std::to_string(lastid));
+        }
+
+        // compute down_distance
+        warthog::arcflags_filter filter(&g, &order, &part);
+        filter.compute(firstid, lastid);
+        
+        // save the result
+        std::cerr << "saving contracted graph to file " << grfile << std::endl;
+        std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+        if(!out.good())
+        {
+            std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        }
+        filter.print(out);
+        out.close();
+    }
+    else
+    {
+        std::cerr << "required: node order file. aborting.\n";
+        return;
+    }
+    std::cerr << "all done!\n";
+}
 
 int main(int argc, char** argv)
 {
@@ -275,9 +345,10 @@ int main(int argc, char** argv)
 		{"verbose", no_argument, &verbose, 1},
 		{"dimacs",  required_argument, 0, 2},
 		{"order",  required_argument, 0, 1},
-        {"arclabels", required_argument, 0, 1}
+		{"part",  required_argument, 0, 1},
+        {"type", required_argument, 0, 1}
 	};
-	cfg.parse_args(argc, argv, "-hvd:o:a:", valid_args);
+	cfg.parse_args(argc, argv, "-hvd:o:p:a:", valid_args);
 
     if(argc == 1 || print_help)
     {
@@ -291,7 +362,13 @@ int main(int argc, char** argv)
         exit(0);
     }
 
-    std::string arclabel = cfg.get_param_value("arclabels");
+    std::string arclabel = cfg.get_param_value("type");
+    if(arclabel == "")
+    {
+        std::cerr << "missing required parameter: type" << std::endl;
+        exit(0);
+    }
+
     if(arclabel.compare("downdist") == 0)
     {
         compute_down_distance();
@@ -308,10 +385,13 @@ int main(int argc, char** argv)
     {
         compute_dcl_labels();
     }
+    if(arclabel.compare("chaf") == 0)
+    {
+        compute_chaf_labels();
+    }
     else
     {
-        std::cerr << "invalid option for parameter arclabel: " 
-            << arclabel << std::endl;
+        std::cerr << "invalid argument for parameter: type";
     }
     return 0;
 }

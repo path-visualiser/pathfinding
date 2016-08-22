@@ -120,6 +120,11 @@ class dimacs_parser
         void
         print(std::ostream&);
 
+        // convert to the graph format used by the METIS 
+        // graph partitioning library
+        void 
+        print_undirected_unweighted_metis(std::ostream&);
+
     private:
         void init();
         bool load_co_file(std::istream& fdimacs);

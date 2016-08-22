@@ -25,7 +25,7 @@ endif
 
 
 .PHONY: all
-all: fast
+all: dev
 
 .PHONY: fast
 fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
@@ -65,6 +65,7 @@ ch: makedirs warthog
 	@echo "linking..."
 	$(CC) ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) arclabels.cpp -o ./bin/arclabels -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: makedirs
 makedirs:

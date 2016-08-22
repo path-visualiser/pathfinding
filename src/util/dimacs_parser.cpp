@@ -1,12 +1,15 @@
 #include "constants.h"
 #include "dimacs_parser.h"
 
+#include <cassert>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
 #include <ostream>
+#include <set>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 warthog::dimacs_parser::dimacs_parser()
 {
@@ -91,7 +94,6 @@ bool
 warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 {
     nodes_->clear();
-
     uint32_t line = 1;
 	char* buf = new char[1024];
 	const char* delim = " \t";
@@ -290,4 +292,61 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
     }
     //std::cerr << "loaded "<<experiments_->size() << " queries\n";
     return true;
+}
+
+void
+warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
+{
+    std::unordered_map<uint32_t, std::set<uint32_t>> adj;
+    std::set<uint32_t> nodes;
+
+    uint32_t num_undirected_edges = 0;
+
+    // enumerate all the nodes
+    for(uint32_t i = 0; i < edges_->size(); i++)
+    {
+        warthog::dimacs_parser::edge e = edges_->at(i);
+        uint32_t id1 = e.head_id_;
+        uint32_t id2 = e.tail_id_;
+        nodes.insert(id1);
+        nodes.insert(id2);
+
+        if(adj.find(id1) == adj.end())
+        {
+            std::set<uint32_t> neis;
+            std::pair<uint32_t, std::set<uint32_t>> elt(id1, neis);
+            adj.insert(elt);
+        }
+        if(adj.find(id2) == adj.end())
+        {
+            std::set<uint32_t> neis;
+            std::pair<uint32_t, std::set<uint32_t>> elt(id2, neis);
+            adj.insert(elt);
+        }
+        std::set<uint32_t>& neis1 = adj.find(id1)->second;
+        std::set<uint32_t>& neis2 = adj.find(id2)->second;
+        if(neis1.find(id2) == neis1.end() && neis2.find(id1) == neis2.end())
+        {
+            num_undirected_edges++;
+        }
+
+        auto iter1 = adj.find(id1);
+        auto iter2 = adj.find(id2);
+        assert(iter1 != adj.end() && iter2 != adj.end());
+        iter1->second.insert(id2);
+        iter2->second.insert(id1);
+
+    }
+    std::cerr << "conversion done; " << nodes.size() << " nodes and " << num_undirected_edges << " edges; printing\n";
+
+    out << nodes.size() << " " << num_undirected_edges << std::endl;
+    for(auto it = nodes.begin(); it != nodes.end(); it++)
+    {
+        std::set<uint32_t>& neis = adj.find(*it)->second;
+        for(auto nit = neis.begin();  nit != neis.end(); nit++)
+        {
+            out << *nit << " "; 
+        }
+        out << std::endl;
+    }
 }
