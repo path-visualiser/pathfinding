@@ -109,7 +109,7 @@ warthog::arcflags_filter::print(std::ostream& out)
     if((bytes_per_label_ % 8) > 0) words_per_label++;
 
     // iterate over the labels for each outgoing arc of each node
-    for(uint32_t i = firstid_; i < lastid_; i++)
+    for(uint32_t i = firstid_; i <= lastid_; i++)
     {
         std::vector<uint8_t*>& node_flags = flags_.at(i);
         for(uint32_t j = 0; j < node_flags.size(); j++)
@@ -234,9 +234,9 @@ warthog::arcflags_filter::compute(uint32_t firstid, uint32_t lastid)
 {
     if(!g_ || !rank_) { return; } 
 
-    if(lastid_ >= g_->get_num_nodes()) { lastid_ = g_->get_num_nodes() - 1; }
     firstid_ = firstid;
     lastid_ = lastid;
+    if(lastid_ >= g_->get_num_nodes()) { lastid_ = g_->get_num_nodes() - 1; }
 
     std::cerr << "computing ch arcflag labels " 
         << "for all nodes in the id-range [" 
