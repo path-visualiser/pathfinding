@@ -134,3 +134,13 @@ warthog::ch::value_index_swap_dimacs(
         vec.at(tmp.at(i)) = i + min_id;
     }
 }
+
+void
+warthog::ch::partition_greedy_bottom_up(
+        warthog::graph::planar_graph* g, 
+        std::vector<uint32_t>* rank,
+        uint32_t nparts,
+        std::vector<uint32_t>* part)
+{
+
+}

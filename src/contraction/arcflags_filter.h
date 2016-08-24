@@ -55,15 +55,19 @@ class arcflags_filter
                 warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part,
-                char* arcflags_file);
+                const char* arcflags_file);
 
         ~arcflags_filter();
 
+        // return true if the ith edge of @param node_id
+        // (as specified by @param edge_index) cannot possibly 
+        // appear on any optimal path to the current target;
+        // return false otherwise.
         inline bool 
         filter(uint32_t node_id, uint32_t edge_idx)
         {
             uint8_t* label = flags_.at(node_id).at(edge_idx);
-            return label[t_byte_] & t_bitmask_;
+            return (label[t_byte_] & t_bitmask_) == 0;
         }
 
         void

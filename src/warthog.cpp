@@ -4,6 +4,7 @@
 // @created: August 2012
 //
 
+#include "arcflags_filter.h"
 #include "bbox_filter.h"
 #include "bidirectional_search.h"
 #include "cfg.h"
@@ -16,6 +17,7 @@
 #include "euclidean_heuristic.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
+#include "fwd_ch_af_expansion_policy.h"
 #include "fwd_ch_expansion_policy.h"
 #include "fwd_ch_dcl_expansion_policy.h"
 #include "fwd_ch_dd_expansion_policy.h"
@@ -727,10 +729,6 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "chf")
     {
         std::string orderfile = cfg.get_param_value("order");
-        std::string arclabels = cfg.get_param_value("filter");
-        std::cerr << "filter param " << arclabels << std::endl;
-        std::string arclabels_file = cfg.get_param_value("filter");
-        std::cerr << "filter param " << arclabels_file << std::endl;
 
         // load up the graph 
         warthog::graph::planar_graph g;
@@ -772,8 +770,6 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "chf-dd")
     {
         std::string orderfile = cfg.get_param_value("order");
-        std::string arclabels = cfg.get_param_value("filter");
-        std::cerr << "filter param " << arclabels << std::endl;
         std::string arclabels_file = cfg.get_param_value("filter");
         std::cerr << "filter param " << arclabels_file << std::endl;
 
@@ -868,11 +864,82 @@ run_dimacs(warthog::util::cfg& cfg)
             << grfile << " " << problemfile << std::endl;
         }
     }
+    else if(alg_name == "chf-af")
+    {
+        std::string orderfile = cfg.get_param_value("order");
+
+        // arclabels file
+        std::string arclabels_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels_file << std::endl;
+
+        // partition file
+        std::string partition_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << partition_file << std::endl;
+
+        std::cerr << "preparing to search\n";
+
+        // load up the graph 
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+        // load up the node order
+        std::vector<uint32_t> order;
+        warthog::ch::load_node_order(orderfile.c_str(), order, true);
+
+        // load up the node partition info
+        std::vector<uint32_t> part;
+        warthog::helpers::load_integer_labels_dimacs(
+                partition_file.c_str(), part);
+
+        // load up the arc labels
+        warthog::arcflags_filter filter(&g, &order, &part, arclabels_file.c_str());
+
+        warthog::euclidean_heuristic h(&g);
+        warthog::fwd_ch_af_expansion_policy fexp(&g, &order, &filter);
+
+        warthog::flexible_astar< warthog::euclidean_heuristic, 
+           warthog::fwd_ch_af_expansion_policy>
+        alg(&h, &fexp);
+        alg.set_verbose(verbose);
+
+        std::cerr << "running experiments\n";
+        int i = 0;
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+
+//            fexp.set_apex(warthog::INF);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+            std::cout << i <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t";
+            std::cout << problemfile << std::endl;
+
+            // run the experiment again but now suppose we have an 
+            // oracle that tells us the apex of the path. this search
+            // never expands down nodes before the apex and never expands
+            // any up nodes after the apex
+//            fexp.set_apex(get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())));
+//            len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+//            std::cout << i <<"\t" << alg_name << "\t" 
+//            << alg.get_nodes_expanded() << "\t" 
+//            << alg.get_nodes_generated() << "\t"
+//            << alg.get_nodes_touched() << "\t"
+//            << alg.get_search_time()  << "\t"
+//            << len << "\t";
+//            std::cout << problemfile << std::endl;
+
+            i++;
+        }
+    }
     else if(alg_name == "chf-bb")
     {
         std::string orderfile = cfg.get_param_value("order");
-        std::string arclabels = cfg.get_param_value("filter");
-        std::cerr << "filter param " << arclabels << std::endl;
         std::string arclabels_file = cfg.get_param_value("filter");
         std::cerr << "filter param " << arclabels_file << std::endl;
 
@@ -917,24 +984,22 @@ run_dimacs(warthog::util::cfg& cfg)
             // oracle that tells us the apex of the path. this search
             // never expands down nodes before the apex and never expands
             // any up nodes after the apex
-            fexp.set_apex(get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())));
-            len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
-            std::cout << i <<"\t" << alg_name << "\t" 
-            << alg.get_nodes_expanded() << "\t" 
-            << alg.get_nodes_generated() << "\t"
-            << alg.get_nodes_touched() << "\t"
-            << alg.get_search_time()  << "\t"
-            << len << "\t";
-            std::cout << problemfile << std::endl;
-
+//            fexp.set_apex(get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())));
+//            len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+//            std::cout << i <<"\t" << alg_name << "\t" 
+//            << alg.get_nodes_expanded() << "\t" 
+//            << alg.get_nodes_generated() << "\t"
+//            << alg.get_nodes_touched() << "\t"
+//            << alg.get_search_time()  << "\t"
+//            << len << "\t";
+//            std::cout << problemfile << std::endl;
+//
             i++;
         }
     }
     else if(alg_name == "chf-dcl")
     {
         std::string orderfile = cfg.get_param_value("order");
-        std::string arclabels = cfg.get_param_value("filter");
-        std::cerr << "filter param " << arclabels << std::endl;
         std::string arclabels_file = cfg.get_param_value("filter");
         std::cerr << "filter param " << arclabels_file << std::endl;
 
@@ -1099,6 +1164,7 @@ main(int argc, char** argv)
 		{"problem",  required_argument, 0, 1},
 		{"format",  required_argument, 0, 1},
 		{"order",  required_argument, 0, 1},
+		{"part",  required_argument, 0, 1},
         {"filter", required_argument, 0, 1}
 	};
 

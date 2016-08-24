@@ -22,7 +22,7 @@ warthog::arcflags_filter::arcflags_filter(
         warthog::graph::planar_graph* g,
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part,
-        char* arcflags_file)
+        const char* arcflags_file)
 {
     init(g, rank, part);
     load_arcflags_file(arcflags_file);
@@ -142,12 +142,13 @@ warthog::arcflags_filter::print(std::ostream& out)
 void
 warthog::arcflags_filter::load_arcflags_file(const char* filename)
 {
+    std::cerr << "loading arcflags file\n";
     std::ifstream ifs(filename);
 
     uint32_t num_parts;
 
     // skip comment lines
-    while(ifs.peek() == 'c')
+    while(ifs.peek() == '#')
     {
         while(ifs.get() != '\n');
     }
@@ -319,5 +320,5 @@ warthog::arcflags_filter::set_instance(warthog::problem_instance* instance)
 {
     uint32_t t_part = part_->at(instance->get_goal());
     t_byte_ = t_part >> 3;
-    t_bitmask_ = t_part & 7;
+    t_bitmask_ = 1 << (t_part & 7);
 }

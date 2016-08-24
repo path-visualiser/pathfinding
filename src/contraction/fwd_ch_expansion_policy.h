@@ -1,5 +1,5 @@
-#ifndef WARTHOG_FWD_CH_EXPANSION_POLICY
-#define WARTHOG_FWD_CH_EXPANSION_POLICY
+#ifndef WARTHOG_FWD_CH_EXPANSION_POLICY_H
+#define WARTHOG_FWD_CH_EXPANSION_POLICY_H
 
 // contraction/fwd_ch_expansion_policy.h
 //
