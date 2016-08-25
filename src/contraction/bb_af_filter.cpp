@@ -345,11 +345,16 @@ warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
                     labels_.at(source_id).at(e_idx).flags_[part_id >> 3]
                         |= (1 << (part_id & 7));
 
-                    int32_t x, y;
-                    this->g_->get_xy(n->get_id(), x, y);
-                    assert(x != warthog::INF && y != warthog::INF);
-                    labels_.at(source_id).at(e_idx).bbox_.grow(x, y);
-                    assert(labels_.at(source_id).at(e_idx).bbox_.is_valid());
+                    // only nodes that are in the down-closure get added
+                    // to the bounding box
+                    if(this->rank_->at(n->get_id()) < rank_->at(source_id))
+                    {
+                        int32_t x, y;
+                        this->g_->get_xy(n->get_id(), x, y);
+                        assert(x != warthog::INF && y != warthog::INF);
+                        labels_.at(source_id).at(e_idx).bbox_.grow(x, y);
+                        assert(labels_.at(source_id).at(e_idx).bbox_.is_valid());
+                    }
 
                 };
         dijkstra.apply_to_closed(fn_arcflags);
