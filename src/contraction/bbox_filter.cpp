@@ -168,18 +168,19 @@ warthog::bbox_filter::compute(uint32_t startid, uint32_t endid)
 void
 warthog::bbox_filter::print(std::ostream& out)
 {
-    out << "from_id\tto_id\tx1\ty1\tx2\ty2"<<std::endl;
-    for(uint32_t i = 0; i < labels_.size(); i++)
+    out << "# Bounding box edge labels for the graph file \n"
+        << g_->get_filename() << "\n" 
+        << "# Before printing labels are sorted by tail index. \n"
+        << "# Ties are broken using the original input ordering \n"
+        << "# (lower is better)\n";
+    out << "firstnode " << start_id_ << " lastnode " << last_id_ << "\n";
+    for(uint32_t i = start_id_; i <= last_id_; i++)
     {
-        uint32_t from_id = i + start_id_;
-        warthog::graph::node* from = g_->get_node(i + start_id_);
         std::vector<warthog::geom::rectangle> vrect = labels_.at(i);
         for(uint32_t j = 0; j < vrect.size(); j++)
         {
             warthog::geom::rectangle rect = vrect.at(j);
-            uint32_t to_id = (*(from->outgoing_begin() + j)).node_id_;
-            out << from_id << "\t" <<  to_id << "\t"
-                << rect.x1 << "\t" << rect.y1 << "\t"
+            out << rect.x1 << "\t" << rect.y1 << "\t"
                 << rect.x2 << "\t" << rect.y2 << "\t"
                 << std::endl;
         }
@@ -201,23 +202,59 @@ warthog::bbox_filter::load_bbox_values(const char* filename)
 
     uint32_t lines = 0;
     labels_.resize(g_->get_num_nodes());
-    while(true)
+    // skip comment lines
+    while(ifs.peek() == '#')
     {
-        // skip header line
-        while(ifs.peek() == 'f')
-        {
-            while(ifs.good() && ifs.get() != '\n');
-            lines++;
-        }
-
-        uint32_t from_id, to_id;
-        int32_t x1, y1, x2, y2;
-        ifs >> from_id >> to_id >> x1 >> y1 >> x2 >> y2;
-        if(ifs.eof()) { break; }
-
-        assert(from_id < labels_.size());
-        labels_.at(from_id).push_back(warthog::geom::rectangle(x1, y1, x2, y2));
+        while(ifs.good() && ifs.get() != '\n');
         lines++;
+    }
+    
+    bool bad_header = false;
+    std::string token;
+
+    ifs >> token;
+    if(token == "firstnode") { ifs >> start_id_; }
+    else { bad_header = true; }
+
+    ifs >> token;
+    if(token == "lastnode") { ifs >> last_id_; }
+    else { bad_header = true; }
+
+    if(bad_header)
+    {
+        std::cerr << " invalid header in file " << filename << std::endl;
+        exit(0);
+    }
+
+    if(!(start_id_ < g_->get_num_nodes() && 
+        last_id_ < g_->get_num_nodes() && 
+        start_id_ < last_id_)) 
+    {
+        std::cerr << " invalid header values in file " << filename << "\n";
+        exit(0);
+    }
+
+    for(uint32_t i = start_id_; i <= last_id_; i++)
+    {
+        warthog::graph::node* n = g_->get_node(i);
+        for(uint32_t j = 0; j < n->out_degree(); j++)
+        {
+            if(ifs.eof())
+            {
+                std::cerr << "unexpected eof in file " << filename << "\n";
+                exit(0);
+            }
+            if(!ifs.good())
+            {
+                std::cerr << "unexpected read error while loading " 
+                    << filename << "\n";
+                exit(0);
+            }
+
+            int32_t x1, y1, x2, y2;
+            ifs >> x1 >> y1 >> x2 >> y2;
+            labels_.at(i).push_back(warthog::geom::rectangle(x1, y1, x2, y2));
+        }
     }
     ifs.close();
 }
