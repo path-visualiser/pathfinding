@@ -1,4 +1,4 @@
-#include "arcflags_filter.h"
+#include "bb_af_filter.h"
 #include "constants.h"
 #include "flexible_astar.h"
 #include "fwd_ch_expansion_policy.h"
@@ -10,7 +10,7 @@
 #include <iostream>
 #include <set>
 
-warthog::arcflags_filter::arcflags_filter(
+warthog::bb_af_filter::bb_af_filter(
         warthog::graph::planar_graph* g,
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part)
@@ -18,32 +18,32 @@ warthog::arcflags_filter::arcflags_filter(
     init(g, rank, part);
 }
 
-warthog::arcflags_filter::arcflags_filter(
+warthog::bb_af_filter::bb_af_filter(
         warthog::graph::planar_graph* g,
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part,
-        const char* arcflags_file)
+        const char* bb_af_file)
 {
     init(g, rank, part);
-    load_arcflags_file(arcflags_file);
+    load_bb_af_file(bb_af_file);
 }
 
-warthog::arcflags_filter::~arcflags_filter()
+warthog::bb_af_filter::~bb_af_filter()
 {
-    for(uint32_t i = 0; i < flags_.size(); i++)
+    for(uint32_t i = 0; i < labels_.size(); i++)
     {
-        std::vector<uint8_t*>& node_flags = flags_.at(i);
-        for(uint32_t j = 0; j < node_flags.size(); j++)
+        std::vector<bbaf_label>& arclabs = labels_.at(i);
+        for(uint32_t j = 0; j < arclabs.size(); j++)
         {
-            uint8_t* label = node_flags.back();
-            delete [] label;
-            node_flags.pop_back();
+            bbaf_label& label = arclabs.back();
+            delete [] label.flags_;
+            arclabs.pop_back();
         }
     }
 }
 
 void 
-warthog::arcflags_filter::init(
+warthog::bb_af_filter::init(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part)
@@ -77,29 +77,40 @@ warthog::arcflags_filter::init(
     // allocate memory for arcflag labels. 
     for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
     {
-        flags_.push_back(std::vector<uint8_t*>());
+        labels_.push_back(std::vector<bbaf_label>());
         warthog::graph::node* n = g_->get_node(i);
         for(uint32_t j = 0; j < n->out_degree(); j++)
         {
-            uint8_t* label = new uint8_t[bytes_per_label_];
-            flags_.back().push_back(label);
+            bbaf_label label;
+            label.flags_ = new uint8_t[bytes_per_label_];
+            labels_.back().push_back(label);
 
             // each bit of each label is initialised to zero
             for(uint32_t k = 0; k < bytes_per_label_; k++)
             {
-                label[k] = 0;
+                label.flags_[k] = 0;
             }
         }
     }
     t_byte_ = 0;
     t_bitmask_ = 0;
+    tx_ = ty_ = 0;
 }
 
 void
-warthog::arcflags_filter::print(std::ostream& out)
+warthog::bb_af_filter::print(std::ostream& out)
 {
-    out << "# to save some space, labels are written out using 64-bit words\n";
-    out << "# with spaces between words for labels longer than 64 bits\n";
+    out 
+    << "# Each line (aside from comments & header) is an edge label.\n"
+    << "# A label comprises a set of arcflags (written out as 64bit words) \n"
+    << "# and a rectangular bounding box which contains all nodes in the \n"
+    << "# down-closure of the associated edge. The last 4 digits of each\n"
+    << "# line describe the bounding box: minx, miny, maxx, maxy.\n"
+    << "#\n"
+    << "# NB: Before printing, labels are sorted by edge-tail index. \n"
+    << "# Ties are broken using the order edges appear in the file \n"
+    << "# " << g_->get_filename() << std::endl
+    << "# (lower/earlier is better)\n";
 
     out << "firstnode " << firstid_ << " lastnode " << lastid_
         << " partitions " << nparts_ << std::endl;
@@ -111,19 +122,20 @@ warthog::arcflags_filter::print(std::ostream& out)
     // iterate over the labels for each outgoing arc of each node
     for(uint32_t i = firstid_; i <= lastid_; i++)
     {
-        std::vector<uint8_t*>& node_flags = flags_.at(i);
-        for(uint32_t j = 0; j < node_flags.size(); j++)
+        std::vector<bbaf_label>& arclabs = labels_.at(i);
+        for(uint32_t j = 0; j < arclabs.size(); j++)
         {
-            uint8_t* label = node_flags.at(j);
+            // print the arcflags
+            bbaf_label& label = arclabs.at(j);
             for(uint32_t word = 0; word < words_per_label; word++)
             {
                 uint8_t printed_word[8];
                 for(uint32_t k = 0; k < 8; k++)
                 {
-                    // read the label, byte by byte, one word at a time
+                    // read the flag label, byte by byte, one word at a time
                     if((word*8+k) < bytes_per_label_)
                     {
-                        printed_word[k] = label[word*8+k];
+                        printed_word[k] = label.flags_[word*8+k];
                     }
                     // pad the last word with leading zeroes if necessary
                     else
@@ -134,15 +146,20 @@ warthog::arcflags_filter::print(std::ostream& out)
                 out << *((uint64_t*)&(printed_word))
                     << (word < words_per_label ? " " : "");
             }
+
+            // print the bounding box
+            out << label.bbox_.x1 << " " << label.bbox_.y1 << " " 
+                << label.bbox_.y1 << " " << label.bbox_.y2;
+
             out << std::endl;
         }
     }
 }
 
 void
-warthog::arcflags_filter::load_arcflags_file(const char* filename)
+warthog::bb_af_filter::load_bb_af_file(const char* filename)
 {
-    std::cerr << "loading arcflags file\n";
+    std::cerr << "loading bb_af file\n";
     std::ifstream ifs(filename);
 
     uint32_t num_parts;
@@ -196,6 +213,7 @@ warthog::arcflags_filter::load_arcflags_file(const char* filename)
     // read labels for each outgoing arc
     uint32_t words_per_label = (bytes_per_label_ / 8);
     if((bytes_per_label_ % 8) != 0) { bytes_per_label_++; }
+    uint32_t lines = 0;
     for(uint32_t i = firstid_; i < (lastid_+1); i++)
     {
         warthog::graph::node* n = g_->get_node(i);
@@ -205,23 +223,40 @@ warthog::arcflags_filter::load_arcflags_file(const char* filename)
             {
                 if(!ifs.good())
                 {
-                    std::cerr << "unexpected read error loading arcflags; "
-                        << "aborting\n";
+                    std::cerr 
+                        << "unexpected error reading arcflags data on line "
+                        << lines << "; aborting\n";
                     exit(0);
                 }
 
                 uint64_t label;
                 ifs >> label;
-                *((uint64_t*)&flags_.at(i).at(j)[word*8]) = label;
-                assert(*((uint64_t*)&flags_.at(i).at(j)[word*8])
+                *((uint64_t*)&labels_.at(i).at(j).flags_[word*8]) = label;
+                assert(*((uint64_t*)&labels_.at(i).at(j).flags_[word*8])
                             == label);
             }
-        }
+
+            if(!ifs.good())
+            {
+                std::cerr 
+                    << "unexpected error reading arcflags data on line "
+                    << lines << "; aborting\n";
+                exit(0);
+            }
+
+            uint32_t x1, y1, x2, y2;
+            ifs >> x1 >> y1 >> x2 >> y2;
+            labels_.at(i).at(j).bbox_.x1 = x1;
+            labels_.at(i).at(j).bbox_.y1 = y1;
+            labels_.at(i).at(j).bbox_.x2 = x2;
+            labels_.at(i).at(j).bbox_.y2 = y2;
+            lines++;
+       }
     }
 }
 
 void
-warthog::arcflags_filter::compute()
+warthog::bb_af_filter::compute()
 {
 
     compute(0, g_->get_num_nodes()-1);
@@ -231,7 +266,7 @@ warthog::arcflags_filter::compute()
 // compute arclabels for all nodes whose ids are in
 // the range [firstid, lastid]
 void
-warthog::arcflags_filter::compute(uint32_t firstid, uint32_t lastid)
+warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
 {
     if(!g_ || !rank_) { return; } 
 
@@ -304,11 +339,18 @@ warthog::arcflags_filter::compute(uint32_t firstid, uint32_t lastid)
                     // label the edges of the source
                     // (TODO: make this stuff faster)
                     uint32_t part_id = part_->at(n->get_id());
-                    uint32_t edge_index  = (*idmap.find(
+                    uint32_t e_idx  = (*idmap.find(
                             n->get_parent()->get_id() == source_id ? 
                             n->get_id() : n->get_parent()->get_id())).second;
-                    flags_.at(source_id).at(edge_index)[part_id >> 3]
+                    labels_.at(source_id).at(e_idx).flags_[part_id >> 3]
                         |= (1 << (part_id & 7));
+
+                    int32_t x, y;
+                    this->g_->get_xy(n->get_id(), x, y);
+                    assert(x != warthog::INF && y != warthog::INF);
+                    labels_.at(source_id).at(e_idx).bbox_.grow(x, y);
+                    assert(labels_.at(source_id).at(e_idx).bbox_.is_valid());
+
                 };
         dijkstra.apply_to_closed(fn_arcflags);
     }
@@ -316,9 +358,10 @@ warthog::arcflags_filter::compute(uint32_t firstid, uint32_t lastid)
 }
 
 void
-warthog::arcflags_filter::set_instance(warthog::problem_instance* instance)
+warthog::bb_af_filter::set_instance(warthog::problem_instance* instance)
 {
     uint32_t t_part = part_->at(instance->get_goal());
     t_byte_ = t_part >> 3;
     t_bitmask_ = 1 << (t_part & 7);
+    g_->get_xy(instance->get_goal(), tx_, ty_);
 }
