@@ -72,7 +72,27 @@ class bidirectional_search : public warthog::search
             this->search(startid, goalid);
 
 #ifndef NDEBUG
+            if(get_verbose())
+            {
+                std::vector<warthog::search_node*> path;
+                warthog::search_node* apex = v_;
+                reconstruct_path(path);
 
+                for(uint32_t i = 0; i < path.size(); i++)
+                {
+                    warthog::search_node* n = path.at(i);
+                    int32_t x, y;
+                    fexpander_->get_xy(n, x, y);
+                    if(&*n == &*apex)
+                    {
+                        std::cerr << "(apex)";
+                    }
+                    std::cerr 
+                        << "final path: (" << x << ", " << y << ")...";
+                    n->print(std::cerr);
+                    std::cerr << std::endl;
+                }
+            }
 #endif
             cleanup();
             return best_cost_;
@@ -101,7 +121,7 @@ class bidirectional_search : public warthog::search
         warthog::expansion_policy* bexpander_;
         H* heuristic_;
         bool dijkstra_;
-        bool forward_;
+        bool forward_next_;
 
         // v is the section of the path in the forward
         // direction and w is the section of the path
@@ -112,14 +132,38 @@ class bidirectional_search : public warthog::search
         double best_cost_;
         warthog::problem_instance instance_;
 
+        void
+        reconstruct_path(std::vector<warthog::search_node*>& path)
+        {
+            if(&*v_ == &*bexpander_->generate(v_->get_id()))
+            {
+                warthog::search_node* tmp = v_;
+                v_ = w_;
+                w_ = tmp;
+            }
+
+            while(v_)
+            {
+               path.push_back(v_);
+               v_ = v_->get_parent();
+            }
+            std::reverse(path.begin(), path.end());
+
+            while(w_)
+            {
+               path.push_back(w_);
+               w_ = w_->get_parent();
+            }
+        }
+
         // modify this function to balance the search
         // by default the search expands one node in
         // each direction then switches to the other direction
         bool
-        expand_forward()
+        forward_next()
         {
-            forward_ = !forward_;
-            return forward_;
+            forward_next_ = !forward_next_;
+            return forward_next_;
         }
 
         void 
@@ -156,17 +200,31 @@ class bidirectional_search : public warthog::search
                     heuristic_->h(startid, goalid));
             bopen_->push(goal);
 
-            // interleave search 
-            forward_ = false;
-            while(fopen_->size() > 0 && bopen_->size() > 0)
+            // interleave search; we terminate when the best lower bound
+            // is larger than the cost of the best solution so far (or when
+            // we exhaust both open lists)
+            //
+            // NB: in a standard formulation we can terminate when either
+            // open list is exhausted. however in a more general context
+            // bi-directional search might choose to ignore an edge so it
+            // can be explored in the opposite direction. thus one open list
+            // can be exhausted and it still makes sense to continue the
+            // search. such an algorithm might be more efficient
+            // (e.g. CH with arc flags) 
+            warthog::search_node *ftop = 0, *btop = 0;
+            while(fopen_->size() || bopen_->size())
             {
+                if(fopen_->size() > 0) { ftop = fopen_->peek(); } 
+                if(bopen_->size() > 0) { btop = bopen_->peek(); } 
+
                 // the way we calculate the lower-bound on solution cost 
-                // differs depending on the search algorithm at hand. 
+                // differs when we have a heuristic available vs not.
                 uint32_t best_bound_ = dijkstra_ ? 
-                    (fopen_->peek()->get_g() + bopen_->peek()->get_g()) : 
-                    (std::min( // alternative termination for bi-A* and bi-CH
-                        fopen_->peek()->get_f(), 
-                        bopen_->peek()->get_f()));
+                    // no heuristic
+                    (ftop->get_g() + btop->get_g()) : 
+                    // with a heuristic
+                    (std::min( 
+                        ftop->get_f(), btop->get_f()));
 
                 // terminate if we cannot improve the best solution found so far
                 if(best_bound_ > best_cost_)
@@ -182,41 +240,51 @@ class bidirectional_search : public warthog::search
                 }
 
                 // ok, we still have hope. let's keep expanding. 
-                // NB: if we can't improve in any one direction we expand a 
-                // node in the other direction instead (regardless of 
-                // interleave policy)
-                if(this->expand_forward())
+                if(forward_next())
                 {
-                    if(fopen_->peek()->get_f() < best_cost_)
+                    if(ftop->get_f() < best_cost_ && fopen_->size()) 
                     {
                         warthog::search_node* current = fopen_->pop();
                         expand(current, fopen_, fexpander_, bexpander_, goalid);
                     }
-                    else
+                    else if(btop->get_f() < best_cost_ && bopen_->size())
                     {
+                        // we can't improve the best solution in the forward
+                        // direction so we ignore the interleave policy and 
+                        // expand a node in the backward direction instead
                         warthog::search_node* current = bopen_->pop();
                         expand(current, bopen_, bexpander_, fexpander_, startid);
+                    }
+                    else 
+                    {
+                        // search is finished in both directions
+                        break;
                     }
                 }
                 else 
                 {
-                    if(bopen_->peek()->get_f() < best_cost_)
+                    if(btop->get_f() < best_cost_ && bopen_->size())
                     {
                         warthog::search_node* current = bopen_->pop();
                         expand(current, bopen_, bexpander_, fexpander_, startid);
                     }
-                    else
+                    else if(ftop->get_f() < best_cost_ && fopen_->size())
                     {
+                        // we can't improve the best solution in the backward
+                        // direction so we ignore the interleave policy and 
+                        // expand a node in the forward direction instead
                         warthog::search_node* current = fopen_->pop();
                         expand(current, fopen_, fexpander_, bexpander_, goalid);
                     }
+                    else
+                    {
+                        // search is finished in both directions
+                        break;
+                    }
                 }
-
-
             }
 
-            assert(best_cost_ != warthog::INF ||
-                    (v_->get_g() != warthog::INF && w_->get_g() != warthog::INF));
+            assert(best_cost_ != warthog::INF || (v_ == 0 && w_ == 0));
 
 			mytimer.stop();
 			search_time_ = mytimer.elapsed_time_micro();

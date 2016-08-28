@@ -9,6 +9,7 @@
 #include "bbox_filter.h"
 #include "bidirectional_search.h"
 #include "cfg.h"
+#include "chaf_expansion_policy.h"
 #include "ch_expansion_policy.h"
 #include "contraction.h"
 #include "dimacs_parser.h"
@@ -609,7 +610,7 @@ run_dimacs(warthog::util::cfg& cfg)
         alg.set_verbose(verbose);
 
         int i = 0;
-        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -641,7 +642,7 @@ run_dimacs(warthog::util::cfg& cfg)
         alg.set_verbose(verbose);
 
         int i = 0;
-        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -673,6 +674,7 @@ run_dimacs(warthog::util::cfg& cfg)
         alg.set_verbose(verbose);
 
         int i = 0;
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -712,7 +714,61 @@ run_dimacs(warthog::util::cfg& cfg)
 
         std::cerr << "running experiments\n";
         int i = 0;
-        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i++ <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
+    }
+    else if(alg_name == "chaf")
+    {
+        std::string orderfile = cfg.get_param_value("order");
+
+        std::string arclabels_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << arclabels_file << std::endl;
+
+        std::string partition_file = cfg.get_param_value("filter");
+        std::cerr << "filter param " << partition_file << std::endl;
+
+        // load up the graph 
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+        // load up the node order
+        std::vector<uint32_t> order;
+        warthog::ch::load_node_order(orderfile.c_str(), order);
+        warthog::ch::value_index_swap_dimacs(order);
+
+        // load up the node partition info
+        std::vector<uint32_t> part;
+        warthog::helpers::load_integer_labels_dimacs(
+                partition_file.c_str(), part);
+        
+        // load up the arc-flags
+        warthog::arcflags_filter filter(&g, &order, &part, arclabels_file.c_str());
+
+        std::cerr << "preparing to search\n";
+        //warthog::zero_heuristic h;
+        warthog::euclidean_heuristic h(&g);
+        warthog::chaf_expansion_policy fexp(&g, &order, &filter);
+        warthog::chaf_expansion_policy bexp (&g, &order, &filter, true);
+        //warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+        warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
+        alg.set_verbose(verbose);
+
+        std::cerr << "running experiments\n";
+        int i = 0;
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -753,7 +809,7 @@ run_dimacs(warthog::util::cfg& cfg)
 
         std::cerr << "running experiments\n";
         int i = 0;
-        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
@@ -844,8 +900,7 @@ run_dimacs(warthog::util::cfg& cfg)
 
         std::cerr << "running experiments\n";
         int i = 0;
-        //std::cout << "id\texp\tgen\ttouch\tmicros\tplen\textra_exps\tmap\n";
-        std::cout << "id\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
         for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
                 it != parser.experiments_end(); it++)
         {
