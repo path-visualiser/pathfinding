@@ -52,6 +52,7 @@ class fwd_ch_bbaf_expansion_policy : public expansion_policy
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
         warthog::bb_af_filter* filter_;
+        uint32_t search_id_;
 
         inline uint32_t
         get_rank(uint32_t id)

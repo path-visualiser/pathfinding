@@ -84,7 +84,7 @@ class bb_af_filter
         }
 
         void
-        set_instance(warthog::problem_instance* instance);
+        set_goal(uint32_t goalid);
 
         void
         compute();

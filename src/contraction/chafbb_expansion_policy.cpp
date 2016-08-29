@@ -1,13 +1,13 @@
-#include "arcflags_filter.h"
-#include "chaf_expansion_policy.h"
+#include "bb_af_filter.h"
+#include "chafbb_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
 #include "search_node.h"
 
-warthog::chaf_expansion_policy::chaf_expansion_policy(
+warthog::chafbb_expansion_policy::chafbb_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank, 
-        warthog::arcflags_filter* filter,
+        warthog::bb_af_filter* filter,
         bool backward,
         warthog::ch::search_direction sd)
     : expansion_policy(g->get_num_nodes())
@@ -22,7 +22,7 @@ warthog::chaf_expansion_policy::chaf_expansion_policy(
 }
 
 void
-warthog::chaf_expansion_policy::expand(warthog::search_node* current,
+warthog::chafbb_expansion_policy::expand(warthog::search_node* current,
         warthog::problem_instance* problem)
 {
     reset();
@@ -74,7 +74,7 @@ warthog::chaf_expansion_policy::expand(warthog::search_node* current,
                 assert(edge_index > -1 && edge_index < m->out_degree());
             }
 
-            if(!filter_->filter(from_id, edge_index))
+            if(!filter_->filter(from_id, edge_index, backward_))
             {
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
                 continue;
@@ -89,7 +89,7 @@ warthog::chaf_expansion_policy::expand(warthog::search_node* current,
 }
 
 uint32_t
-warthog::chaf_expansion_policy::mem()
+warthog::chafbb_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + 

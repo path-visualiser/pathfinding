@@ -363,10 +363,10 @@ warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
 }
 
 void
-warthog::bb_af_filter::set_instance(warthog::problem_instance* instance)
+warthog::bb_af_filter::set_goal(uint32_t goalid)
 {
-    uint32_t t_part = part_->at(instance->get_goal());
+    uint32_t t_part = part_->at(goalid);
     t_byte_ = t_part >> 3;
     t_bitmask_ = 1 << (t_part & 7);
-    g_->get_xy(instance->get_goal(), tx_, ty_);
+    g_->get_xy(goalid, tx_, ty_);
 }

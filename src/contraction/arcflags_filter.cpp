@@ -315,10 +315,3 @@ warthog::arcflags_filter::compute(uint32_t firstid, uint32_t lastid)
     std::cerr << "\nall done\n"<< std::endl;
 }
 
-void
-warthog::arcflags_filter::set_instance(warthog::problem_instance* instance)
-{
-    uint32_t t_part = part_->at(instance->get_goal());
-    t_byte_ = t_part >> 3;
-    t_bitmask_ = 1 << (t_part & 7);
-}

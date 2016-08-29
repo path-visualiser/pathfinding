@@ -22,7 +22,11 @@ warthog::fwd_ch_bbaf_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    filter_->set_instance(instance);
+    if(instance->get_searchid() != search_id_)
+    {
+        filter_->set_goal(instance->get_goal());
+        search_id_ = instance->get_searchid();
+    }
 
     warthog::search_node* pn = current->get_parent();
     uint32_t current_id = current->get_id();
