@@ -47,6 +47,12 @@ class fixed_graph_contraction : public warthog::ch::graph_contraction
 
         virtual ~fixed_graph_contraction();
 
+        void
+        get_order(std::vector<uint32_t>& order)
+        {
+            order = *order_;
+        }
+
         virtual size_t
         mem();
 

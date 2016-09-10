@@ -34,22 +34,39 @@ void contract_graph()
 
     std::cerr << "grfile: "<< grfile << " cofile " << cofile << std::endl;
 
-    // load up (or create) the contraction hierarchy
+    // contract a graph and create a hierarchy
     warthog::graph::planar_graph g;
     std::vector<uint32_t> order;
 
     if(orderfile.compare("") != 0)
     {
-        // load up existing contraction hierarchy
+        // use an existing node order
         g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
         warthog::ch::load_node_order(orderfile.c_str(), order);
         warthog::ch::fixed_graph_contraction contractor(&g, &order);
         contractor.set_verbose(verbose);
         contractor.contract();
+
+        // save the order of contraction
+        contractor.get_order(order);
+        std::string orderfile = grfile + ".ooc";
+        std::cerr << "saving order to file " << orderfile << std::endl;
+        warthog::ch::write_node_order(orderfile.c_str(), order);
+
+        // save the result
+        grfile.append(".ch");
+        std::cerr << "saving contracted graph to file " << grfile << std::endl;
+        std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+        if(!ch_out.good())
+        {
+            std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        }
+        g.print_dimacs_gr(ch_out);
+        ch_out.close();
     }
     else
     {
-        // create a new contraction hierarchy 
+        // create a new contraction hierarchy with dynamic node ordering
         g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
         warthog::ch::lazy_graph_contraction contractor(&g);
         contractor.set_verbose(verbose);

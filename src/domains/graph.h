@@ -37,7 +37,8 @@ class edge
             wt_ = wt;
         }
 
-        edge(const warthog::graph::edge& other) { node_id_ = other.node_id_; wt_ = other.wt_; }
+        edge(const warthog::graph::edge& other) 
+        { node_id_ = other.node_id_; wt_ = other.wt_; }
 
         edge&
         operator=(const warthog::graph::edge& other) 
@@ -149,6 +150,23 @@ class node
         out_degree()
         {
             return out_deg_;
+        }
+
+        // find the index of an outgoing edge whose head 
+        // node is @param to_id. the index is relative to
+        // ::outgoing_begin() and warthog::INF if no such
+        // edge exists
+        uint32_t
+        find_edge_index(uint32_t to_id, uint32_t start_index = 0)
+        {
+            for(int i = start_index; i < out_deg_; i++)
+            {
+                if(outgoing_[i].node_id_ == to_id)
+                {
+                    return i;
+                }
+            }
+            return warthog::INF;
         }
 
         inline size_t
