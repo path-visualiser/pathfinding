@@ -163,9 +163,7 @@ class bidirectional_search : public warthog::search
         bool
         forward_next()
         {
-            bool tmp = forward_next_;
             forward_next_ = !forward_next_;
-            assert(tmp != forward_next_);
             return forward_next_;
         }
 
