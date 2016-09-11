@@ -54,6 +54,7 @@ class bidirectional_search : public warthog::search
             bopen_ = new pqueue(512, true);
             
             dijkstra_ = false;
+            forward_next_ = true;
             if(typeid(*heuristic_) == typeid(warthog::zero_heuristic))
             {
                 dijkstra_ = true;
@@ -162,7 +163,9 @@ class bidirectional_search : public warthog::search
         bool
         forward_next()
         {
+            bool tmp = forward_next_;
             forward_next_ = !forward_next_;
+            assert(tmp != forward_next_);
             return forward_next_;
         }
 
@@ -176,6 +179,7 @@ class bidirectional_search : public warthog::search
             this->reset_metrics();
             best_cost_ = warthog::INF;
             v_ = w_ = 0;
+            forward_next_ = true;
 
             #ifndef NDEBUG
             if(verbose_)
