@@ -11,6 +11,8 @@ warthog::fwd_ch_af_expansion_policy::fwd_ch_af_expansion_policy(
 {
     rank_ = rank;
     filter_ = filter;
+    apex_ = warthog::INF;
+    apex_reached_ = false;
 }
 
 warthog::fwd_ch_af_expansion_policy::~fwd_ch_af_expansion_policy()
@@ -50,6 +52,8 @@ warthog::fwd_ch_af_expansion_policy::expand(
         {
             if(!filter_->filter(current_id, it - begin))
             {
+                // prune up successors above the apex
+                if(rank_->at(e.node_id_) > apex_) { continue; }
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
             }
         }

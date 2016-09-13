@@ -40,6 +40,12 @@ class fwd_ch_af_expansion_policy : public expansion_policy
         virtual void
         get_xy(warthog::search_node*, int32_t& x, int32_t& y);
 
+        void
+        set_apex(uint32_t apex) 
+        { 
+            apex_ = apex; 
+        }
+
         virtual uint32_t
         mem()
         {
@@ -47,11 +53,14 @@ class fwd_ch_af_expansion_policy : public expansion_policy
                 sizeof(this);
         }
 
+
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
         warthog::arcflags_filter* filter_;
         uint32_t search_id_;
+        bool apex_reached_;
+        uint32_t apex_;
 
         inline uint32_t
         get_rank(uint32_t id)
