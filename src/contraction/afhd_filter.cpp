@@ -1,4 +1,5 @@
-#include "afh_filter.h"
+#include "afhd_filter.h"
+#include "ch_expansion_policy.h"
 #include "constants.h"
 #include "contraction.h"
 #include "flexible_astar.h"
@@ -12,7 +13,7 @@
 #include <set>
 #include <unordered_map>
 
-warthog::afh_filter::afh_filter(
+warthog::afhd_filter::afhd_filter(
         warthog::graph::planar_graph* g,
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part)
@@ -20,17 +21,17 @@ warthog::afh_filter::afh_filter(
     init(g, rank, part);
 }
 
-warthog::afh_filter::afh_filter(
+warthog::afhd_filter::afhd_filter(
         warthog::graph::planar_graph* g,
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part,
-        const char* afh_file)
+        const char* afhd_file)
 {
     init(g, rank, part);
-    load_afh_file(afh_file);
+    load_afhd_file(afhd_file);
 }
 
-warthog::afh_filter::~afh_filter()
+warthog::afhd_filter::~afhd_filter()
 {
     for(uint32_t i = 0; i < flags_.size(); i++)
     {
@@ -45,7 +46,7 @@ warthog::afh_filter::~afh_filter()
 }
 
 void 
-warthog::afh_filter::init(
+warthog::afhd_filter::init(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part)
@@ -99,7 +100,7 @@ warthog::afh_filter::init(
 }
 
 void
-warthog::afh_filter::print(std::ostream& out)
+warthog::afhd_filter::print(std::ostream& out)
 {
     out << "# to save some space, labels are written out using 64-bit words\n";
     out << "# with spaces between words for labels longer than 64 bits\n";
@@ -143,7 +144,7 @@ warthog::afh_filter::print(std::ostream& out)
 }
 
 void
-warthog::afh_filter::load_afh_file(const char* filename)
+warthog::afhd_filter::load_afhd_file(const char* filename)
 {
     std::cerr << "loading arcflags file\n";
     std::ifstream ifs(filename);
@@ -224,7 +225,7 @@ warthog::afh_filter::load_afh_file(const char* filename)
 }
 
 void
-warthog::afh_filter::compute()
+warthog::afhd_filter::compute()
 {
 
     compute(0, g_->get_num_nodes()-1);
@@ -234,7 +235,7 @@ warthog::afh_filter::compute()
 // compute arclabels for all nodes whose ids are in
 // the range [firstid, lastid]
 void
-warthog::afh_filter::compute(uint32_t firstid, uint32_t lastid)
+warthog::afhd_filter::compute(uint32_t firstid, uint32_t lastid)
 {
     if(!g_ || !rank_) { return; } 
 
@@ -246,20 +247,20 @@ warthog::afh_filter::compute(uint32_t firstid, uint32_t lastid)
     std::vector<uint32_t> ids_by_rank(*rank_); 
     warthog::ch::value_index_swap_dimacs(ids_by_rank);
 
-    std::cerr << "computing afh down-labels\n";
+    std::cerr << "computing afhd down-labels\n";
     compute_down_flags(ids_by_rank);
 
-    std::cerr << "computing afh up-labels\n";
+    std::cerr << "computing afhd up-labels\n";
     compute_up_flags(ids_by_rank);
 
     std::cerr << "\nall done\n"<< std::endl;
 }
 
 //void
-//warthog::afh_filter::compute_up_flags()
+//warthog::afhd_filter::compute_up_flags()
 //{
 //    // traverse the hierarchy top-to-bottom
-//    std::cerr << "computing afh up-labels\n";
+//    std::cerr << "computing afhd up-labels\n";
 //    for(uint32_t source_id = last_id_; source_id >= firstid_; source_id--)
 //    {
 //        std::cerr << "\rprocessing node " << i << "; continues until node " 
@@ -367,7 +368,7 @@ warthog::afh_filter::compute(uint32_t firstid, uint32_t lastid)
 //}
 
 void
-warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
+warthog::afhd_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
 {
     // traverse the hierarchy top-to-bottom
     for(int32_t idx = ids_by_rank.size()-1; idx >= 0; idx--)
@@ -430,7 +431,7 @@ warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
 }
 
 void
-warthog::afh_filter::unpack(uint32_t from_id, uint32_t edge_idx,
+warthog::afhd_filter::unpack(uint32_t from_id, uint32_t edge_idx,
         std::set<uint32_t>& intermediate)
 {
     warthog::graph::node* from = g_->get_node(from_id);
@@ -469,67 +470,90 @@ warthog::afh_filter::unpack(uint32_t from_id, uint32_t edge_idx,
 }
 
 void
-warthog::afh_filter::compute_down_flags(std::vector<uint32_t>& ids_by_rank)
+warthog::afhd_filter::compute_down_flags(std::vector<uint32_t>& ids_by_rank)
 {
-    // compute down-flags. 
-    for(uint32_t idx = 0; idx < ids_by_rank.size(); idx++)
+    warthog::zero_heuristic heuristic;
+    warthog::ch_expansion_policy expander(g_, rank_, false, warthog::ch::DOWN);
+
+    warthog::flexible_astar<
+        warthog::zero_heuristic,
+        warthog::ch_expansion_policy> dijkstra(&heuristic, &expander);
+
+    // need to keep track of the first edge on the way to the current node
+    // (the solution is a bit hacky as we break the chain of backpointers 
+    // to achieve this; it doesn't matter, we don't care about the path)
+    std::function<void(warthog::search_node*)> relax_fn = 
+            [] (warthog::search_node* n) -> void
+            {
+                // the start node and its children don't need their 
+                // parent pointers updated. for all other nodes the
+                // grandparent becomes the parent
+                if(n->get_parent()->get_parent() != 0)
+                {
+                    if(n->get_parent()->get_parent()->get_parent() != 0)
+                    {
+                        n->set_parent(n->get_parent()->get_parent());
+                    }
+                }
+            };
+    dijkstra.apply_on_relax(relax_fn);
+
+    // label each down-edge, (m, n), being careful to avoid
+    // redundant paths such as <m, n, q> when <m, q> exists
+    for(uint32_t i = 0; i <= lastid_; i++)
     {
-        std::cerr << "\rprocessing node ranked " << idx 
-            << "; continues until rank " << (ids_by_rank.size()-1);
-        uint32_t n_id = ids_by_rank.at(idx);
+        std::cerr << "\rprocessing node " << i << "; continues"
+            << " until node " << lastid_;
+        uint32_t source_id = i;
+        dijkstra.get_length(source_id, warthog::INF);
+        
+        // create a rectangle label for every outgoing edge
+        warthog::graph::node* source = g_->get_node(source_id);
 
-        warthog::graph::node* n = g_->get_node(n_id);
-        uint32_t n_col = part_->at(n_id);
-
-        // label each down-edge, (m, n), being careful to avoid
-        // redundant paths such as <m, n, q> when <m, q> exists
-        for(warthog::graph::edge_iter ei_mn = n->incoming_begin(); 
-            ei_mn != n->incoming_end(); ei_mn++)
+        // we need an easy way to convert between the ids of nodes
+        // adjacent to the source and their corresponding edge index
+        std::unordered_map<uint32_t, uint32_t> idmap;
+        uint32_t edge_idx = 0;
+        for(warthog::graph::edge_iter it = source->outgoing_begin(); 
+                it != source->outgoing_end(); it++)
         {
-            // we focus on down edges where m > n 
-            uint32_t m_id = (*ei_mn).node_id_;
-            if(rank_->at(m_id) < rank_->at(n_id)) { continue; }
-
-            // to avoid redundant paths we build a set with down-successors
-            // of m which might also be down-successors of n
-            warthog::graph::node* m = g_->get_node(m_id);
-            std::unordered_map<uint32_t, warthog::graph::edge> m_down;
-            for(warthog::graph::edge_iter em = m->outgoing_begin();
-                    em != m->outgoing_end(); em++)
-            {
-                if(rank_->at((*em).node_id_) > rank_->at(n_id)) { continue; }
-                m_down.insert(
-                        std::pair<uint32_t, warthog::graph::edge>(
-                            (*em).node_id_, *em));
-            }
-
-            // next we construct a label for the edge (m, n) by taking
-            // a union of arcflags from the non-redundant down successors of n 
-            uint32_t e_mn_index = m->find_edge_index(n_id);
-            assert(e_mn_index != warthog::INF);
-            uint8_t* e_mn_flags = flags_.at(m_id).at(e_mn_index);
-
-            for(warthog::graph::edge_iter en = n->outgoing_begin(); 
-                    en != n->outgoing_end(); en++)
-            {
-                // only down successors
-                if(rank_->at((*en).node_id_) > rank_->at(n_id)) { continue; }
-
-                // only if the down path <m, n, n'> is not redundant
-                std::unordered_map<uint32_t, warthog::graph::edge>::iterator mit
-                    = m_down.find((*en).node_id_);
-                if(mit != m_down.end() &&
-                        (*mit).second.wt_ < ((*ei_mn).wt_ + (*en).wt_)) { continue; }
-
-                // label (m, n) with colours that are reachable via 
-                // non-redundant edges to the down-successors of n
-                uint32_t en_idx = en - n->outgoing_begin();
-                for(uint8_t j = 0; j < bytes_per_label_; j++)
-                { e_mn_flags[j] |= flags_.at(n_id).at(en_idx)[j]; }
-            }
-            //finally, label (m, n) with the colour of n
-            e_mn_flags[n_col >> 3] |= (1 << (n_col & 7));
+            idmap.insert(
+                    std::pair<uint32_t, uint32_t>((*it).node_id_, edge_idx));
+            edge_idx++;
         }
+
+        // label each arc, e, of the source with the colour of every node 
+        // that is reached by an optimal down path whose first edge is e
+        std::function<void(warthog::search_node*)> label_fn = 
+                [this, &source_id, &idmap](warthog::search_node* n) -> void
+                {
+                    // skip the source (it doesn't appear on any path)
+                    assert(n);
+                    if(n->get_id() == source_id) { return; } 
+                    assert(n->get_parent());
+
+                    // identify the first arc on the optimal down path 
+                    // to node n
+                    std::unordered_map<uint32_t, uint32_t>::iterator it;
+                    if(n->get_parent()->get_parent() == 0)
+                    // special case for the successors of the source
+                    { it = idmap.find(n->get_id()); }
+                    else
+                    // all the other nodes
+                    { it = idmap.find(n->get_parent()->get_id()); }
+
+                    if(it == idmap.end())
+                    {
+                        std::cerr << "err; invalid first edge; "
+                             << " n id: "<< n->get_id() << " parent id: " 
+                             << n->get_parent()->get_id() << std::endl;
+                        exit(0);
+                    }
+                    uint32_t n_col = part_->at(n->get_id());
+                    flags_.at(source_id).at((*it).second)[n_col >> 3] 
+                        |= (1 << (n_col & 7));
+                };
+        dijkstra.apply_to_closed(label_fn);
     }
     std::cerr << "\ndone\n";
 }

@@ -11,6 +11,7 @@
 #include "cfg.h"
 #include "chaf_expansion_policy.h"
 #include "chafbb_expansion_policy.h"
+#include "chase_search.h"
 #include "ch_expansion_policy.h"
 #include "contraction.h"
 #include "dimacs_parser.h"
@@ -731,6 +732,46 @@ run_dimacs(warthog::util::cfg& cfg)
             << grfile << " " << problemfile << std::endl;
         }
     }
+    else if(alg_name == "chase")
+    {
+        std::string orderfile = cfg.get_param_value("order");
+
+        // load up the graph 
+        warthog::graph::planar_graph g;
+        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+        // load up the node order
+        std::vector<uint32_t> order;
+        warthog::ch::load_node_order(orderfile.c_str(), order);
+        warthog::ch::value_index_swap_dimacs(order);
+
+        std::cerr << "preparing to search\n";
+        //warthog::zero_heuristic h;
+        warthog::euclidean_heuristic h(&g);
+        warthog::ch_expansion_policy fexp(&g, &order);
+        warthog::ch_expansion_policy bexp (&g, &order, true);
+        //warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+        warthog::chase_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
+        alg.set_verbose(verbose);
+
+        std::cerr << "running experiments\n";
+        int i = 0;
+        std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+        for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+                it != parser.experiments_end(); it++)
+        {
+            warthog::dimacs_parser::experiment exp = (*it);
+            double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+            std::cout << i++ <<"\t" << alg_name << "\t" 
+            << alg.get_nodes_expanded() << "\t" 
+            << alg.get_nodes_generated() << "\t"
+            << alg.get_nodes_touched() << "\t"
+            << alg.get_search_time()  << "\t"
+            << len << "\t" 
+            << grfile << " " << problemfile << std::endl;
+        }
+    }
     else if(alg_name == "chaf")
     {
         std::string orderfile = cfg.get_param_value("order");
@@ -1022,7 +1063,7 @@ run_dimacs(warthog::util::cfg& cfg)
         {
             warthog::dimacs_parser::experiment exp = (*it);
 
-//            fexp.set_apex(warthog::INF);
+            //fexp.set_apex(warthog::INF);
             double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
             std::cout << i <<"\t" << alg_name << "\t" 
             << alg.get_nodes_expanded() << "\t" 
@@ -1036,6 +1077,7 @@ run_dimacs(warthog::util::cfg& cfg)
             // oracle that tells us the apex of the path. this search
             // never expands down nodes before the apex and never expands
             // any up nodes after the apex
+//            std::cout << "apex " << get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())) << std::endl;
 //            fexp.set_apex(get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())));
 //            len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
 //            std::cout << i <<"\t" << alg_name << "\t" 
@@ -1049,79 +1091,6 @@ run_dimacs(warthog::util::cfg& cfg)
             i++;
         }
     }
-    //else if(alg_name == "chf-afh")
-    //{
-    //    std::string orderfile = cfg.get_param_value("order");
-
-    //    // arclabels file
-    //    std::string arclabels_file = cfg.get_param_value("filter");
-    //    std::cerr << "filter param " << arclabels_file << std::endl;
-
-    //    // partition file
-    //    std::string partition_file = cfg.get_param_value("filter");
-    //    std::cerr << "filter param " << partition_file << std::endl;
-
-    //    std::cerr << "preparing to search\n";
-
-    //    // load up the graph 
-    //    warthog::graph::planar_graph g;
-    //    g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
-
-    //    // load up the node order
-    //    std::vector<uint32_t> order;
-    //    warthog::ch::load_node_order(orderfile.c_str(), order, true);
-
-    //    // load up the node partition info
-    //    std::vector<uint32_t> part;
-    //    warthog::helpers::load_integer_labels_dimacs(
-    //            partition_file.c_str(), part);
-
-    //    // load up the arc labels
-    //    warthog::afh_filter filter(&g, &order, &part, arclabels_file.c_str());
-
-    //    warthog::euclidean_heuristic h(&g);
-    //    warthog::fwd_ch_afh_expansion_policy fexp(&g, &order, &filter);
-
-    //    warthog::flexible_astar< warthog::euclidean_heuristic, 
-    //       warthog::fwd_ch_afh_expansion_policy>
-    //    alg(&h, &fexp);
-    //    alg.set_verbose(verbose);
-
-    //    std::cerr << "running experiments\n";
-    //    int i = 0;
-    //    std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
-    //    for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
-    //            it != parser.experiments_end(); it++)
-    //    {
-    //        warthog::dimacs_parser::experiment exp = (*it);
-
-//  //          fexp.set_apex(warthog::INF);
-    //        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
-    //        std::cout << i <<"\t" << alg_name << "\t" 
-    //        << alg.get_nodes_expanded() << "\t" 
-    //        << alg.get_nodes_generated() << "\t"
-    //        << alg.get_nodes_touched() << "\t"
-    //        << alg.get_search_time()  << "\t"
-    //        << len << "\t";
-    //        std::cout << problemfile << std::endl;
-
-    //        // run the experiment again but now suppose we have an 
-    //        // oracle that tells us the apex of the path. this search
-    //        // never expands down nodes before the apex and never expands
-    //        // any up nodes after the apex
-//  //          fexp.set_apex(get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())));
-//  //          len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
-//  //          std::cout << i <<"\t" << alg_name << "\t" 
-//  //          << alg.get_nodes_expanded() << "\t" 
-//  //          << alg.get_nodes_generated() << "\t"
-//  //          << alg.get_nodes_touched() << "\t"
-//  //          << alg.get_search_time()  << "\t"
-//  //          << len << "\t";
-//  //          std::cout << problemfile << std::endl;
-
-    //        i++;
-    //    }
-    //}
     else if(alg_name == "chf-bb")
     {
         std::string orderfile = cfg.get_param_value("order");
@@ -1228,7 +1197,7 @@ run_dimacs(warthog::util::cfg& cfg)
         {
             warthog::dimacs_parser::experiment exp = (*it);
 
-//            fexp.set_apex(warthog::INF);
+            //fexp.set_apex(warthog::INF);
             double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
             std::cout << i <<"\t" << alg_name << "\t" 
             << alg.get_nodes_expanded() << "\t" 
@@ -1237,6 +1206,7 @@ run_dimacs(warthog::util::cfg& cfg)
             << alg.get_search_time()  << "\t"
             << len << "\t";
             std::cout << problemfile << std::endl;
+            //std::cout << "apex " << get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())) << std::endl;
 
             // run the experiment again but now suppose we have an 
             // oracle that tells us the apex of the path. this search
@@ -1297,6 +1267,7 @@ run_dimacs(warthog::util::cfg& cfg)
             << alg.get_search_time()  << "\t"
             << len << "\t";
             std::cout << problemfile << std::endl;
+            std::cout << "apex " << get_apex(order, fexp.get_ptr(exp.target, alg.get_searchid())) << std::endl;
 
             // run the experiment again but now suppose we have an 
             // oracle that tells us the apex of the path. this search
