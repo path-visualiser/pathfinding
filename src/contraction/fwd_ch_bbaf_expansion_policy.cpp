@@ -50,6 +50,8 @@ warthog::fwd_ch_bbaf_expansion_policy::expand(
         {
             if(!filter_->filter(current_id, it - begin, dn_succ))
             {
+                // prune down successors below the goal
+                if(dn_succ && rank_->at(e.node_id_) < rank_->at(instance->get_goal())) { continue; }
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
             }
         }
