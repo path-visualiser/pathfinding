@@ -36,7 +36,7 @@ class scenario_manager
 		scenario_manager();
 		~scenario_manager();
 
-		inline experiment* 
+		inline warthog::experiment* 
 		get_experiment(unsigned int which) 
 		{ 
 			if(which < experiments_.size())
@@ -47,7 +47,7 @@ class scenario_manager
 		}
 
 		inline void 
-		add_experiment(experiment* newexp) 
+		add_experiment(warthog::experiment* newexp) 
 		{ 
 			experiments_.push_back(newexp); 
 		}
