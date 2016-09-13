@@ -40,7 +40,7 @@ class planar_graph
         // read in a grid map in the format used at the 
         // international Grid-based Path Planning Competition
         bool 
-        load_grid(const char* filename);
+        load_grid(const char* filename, bool store_incoming=true);
 
         // read in a map in the format of the 9th DIMACS
         // competition. In this format graphs are specified
@@ -56,9 +56,6 @@ class planar_graph
                 bool reverse_arcs =false, 
                 bool store_incoming_edges = false,
                 bool enforce_euclidean=true);
-
-        void
-        print_dimacs(std::ostream& oss);
 
         void
         print_dimacs_gr(std::ostream& oss);

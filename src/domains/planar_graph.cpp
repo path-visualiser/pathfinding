@@ -1,6 +1,8 @@
 #include "constants.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
+#include "gridmap.h"
+#include "gridmap_expansion_policy.h"
 #include "planar_graph.h"
 
 #include <algorithm>
@@ -161,34 +163,54 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     return true;
 }
 
+// creates a graph from a gridmap input file. edge transition
+// costs are fixed to 1 for straight moves and sqrt(2) for diagonal.
 bool
-warthog::graph::planar_graph::load_grid(const char* file)
+warthog::graph::planar_graph::load_grid(
+        const char* file, bool store_incoming)
 {
-    std::cerr << "not yet!";
-    return 1;
-}
+    delete [] nodes_;
+    delete [] xy_;
 
-void
-warthog::graph::planar_graph::print_dimacs(std::ostream& oss)
-{
-    if(nodes_sz_ > 0)
+    warthog::gridmap gm(file);
+    warthog::gridmap_expansion_policy exp(&gm);
+    this->nodes_sz_ = gm.header_width() * gm.header_height();
+    this->nodes_ = new warthog::graph::node[nodes_sz_];
+    this->xy_ = new int32_t[nodes_sz_*2];
+
+    for(uint32_t y = 0; y < gm.header_height(); y++)
     {
-        // we add +1 to all ids because dimacs ids are 1-indexed and our
-        // internal representation is 0-indexed
-        oss << "p aux sp co " << (nodes_sz_) << std::endl;
-        oss << "p sp " << (nodes_sz_) << " " << 
-            this->get_num_edges() << std::endl;
-        for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
+        for(uint32_t x = 0; x < gm.header_width(); x++)
         {
-            warthog::graph::node n = nodes_[i];
-            oss << "v " << i << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
-            for(warthog::graph::edge_iter it = n.outgoing_begin(); it != n.outgoing_end(); it++)
+            uint32_t node_id = y * gm.header_width() + x;
+            xy_[node_id*2] = x;
+            xy_[node_id*2+1] = y;
+
+            uint32_t gm_id = gm.to_padded_id(node_id);
+            warthog::search_node* n = exp.generate(gm_id);
+            warthog::search_node* nei = 0;
+            double edge_cost = 0;
+            exp.expand(n, 0);
+
+            // iterate over all the neighbours of n
+            for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
             {
-                oss << "a " << i << " " << (*it).node_id_ << " " 
-                    << (*it).wt_ << std::endl;
+                uint32_t nei_x, nei_y;
+                gm.to_unpadded_xy(nei->get_id(), nei_x, nei_y);
+                uint32_t nei_id = nei_y * gm.header_width() + nei_x;
+
+                nodes_[node_id].add_outgoing(
+                        warthog::graph::edge(nei_id, edge_cost));
+
+                if(store_incoming)
+                {
+                    nodes_[nei_id].add_incoming(
+                            warthog::graph::edge(node_id, edge_cost));
+                }
             }
         }
     }
+    return true;
 }
 
 void
@@ -201,8 +223,9 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss)
             this->get_num_edges() << std::endl;
         for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
         {
-            warthog::graph::node n = nodes_[i];
-            for(warthog::graph::edge_iter it = n.outgoing_begin(); it != n.outgoing_end(); it++)
+            warthog::graph::node* n = get_node(i);
+            for(warthog::graph::edge_iter it = n->outgoing_begin(); 
+                    it != n->outgoing_end(); it++)
             {
                 oss << "a " << i << " " << (*it).node_id_ << " " 
                     << (*it).wt_ << std::endl;
@@ -220,7 +243,6 @@ warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss)
         oss << "p aux sp co " << (nodes_sz_ - ID_OFFSET) << std::endl;
         for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
         {
-            warthog::graph::node n = nodes_[i];
             oss << "v " << i << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
         }
     }
