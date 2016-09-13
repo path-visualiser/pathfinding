@@ -143,8 +143,7 @@ warthog::bb_af_filter::print(std::ostream& out)
                         printed_word[k] = 0;
                     }
                 }
-                out << *((uint64_t*)&(printed_word))
-                    << (word < words_per_label ? " " : "");
+                out << *((uint64_t*)&(printed_word)) << " ";
             }
 
             // print the bounding box
