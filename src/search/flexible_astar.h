@@ -211,7 +211,7 @@ class flexible_astar : public warthog::search
 			warthog::problem_instance instance;
 			instance.set_goal(goalid);
 			instance.set_start(startid);
-			instance.set_searchid(++warthog::search::searchid_);
+			instance.set_searchid(++(this->searchid_));
 
 			#ifndef NDEBUG
 			if(verbose_)
