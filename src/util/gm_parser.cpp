@@ -84,6 +84,7 @@ warthog::gm_parser::parse_map(std::fstream& mapfs)
 	{
 		std::cerr << "err; map load failed. missing 'map' keyword." 
 			<< std::endl;
+        exit(1);
 	}
 
 	// read map data

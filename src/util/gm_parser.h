@@ -56,7 +56,7 @@ namespace warthog
 			gm_parser(const char* filename);
 			~gm_parser();
 
-			inline warthog::gm_header 
+			inline warthog::gm_header
 			get_header()
 			{
 				return this->header_;
