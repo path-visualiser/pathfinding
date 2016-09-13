@@ -66,6 +66,7 @@ ch: makedirs warthog
 	$(CC) ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) arclabels.cpp -o ./bin/arclabels -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) grid2dimacs.cpp -o ./bin/grid2dimacs -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: makedirs
 makedirs:
