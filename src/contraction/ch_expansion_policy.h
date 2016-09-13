@@ -59,6 +59,15 @@ class ch_expansion_policy : public  expansion_policy
             g_->get_xy(n->get_id(), x, y);
         }
 
+        inline uint32_t
+        get_rank(uint32_t id)
+        {
+            return rank_->at(id);
+        }
+
+        inline uint32_t
+        get_num_nodes() { return g_->get_num_nodes(); }
+
         uint32_t
         mem();
 
@@ -68,11 +77,6 @@ class ch_expansion_policy : public  expansion_policy
         std::vector<uint32_t>* rank_;
         warthog::ch::search_direction sd_;
 
-        inline uint32_t
-        get_rank(uint32_t id)
-        {
-            return rank_->at(id);
-        }
 
 };
 
