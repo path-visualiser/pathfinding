@@ -18,15 +18,10 @@
 #include <set>
 #include <vector>
 
+#include "planar_graph.h"
+
 namespace warthog
 {
-
-namespace graph
-{
-
-class planar_graph;
-
-}
 
 class problem_instance;
 class search_node;
@@ -109,7 +104,7 @@ class afhd_filter
         compute_up_flags(std::vector<uint32_t>& ids_by_rank);
 
         void
-        unpack(uint32_t node_id, uint32_t edge_idx, 
+        unpack(uint32_t node_id, warthog::graph::edge_iter it_e,
                 std::set<uint32_t>& intermediate);
 };
 

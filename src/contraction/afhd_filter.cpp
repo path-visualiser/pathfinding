@@ -389,11 +389,12 @@ warthog::afhd_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
             warthog::graph::node* m = g_->get_node(m_id);
 
             // identify the outgoing version of (m, n)
-            uint32_t e_mn_idx = m->find_edge_index(n_id);
-            assert(e_mn_idx != warthog::INF);
+            warthog::graph::edge_iter it_e_mn = m->find_edge(n_id);
+            uint32_t e_mn_idx = it_e_mn - m->outgoing_begin();
+            assert(it_e_mn != m->outgoing_end());
 
             std::set<uint32_t> intermediate;
-            unpack(m_id, e_mn_idx, intermediate);
+            unpack(m_id, it_e_mn, intermediate);
             for(warthog::graph::edge_iter out_it = n->outgoing_begin(); 
                     out_it != n->outgoing_end(); out_it++)
             {
@@ -431,40 +432,40 @@ warthog::afhd_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
 }
 
 void
-warthog::afhd_filter::unpack(uint32_t from_id, uint32_t edge_idx,
+warthog::afhd_filter::unpack(uint32_t from_id,
+        warthog::graph::edge_iter it_e,
         std::set<uint32_t>& intermediate)
 {
     warthog::graph::node* from = g_->get_node(from_id);
-    assert(edge_idx < from->out_degree());
+    assert(it_e >= from->outgoing_begin() && it_e < from->outgoing_end());
 
-    warthog::graph::edge* e_ft = &*(from->outgoing_begin() + edge_idx);
+    warthog::graph::edge* e_ft = &*it_e;
     uint32_t to_id = e_ft->node_id_;
 
     for(warthog::graph::edge_iter it = from->outgoing_begin(); 
             it < from->outgoing_end(); it++)
     {
         warthog::graph::node* succ = g_->get_node((*it).node_id_);
-        uint32_t e_succ_idx = 0;
+        warthog::graph::edge_iter it_e_succ = succ->outgoing_begin();
         while(true)
         {
-            e_succ_idx = succ->find_edge_index(to_id, e_succ_idx);
-            if(e_succ_idx == warthog::INF) { break; }
-            assert(e_succ_idx < succ->out_degree());
+            it_e_succ = succ->find_edge(to_id, it_e_succ);
+            if(it_e_succ == succ->outgoing_end()) { break; }
+            assert( it_e_succ >= succ->outgoing_begin() && 
+                    it_e_succ <= succ->outgoing_end());
 
-            warthog::graph::edge* e_st = 
-                &*(succ->outgoing_begin() + e_succ_idx);
+            warthog::graph::edge* e_st = &*it_e_succ;
             if(((*it).wt_ + e_st->wt_) == e_ft->wt_) { break; }
-            e_succ_idx++;
+            it_e_succ++;
         }
-        if(e_succ_idx == warthog::INF) { continue; } 
+        if(it_e_succ == succ->outgoing_end()) { continue; } 
 
         // recursively unpack the two edges being represented by
         // the single shortcut edge (from_id, to_id)
-        unpack(from_id, it - from->outgoing_begin(), intermediate);
+        unpack(from_id, it, intermediate);
 
         succ = g_->get_node((*it).node_id_);
-        assert(e_succ_idx < succ->out_degree());
-        unpack((*it).node_id_, e_succ_idx, intermediate);
+        unpack((*it).node_id_, it_e_succ, intermediate);
         break;
     }
 }

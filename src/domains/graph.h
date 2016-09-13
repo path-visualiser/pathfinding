@@ -156,17 +156,36 @@ class node
         // node is @param to_id. the index is relative to
         // ::outgoing_begin() and warthog::INF if no such
         // edge exists
-        uint32_t
-        find_edge_index(uint32_t to_id, uint32_t start_index = 0)
+//        uint32_t
+//        find_edge_index(uint32_t to_id, uint32_t start_index = 0)
+//        {
+//            for(int i = start_index; i < out_deg_; i++)
+//            {
+//                if(outgoing_[i].node_id_ == to_id)
+//                {
+//                    return i;
+//                }
+//            }
+//            return warthog::INF;
+//        }
+
+        warthog::graph::edge_iter
+        find_edge(uint32_t to_id, warthog::graph::edge_iter it = 0)
         {
-            for(int i = start_index; i < out_deg_; i++)
+            if(it == 0) { it = outgoing_begin(); }
+            if(it < outgoing_begin() || it >= outgoing_end())
             {
-                if(outgoing_[i].node_id_ == to_id)
+                return outgoing_end();
+            }
+
+            for( ; it < outgoing_end(); it++)
+            {
+                if((*it).node_id_ == to_id)
                 {
-                    return i;
+                    return it;
                 }
             }
-            return warthog::INF;
+            return outgoing_end();
         }
 
         inline size_t
