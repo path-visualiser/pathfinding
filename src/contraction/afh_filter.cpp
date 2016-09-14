@@ -255,117 +255,6 @@ warthog::afh_filter::compute(uint32_t firstid, uint32_t lastid)
     std::cerr << "\nall done\n"<< std::endl;
 }
 
-//void
-//warthog::afh_filter::compute_up_flags()
-//{
-//    // traverse the hierarchy top-to-bottom
-//    std::cerr << "computing afh up-labels\n";
-//    for(uint32_t source_id = last_id_; source_id >= firstid_; source_id--)
-//    {
-//        std::cerr << "\rprocessing node " << i << "; continues until node " 
-//            << firstid_ << "\r";
-//
-//        std::set<uint32_t> neis;
-//        std::vector<std::set<uint32_t>> reachable(nparts_);
-//        warthog::search_node* source = g_->get_node(source_id);
-//
-//        // scan the up and down flags of every successor node and
-//        // record which node is useful for reaching which colour
-//        for(warthog::graph::edge_iter it = n->outgoing_begin(); 
-//                it != n->outgoing_end(); it++)
-//        {
-//            uint32_t e_idx = it - n->outgoing_begin();
-//            uint32_t nei_idx = (*it).node_id_;
-//            neis.insert(nei_idx);
-//            for(uint32_t col = 0; col < nparts_; col++)
-//            {
-//                uint8_t* eflag = flags_->at(nei_idx).at(e_idx);
-//                if(eflag[col >> 3] & (1 << (col & 7)))
-//                {
-//                    reachable.at(col).insert(nei_idx);
-//                }
-//            }
-//        }
-//
-//        // label up edges leading into the current source node
-//        std::set<uint32_t> mycolours;
-//        for(warthog::graph::edge_iter it = n->incoming_begin(); 
-//                it != n->incoming_end(); it++)
-//        {
-//            uint32_t nei_idx = (*it).node_id_;
-//            warthog::graph::node* nei = g_->get_node(nei_idx);
-//            uint32_t e_idx = nei->find_edge_index(source_id);
-//            assert(e_idx != warthog::INF);
-//            // process colours we might be able to reach optimally
-//            // by taking an up edge (to reach source) and then a down
-//            // edge (from source to one of its successors)
-//            for(uint32_t col = 0; col < nparts_; col++)
-//            {
-//                std::set<uint32_t>& col_neis = dn_reach.at(col);
-//
-//                // skip colours we cannot reach optimally
-//                if(col_neis.size() == 0) { continue; } 
-//
-//                // always label the edge with the colour of 
-//                // the source
-//                if(col == part_->at(source_id))
-//                {
-//                    mycolours.insert(col);
-//                    continue;
-//                }
-//
-//                if(col_neis.find(nei_idx) != col_neis.end())
-//                {
-//                    // redundant (i): <nei_idx, source, nei_idx>
-//                    if(col_neis.size() == 1) { continue; }
-//
-//                    // redundant (ii): we try to prove for each up/down 
-//                    // path such as <nei_idx, source, nei2_idx>
-//                    // that there is shorter alternative, namely
-//                    // <nei_idx, nei2_idx>
-//                    //
-//                    // we do two things here:
-//                    // 1. we try to look for a direct edge to nei2_idx
-//                    // 2. we unpack shortcut edges and look for nei2_idx 
-//                    // among the intermediate nodes on that path 
-//                    std::set<uint32_t> intermediate;
-//                    unpack(source_id, nei_idx, intermediate);
-//                    for(uint32_t x = 0; x < col_neis.size() x++) 
-//                    { 
-//                        uint32_t nei2_idx = *(col_neis.begin() + x);
-//
-//                        // paths that backtrack on themselves are redundant
-//                        // i.e. <nei_idx, source, nei_idx>
-//                        if(nei_idx == nei2_idx) { continue; }
-//
-//                        // check if the two nodes are directly connected
-//                        if(find_outgoing_edge(nei_idx, nei2_idx) 
-//                                != warthog::INF) { continue; }
-//
-//                        // shortcut unpacking
-//                        if(intermediate.find(x) == intermediate.end())
-//                        {
-//                            // it seems there is at least one node that could
-//                            // be optimally reachanble via the up,down path 
-//                            // <nei_idx, source, nei2_idx>
-//                            // we thus label (nei_idx, source) with col
-//                            mycolours.insert(col);
-//                            break;
-//                        }
-//                    }
-//                }
-//                else
-//                {
-//                    // col doesn't appear in dn_flags_[nei_idx]
-//                    // we need to pass through node n to reach it
-//                    mycolours.push_back(col);
-//                }
-//            }
-//        }
-//    }
-//    std::cerr <<"\ndone\n"<< std::endl;
-//}
-
 void
 warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
 {
@@ -393,7 +282,7 @@ warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
             assert(it_e_mn != m->outgoing_end());
 
             std::set<uint32_t> intermediate;
-            unpack(m_id, it_e_mn, intermediate);
+            warthog::ch::unpack(m_id, it_e_mn, g_, intermediate);
             for(warthog::graph::edge_iter out_it = n->outgoing_begin(); 
                     out_it != n->outgoing_end(); out_it++)
             {
@@ -430,44 +319,44 @@ warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
     std::cerr <<"\ndone\n"<< std::endl;
 }
 
-void
-warthog::afh_filter::unpack(uint32_t from_id,
-        warthog::graph::edge_iter it_e,
-        std::set<uint32_t>& intermediate)
-{
-    warthog::graph::node* from = g_->get_node(from_id);
-    assert(it_e >= from->outgoing_begin() && it_e < from->outgoing_end());
-
-    warthog::graph::edge* e_ft = &*it_e;
-    uint32_t to_id = e_ft->node_id_;
-
-    for(warthog::graph::edge_iter it = from->outgoing_begin(); 
-            it < from->outgoing_end(); it++)
-    {
-        warthog::graph::node* succ = g_->get_node((*it).node_id_);
-        warthog::graph::edge_iter it_e_succ = succ->outgoing_begin();
-        while(true)
-        {
-            it_e_succ = succ->find_edge(to_id, it_e_succ);
-            if(it_e_succ == succ->outgoing_end()) { break; }
-            assert( it_e_succ >= succ->outgoing_begin() && 
-                    it_e_succ <= succ->outgoing_end());
-
-            warthog::graph::edge* e_st = &*it_e_succ;
-            if(((*it).wt_ + e_st->wt_) == e_ft->wt_) { break; }
-            it_e_succ++;
-        }
-        if(it_e_succ == succ->outgoing_end()) { continue; } 
-
-        // recursively unpack the two edges being represented by
-        // the single shortcut edge (from_id, to_id)
-        unpack(from_id, it, intermediate);
-
-        succ = g_->get_node((*it).node_id_);
-        unpack((*it).node_id_, it_e_succ, intermediate);
-        break;
-    }
-}
+//void
+//warthog::afh_filter::unpack(uint32_t from_id,
+//        warthog::graph::edge_iter it_e,
+//        std::set<uint32_t>& intermediate)
+//{
+//    warthog::graph::node* from = g_->get_node(from_id);
+//    assert(it_e >= from->outgoing_begin() && it_e < from->outgoing_end());
+//
+//    warthog::graph::edge* e_ft = &*it_e;
+//    uint32_t to_id = e_ft->node_id_;
+//
+//    for(warthog::graph::edge_iter it = from->outgoing_begin(); 
+//            it < from->outgoing_end(); it++)
+//    {
+//        warthog::graph::node* succ = g_->get_node((*it).node_id_);
+//        warthog::graph::edge_iter it_e_succ = succ->outgoing_begin();
+//        while(true)
+//        {
+//            it_e_succ = succ->find_edge(to_id, it_e_succ);
+//            if(it_e_succ == succ->outgoing_end()) { break; }
+//            assert( it_e_succ >= succ->outgoing_begin() && 
+//                    it_e_succ <= succ->outgoing_end());
+//
+//            warthog::graph::edge* e_st = &*it_e_succ;
+//            if(((*it).wt_ + e_st->wt_) == e_ft->wt_) { break; }
+//            it_e_succ++;
+//        }
+//        if(it_e_succ == succ->outgoing_end()) { continue; } 
+//
+//        // recursively unpack the two edges being represented by
+//        // the single shortcut edge (from_id, to_id)
+//        unpack(from_id, it, intermediate);
+//
+//        succ = g_->get_node((*it).node_id_);
+//        unpack((*it).node_id_, it_e_succ, intermediate);
+//        break;
+//    }
+//}
 
 void
 warthog::afh_filter::compute_down_flags(std::vector<uint32_t>& ids_by_rank)

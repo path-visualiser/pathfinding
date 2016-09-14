@@ -78,13 +78,13 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     // our internal representation is 0-indexed. We add dummy elements
     // to the front of the node arrays so we can use the 1-indexed ids
     // without any internal conversion
-    ID_OFFSET = 1;
+    ID_OFFSET = (*dimacs.nodes_begin()).id_;
     nodes_sz_ = dimacs.get_num_nodes() + ID_OFFSET;
     xy_ = new int32_t[nodes_sz_*2];
     nodes_ = new node[nodes_sz_];
     for(uint32_t i = 0; i < ID_OFFSET*2; i++)
     {
-        xy_[i] = xy_[i+1] = INT32_MAX;
+        xy_[i] = INT32_MAX;
     }
 
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
@@ -178,19 +178,21 @@ warthog::graph::planar_graph::load_grid(
     this->nodes_ = new warthog::graph::node[nodes_sz_];
     this->xy_ = new int32_t[nodes_sz_*2];
 
+    uint32_t scale = 100000;
     for(uint32_t y = 0; y < gm.header_height(); y++)
     {
         for(uint32_t x = 0; x < gm.header_width(); x++)
         {
             uint32_t node_id = y * gm.header_width() + x;
-            xy_[node_id*2] = x;
-            xy_[node_id*2+1] = y;
-
             uint32_t gm_id = gm.to_padded_id(node_id);
             warthog::search_node* n = exp.generate(gm_id);
             warthog::search_node* nei = 0;
             double edge_cost = 0;
             exp.expand(n, 0);
+
+            //if(exp.num_neighbours() == 0) { continue; }
+            xy_[node_id*2] = x*scale;
+            xy_[node_id*2+1] = y*scale;
 
             // iterate over all the neighbours of n
             for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
@@ -198,14 +200,15 @@ warthog::graph::planar_graph::load_grid(
                 uint32_t nei_x, nei_y;
                 gm.to_unpadded_xy(nei->get_id(), nei_x, nei_y);
                 uint32_t nei_id = nei_y * gm.header_width() + nei_x;
+                uint32_t int_edge_cost = edge_cost*scale;
 
                 nodes_[node_id].add_outgoing(
-                        warthog::graph::edge(nei_id, edge_cost));
+                        warthog::graph::edge(nei_id, int_edge_cost));
 
                 if(store_incoming)
                 {
                     nodes_[nei_id].add_incoming(
-                            warthog::graph::edge(node_id, edge_cost));
+                            warthog::graph::edge(node_id, int_edge_cost));
                 }
             }
         }

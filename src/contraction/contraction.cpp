@@ -144,3 +144,46 @@ warthog::ch::partition_greedy_bottom_up(
 {
 
 }
+
+void
+warthog::ch::unpack(uint32_t from_id,
+        warthog::graph::edge_iter it_e,
+        warthog::graph::planar_graph* g,
+        std::set<uint32_t>& intermediate)
+{
+    warthog::graph::node* from = g->get_node(from_id);
+    assert(it_e >= from->outgoing_begin() && it_e < from->outgoing_end());
+
+    warthog::graph::edge* e_ft = &*it_e;
+    uint32_t to_id = e_ft->node_id_;
+
+    for(warthog::graph::edge_iter it = from->outgoing_begin(); 
+            it < from->outgoing_end(); it++)
+    {
+        warthog::graph::node* succ = g->get_node((*it).node_id_);
+        warthog::graph::edge_iter it_e_succ = succ->outgoing_begin();
+        while(true)
+        {
+            it_e_succ = succ->find_edge(to_id, it_e_succ);
+            if(it_e_succ == succ->outgoing_end()) { break; }
+            assert( it_e_succ >= succ->outgoing_begin() && 
+                    it_e_succ <= succ->outgoing_end());
+
+            warthog::graph::edge* e_st = &*it_e_succ;
+            if(((*it).wt_ + e_st->wt_) == e_ft->wt_) { break; }
+            it_e_succ++;
+        }
+        if(it_e_succ == succ->outgoing_end()) { continue; } 
+
+        intermediate.insert(from_id);
+        intermediate.insert((*it).node_id_);
+
+        // recursively unpack the two edges being represented by
+        // the single shortcut edge (from_id, to_id)
+        unpack(from_id, it, g, intermediate);
+
+        succ = g->get_node((*it).node_id_);
+        unpack((*it).node_id_, it_e_succ, g, intermediate);
+        break;
+    }
+}

@@ -108,9 +108,9 @@ class afh_filter
         void
         compute_up_flags(std::vector<uint32_t>& ids_by_rank);
 
-        void
-        unpack(uint32_t node_id, warthog::graph::edge_iter it_e,
-                std::set<uint32_t>& intermediate);
+//        void
+//        unpack(uint32_t node_id, warthog::graph::edge_iter it_e,
+//                std::set<uint32_t>& intermediate);
 };
 
 }

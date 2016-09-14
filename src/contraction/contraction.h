@@ -11,6 +11,8 @@
 //
 
 #include "constants.h"
+#include "graph.h"
+
 #include <cstdint>
 #include <fstream>
 #include <set>
@@ -27,8 +29,11 @@ class flexible_astar;
 
 namespace graph
 {
+
 class planar_graph;
+
 }
+
 
 namespace ch
 {
@@ -82,6 +87,13 @@ partition_greedy_bottom_up(
         std::vector<uint32_t>* rank,
         uint32_t nparts, 
         std::vector<uint32_t>* part);
+
+// recursively unpack a shortcut edge
+void
+unpack(uint32_t from_id,
+        warthog::graph::edge_iter it_e,
+        warthog::graph::planar_graph* g,
+        std::set<uint32_t>& intermediate);
 
 }
 
