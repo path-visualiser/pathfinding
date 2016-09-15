@@ -153,22 +153,11 @@ class node
         }
 
         // find the index of an outgoing edge whose head 
-        // node is @param to_id. the index is relative to
-        // ::outgoing_begin() and warthog::INF if no such
-        // edge exists
-//        uint32_t
-//        find_edge_index(uint32_t to_id, uint32_t start_index = 0)
-//        {
-//            for(int i = start_index; i < out_deg_; i++)
-//            {
-//                if(outgoing_[i].node_id_ == to_id)
-//                {
-//                    return i;
-//                }
-//            }
-//            return warthog::INF;
-//        }
-
+        // node is @param to_id. the search begins from 
+        // the edge iterator specified in @param it
+        // (by default, the first outgoing edge).
+        // the function returns an iterator for the
+        // target edge or ::outgoing_end() if no suh edge
         warthog::graph::edge_iter
         find_edge(uint32_t to_id, warthog::graph::edge_iter it = 0)
         {

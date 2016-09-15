@@ -2,6 +2,7 @@
 #include "planar_graph.h"
 #include <algorithm>
 #include <stack>
+#include <vector>
 
 void
 warthog::ch::make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order)
@@ -185,5 +186,52 @@ warthog::ch::unpack(uint32_t from_id,
         succ = g->get_node((*it).node_id_);
         unpack((*it).node_id_, it_e_succ, g, intermediate);
         break;
+    }
+}
+
+void
+warthog::ch::unpack_list_edges(uint32_t from_id,
+        warthog::graph::edge_iter it_e,
+        warthog::graph::planar_graph* g,
+        std::vector<warthog::graph::edge*>& edges)
+{
+    warthog::graph::node* from = g->get_node(from_id);
+    assert(it_e >= from->outgoing_begin() && it_e < from->outgoing_end());
+
+    warthog::graph::edge* e_ft = &*it_e;
+    uint32_t to_id = e_ft->node_id_;
+
+    bool unpacked = false;
+    for(warthog::graph::edge_iter it = from->outgoing_begin(); 
+            it < from->outgoing_end(); it++)
+    {
+        warthog::graph::node* succ = g->get_node((*it).node_id_);
+        warthog::graph::edge_iter it_e_succ = succ->outgoing_begin();
+        while(true)
+        {
+            it_e_succ = succ->find_edge(to_id, it_e_succ);
+            if(it_e_succ == succ->outgoing_end()) { break; }
+            assert( it_e_succ >= succ->outgoing_begin() && 
+                    it_e_succ <= succ->outgoing_end());
+
+            warthog::graph::edge* e_st = &*it_e_succ;
+            if(((*it).wt_ + e_st->wt_) == e_ft->wt_) { break; }
+            it_e_succ++;
+        }
+        if(it_e_succ == succ->outgoing_end()) { continue; } 
+
+        // recursively unpack the two edges being represented by
+        // the single shortcut edge (from_id, to_id)
+        unpack_list_edges(from_id, it, g, edges);
+
+        succ = g->get_node((*it).node_id_);
+        unpack_list_edges((*it).node_id_, it_e_succ, g, edges);
+        unpacked = true;
+        break;
+    }
+
+    if(!unpacked)
+    {
+        edges.push_back(e_ft);
     }
 }

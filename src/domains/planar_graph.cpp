@@ -129,6 +129,7 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
             } 
         }
 
+
         // add edge to the graph
 #ifndef NDEBUG
         uint32_t deg_before = nodes_[tid].out_degree();
@@ -231,7 +232,7 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss)
                     it != n->outgoing_end(); it++)
             {
                 oss << "a " << i << " " << (*it).node_id_ << " " 
-                    << (*it).wt_ << std::endl;
+                    << (uint32_t)(*it).wt_ << std::endl;
             }
         }
     }
