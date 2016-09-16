@@ -791,10 +791,22 @@ run_dimacs(warthog::util::cfg& cfg)
         warthog::ch::load_node_order(orderfile.c_str(), order);
         warthog::ch::value_index_swap_dimacs(order);
 
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
+
         // load up the node partition info
         std::vector<uint32_t> part;
         warthog::helpers::load_integer_labels_dimacs(
                 partition_file.c_str(), part);
+
+        if(part.size() == 0)
+        {
+            std::cerr << "err; could not load node partition file\n";
+            return;
+        }
         
         // load up the arc-flags
         warthog::arcflags_filter filter(&g, &order, &part, arclabels_file.c_str());
@@ -844,11 +856,23 @@ run_dimacs(warthog::util::cfg& cfg)
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order);
         warthog::ch::value_index_swap_dimacs(order);
+        
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
 
         // load up the node partition info
         std::vector<uint32_t> part;
         warthog::helpers::load_integer_labels_dimacs(
                 partition_file.c_str(), part);
+
+        if(part.size() == 0)
+        {
+            std::cerr << "err; could not load node partition file\n";
+            return;
+        }
         
         // load up the arc labels
         warthog::bb_af_filter filter(&g, &order, &part, arclabels_file.c_str());
@@ -893,6 +917,12 @@ run_dimacs(warthog::util::cfg& cfg)
         warthog::ch::load_node_order(orderfile.c_str(), order);
         warthog::ch::value_index_swap_dimacs(order);
 
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
+
         std::cerr << "preparing to search\n";
         warthog::fwd_ch_expansion_policy fexp(&g, &order); 
         warthog::euclidean_heuristic h(&g);
@@ -935,6 +965,12 @@ run_dimacs(warthog::util::cfg& cfg)
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order);
         warthog::ch::value_index_swap_dimacs(order);
+
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
 
         std::cerr << "preparing to search\n";
         warthog::down_distance_filter filter(arclabels_file.c_str(), &g, &order);
@@ -1039,10 +1075,22 @@ run_dimacs(warthog::util::cfg& cfg)
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order, true);
 
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
+
         // load up the node partition info
         std::vector<uint32_t> part;
         warthog::helpers::load_integer_labels_dimacs(
                 partition_file.c_str(), part);
+
+        if(part.size() == 0)
+        {
+            std::cerr << "err; could not load node partition file\n";
+            return;
+        }
 
         // load up the arc labels
         warthog::arcflags_filter filter(&g, &order, &part, arclabels_file.c_str());
@@ -1105,6 +1153,12 @@ run_dimacs(warthog::util::cfg& cfg)
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order);
         warthog::ch::value_index_swap_dimacs(order);
+
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
 
         std::cerr << "preparing to search\n";
         warthog::bbox_filter filter(arclabels_file.c_str(), &g, &order);
@@ -1173,10 +1227,22 @@ run_dimacs(warthog::util::cfg& cfg)
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order, true);
 
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
+
         // load up the node partition info
         std::vector<uint32_t> part;
         warthog::helpers::load_integer_labels_dimacs(
                 partition_file.c_str(), part);
+
+        if(part.size() == 0)
+        {
+            std::cerr << "err; could not load node partition file\n";
+            return;
+        }
 
         // load up the arc labels
         warthog::bb_af_filter filter(&g, &order, &part, arclabels_file.c_str());
@@ -1239,6 +1305,12 @@ run_dimacs(warthog::util::cfg& cfg)
         std::vector<uint32_t> order;
         warthog::ch::load_node_order(orderfile.c_str(), order);
         warthog::ch::value_index_swap_dimacs(order);
+
+        if(order.size() == 0)
+        {
+            std::cerr << "err; could not load node order file\n";
+            return;
+        }
 
         std::cerr << "preparing to search\n";
         warthog::dcl_filter filter(arclabels_file.c_str(), &g, &order);

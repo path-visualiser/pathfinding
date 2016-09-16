@@ -361,6 +361,12 @@ compute_bbaf_labels()
         warthog::ch::load_node_order(orderfile.c_str(), order, true);
         warthog::helpers::load_integer_labels_dimacs(partfile.c_str(), part);
 
+        if(part.size() == 0) 
+        { 
+            std::cerr << "err; could not load partition file\n"; 
+            return;
+        }
+
         // output filename reflects the type and scope of the labeling
         grfile.append(".bbaf.arclabel");
         uint32_t firstid = 0;
