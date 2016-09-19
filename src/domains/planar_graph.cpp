@@ -251,3 +251,25 @@ warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss)
         }
     }
 }
+
+size_t
+warthog::graph::planar_graph::resize(uint32_t new_cap)
+{
+    if(new_cap <= nodes_cap_) { return false; }
+    warthog::graph::node* big_nodes = new warthog::graph::node[new_cap];
+    int32_t* big_xy = new int32_t[new_cap*2];
+    for(uint32_t i = 0; i < nodes_sz_; i++)
+    {
+        big_nodes[i] = std::move(nodes_[i]);
+        big_xy[i*2] = xy_[i*2];
+        big_xy[i*2+1] = xy_[i*2+1];
+    }
+    delete [] nodes_;
+    delete [] xy_;
+
+    nodes_ = big_nodes;
+    xy_ = big_xy;
+    nodes_cap_ = new_cap;
+
+    return nodes_cap_;
+}

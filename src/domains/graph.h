@@ -64,6 +64,40 @@ class node
 
         node(const node& other)
         {
+            *this = other;
+        }
+
+        ~node()
+        {
+            delete [] incoming_;
+            incoming_ = 0;
+            in_cap_ = in_deg_ = 0;
+
+            delete [] outgoing_;
+            outgoing_ = 0;
+            out_cap_ = out_deg_ = 0;
+        }
+
+        warthog::graph::node&
+        operator=(warthog::graph::node&& other)
+        {
+            this->in_deg_ = other.in_deg_;
+            this->out_deg_ = other.out_deg_;
+
+            other.out_deg_ = 0;
+            other.in_deg_ = 0;
+
+            this->incoming_ = other.incoming_;
+            other.incoming_ = 0;
+
+            this->outgoing_ = other.outgoing_;
+            other.outgoing_ = 0;
+            return *this;
+        }
+
+        warthog::graph::node&
+        operator=(const warthog::graph::node& other)
+        {
             in_deg_ = other.in_deg_;
             in_cap_ = other.in_cap_;
             incoming_ = new edge[other.in_cap_];
@@ -79,17 +113,7 @@ class node
             {
                 outgoing_[i] = other.outgoing_[i];
             }
-        }
-
-        ~node()
-        {
-            delete [] incoming_;
-            incoming_ = 0;
-            in_cap_ = in_deg_ = 0;
-
-            delete [] outgoing_;
-            outgoing_ = 0;
-            out_cap_ = out_deg_ = 0;
+            return *this;
         }
 
         inline void

@@ -111,6 +111,21 @@ class planar_graph
             return 0;
         }
 
+        inline warthog::graph::node*
+        add_node(int32_t x, int32_t y)
+        {
+            if(nodes_cap_ == nodes_sz_)
+            {
+                resize(nodes_cap_ + 1);
+                nodes_sz_ = nodes_cap_;
+            }
+            uint32_t index = nodes_sz_;
+            nodes_sz_++;
+            xy_[index*2] = x;
+            xy_[index*2+1] = y;
+            return &(nodes_[index]);
+        }
+
         inline void 
         set_verbose(bool verbose) { verbose_ = verbose; } 
 
@@ -119,6 +134,11 @@ class planar_graph
 
         inline const char* 
         get_filename() { return filename_.c_str(); }
+
+        // increase the node capacity of the graph
+        // (NB: capacity is not the same as size!)
+        bool
+        reserve(uint32_t new_cap);
 
         inline size_t
         mem()
@@ -140,6 +160,7 @@ class planar_graph
         
         // the set of nodes that comprise the graph
         uint32_t nodes_sz_;
+        uint32_t nodes_cap_;
         warthog::graph::node* nodes_;
 
         // planar coordinates stored as adjacent pairs (x, then y)
@@ -151,6 +172,10 @@ class planar_graph
         // representation is zero indexed. We convert between them by 
         // adding an offset
         uint32_t ID_OFFSET; 
+
+        size_t
+        resize(uint32_t new_cap);
+
 };
 
 }
