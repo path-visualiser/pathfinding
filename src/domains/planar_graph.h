@@ -111,7 +111,7 @@ class planar_graph
             return 0;
         }
 
-        inline warthog::graph::node*
+        inline uint32_t
         add_node(int32_t x, int32_t y)
         {
             if(nodes_cap_ == nodes_sz_)
@@ -123,7 +123,7 @@ class planar_graph
             nodes_sz_++;
             xy_[index*2] = x;
             xy_[index*2+1] = y;
-            return &(nodes_[index]);
+            return index;
         }
 
         inline void 

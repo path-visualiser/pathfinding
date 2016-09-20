@@ -1,5 +1,8 @@
 #include "constants.h"
+#include "gridmap.h"
 #include "jps.h"
+#include "online_jump_point_locator2.h"
+#include "planar_graph.h"
 
 // computes the forced neighbours of a node.
 // for a neighbour to be forced we must check that 
@@ -148,3 +151,70 @@ warthog::jps::compute_natural(warthog::jps::direction d, uint32_t tiles)
 	return ret;
 }
 
+warthog::graph::planar_graph*
+warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
+{
+    warthog::graph::planar_graph* graph = new warthog::graph::planar_graph();
+    warthog::online_jump_point_locator2 jpl(gm);
+    uint32_t mapwidth = gm->header_width();
+    uint32_t mapheight = gm->header_height();
+
+    // add nodes to graph
+    std::unordered_map<uint32_t, uint32_t> id_map;
+    for(uint32_t y = 0; y < mapheight; y++)
+    {
+        for(uint32_t x = 0; x < mapwidth; x++)
+        {
+            uint32_t from_id = gm->to_padded_id(y*mapwidth+x);
+            uint32_t tiles;
+            gm->get_neighbours(from_id, (uint8_t*)&tiles);
+
+            for(uint32_t i = 0; i < 8; i++)
+            {
+                warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+                if(!compute_forced(d, tiles)) { continue; }
+
+                // tile (x, y) has forced neighbours for direction d
+                // so we add it to the jump point graph
+                std::unordered_map<uint32_t, uint32_t>::iterator it_from;
+                if(it_from == id_map.end())
+                {
+                    uint32_t graph_id = graph->add_node(x, y);
+                    id_map.insert(
+                            std::pair<uint32_t, uint32_t>(from_id, graph_id));
+                }
+                break;
+            }
+        }
+    }
+            
+    // add edges to graph
+    for(uint32_t from_id = 0; from_id < graph->get_num_nodes(); from_id++)
+    {
+
+        int32_t x, y;
+        graph->get_xy(from_id, x, y);
+        uint32_t gm_id = gm->to_padded_id(y*mapwidth+x);
+        warthog::graph::node* from = graph->get_node(from_id);
+
+        for(uint32_t i = 0; i < 8; i++)
+        {
+            warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+            std::vector<uint32_t> jpoints;
+            std::vector<double> jcosts;
+            jpl.jump(d, gm_id, warthog::INF, jpoints, jcosts);
+            for(uint32_t idx = 0; idx < jpoints.size(); idx++)
+            {
+                uint32_t jp_id = jpoints[idx];
+                std::unordered_map<uint32_t, uint32_t>::iterator it_to_id; 
+                it_to_id = id_map.find(jp_id);
+                assert(it_to_id != id_map.end());
+                uint32_t to_id = it_to_id->second;
+                warthog::graph::node* to = graph->get_node(to_id);
+                from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx]));
+                to->add_outgoing(warthog::graph::edge(from_id, jcosts[idx]));
+            }
+        }
+    }
+    return graph;
+}

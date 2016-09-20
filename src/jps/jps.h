@@ -20,6 +20,15 @@
 namespace warthog
 {
 
+class gridmap;
+
+namespace graph
+{
+
+class planar_graph;
+
+}
+
 namespace jps
 {
 
@@ -63,6 +72,16 @@ compute_successors(warthog::jps::direction d, uint32_t tiles)
 	return warthog::jps::compute_forced(d, tiles) |
 	   	warthog::jps::compute_natural(d, tiles);
 }
+
+// creates a warthog::graph::planar_graph which contains only 
+// nodes that are jump points and edges which represent valid jumps,
+// from one jump point to another.
+//
+// @param gm: the input grid
+//
+// @return the jump point graph
+warthog::graph::planar_graph*
+create_jump_point_graph(warthog::gridmap* gm);
 
 
 }
