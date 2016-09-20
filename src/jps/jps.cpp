@@ -176,13 +176,9 @@ warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
 
                 // tile (x, y) has forced neighbours for direction d
                 // so we add it to the jump point graph
-                std::unordered_map<uint32_t, uint32_t>::iterator it_from;
-                if(it_from == id_map.end())
-                {
-                    uint32_t graph_id = graph->add_node(x, y);
-                    id_map.insert(
-                            std::pair<uint32_t, uint32_t>(from_id, graph_id));
-                }
+                uint32_t graph_id = graph->add_node(x, y);
+                id_map.insert(
+                        std::pair<uint32_t, uint32_t>(from_id, graph_id));
                 break;
             }
         }
