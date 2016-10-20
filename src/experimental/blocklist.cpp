@@ -33,6 +33,7 @@ warthog::blocklist::~blocklist()
 	clear();
 	delete pool_;
 	delete blockspool_;
+    delete blocks_;
 }
 
 warthog::search_node*
