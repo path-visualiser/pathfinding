@@ -168,6 +168,15 @@ class gridmap
 			return (db_[dbindex] & bitmask) != 0;
 		}
 
+        // get a pointer to the word that contains the label of node @padded_id
+        inline warthog::dbword*
+        get_mem_ptr(uint32_t padded_id)
+        {
+			uint32_t dbindex = padded_id >> warthog::LOG2_DBWORD_BITS;
+			if(dbindex > max_id_) { return 0; }
+			return &db_[dbindex];
+        }
+
 		// set the label associated with the padded coordinate pair (x, y)
 		inline void
 		set_label(uint32_t x, unsigned int y, bool label)
