@@ -50,7 +50,7 @@ class fwd_ch_bb_expansion_policy : public expansion_policy
             apex_reached_ = (apex == warthog::INF) ? true : false; 
         }
 
-        virtual uint32_t
+        virtual size_t
         mem()
         {
             return expansion_policy::mem() +

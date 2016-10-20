@@ -68,7 +68,7 @@ class ch_expansion_policy : public  expansion_policy
         inline uint32_t
         get_num_nodes() { return g_->get_num_nodes(); }
 
-        uint32_t
+        virtual size_t
         mem();
 
     private:

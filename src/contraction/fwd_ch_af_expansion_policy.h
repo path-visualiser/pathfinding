@@ -46,7 +46,7 @@ class fwd_ch_af_expansion_policy : public expansion_policy
             apex_ = apex; 
         }
 
-        virtual uint32_t
+        virtual size_t
         mem()
         {
             return expansion_policy::mem() +

@@ -55,7 +55,7 @@ class chaf_expansion_policy : public  expansion_policy
             g_->get_xy(n->get_id(), x, y);
         }
 
-        uint32_t
+        virtual size_t
         mem();
 
     private:

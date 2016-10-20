@@ -48,7 +48,7 @@ class graph_expansion_policy : public expansion_policy
         inline warthog::node_filter* 
         get_filter() { return nf_; }
 
-		uint32_t
+        virtual size_t
 		mem();
 
 	private:

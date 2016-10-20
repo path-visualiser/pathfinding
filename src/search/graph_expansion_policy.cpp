@@ -45,7 +45,7 @@ warthog::graph_expansion_policy::get_xy(warthog::search_node* n,
 }
 
 
-uint32_t
+size_t
 warthog::graph_expansion_policy::mem()
 {
     return 

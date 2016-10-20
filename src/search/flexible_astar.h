@@ -224,8 +224,11 @@ class flexible_astar : public warthog::search
 
 			warthog::search_node* goal = 0;
 			warthog::search_node* start = expander_->generate(startid);
+            int32_t sx, sy, gx, gy;
+            expander_->get_xy(start, sx, sy);
+            expander_->get_xy(expander_->generate(goalid), gx, gy);
 			start->init(instance.get_searchid(), 0, 0, 
-                    heuristic_->h(startid, goalid));
+                    heuristic_->h(sx, sy, gx, gy));
 			open_->push(start);
 
 			while(open_->size())
@@ -319,7 +322,9 @@ class flexible_astar : public warthog::search
 							{
 								int32_t x, y;
                                 expander_->get_xy(n, x, y);
-								std::cerr << "  open; updating (edgecost="<< cost_to_n<<") ("<<x<<", "<<y<<")...";
+								std::cerr 
+                                    << "  open; updating (edgecost="
+                                    << cost_to_n<<") ("<<x<<", "<<y<<")...";
 								n->print(std::cerr);
 								std::cerr << std::endl;
 							}
@@ -334,7 +339,9 @@ class flexible_astar : public warthog::search
 							{
 								int32_t x, y;
                                 expander_->get_xy(n, x, y);
-								std::cerr << "  open; not updating (edgecost=" << cost_to_n<< ") ("<<x<<", "<<y<<")...";
+								std::cerr 
+                                    << "  open; not updating (edgecost=" 
+                                    << cost_to_n<< ") ("<<x<<", "<<y<<")...";
 								n->print(std::cerr);
 								std::cerr << std::endl;
 							}
@@ -345,8 +352,10 @@ class flexible_astar : public warthog::search
 					{
 						// add a new node to the fringe
 						double gval = current->get_g() + cost_to_n;
+                        int32_t nx, ny;
+                        expander_->get_xy(n, nx, ny);
                         n->init(instance.get_searchid(), current, 
-                            gval, gval + heuristic_->h(n->get_id(), goalid));
+                            gval, gval + heuristic_->h(nx, ny, gx, gy));
                         
                         // but only if the node is not provably redundant
                         if(nf_->filter(n))
@@ -354,9 +363,9 @@ class flexible_astar : public warthog::search
 #ifndef NDEBUG
                             if(verbose_)
                             {
-                                int32_t x, y;
-                                expander_->get_xy(n, x, y);
-                                std::cerr << "  filtered-out (edgecost=" << cost_to_n<<") ("<<x<<", "<<y<<")...";
+                                std::cerr 
+                                    << "  filtered-out (edgecost=" 
+                                    << cost_to_n<<") ("<<nx<<", "<<ny<<")...";
                                 n->print(std::cerr);
                                 std::cerr << std::endl;
                             }
@@ -371,9 +380,9 @@ class flexible_astar : public warthog::search
                         #ifndef NDEBUG
                         if(verbose_)
                         {
-                            int32_t x, y;
-                            expander_->get_xy(n, x, y);
-                            std::cerr << "  generating (edgecost=" << cost_to_n<<") ("<<x<<", "<<y<<")...";
+                            std::cerr 
+                                << "  generating (edgecost=" 
+                                << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
                             n->print(std::cerr);
                             std::cerr << std::endl;
                         }

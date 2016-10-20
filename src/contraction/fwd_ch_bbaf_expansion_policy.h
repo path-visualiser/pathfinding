@@ -41,7 +41,7 @@ class fwd_ch_bbaf_expansion_policy : public expansion_policy
         virtual void
         get_xy(warthog::search_node*, int32_t& x, int32_t& y);
 
-        virtual uint32_t
+        virtual size_t
         mem()
         {
             return expansion_policy::mem() +

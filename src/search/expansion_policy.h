@@ -86,7 +86,7 @@ class expansion_policy
             return neis_->back();
         }
 
-		virtual uint32_t
+		virtual size_t
 		mem()
 		{
 			return sizeof(*this) + 

@@ -58,7 +58,7 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
     }
 }
 
-uint32_t
+size_t
 warthog::ch_expansion_policy::mem()
 {
     return 

@@ -28,7 +28,7 @@ class wgridmap_expansion_policy : public expansion_policy
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
-		virtual uint32_t
+		virtual size_t
 		mem()
 		{
 			return 
