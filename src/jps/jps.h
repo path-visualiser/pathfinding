@@ -16,6 +16,7 @@
 //
 
 #include "stdint.h"
+#include <unordered_map>
 
 namespace warthog
 {
@@ -73,16 +74,30 @@ compute_successors(warthog::jps::direction d, uint32_t tiles)
 	   	warthog::jps::compute_natural(d, tiles);
 }
 
+
 // creates a warthog::graph::planar_graph which contains only 
 // nodes that are jump points and edges which represent valid jumps,
 // from one jump point to another.
 //
 // @param gm: the input grid
+// @param id_map: a key/value set that maps the grid id of 
+// of each jump points to a corresponding id in the graph (optional)
+//
 //
 // @return the jump point graph
 warthog::graph::planar_graph*
 create_jump_point_graph(warthog::gridmap* gm);
 
+// given an input grid, create a new map where every (x, y) location
+// is labeled as a corner point or not.
+//
+// @param: gm; the input grid
+// @return the corner gridmap
+warthog::gridmap*
+create_corner_map(warthog::gridmap* gm);
+
+warthog::graph::planar_graph* 
+create_corner_graph(warthog::gridmap* gm);
 
 }
 }

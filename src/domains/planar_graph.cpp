@@ -16,6 +16,7 @@ warthog::graph::planar_graph::planar_graph()
     xy_ = 0;
     nodes_ = 0;
     nodes_sz_ = 0;
+    nodes_cap_ = 0;
     verbose_ = false;
     ID_OFFSET=0;
 }

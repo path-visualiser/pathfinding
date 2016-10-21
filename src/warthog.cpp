@@ -14,6 +14,8 @@
 #include "chase_search.h"
 #include "ch_expansion_policy.h"
 #include "contraction.h"
+#include "corner_graph_expansion_policy.h"
+#include "corner_point_locator.h"
 #include "dimacs_parser.h"
 #include "dcl_filter.h"
 #include "down_distance_filter.h"
@@ -39,6 +41,7 @@
 #include "octile_heuristic.h"
 #include "planar_graph.h"
 #include "scenario_manager.h"
+#include "timer.h"
 #include "weighted_gridmap.h"
 #include "wgridmap_expansion_policy.h"
 #include "zero_heuristic.h"
@@ -69,7 +72,7 @@ help()
 {
 	std::cerr << "valid parameters:\n"
     << "--format [ grid | wgm ]; followed by\n"
-	<< "\t--alg [astar | jps | jps2 | jps+ | jps2+ | jps | jps2_sssp | sssp ]\n"
+	<< "\t--alg [astar | jpg | jps | jps2 | jps+ | jps2+ | jps | jps2_sssp | sssp ]\n"
 	<< "\t--map [map filename] (only with dimacs format)\n"
 	<< "\t--scen [scenario filename]\n"
 	<< "\t--gen [map filename] (only with grid format)\n"
@@ -156,6 +159,57 @@ run_jpsplus(warthog::scenario_manager& scenmgr)
 		check_optimality(len, exp);
 	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
+run_jpg(warthog::scenario_manager& scenmgr)
+{
+    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
+    warthog::jps::corner_point_locator cpl(&map);
+
+    warthog::graph::planar_graph* jpg = warthog::jps::create_corner_graph(&map);
+	warthog::jps::corner_graph_expansion_policy expander(jpg, &map);
+
+	warthog::octile_heuristic heuristic(map.width(), map.height());
+	warthog::flexible_astar<
+		warthog::octile_heuristic,
+	   	warthog::jps::corner_graph_expansion_policy> 
+            astar(&heuristic, &expander);
+	astar.set_verbose(verbose);
+
+	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
+    warthog::timer mytimer;
+	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+		uint32_t startid = map.to_padded_id( 
+                exp->starty() * exp->mapwidth() + exp->startx());
+		uint32_t goalid = map.to_padded_id(
+                exp->goaly() * exp->mapwidth() + exp->goalx());
+
+        mytimer.start();
+        expander.insert(startid, goalid, startid, goalid);
+		double len = astar.get_length(startid, goalid);
+        expander.uninsert();
+        mytimer.stop();
+
+		if(len == warthog::INF)
+		{
+			len = 0;
+		}
+
+		std::cout << i<<"\t" << "jps+" << "\t" 
+		<< astar.get_nodes_expanded() << "\t" 
+		<< astar.get_nodes_generated() << "\t"
+		<< astar.get_nodes_touched() << "\t"
+		<< mytimer.elapsed_time_micro() << "\t"
+		<< len << "\t" 
+		<< scenmgr.last_file_loaded() << std::endl;
+
+		check_optimality(len, exp);
+	}
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+    delete jpg;
 }
 
 void
@@ -1396,12 +1450,12 @@ run_grid(warthog::util::cfg& cfg)
         run_jpsplus(scenmgr);
     }
 
-    if(alg == "jps2")
+    else if(alg == "jps2")
     {
         run_jps2(scenmgr);
     }
 
-    if(alg == "jps2+")
+    else if(alg == "jps2+")
     {
         run_jps2plus(scenmgr);
     }
@@ -1418,7 +1472,7 @@ run_grid(warthog::util::cfg& cfg)
         }
     }
 
-    if(alg == "astar")
+    else if(alg == "astar")
     {
         if(wgm) 
         { 
@@ -1430,7 +1484,7 @@ run_grid(warthog::util::cfg& cfg)
         }
     }
 
-    if(alg == "sssp")
+    else if(alg == "sssp")
     {
         if(wgm) 
         { 
@@ -1442,9 +1496,14 @@ run_grid(warthog::util::cfg& cfg)
         }
     }
    
-    if(alg == "jps2_sssp")
+    else if(alg == "jps2_sssp")
     {
         run_jps2_sssp(scenmgr);
+    }
+    
+    else if(alg == "jpg")
+    {
+        run_jpg(scenmgr);
     }
 }
 

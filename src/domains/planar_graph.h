@@ -116,8 +116,7 @@ class planar_graph
         {
             if(nodes_cap_ == nodes_sz_)
             {
-                resize(nodes_cap_ + 1);
-                nodes_sz_ = nodes_cap_;
+                resize(nodes_cap_ == 0 ? 1 : (nodes_cap_*2));
             }
             uint32_t index = nodes_sz_;
             nodes_sz_++;

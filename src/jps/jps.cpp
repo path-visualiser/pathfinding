@@ -1,4 +1,5 @@
 #include "constants.h"
+#include "corner_point_locator.h"
 #include "gridmap.h"
 #include "jps.h"
 #include "online_jump_point_locator2.h"
@@ -152,15 +153,15 @@ warthog::jps::compute_natural(warthog::jps::direction d, uint32_t tiles)
 }
 
 warthog::graph::planar_graph*
-warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
+warthog::jps::create_jump_point_graph(warthog::gridmap* gm) 
 {
     warthog::graph::planar_graph* graph = new warthog::graph::planar_graph();
     warthog::online_jump_point_locator2 jpl(gm);
     uint32_t mapwidth = gm->header_width();
     uint32_t mapheight = gm->header_height();
+    std::unordered_map<uint32_t, uint32_t> id_map;
 
     // add nodes to graph
-    std::unordered_map<uint32_t, uint32_t> id_map;
     for(uint32_t y = 0; y < mapheight; y++)
     {
         for(uint32_t x = 0; x < mapwidth; x++)
@@ -169,25 +170,33 @@ warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
             uint32_t tiles;
             gm->get_neighbours(from_id, (uint8_t*)&tiles);
 
-            for(uint32_t i = 0; i < 8; i++)
+            if(!gm->get_label(gm->to_padded_id(x, y))) { continue; } 
+            
+            // detect all corner turning points (== jump points) 
+            // and add them to the jump point graph
+            if( (!gm->get_label(gm->to_padded_id(x-1, y-1)) && 
+                    gm->get_label(gm->to_padded_id(x-1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y-1))) ||
+                (!gm->get_label(gm->to_padded_id(x+1, y-1)) && 
+                    gm->get_label(gm->to_padded_id(x+1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y-1))) ||
+                (!gm->get_label(gm->to_padded_id(x+1, y+1)) && 
+                    gm->get_label(gm->to_padded_id(x+1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y+1))) ||
+                (!gm->get_label(gm->to_padded_id(x-1, y+1)) && 
+                    gm->get_label(gm->to_padded_id(x-1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y+1))) )
             {
-                warthog::jps::direction d = (warthog::jps::direction)(1 << i);
-                if(!compute_forced(d, tiles)) { continue; }
-
-                // tile (x, y) has forced neighbours for direction d
-                // so we add it to the jump point graph
                 uint32_t graph_id = graph->add_node(x, y);
                 id_map.insert(
                         std::pair<uint32_t, uint32_t>(from_id, graph_id));
-                break;
             }
         }
     }
-            
+
     // add edges to graph
     for(uint32_t from_id = 0; from_id < graph->get_num_nodes(); from_id++)
     {
-
         int32_t x, y;
         graph->get_xy(from_id, x, y);
         uint32_t gm_id = gm->to_padded_id(y*mapwidth+x);
@@ -201,12 +210,119 @@ warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
             jpl.jump(d, gm_id, warthog::INF, jpoints, jcosts);
             for(uint32_t idx = 0; idx < jpoints.size(); idx++)
             {
-                uint32_t jp_id = jpoints[idx];
+                uint32_t jp_id = jpoints[idx] & ((1 << 24) - 1);
+                //warthog::jps::direction d = (warthog::jps::direction)(jpoints[idx] >> 24);
                 std::unordered_map<uint32_t, uint32_t>::iterator it_to_id; 
                 it_to_id = id_map.find(jp_id);
                 assert(it_to_id != id_map.end());
                 uint32_t to_id = it_to_id->second;
                 warthog::graph::node* to = graph->get_node(to_id);
+                from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx]));
+                to->add_outgoing(warthog::graph::edge(from_id, jcosts[idx]));
+            }
+        }
+    }
+    return graph;
+}
+
+warthog::gridmap*
+warthog::jps::create_corner_map(warthog::gridmap* gm)
+{
+    uint32_t mapwidth = gm->header_width();
+    uint32_t mapheight = gm->header_height();
+    warthog::gridmap* corner_map = new warthog::gridmap(mapheight, mapwidth);
+
+    // add nodes to graph
+    for(uint32_t y = 0; y < mapheight; y++)
+    {
+        for(uint32_t x = 0; x < mapwidth; x++)
+        {
+            uint32_t from_id = gm->to_padded_id(y*mapwidth+x);
+            uint32_t tiles;
+            gm->get_neighbours(from_id, (uint8_t*)&tiles);
+
+            if(!gm->get_label(gm->to_padded_id(x, y))) { continue; } 
+            
+            // detect all corner turning points (== jump points) 
+            // and add them to the jump point graph
+            if( (!gm->get_label(gm->to_padded_id(x-1, y-1)) && 
+                    gm->get_label(gm->to_padded_id(x-1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y-1))) ||
+                (!gm->get_label(gm->to_padded_id(x+1, y-1)) && 
+                    gm->get_label(gm->to_padded_id(x+1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y-1))) ||
+                (!gm->get_label(gm->to_padded_id(x+1, y+1)) && 
+                    gm->get_label(gm->to_padded_id(x+1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y+1))) ||
+                (!gm->get_label(gm->to_padded_id(x-1, y+1)) && 
+                    gm->get_label(gm->to_padded_id(x-1, y)) && 
+                    gm->get_label(gm->to_padded_id(x, y+1))) )
+            {
+                corner_map->set_label(from_id, true);
+            }
+        }
+    }
+    return corner_map;
+}
+
+warthog::graph::planar_graph*
+warthog::jps::create_corner_graph(warthog::gridmap* gm) 
+{
+    std::unordered_map<uint32_t, uint32_t> id_map;
+    warthog::graph::planar_graph* graph = new warthog::graph::planar_graph();
+    warthog::jps::corner_point_locator cpl(gm);
+    warthog::gridmap* corner_map = cpl.get_corner_map();
+
+    uint32_t mapwidth = gm->header_width();
+    uint32_t mapheight = gm->header_height();
+    for(uint32_t index = 0; index < mapheight*mapwidth; index++)
+    {
+        uint32_t gm_id = gm->to_padded_id(index);
+        if(!corner_map->get_label(gm_id)) { continue; } 
+
+        // each corner point in the grid becomes a node in 
+        // the corresponding planar graph
+        uint32_t gm_x, gm_y;
+        gm->to_unpadded_xy(gm_id, gm_x, gm_y);
+
+        uint32_t from_id;
+        std::unordered_map<uint32_t, uint32_t>::iterator it_from_id;
+        it_from_id = id_map.find(gm_id);
+        if(it_from_id == id_map.end())
+        {
+            from_id = graph->add_node(gm_x, gm_y);
+            id_map.insert(std::pair<uint32_t, uint32_t>(gm_id, from_id));
+        }
+        else { from_id = it_from_id->second; }
+
+        // identify other corner points by scanning the map and adding them 
+        // to the graph as necessary. also added are edges between corner 
+        // points to their immediate corner-point successors
+        for(uint32_t i = 0; i < 8; i++)
+        {
+            warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+            std::vector<uint32_t> jpoints;
+            std::vector<double> jcosts;
+            cpl.jump(d, gm_id, warthog::INF, jpoints, jcosts);
+            for(uint32_t idx = 0; idx < jpoints.size(); idx++)
+            {
+                uint32_t jp_id = jpoints[idx] & ((1 << 24) - 1);
+                std::unordered_map<uint32_t, uint32_t>::iterator it_to_id; 
+                it_to_id = id_map.find(jp_id);
+
+                uint32_t to_id;
+                if(it_to_id == id_map.end())
+                {
+                    uint32_t jp_x, jp_y;
+                    gm->to_unpadded_xy(jp_id, jp_x, jp_y);
+                    to_id = graph->add_node(jp_x, jp_y);
+                    id_map.insert(std::pair<uint32_t, uint32_t>(jp_id, to_id));
+                }
+                else { to_id = it_to_id->second; }
+
+                warthog::graph::node* from = graph->get_node(from_id);
+                warthog::graph::node* to = graph->get_node(to_id);
+                assert(from && to);
                 from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx]));
                 to->add_outgoing(warthog::graph::edge(from_id, jcosts[idx]));
             }

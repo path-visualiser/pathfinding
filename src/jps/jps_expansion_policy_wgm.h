@@ -46,7 +46,7 @@ class jps_expansion_policy_wgm : public expansion_policy
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
-		virtual inline uint32_t
+		virtual inline size_t
 		mem()
 		{
 			return expansion_policy::mem() + 

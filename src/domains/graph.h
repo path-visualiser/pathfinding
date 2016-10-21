@@ -47,6 +47,12 @@ class edge
             return *this;
         }
 
+        void
+        print(std::ostream& out)
+        {
+            out << " edge endpoint " << node_id_ << "; cost " << wt_;
+        }
+
         // we store only one id, typically the head node
         // the id of the other node is derived contextually
         uint32_t node_id_;
@@ -67,6 +73,25 @@ class node
             *this = other;
         }
 
+        node(node&& other)
+        {
+            incoming_ = other.incoming_;
+            in_cap_ = other.in_cap_;
+            in_deg_ = other.in_deg_;
+
+            outgoing_ = other.outgoing_;
+            out_cap_ = other.out_cap_;
+            out_deg_ = other.out_deg_;
+
+            other.incoming_ = 0;
+            other.outgoing_ = 0;
+            other.out_cap_ = 0;
+            other.out_deg_ = 0;
+            other.in_cap_ = 0;
+            other.in_deg_ = 0;
+        }
+
+
         ~node()
         {
             delete [] incoming_;
@@ -81,17 +106,19 @@ class node
         warthog::graph::node&
         operator=(warthog::graph::node&& other)
         {
+            this->incoming_ = other.incoming_;
             this->in_deg_ = other.in_deg_;
+            this->in_cap_ = other.in_cap_;
+
+            this->outgoing_ = other.outgoing_;
             this->out_deg_ = other.out_deg_;
+            this->out_cap_ = other.out_cap_;
 
             other.out_deg_ = 0;
             other.in_deg_ = 0;
-
-            this->incoming_ = other.incoming_;
             other.incoming_ = 0;
-
-            this->outgoing_ = other.outgoing_;
             other.outgoing_ = 0;
+
             return *this;
         }
 
@@ -116,16 +143,16 @@ class node
             return *this;
         }
 
-        inline void
+        inline warthog::graph::edge_iter
         add_incoming(warthog::graph::edge e)
         {
-            add_edge(e, in_cap_, in_deg_, incoming_);
+            return add_edge(e, in_cap_, in_deg_, incoming_);
         }
 
-        inline void
+        inline warthog::graph::edge_iter
         add_outgoing(warthog::graph::edge e)
         {
-            add_edge(e, out_cap_, out_deg_, outgoing_);
+            return add_edge(e, out_cap_, out_deg_, outgoing_);
         }
 
         inline void
@@ -256,7 +283,7 @@ class node
         inline void
         del_edge(warthog::graph::edge_iter elt, ECAP_T& deg, edge*& elts)
         {
-            uint32_t index = elt - elts;
+            uint32_t index = &*elt - elts;
             if(index < deg)
             {
                 deg--;
@@ -267,14 +294,14 @@ class node
             }
         }
 
-        inline void
+        inline warthog::graph::edge_iter
         add_edge(warthog::graph::edge& e, 
                 ECAP_T& max_elts, ECAP_T& deg, edge*& elts)
         {
             if(deg == ECAP_MAX)
             {
                 std::cerr << "warthog::graph::node edge-capacity reached!\n";
-                return;
+                return &elts[deg];
             }
          
             // don't add redundant edges; we only want one:
@@ -287,16 +314,17 @@ class node
                     {
                         elts[i].wt_ = e.wt_;
                     }
-                    return;
+                    return &elts[deg];
                 }
             }
 
             if(deg == max_elts)
             {
-                max_elts = increase_capacity(max_elts*2, max_elts, elts);
+                //uint32_t bigmax = (max_elts == 0 ? 1 : (2*max_elts));
+                max_elts = increase_capacity(2*max_elts, max_elts, elts);
             }
             elts[deg] = e; 
-            deg++;
+            return &elts[deg++];
         }
 
 
