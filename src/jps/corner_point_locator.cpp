@@ -50,23 +50,6 @@ warthog::jps::corner_point_locator::create_rmap(warthog::gridmap* map)
 	return rmap;
 }
 
-//warthog::gridmap* 
-//warthog::jps::corner_point_locator::create_cnr_map(warthog::graph::planar_graph* g)
-//{
-//    warthog::gridmap* cnr_map = new warthog::gridmap(
-//            map_->header_height(), map_->header_width());
-//
-//    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
-//    {
-//        int32_t x, y;
-//        g->get_xy(i, x, y);
-//        uint32_t grid_id = cnr_map->to_padded_id(y*cnr_map->header_width() + x);
-//        cnr_map->set_label(grid_id, true);
-//    }
-//    return cnr_map;
-//}
-//
-
 // Finds a jump point successor of node (x, y) in Direction d.
 // Also given is the location of the goal node (goalx, goaly) for a particular
 // search instance. If encountered, the goal node is always returned as a 

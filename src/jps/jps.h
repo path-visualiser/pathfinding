@@ -46,6 +46,11 @@ typedef enum
 	SOUTHWEST = 128
 } direction;
 
+// compute the diagonal-first direction of travel, 
+// from (px, py) to (x, y)
+warthog::jps::direction
+compute_direction(uint32_t px, uint32_t py, uint32_t x, uint32_t y);
+
 // Computes the set of "forced" directions in which to search for jump points
 // from a given location (x, y). 
 // A neighbour is forced if it cannot be proven that there is at least one 
