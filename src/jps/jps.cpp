@@ -238,25 +238,30 @@ warthog::jps::create_corner_map(warthog::gridmap* gm)
         for(uint32_t x = 0; x < mapwidth; x++)
         {
             uint32_t from_id = gm->to_padded_id(y*mapwidth+x);
-            uint32_t tiles;
-            gm->get_neighbours(from_id, (uint8_t*)&tiles);
+            if(!gm->get_label(from_id)) { continue; } 
 
-            if(!gm->get_label(gm->to_padded_id(x, y))) { continue; } 
+
+            uint32_t w_id = from_id - 1;
+            uint32_t e_id = from_id + 1;
+            uint32_t s_id = from_id + gm->width();
+            uint32_t n_id = from_id - gm->width();
+            uint32_t nw_id = (from_id - gm->width()) - 1;
+            uint32_t ne_id = (from_id - gm->width()) + 1;
+            uint32_t sw_id = (from_id + gm->width()) - 1;
+            uint32_t se_id = (from_id + gm->width()) + 1;
             
             // detect all corner turning points (== jump points) 
             // and add them to the jump point graph
-            if( (!gm->get_label(gm->to_padded_id(x-1, y-1)) && 
-                    gm->get_label(gm->to_padded_id(x-1, y)) && 
-                    gm->get_label(gm->to_padded_id(x, y-1))) ||
-                (!gm->get_label(gm->to_padded_id(x+1, y-1)) && 
-                    gm->get_label(gm->to_padded_id(x+1, y)) && 
-                    gm->get_label(gm->to_padded_id(x, y-1))) ||
-                (!gm->get_label(gm->to_padded_id(x+1, y+1)) && 
-                    gm->get_label(gm->to_padded_id(x+1, y)) && 
-                    gm->get_label(gm->to_padded_id(x, y+1))) ||
-                (!gm->get_label(gm->to_padded_id(x-1, y+1)) && 
-                    gm->get_label(gm->to_padded_id(x-1, y)) && 
-                    gm->get_label(gm->to_padded_id(x, y+1))) )
+            uint32_t tiles;
+            gm->get_neighbours(from_id, (uint8_t*)&tiles);
+            if( (!gm->get_label(nw_id) && 
+                    gm->get_label(w_id) && gm->get_label(n_id)) ||
+                (!gm->get_label(ne_id) && 
+                    gm->get_label(e_id) && gm->get_label(n_id)) ||
+                (!gm->get_label(se_id) && 
+                    gm->get_label(e_id) && gm->get_label(s_id)) ||
+                (!gm->get_label(sw_id) && 
+                    gm->get_label(w_id) && gm->get_label(s_id)) )
             {
                 corner_map->set_label(from_id, true);
             }
