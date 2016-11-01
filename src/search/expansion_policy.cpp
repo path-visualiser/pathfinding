@@ -1,9 +1,9 @@
 #include "expansion_policy.h"
 
-warthog::expansion_policy::expansion_policy(uint32_t num_nodes)
+warthog::expansion_policy::expansion_policy(uint32_t nodes_pool_size)
 {
-    num_nodes_ = num_nodes;
-    nodepool_ = new warthog::blocklist(num_nodes);
+    nodes_pool_size_ = nodes_pool_size;
+    nodepool_ = new warthog::blocklist(nodes_pool_size);
     costs_ = new std::vector<double>();
     neis_ = new std::vector<warthog::search_node*>();
     costs_->reserve(8);

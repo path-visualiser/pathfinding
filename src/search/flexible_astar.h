@@ -82,7 +82,7 @@ class flexible_astar : public warthog::search
         void
         closed_list(std::vector<warthog::search_node*>& coll)
         {
-            for(uint32_t i = 0; i < expander_->get_num_nodes(); i++)
+            for(uint32_t i = 0; i < expander_->get_nodes_pool_size(); i++)
             {
                 warthog::search_node* current = expander_->get_ptr(i, searchid_);
                 if(current) { coll.push_back(current); }
@@ -93,7 +93,7 @@ class flexible_astar : public warthog::search
         void
         apply_to_closed(std::function<void(warthog::search_node*)>& fn)
         {
-            for(uint32_t i = 0; i < expander_->get_num_nodes(); i++)
+            for(uint32_t i = 0; i < expander_->get_nodes_pool_size(); i++)
             {
                 warthog::search_node* current = 
                     expander_->get_ptr(i, searchid_);

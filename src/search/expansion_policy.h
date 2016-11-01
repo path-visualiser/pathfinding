@@ -22,11 +22,11 @@ namespace warthog
 class expansion_policy
 {
     public:
-        expansion_policy(uint32_t num_nodes);
+        expansion_policy(uint32_t nodes_pool_size);
         virtual ~expansion_policy();
 
         uint32_t
-        get_num_nodes() { return num_nodes_; } 
+        get_nodes_pool_size() { return nodes_pool_size_; } 
        
 		// create a warthog::search_node object from a state description
 		// (in this case, an id)
@@ -125,12 +125,15 @@ class expansion_policy
             //std::cout << " neis_.size() == " << neis_->size() << std::endl;
         }
 
+        inline uint32_t 
+        get_num_neighbours() { return neis_->size(); } 
+
     private:
         warthog::blocklist* nodepool_;
         std::vector<warthog::search_node*>* neis_;
         std::vector<double>* costs_;
         uint32_t current_;
-        uint32_t num_nodes_;
+        uint32_t nodes_pool_size_;
 };
 
 }
