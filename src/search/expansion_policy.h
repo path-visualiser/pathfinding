@@ -48,7 +48,6 @@ class expansion_policy
 		{
 			current_ = 0;
             neis_->clear();
-            costs_->clear();
 		}
 
 		inline void
@@ -63,8 +62,8 @@ class expansion_policy
 		{
             if(current_ < neis_->size())
             {
-                ret = (*neis_)[current_];
-                cost = (*costs_)[current_];
+                ret = (*neis_)[current_].node_;
+                cost = (*neis_)[current_].cost_;
             }
             else
             {
@@ -83,15 +82,14 @@ class expansion_policy
         inline warthog::search_node* 
         last()
         {
-            return neis_->back();
+            return (neis_->back()).node_;
         }
 
 		virtual size_t
 		mem()
 		{
 			return sizeof(*this) + 
-            sizeof(warthog::search_node*) * neis_->capacity() + 
-            sizeof(double) * costs_->capacity() +
+            sizeof(neighbour_record) * neis_->capacity() + 
             nodepool_->mem();
 		}
 
@@ -119,9 +117,7 @@ class expansion_policy
         inline void 
         add_neighbour(warthog::search_node* nei, double cost)
         {
-            neis_->push_back(nei);
-            costs_->push_back(cost);
-            //nei->print(std::cout);
+            neis_->push_back(neighbour_record(nei, cost));
             //std::cout << " neis_.size() == " << neis_->size() << std::endl;
         }
 
@@ -129,9 +125,20 @@ class expansion_policy
         get_num_neighbours() { return neis_->size(); } 
 
     private:
+
+        struct neighbour_record
+        {
+            neighbour_record(warthog::search_node* node, double cost)
+            {
+                node_ = node;
+                cost_ = cost;
+            }
+            warthog::search_node* node_;
+            double cost_;
+        };
+
         warthog::blocklist* nodepool_;
-        std::vector<warthog::search_node*>* neis_;
-        std::vector<double>* costs_;
+        std::vector<neighbour_record>* neis_;
         uint32_t current_;
         uint32_t nodes_pool_size_;
 };
