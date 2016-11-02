@@ -314,6 +314,7 @@ warthog::jps::create_corner_graph(warthog::gridmap* gm)
             cpl.jump(d, gm_id, warthog::INF, jpoints, jcosts);
             for(uint32_t idx = 0; idx < jpoints.size(); idx++)
             {
+                //uint8_t pdir = ((uint8_t*)&jpoints[idx])[3];
                 uint32_t jp_id = jpoints[idx] & ((1 << 24) - 1);
                 std::unordered_map<uint32_t, uint32_t>::iterator it_to_id; 
                 it_to_id = id_map.find(jp_id);
@@ -331,8 +332,8 @@ warthog::jps::create_corner_graph(warthog::gridmap* gm)
                 warthog::graph::node* from = graph->get_node(from_id);
                 warthog::graph::node* to = graph->get_node(to_id);
                 assert(from && to);
+                //from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx], pdir));
                 from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx]));
-                to->add_outgoing(warthog::graph::edge(from_id, jcosts[idx]));
             }
         }
     }
