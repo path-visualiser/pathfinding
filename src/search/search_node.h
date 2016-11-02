@@ -43,7 +43,6 @@ class search_node
             f_ = f;
             g_ = g;
 			searchid_ = searchid;
-            set_pdir(warthog::jps::direction::NONE);
 		}
 
 		inline uint32_t

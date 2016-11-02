@@ -55,7 +55,7 @@ warthog::jps2_expansion_policy::expand(
 		warthog::jps::direction pdir = (warthog::jps::direction)*(((uint8_t*)(&jp_id))+3);
 		warthog::search_node* mynode = generate(jp_id & id_mask);
 		//if(mynode->get_searchid() != searchid) { mynode->reset(searchid); }
-        assert(mynode->get_searchid() == problem->get_searchid());
+        //assert(mynode->get_searchid() == problem->get_searchid());
 		add_neighbour(mynode, jp_cost);
 
 		// stupid hack
