@@ -188,11 +188,14 @@ class flexible_astar : public warthog::search
 		E* expander_;
         F* nf_;
 		warthog::pqueue* open_;
-        double cost_cutoff_; // early termination
+
+        // early termination limits
+        double cost_cutoff_; 
         uint32_t exp_cutoff_;
+
         std::function<void(warthog::search_node*)> on_relax_fn_;
 
-		// no copy
+		// no copy ctor
 		flexible_astar(const flexible_astar& other) { } 
 		flexible_astar& 
 		operator=(const flexible_astar& other) { return *this; }
@@ -250,10 +253,10 @@ class flexible_astar : public warthog::search
 					goal = open_->peek();
 					break;
 				}
-                // bounded-cost search runs until the goal is found or until
-                // a maximum cost limit is reached
-                if(open_->peek()->get_f() > cost_cutoff_) { break; } 
 
+                // early termination tests (in case we want bounded-cost 
+                // search or if we want to impose some memory limit)
+                if(open_->peek()->get_f() > cost_cutoff_) { break; } 
                 if(nodes_expanded_ >= exp_cutoff_) { break; }
 
 				warthog::search_node* current = open_->pop();
@@ -265,12 +268,13 @@ class flexible_astar : public warthog::search
 				{
 					int32_t x, y;
                     expander_->get_xy(current, x, y);
-					std::cerr << this->nodes_expanded_ << ". expanding ("<<x<<", "<<y<<")...";
+					std::cerr << this->nodes_expanded_ 
+                        << ". expanding ("<<x<<", "<<y<<")...";
 					current->print(std::cerr);
 					std::cerr << std::endl;
 				}
 				#endif
-				current->set_expanded(true); // NB: set this before calling expander_ 
+				current->set_expanded(true); // NB: set before generating
 				assert(current->get_expanded());
 				expander_->expand(current, &instance);
 
@@ -289,19 +293,10 @@ class flexible_astar : public warthog::search
                         {
                             int32_t x, y;
                             expander_->get_xy(n, x, y);
-                            std::cerr << "  closed; (edgecost=" << cost_to_n << ") ("<<x<<", "<<y<<")...";
+                            std::cerr << "  closed; (edgecost=" 
+                                << cost_to_n << ") ("<<x<<", "<<y<<")...";
                             n->print(std::cerr);
                             std::cerr << std::endl;
-
-                            //double gval = current->get_g() + cost_to_n;
-                            //double hval = heuristic_->h(n->get_id(), goalid) * hscale_;
-                            //double fval = gval + hval;
-                            //std::cerr << "  alt g: " << gval << " h: " << hval << " f: " << fval << std::endl;
-                            //if(gval < n->get_g())
-                            //{
-                            //    assert(gval >= n->get_g());
-                            //}
-
                         }
                         #endif
 						continue;
@@ -360,7 +355,7 @@ class flexible_astar : public warthog::search
                         // but only if the node is not provably redundant
                         if(nf_->filter(n))
                         {
-#ifndef NDEBUG
+                            #ifndef NDEBUG
                             if(verbose_)
                             {
                                 std::cerr 
@@ -369,7 +364,7 @@ class flexible_astar : public warthog::search
                                 n->print(std::cerr);
                                 std::cerr << std::endl;
                             }
-#endif
+                            #endif
                             continue;
                         }
 
@@ -391,19 +386,9 @@ class flexible_astar : public warthog::search
                         on_relax_fn_(n);
 					}
 				}
-//				#ifndef NDEBUG
-//				if(verbose_)
-//				{
-//					int32_t x, y;
-//                    expander_->get_xy(current, x, y);
-//					std::cerr <<"closing ("<<x<<", "<<y<<")...";
-//					current->print(std::cerr);
-//					std::cerr << std::endl;
-//			    }
-//			    #endif
 			}
 
-#ifndef NDEBUG
+            #ifndef NDEBUG
             if(verbose_)
             {
                 if(goal == 0) 
@@ -411,8 +396,7 @@ class flexible_astar : public warthog::search
                     std::cerr << "search failed; no solution exists " << std::endl;
                 }
             }
-#endif
-
+            #endif
 
 			mytimer.stop();
 			search_time_ = mytimer.elapsed_time_micro();
