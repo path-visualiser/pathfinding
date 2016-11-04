@@ -120,8 +120,7 @@ class flexible_astar : public warthog::search
 				len = goal->get_g();
 			}
 
-#ifndef NDEBUG
-
+            #ifndef NDEBUG
 			if(verbose_)
 			{
 				std::stack<warthog::search_node*> path;
@@ -144,8 +143,7 @@ class flexible_astar : public warthog::search
 					path.pop();
 				}
 			}
-#endif
-            //cleanup();
+            #endif
 			return len;
 		}
 
