@@ -46,6 +46,10 @@ typedef enum
 	SOUTHWEST = 128
 } direction;
 
+// we sometimes store the id of a node in the lower 3 bytes of a word and 
+// use the upper byte to store something else (e.g. the parent direction)
+const uint32_t ID_MASK = (1 << 24)-1;
+
 // compute the diagonal-first direction of travel, 
 // from (px, py) to (x, y)
 warthog::jps::direction

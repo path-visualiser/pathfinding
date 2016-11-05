@@ -43,6 +43,13 @@ class jps2_expansion_policy : public expansion_policy
         virtual void
         get_xy(warthog::search_node* n, int32_t& x, int32_t& y); 
 
+        // this function gets called whenever a successor node is relaxed. at that
+        // point we set the node currently being expanded (==current) as the 
+        // parent of n and label node n with the direction of travel, 
+        // from current to n
+        void
+        update_parent_direction(warthog::search_node* n);
+
 	private:
 		warthog::gridmap* map_;
 		online_jump_point_locator2* jpl_;

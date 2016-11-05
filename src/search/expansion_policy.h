@@ -124,6 +124,10 @@ class expansion_policy
         inline uint32_t 
         get_num_neighbours() { return neis_->size(); } 
 
+        // return the index associated with the successor ::n()
+        inline uint32_t 
+        get_current_successor_index() { return current_; }
+      
     private:
 
         struct neighbour_record

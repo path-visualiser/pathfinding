@@ -35,13 +35,14 @@ namespace warthog
 // H is a heuristic function
 // E is an expansion policy
 // F is a node filtering (== pruning) policy
-template <class H, class E, class F = warthog::dummy_filter>
+template< class H, 
+          class E, 
+          class F = warthog::dummy_filter>
 class flexible_astar : public warthog::search
 {
 	public:
-		flexible_astar(H* heuristic, E* expander, 
-                F* filter = new warthog::dummy_filter())
-			: heuristic_(heuristic), expander_(expander), nf_(filter)
+		flexible_astar(H* heuristic, E* expander, F* filter = 0) :
+            heuristic_(heuristic), expander_(expander), filter_(filter)
 		{
 			open_ = new warthog::pqueue(1024, true);
 			verbose_ = false;
@@ -184,7 +185,7 @@ class flexible_astar : public warthog::search
 	private:
 		H* heuristic_;
 		E* expander_;
-        F* nf_;
+        F* filter_;
 		warthog::pqueue* open_;
 
         // early termination limits
@@ -322,7 +323,6 @@ class flexible_astar : public warthog::search
 								std::cerr << std::endl;
 							}
 							#endif
-
                             on_relax_fn_(n);
 						}
 						else
@@ -351,7 +351,7 @@ class flexible_astar : public warthog::search
                             gval, gval + heuristic_->h(nx, ny, gx, gy));
                         
                         // but only if the node is not provably redundant
-                        if(nf_->filter(n))
+                        if(filter_ && filter_->filter(n))
                         {
                             #ifndef NDEBUG
                             if(verbose_)

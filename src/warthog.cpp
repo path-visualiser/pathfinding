@@ -276,6 +276,13 @@ run_jps2plus(warthog::scenario_manager& scenmgr)
 	   	warthog::jps2plus_expansion_policy> astar(&heuristic, &expander);
 	astar.set_verbose(verbose);
 
+    std::function<void(warthog::search_node*)> relax_fn = 
+            [&](warthog::search_node* n)
+            {
+                expander.update_parent_direction(n);
+            };
+    astar.apply_on_relax(relax_fn);
+
 	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
@@ -316,6 +323,13 @@ run_jps2(warthog::scenario_manager& scenmgr)
 	   	warthog::jps2_expansion_policy> astar(&heuristic, &expander);
 	astar.set_verbose(verbose);
 
+    std::function<void(warthog::search_node*)> relax_fn = 
+            [&](warthog::search_node* n)
+            {
+                expander.update_parent_direction(n);
+            };
+    astar.apply_on_relax(relax_fn);
+            
 	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
