@@ -44,10 +44,10 @@ class corner_point_locator
 				std::vector<uint32_t>& jpoints,
 				std::vector<double>& costs);
 
-        warthog::gridmap* 
+        inline warthog::gridmap* 
         get_map() { return map_; } 
 
-        warthog::gridmap* 
+        inline warthog::gridmap* 
         get_corner_map() { return cnr_map_; }
 
 		uint32_t 

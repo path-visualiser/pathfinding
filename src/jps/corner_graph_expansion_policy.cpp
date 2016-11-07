@@ -28,7 +28,6 @@ warthog::jps::corner_graph_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* problem)
 {
     reset();
-    problem_ = problem;
 
     uint32_t graph_id = current->get_id();
     warthog::graph::node* n = g_->get_node(graph_id);

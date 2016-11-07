@@ -53,7 +53,6 @@ class corner_graph_expansion_policy : public expansion_policy
 
     private:
         warthog::graph::corner_graph* g_;
-        warthog::problem_instance* problem_;
 };
 
 }

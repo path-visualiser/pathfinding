@@ -101,6 +101,16 @@ class planar_graph
             }
         }
 
+        inline void
+        set_xy(uint32_t id, int32_t x, int32_t y)
+        {
+            if(id < nodes_sz_)
+            {
+                xy_[id*2] = x;
+                xy_[id*2+1] = y;
+            }
+        }
+
         inline warthog::graph::node* 
         get_node(uint32_t id)
         {

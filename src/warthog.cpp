@@ -169,8 +169,9 @@ run_jpg(warthog::scenario_manager& scenmgr)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
     warthog::jps::corner_point_locator cpl(&map);
 
-    warthog::graph::planar_graph* jpg = warthog::jps::create_corner_graph(&map);
-	warthog::jps::jpg_expansion_policy expander(jpg, &map);
+    warthog::graph::planar_graph* cg = warthog::jps::create_corner_graph(&map);
+    warthog::graph::corner_graph* cpg = new warthog::graph::corner_graph(&map, cg);
+	warthog::jps::jpg_expansion_policy expander(cpg);
 
 	warthog::octile_heuristic heuristic(map.width(), map.height());
 	warthog::flexible_astar<
@@ -190,9 +191,10 @@ run_jpg(warthog::scenario_manager& scenmgr)
                 exp->goaly() * exp->mapwidth() + exp->goalx());
 
         mytimer.start();
-        expander.insert(startid, goalid, startid, goalid);
+        cpg->insert(startid, goalid);
+        startid = cpg->get_inserted_start_id();
+        goalid = cpg->get_inserted_target_id();
 		double len = astar.get_length(startid, goalid);
-        expander.uninsert();
         mytimer.stop();
 
 		if(len == warthog::INF)
@@ -211,7 +213,8 @@ run_jpg(warthog::scenario_manager& scenmgr)
 		check_optimality(len, exp);
 	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
-    delete jpg;
+    delete cg;
+    delete cpg;
 }
 
 void

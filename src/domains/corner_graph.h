@@ -20,6 +20,7 @@
 // @created: 2016-11-06
 //
 
+#include "corner_point_locator.h"
 #include "gridmap.h"
 #include "planar_graph.h"
 
@@ -80,15 +81,7 @@ class corner_graph
         inline warthog::graph::node* 
         get_node(uint32_t id)
         {
-            warthog::graph::node* retval = g_->get_node(id);
-            if(retval == 0)
-            { 
-                if(id == s_graph_id_)
-                    retval = s_;
-                else if(id == t_grid_id_)
-                    retval = t_;
-            }
-            return retval;
+            return g_->get_node(id);
         }
 
         inline uint32_t
@@ -109,6 +102,9 @@ class corner_graph
 
         inline const char* 
         get_filename() { return g_->get_filename(); }
+
+        inline warthog::gridmap* 
+        get_gridmap() { return cpl_->get_map(); } 
 
         inline bool
         reserve(uint32_t new_cap) { return g_->reserve(new_cap); }
@@ -132,16 +128,14 @@ class corner_graph
         warthog::jps::corner_point_locator* cpl_;
         
         // no copy ctor
-        corner_graph(warthog::graph::corner_graph& other) { }
+        corner_graph(warthog::graph::corner_graph& other) : S_DUMMY_ID(0), T_DUMMY_ID(0) { }
 
         // below the line: variables and data structures and functions 
         // for connecting the start and target nodes to the rest of the graph
         // -------------------------------------------------------------------
         uint32_t s_graph_id_, s_grid_id_;
         uint32_t t_graph_id_, t_grid_id_;
-
-        warthog::graph::node* s_;
-        warthog::graph::node* t_;
+        const uint32_t S_DUMMY_ID, T_DUMMY_ID;
 
         std::vector<uint32_t> t_incoming_;
         std::vector<warthog::graph::edge_iter> t_incoming_iters_;
