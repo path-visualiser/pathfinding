@@ -14,6 +14,7 @@
 #include "chase_search.h"
 #include "ch_expansion_policy.h"
 #include "contraction.h"
+#include "corner_graph.h"
 #include "corner_graph_expansion_policy.h"
 #include "corner_point_locator.h"
 #include "dimacs_parser.h"
@@ -217,10 +218,9 @@ void
 run_cpg(warthog::scenario_manager& scenmgr)
 {
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
-    warthog::jps::corner_point_locator cpl(&map);
-
-    warthog::graph::planar_graph* jpg = warthog::jps::create_corner_graph(&map);
-	warthog::jps::corner_graph_expansion_policy expander(jpg, &map);
+    warthog::graph::planar_graph* cg = warthog::jps::create_corner_graph(&map);
+    warthog::graph::corner_graph* jpg = new warthog::graph::corner_graph(&map, cg);
+	warthog::jps::corner_graph_expansion_policy expander(jpg);
 
 	warthog::octile_heuristic heuristic(map.width(), map.height());
 	warthog::flexible_astar<
@@ -240,9 +240,10 @@ run_cpg(warthog::scenario_manager& scenmgr)
                 exp->goaly() * exp->mapwidth() + exp->goalx());
 
         mytimer.start();
-        expander.insert(startid, goalid, startid, goalid);
+        jpg->insert(startid, goalid);
+        startid = jpg->get_inserted_start_id();
+        goalid = jpg->get_inserted_target_id();
 		double len = astar.get_length(startid, goalid);
-        expander.uninsert();
         mytimer.stop();
 
 		if(len == warthog::INF)
@@ -262,6 +263,7 @@ run_cpg(warthog::scenario_manager& scenmgr)
 	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
     delete jpg;
+    delete cg;
 }
 
 void

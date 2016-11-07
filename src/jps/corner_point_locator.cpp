@@ -679,5 +679,5 @@ warthog::jps::corner_point_locator::__jump_southwest(
 uint32_t 
 warthog::jps::corner_point_locator::mem()
 {
-    return sizeof(this) + rmap_->mem();
+    return sizeof(*this) + rmap_->mem();
 }

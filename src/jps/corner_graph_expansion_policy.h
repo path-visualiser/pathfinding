@@ -20,8 +20,12 @@
 
 namespace warthog
 {
-
 class search_node;
+
+namespace graph
+{
+class corner_graph;
+}
 
 namespace jps
 {
@@ -29,12 +33,8 @@ namespace jps
 class corner_point_locator;
 class corner_graph_expansion_policy : public expansion_policy
 {
-    typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
-
     public:
-        corner_graph_expansion_policy(
-                warthog::graph::planar_graph*, 
-                warthog::gridmap* gm);
+        corner_graph_expansion_policy(warthog::graph::corner_graph*);
 
         virtual 
         ~corner_graph_expansion_policy();
@@ -45,51 +45,15 @@ class corner_graph_expansion_policy : public expansion_policy
         virtual void
         get_xy(warthog::search_node* n, int32_t& x, int32_t& y);
 
-        inline warthog::graph::planar_graph*
+        inline warthog::graph::corner_graph*
         get_graph() { return this->g_; }
-
-        // insert into ::g_ start and target locations that
-        // are not jump points
-        void
-        insert(uint32_t start_grid_id, uint32_t target_grid_id,
-               uint32_t& start_graph_id, uint32_t& target_graph_id);
-
-        // inverse of insert operations
-        void
-        uninsert();
 
         virtual size_t
         mem();
 
     private:
-        // a graph of jump points
-        warthog::graph::planar_graph* g_;
-
-        // we use this to insert into ::g_ start and 
-        // target locations that are not jump points
-        warthog::jps::corner_point_locator* cpl_;
-
+        warthog::graph::corner_graph* g_;
         warthog::problem_instance* problem_;
-
-        uint32_t s_graph_id_, s_grid_id_;
-        uint32_t t_graph_id_, t_grid_id_;
-        std::vector<warthog::graph::edge> s_outgoing_;
-        std::vector<uint32_t> t_incoming_;
-        std::vector<warthog::graph::edge_iter> t_incoming_iters_;
-
-        // maps gridmap ids to graph ids
-        std::unordered_map<uint32_t, uint32_t> id_map_;
-
-        // keep track of which nodes we are inserting
-        std::vector<uint32_t> inserted_ids_;
-
-        uint32_t
-        insert_start(uint32_t start_grid_id, uint32_t target_grid_id);
-        uint32_t
-        insert_target(uint32_t start_grid_id, uint32_t target_grid_id);
-
-
-
 };
 
 }

@@ -203,6 +203,17 @@ class node
             return out_deg_;
         }
 
+        // discard all incoming and all outgoing edges
+        // after calling this function the in degree and out
+        // degree of the node are both equal to zero
+        inline void
+        clear()
+        {
+            in_deg_ = 0;
+            out_deg_ = 0;
+        }
+
+
         // find the index of an outgoing edge whose head 
         // node is @param to_id. the search begins from 
         // the edge iterator specified in @param it

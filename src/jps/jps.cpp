@@ -330,9 +330,7 @@ warthog::jps::create_corner_graph(warthog::gridmap* gm)
                 else { to_id = it_to_id->second; }
 
                 warthog::graph::node* from = graph->get_node(from_id);
-                warthog::graph::node* to = graph->get_node(to_id);
-                assert(from && to);
-                //from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx], pdir));
+                assert(from);
                 from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx]));
             }
         }
