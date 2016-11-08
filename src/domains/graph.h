@@ -25,25 +25,34 @@ namespace graph
 // smaller values make node manipulation operations more cache friendly
 typedef uint16_t ECAP_T;
 const uint16_t ECAP_MAX = UINT16_MAX;
+typedef uintptr_t ELABEL_T;
 
 class edge
 {
     public:
-        edge() { node_id_ = UINT32_MAX; wt_ = DBL_MAX; }
+        edge() { node_id_ = UINT32_MAX; wt_ = DBL_MAX; label_ = UINTPTR_MAX;}
+
+        edge(uint32_t node_id, double wt, uintptr_t label)
+        {
+            node_id_ = node_id;
+            wt_ = wt;
+            label_ = label;
+        }
 
         edge(uint32_t node_id, double wt)
         {
             node_id_ = node_id;
             wt_ = wt;
+            label_ = UINTPTR_MAX;
         }
 
         edge(const warthog::graph::edge& other) 
-        { node_id_ = other.node_id_; wt_ = other.wt_; }
+        { node_id_ = other.node_id_; wt_ = other.wt_; label_ = other.label_; }
 
         edge&
         operator=(const warthog::graph::edge& other) 
         { 
-            node_id_ = other.node_id_; wt_ = other.wt_; 
+            node_id_ = other.node_id_; wt_ = other.wt_; label_ = other.label_;
             return *this;
         }
 
@@ -57,6 +66,7 @@ class edge
         // the id of the other node is derived contextually
         uint32_t node_id_;
         double wt_;
+        ELABEL_T label_;
 };
 typedef edge* edge_iter;
 

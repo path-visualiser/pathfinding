@@ -1,8 +1,6 @@
 #include "jpg_expansion_policy.h"
 #include "corner_graph.h"
 
-typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
-
 warthog::jps::jpg_expansion_policy::jpg_expansion_policy(
         warthog::graph::corner_graph* g)
     : expansion_policy(g->get_num_nodes())
@@ -27,6 +25,7 @@ warthog::jps::jpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* problem)
 {
     reset();
+    assert(g_->get_num_nodes() == 3822);
 
     uint32_t graph_id = current->get_id();
 
@@ -65,10 +64,7 @@ warthog::jps::jpg_expansion_policy::expand(
         {
             int32_t sx, sy;
             g_->get_xy(eit->node_id_, sx, sy);
-            warthog::jps::direction s_dir = 
-                warthog::jps::compute_direction(
-                        (uint32_t)x, (uint32_t)y, 
-                        (uint32_t)sx, (uint32_t)sy);
+            warthog::jps::direction s_dir = (warthog::jps::direction)(*eit).label_;
             if( s_dir & succ_dirs || 
                 eit->node_id_ == g_->get_inserted_target_id())
             {

@@ -65,8 +65,7 @@ class corner_graph
         inline uint32_t
         get_num_nodes()
         {
-            // +2 because we might need to insert start + target
-            return g_->get_num_nodes() + 2;
+            return g_->get_num_nodes();
         }
 
         inline uint32_t 

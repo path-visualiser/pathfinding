@@ -7,6 +7,8 @@ typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
 warthog::graph::corner_graph::corner_graph(
         warthog::gridmap* gm, 
         warthog::graph::planar_graph* g) 
+    // we insert two dummy nodes into the graph which will be
+    // used whenever the start and target location are not corner points
     : S_DUMMY_ID(g->add_node(0, 0)), T_DUMMY_ID(g->add_node(0,0))
 {
     g_ = g;
@@ -24,11 +26,6 @@ warthog::graph::corner_graph::corner_graph(
     }
     s_grid_id_ = t_grid_id_ = warthog::INF;
     s_graph_id_ = t_graph_id_ = warthog::INF;
-
-    // we insert two dummy nodes into the graph which will be
-    // used whenever the start and target location are not corner points
-    g_->add_node(0, 0);
-    g_->add_node(0, 0);
 }
 
 warthog::graph::corner_graph::~corner_graph()
@@ -137,22 +134,21 @@ warthog::graph::corner_graph::insert_target(
         cpl_->jump(d, target_grid_id, warthog::INF, corner_neis, costs);
     }
 
+    int32_t tx, ty, x, y;
+    g_->get_xy(t_graph_id_, tx, ty);
     for(uint32_t i = 0; i < corner_neis.size(); i++)
     {
         uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
         double cost = costs[i];
         uint32_t graph_id = (*id_map_.find(corner_id)).second;
+
+        g_->get_xy(graph_id, x, y);
+        uint32_t jump_dir = warthog::jps::compute_direction(x, y, tx, ty);
         warthog::graph::node* nei = g_->get_node(graph_id);
         warthog::graph::edge_iter eit = 
-            nei->add_outgoing(warthog::graph::edge(t_graph_id_, cost));
-        if(eit != nei->outgoing_end())
-        {
-            //std::cout 
-            //<< "inserted target edge " << t_graph_id_ << " " 
-            //<< graph_id << "; cost " << cost << std::endl;
-            t_incoming_.push_back(graph_id);
-            t_incoming_iters_.push_back(eit);
-        }
+            nei->add_outgoing(warthog::graph::edge(t_graph_id_, cost, jump_dir));
+        t_incoming_.push_back(graph_id);
+        t_incoming_iters_.push_back(eit);
     }
 }
 
