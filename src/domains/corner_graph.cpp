@@ -82,6 +82,8 @@ warthog::graph::corner_graph::insert_start(
         warthog::graph::node* s = g_->get_node(s_graph_id_);
         for(uint32_t i = 0; i < corner_neis.size(); i++)
         {
+            warthog::jps::direction d = 
+                (warthog::jps::direction)(corner_neis[i] >> 24);
             uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
             double cost = costs[i];
             uint32_t graph_id;
@@ -95,7 +97,7 @@ warthog::graph::corner_graph::insert_start(
                assert(corner_iter != id_map_.end());
                graph_id = corner_iter->second;
             }
-            s->add_outgoing(warthog::graph::edge(graph_id, cost));
+            s->add_outgoing(warthog::graph::edge(graph_id, cost, d));
         }
     }
     else
@@ -143,7 +145,7 @@ warthog::graph::corner_graph::insert_target(
         uint32_t graph_id = (*id_map_.find(corner_id)).second;
 
         g_->get_xy(graph_id, x, y);
-        uint32_t jump_dir = warthog::jps::compute_direction(x, y, tx, ty);
+        uint32_t jump_dir = warthog::jps::direction::ALL;
         warthog::graph::node* nei = g_->get_node(graph_id);
         warthog::graph::edge_iter eit = 
             nei->add_outgoing(warthog::graph::edge(t_graph_id_, cost, jump_dir));

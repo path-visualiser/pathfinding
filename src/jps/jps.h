@@ -43,7 +43,8 @@ typedef enum
 	NORTHEAST = 16,
 	NORTHWEST = 32, 
 	SOUTHEAST = 64,
-	SOUTHWEST = 128
+	SOUTHWEST = 128,
+    ALL = 255
 } direction;
 
 // we sometimes store the id of a node in the lower 3 bytes of a word and 
