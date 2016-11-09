@@ -33,52 +33,56 @@
 uint32_t
 warthog::jps::compute_forced(warthog::jps::direction d, uint32_t tiles)
 {
-	// NB: to avoid branching statements, shift operations are
-	// used below. The values of the shift constants correspond to 
-	// direction values. 
+	// NB: to avoid branching statements, bit operations are
+	// used below to determine which neighbours are traversable
+    // and which are obstacles
 	uint32_t ret = 0;
 	switch(d)
 	{
 		case warthog::jps::NORTH:
-			if((tiles & 65792) == 256)
-			{
-				ret |= (warthog::jps::WEST | warthog::jps::NORTHWEST);
-			}
-			if((tiles & 263168) == 1024)
-			{
-				ret |= (warthog::jps::EAST | warthog::jps::NORTHEAST);
-			}
+        {
+            uint32_t branch_nw = ((tiles & 65792) == 256);
+            ret |= (branch_nw << 3); // force west
+            ret |= (branch_nw << 5); // force northwest
+
+            uint32_t branch_ne = ((tiles & 263168) == 1024);
+            ret |= (branch_ne << 2); // force east
+            ret |= (branch_ne << 4); // force northeast
 			break;
+        }
 		case warthog::jps::SOUTH:
-			if((tiles & 257) == 256) 
-			{
-				ret |= (warthog::jps::WEST | warthog::jps::SOUTHWEST);
-			}
-			if((tiles & 1028) == 1024)
-			{
-				ret |= (warthog::jps::EAST | warthog::jps::SOUTHEAST);
-			}
-			break;
+        {
+            uint32_t branch_sw = ((tiles & 257) == 256);
+            ret |= (branch_sw << 3); // force west
+            ret |= (branch_sw << 7); // force southwest
+
+            uint32_t branch_se = ((tiles & 1028) == 1024);
+            ret |= (branch_se << 2); // force east
+            ret |= (branch_se << 6); // force southeast
+            break;
+        }
 		case warthog::jps::EAST:
-			if((tiles & 3) == 2) 
-			{
-				ret |= (warthog::jps::NORTH | warthog::jps::NORTHEAST);
-			}
-			if((tiles & 196608) == 131072)
-			{
-				ret |= (warthog::jps::SOUTH | warthog::jps::SOUTHEAST);
-			}
+        {
+			uint32_t branch_ne = ((tiles & 3) == 2);
+            ret |= branch_ne;        // force north
+            ret |= (branch_ne << 4); // force northeast
+
+            uint32_t branch_se= ((tiles & 196608) == 131072);
+            ret |= (branch_se << 1); // force south
+            ret |= (branch_se << 6); // force southeast
 			break;
+        }
 		case warthog::jps::WEST:
-			if((tiles & 6) == 2)
-			{
-				ret |= (warthog::jps::NORTH | warthog::jps::NORTHWEST);
-			}
-			if((tiles & 393216) == 131072)
-			{
-				ret |= (warthog::jps::SOUTH | warthog::jps::SOUTHWEST);
-			}
+        {
+            uint32_t force_nw = ((tiles & 6) == 2);
+            ret |= force_nw;        // force north
+            ret |= (force_nw << 5); // force northwest
+
+			uint32_t force_sw = ((tiles & 393216) == 131072);
+            ret |= (force_sw << 1); // force south
+            ret |= (force_sw << 7); // force southwest
 			break;
+        }
 		default:
 			break;
 	}
