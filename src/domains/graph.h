@@ -259,6 +259,14 @@ class node
         }
 
     private: 
+        edge* incoming_;
+        ECAP_T in_deg_;
+        ECAP_T in_cap_;
+
+        edge* outgoing_;
+        ECAP_T out_deg_;
+        ECAP_T out_cap_;
+
         void
         init(ECAP_T in_capacity, ECAP_T out_capacity)
         {
@@ -348,15 +356,6 @@ class node
             return &elts[deg++];
         }
 
-
-    private:
-        edge* incoming_;
-        ECAP_T in_deg_;
-        ECAP_T in_cap_;
-
-        edge* outgoing_;
-        ECAP_T out_deg_;
-        ECAP_T out_cap_;
 };
 typedef node* node_iter;
 

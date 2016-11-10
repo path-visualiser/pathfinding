@@ -25,8 +25,6 @@ warthog::jps::jpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* problem)
 {
     reset();
-    assert(g_->get_num_nodes() == 3822);
-
     uint32_t graph_id = current->get_id();
 
     // special case for the start node (which has no parent)
