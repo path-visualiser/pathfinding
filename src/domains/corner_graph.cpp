@@ -4,33 +4,88 @@
 
 typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
 
-warthog::graph::corner_graph::corner_graph(
-        warthog::gridmap* gm, 
-        warthog::graph::planar_graph* g) 
-    // we insert two dummy nodes into the graph which will be
-    // used whenever the start and target location are not corner points
-    : S_DUMMY_ID(g->add_node(0, 0)), T_DUMMY_ID(g->add_node(0,0))
+warthog::graph::corner_graph::corner_graph(warthog::gridmap* gm)
 {
-    g_ = g;
+    g_ = new warthog::graph::planar_graph();
     cpl_ = new warthog::jps::corner_point_locator(gm);
 
-    // we construct a hash map to quickly convert from the grid identifier
-    // of a node to the corresponding graph identifier of the same node
-    for(uint32_t graph_id = 0; graph_id < g_->get_num_nodes(); graph_id++)
-    {
-        int32_t x, y;
-        g_->get_xy(graph_id, x, y);
-        uint32_t grid_id = gm->to_padded_id(y * gm->header_width() + x);
-        id_map_.insert(
-                std::pair<uint32_t, uint32_t>(grid_id, graph_id));
-    }
     s_grid_id_ = t_grid_id_ = warthog::INF;
     s_graph_id_ = t_graph_id_ = warthog::INF;
+
+    // do the thing
+    construct();
+
+    // we now insert two dummy nodes into the graph which will be
+    // used whenever the start and target location are not corner points
+    S_DUMMY_ID = g_->add_node(0, 0); 
+    T_DUMMY_ID = g_->add_node(0,0);
 }
 
 warthog::graph::corner_graph::~corner_graph()
 {
     delete cpl_;
+    delete g_;
+}
+
+void
+warthog::graph::corner_graph::construct()
+{
+    warthog::gridmap* gm = cpl_->get_map();
+    warthog::gridmap* corner_map = cpl_->get_corner_map();
+    uint32_t mapwidth = gm->header_width();
+    uint32_t mapheight = gm->header_height();
+    for(uint32_t index = 0; index < mapheight*mapwidth; index++)
+    {
+        uint32_t gm_id = gm->to_padded_id(index);
+        if(!corner_map->get_label(gm_id)) { continue; } 
+
+        // each corner point in the grid becomes a node in 
+        // the corresponding planar graph
+        uint32_t gm_x, gm_y;
+        gm->to_unpadded_xy(gm_id, gm_x, gm_y);
+
+        uint32_t from_id;
+        std::unordered_map<uint32_t, uint32_t>::iterator it_from_id;
+        it_from_id = id_map_.find(gm_id);
+        if(it_from_id == id_map_.end())
+        {
+            from_id = g_->add_node(gm_x, gm_y);
+            id_map_.insert(std::pair<uint32_t, uint32_t>(gm_id, from_id));
+        }
+        else { from_id = it_from_id->second; }
+
+        // identify other corner points by scanning the map and adding them 
+        // to the graph as necessary. also added are edges between corner 
+        // points to their immediate corner-point successors
+        for(uint32_t i = 0; i < 8; i++)
+        {
+            warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+            std::vector<uint32_t> jpoints;
+            std::vector<double> jcosts;
+            cpl_->jump(d, gm_id, warthog::INF, jpoints, jcosts);
+            for(uint32_t idx = 0; idx < jpoints.size(); idx++)
+            {
+                //uint8_t pdir = ((uint8_t*)&jpoints[idx])[3];
+                uint32_t jp_id = jpoints[idx] & ((1 << 24) - 1);
+                std::unordered_map<uint32_t, uint32_t>::iterator it_to_id; 
+                it_to_id = id_map_.find(jp_id);
+
+                uint32_t to_id;
+                if(it_to_id == id_map_.end())
+                {
+                    uint32_t jp_x, jp_y;
+                    gm->to_unpadded_xy(jp_id, jp_x, jp_y);
+                    to_id = g_->add_node(jp_x, jp_y);
+                    id_map_.insert(std::pair<uint32_t, uint32_t>(jp_id, to_id));
+                }
+                else { to_id = it_to_id->second; }
+
+                warthog::graph::node* from = g_->get_node(from_id);
+                assert(from);
+                from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx], d));
+            }
+        }
+    }
 }
 
 void

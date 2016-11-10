@@ -27,6 +27,7 @@ namespace graph
 {
 
 class planar_graph;
+class corner_graph;
 
 }
 
@@ -105,9 +106,6 @@ create_jump_point_graph(warthog::gridmap* gm);
 // @return the corner gridmap
 warthog::gridmap*
 create_corner_map(warthog::gridmap* gm);
-
-warthog::graph::planar_graph* 
-create_corner_graph(warthog::gridmap* gm);
 
 }
 }

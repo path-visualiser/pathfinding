@@ -42,9 +42,8 @@ namespace graph
 class corner_graph
 {
     public:
-        corner_graph(
-                warthog::gridmap* map, 
-                warthog::graph::planar_graph* graph);
+        corner_graph( warthog::gridmap* map );
+                
 
         virtual ~corner_graph();
 
@@ -121,6 +120,9 @@ class corner_graph
         uint32_t 
         get_inserted_target_id() { return t_graph_id_; }
 
+        warthog::graph::planar_graph*
+        get_planar_graph() { return g_; }
+
     private:
         bool verbose_;
         warthog::graph::planar_graph* g_;
@@ -134,13 +136,16 @@ class corner_graph
         // -------------------------------------------------------------------
         uint32_t s_graph_id_, s_grid_id_;
         uint32_t t_graph_id_, t_grid_id_;
-        const uint32_t S_DUMMY_ID, T_DUMMY_ID;
+        uint32_t S_DUMMY_ID, T_DUMMY_ID; 
 
         std::vector<uint32_t> t_incoming_;
         std::vector<warthog::graph::edge_iter> t_incoming_iters_;
 
         // maps gridmap ids to graph ids
         std::unordered_map<uint32_t, uint32_t> id_map_;
+
+        void
+        construct();
 
         void
         insert_start(uint32_t start_grid_id, uint32_t target_grid_id);
