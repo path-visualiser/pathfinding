@@ -136,15 +136,12 @@ warthog::graph::corner_graph::insert_target(
         cpl_->jump(d, target_grid_id, warthog::INF, corner_neis, costs);
     }
 
-    int32_t tx, ty, x, y;
-    g_->get_xy(t_graph_id_, tx, ty);
     for(uint32_t i = 0; i < corner_neis.size(); i++)
     {
         uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
         double cost = costs[i];
         uint32_t graph_id = (*id_map_.find(corner_id)).second;
 
-        g_->get_xy(graph_id, x, y);
         uint32_t jump_dir = warthog::jps::direction::ALL;
         warthog::graph::node* nei = g_->get_node(graph_id);
         warthog::graph::edge_iter eit = 
