@@ -70,6 +70,13 @@ warthog::jps::jpg_expansion_policy::expand(
             }
             succ_dirs = succ_dirs & ~(1 << label);
         }
+
+        // goal test
+        eit += n->out_degree() - 1;
+        if(eit->node_id_ == g_->get_inserted_target_id())
+        {
+            add_neighbour(generate(eit->node_id_), eit->wt_);
+        }
     }
 }
 

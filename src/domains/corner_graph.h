@@ -126,7 +126,6 @@ class corner_graph
         inline uint32_t
         labelled_edge_offset(uint32_t node_id, uint32_t label_id)
         {
-            assert(label_id < warthog::graph::corner_graph::NUM_LABELS);
             if(label_id >= NUM_LABELS)
             {
                 return get_node(node_id)->out_degree();
