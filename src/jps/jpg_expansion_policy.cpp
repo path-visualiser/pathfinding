@@ -28,7 +28,6 @@ warthog::jps::jpg_expansion_policy::expand(
     uint32_t graph_id = current->get_id();
 
     uint32_t succ_dirs;
-
     if(graph_id == problem->get_start())
     {
         // special case for the start node: since there is no parent, 
