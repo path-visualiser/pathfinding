@@ -57,15 +57,18 @@ warthog::jps::jpg_expansion_policy::expand(
         uint32_t succ_dirs = warthog::jps::compute_successors(dir_c, tiles);
 
         warthog::graph::node* n = g_->get_node(graph_id);
-        warthog::graph::edge_iter end = n->outgoing_end();
-        for(warthog::graph::edge_iter eit = n->outgoing_begin(); 
-                eit != end; eit++)
+        warthog::graph::edge_iter eit = n->outgoing_begin();
+        while(succ_dirs)
         {
-            warthog::jps::direction s_dir = (warthog::jps::direction)(*eit).label_;
-            if( s_dir & succ_dirs )
+            uint32_t label = __builtin_ffs(succ_dirs)-1;
+            uint32_t first = g_->labelled_edge_offset(graph_id, label);
+            uint32_t last = g_->labelled_edge_offset(graph_id, label+1);
+
+            for( uint32_t i = first; i < last; i++)
             {
-                add_neighbour(generate(eit->node_id_), eit->wt_);
+                add_neighbour(generate((eit+i)->node_id_), (eit+i)->wt_);
             }
+            succ_dirs = succ_dirs & ~(1 << label);
         }
     }
 }

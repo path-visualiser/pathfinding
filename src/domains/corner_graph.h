@@ -41,6 +41,22 @@ namespace graph
 
 class corner_graph
 {
+    // sometimes we want to label edges with grid-direction values
+    // here we index the outgoing edges of each node in order to more 
+    // easily access edges with a specific label (cf. iterating all edges)
+    static const uint32_t NUM_LABELS = 8;
+    struct label_index
+    {
+        label_index()
+        {
+            uint32_t num_labels = warthog::graph::corner_graph::NUM_LABELS;
+            for(uint32_t i = 0; i < num_labels; i++)
+                head_[i] = 0;
+        }
+
+        warthog::graph::ECAP_T head_[warthog::graph::corner_graph::NUM_LABELS];
+    };
+
     public:
         corner_graph( warthog::gridmap* map );
                 
@@ -85,11 +101,40 @@ class corner_graph
         inline uint32_t
         add_node(int32_t x, int32_t y)
         {
-            return g_->add_node(x, y);
+            uint32_t graph_id = g_->add_node(x, y);
+            if(e_lab_index_)
+            {
+                if(graph_id >= e_lab_index_->size())
+                {
+                    e_lab_index_->resize(graph_id+1);
+                }
+            }
+            return graph_id;
         }
 
-        inline void 
-        set_verbose(bool verbose) 
+        // edges can be assigned one of a fixed number of labels
+        // (up to warthog::graph::corner_graph::NUM_LABELS)
+        // this function adds edges and indexes them by label type.
+        warthog::graph::edge_iter
+        add_labeled_outgoing_edge(
+                uint32_t node_id, 
+                warthog::graph::edge e, 
+                uint32_t label_id);
+
+        // return the offset for the first neighbour of
+        // node_id in direction d
+        inline uint32_t
+        labelled_edge_offset(uint32_t node_id, uint32_t label_id)
+        {
+            assert(label_id < warthog::graph::corner_graph::NUM_LABELS);
+            if(label_id >= NUM_LABELS)
+            {
+                return get_node(node_id)->out_degree();
+            }
+            return e_lab_index_->at(node_id).head_[label_id];
+        }
+
+        inline void set_verbose(bool verbose) 
         { 
             verbose_ = verbose; 
             g_->set_verbose(verbose);
@@ -143,6 +188,8 @@ class corner_graph
 
         // maps gridmap ids to graph ids
         std::unordered_map<uint32_t, uint32_t> id_map_;
+        
+        std::vector<label_index>* e_lab_index_;
 
         void
         construct();

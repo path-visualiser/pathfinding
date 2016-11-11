@@ -165,6 +165,30 @@ class node
             return add_edge(e, out_cap_, out_deg_, outgoing_);
         }
 
+        // insert an outgoing edge at a fixed position in the 
+        // underlying edges array. if the position is anywhere
+        // except the end of the array the elements [index, end)
+        // will be shifted to the right to make space. 
+        // NB: this operation may involve a reallocation of storage
+        inline warthog::graph::edge_iter
+        insert_outgoing(warthog::graph::edge e, uint32_t index)
+        {
+            if(out_deg_ == out_cap_)
+            {
+                out_cap_ = increase_capacity(2*out_cap_, out_cap_, outgoing_);
+            }
+            assert(out_cap_ > 0 && out_cap_ > out_deg_);
+
+            // shuffle everything down so we can insert the new edge
+            for(uint32_t i = out_deg_; i > index; i--)
+            {
+                outgoing_[i] = outgoing_[i-1];
+            }
+            outgoing_[index] = e;
+            out_deg_++;
+            return &outgoing_[index];
+        }
+
         inline void
         del_incoming(warthog::graph::edge_iter iter)
         {
@@ -222,7 +246,6 @@ class node
             in_deg_ = 0;
             out_deg_ = 0;
         }
-
 
         // find the index of an outgoing edge whose head 
         // node is @param to_id. the search begins from 
