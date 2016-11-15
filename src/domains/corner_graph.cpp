@@ -11,15 +11,16 @@ warthog::graph::corner_graph::corner_graph(warthog::gridmap* gm)
 
     s_grid_id_ = t_grid_id_ = warthog::INF;
     s_graph_id_ = t_graph_id_ = warthog::INF;
-    e_lab_index_ = 0;
+    e_lab_index_ = new std::vector<label_index>(g_->get_num_nodes());
+
 
     // do the thing
     construct();
 
     // we now insert two dummy nodes into the graph which will be
     // used whenever the start and target location are not corner points
-    S_DUMMY_ID = g_->add_node(0, 0); 
-    T_DUMMY_ID = g_->add_node(0,0);
+    S_DUMMY_ID = this->add_node(0, 0); 
+    T_DUMMY_ID = this->add_node(0, 0);
 }
 
 warthog::graph::corner_graph::~corner_graph()
@@ -251,11 +252,6 @@ warthog::graph::edge_iter
 warthog::graph::corner_graph::add_labeled_outgoing_edge(
         uint32_t node_id, warthog::graph::edge e, uint32_t label_id)
 {
-    if(e_lab_index_ == 0)
-    {
-        e_lab_index_ = new std::vector<label_index>(g_->get_num_nodes());
-    }
-
     assert(label_id < NUM_LABELS);
     int32_t head = e_lab_index_->at(node_id).head_[label_id];
     
