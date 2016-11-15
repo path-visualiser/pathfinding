@@ -4,7 +4,7 @@ warthog::jps2_expansion_policy::jps2_expansion_policy(warthog::gridmap* map)
     : expansion_policy(map->height() * map->width())
 {
 	map_ = map;
-	jpl_ = new warthog::online_jump_point_locator2(map);
+	jpl_ = new warthog::jps::online_jump_point_locator2(map);
 	jp_ids_.reserve(100);
 }
 

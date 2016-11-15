@@ -161,7 +161,7 @@ warthog::graph::planar_graph*
 warthog::jps::create_jump_point_graph(warthog::gridmap* gm) 
 {
     warthog::graph::planar_graph* graph = new warthog::graph::planar_graph();
-    warthog::online_jump_point_locator2 jpl(gm);
+    warthog::jps::online_jump_point_locator2 jpl(gm);
     uint32_t mapwidth = gm->header_width();
     uint32_t mapheight = gm->header_height();
     std::unordered_map<uint32_t, uint32_t> id_map;
