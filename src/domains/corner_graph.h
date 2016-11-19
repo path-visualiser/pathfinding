@@ -25,6 +25,7 @@
 #include "planar_graph.h"
 
 #include <unordered_map>
+#include <memory>
 
 namespace warthog
 {
@@ -58,8 +59,10 @@ class corner_graph
     };
 
     public:
-        corner_graph( warthog::gridmap* map );
-                
+        corner_graph(std::shared_ptr<warthog::gridmap> map );
+        corner_graph(
+                std::shared_ptr<warthog::gridmap> gm, 
+                std::shared_ptr<warthog::graph::planar_graph> g);
 
         virtual ~corner_graph();
 
@@ -164,12 +167,18 @@ class corner_graph
         uint32_t 
         get_inserted_target_id() { return t_graph_id_; }
 
+        uint32_t 
+        get_dummy_target_id() { return T_DUMMY_ID; }
+
+        uint32_t 
+        get_dummy_start_id() { return S_DUMMY_ID; }
+
         warthog::graph::planar_graph*
-        get_planar_graph() { return g_; }
+        get_planar_graph() { return g_.get(); }
 
     private:
         bool verbose_;
-        warthog::graph::planar_graph* g_;
+        std::shared_ptr<warthog::graph::planar_graph> g_;
         warthog::jps::corner_point_locator* cpl_;
         
         // no copy ctor

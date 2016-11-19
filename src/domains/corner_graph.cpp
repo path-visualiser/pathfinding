@@ -4,13 +4,12 @@
 
 typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
 
-warthog::graph::corner_graph::corner_graph(warthog::gridmap* gm)
+warthog::graph::corner_graph::corner_graph(std::shared_ptr<warthog::gridmap> gm)
 {
-    g_ = new warthog::graph::planar_graph();
-    cpl_ = new warthog::jps::corner_point_locator(gm);
+    g_ = std::shared_ptr<warthog::graph::planar_graph>(
+            new warthog::graph::planar_graph());
+    cpl_ = new warthog::jps::corner_point_locator(gm.get());
 
-    s_grid_id_ = t_grid_id_ = warthog::INF;
-    s_graph_id_ = t_graph_id_ = warthog::INF;
     e_lab_index_ = new std::vector<label_index>(g_->get_num_nodes());
 
 
@@ -21,12 +20,46 @@ warthog::graph::corner_graph::corner_graph(warthog::gridmap* gm)
     // used whenever the start and target location are not corner points
     S_DUMMY_ID = this->add_node(0, 0); 
     T_DUMMY_ID = this->add_node(0, 0);
+
+    s_grid_id_ = t_grid_id_ = warthog::INF;
+    s_graph_id_ = t_graph_id_ = warthog::INF;
+}
+
+warthog::graph::corner_graph::corner_graph(
+        std::shared_ptr<warthog::gridmap> gm, 
+        std::shared_ptr<warthog::graph::planar_graph> g)
+{
+    g_ = g;
+    cpl_ = new warthog::jps::corner_point_locator(gm.get());
+
+    s_graph_id_ = t_graph_id_ = warthog::INF;
+    e_lab_index_ = new std::vector<label_index>(g_->get_num_nodes());
+
+    // we now insert two dummy nodes into the graph which will be
+    // used whenever the start and target location are not corner points
+    S_DUMMY_ID = this->add_node(0, 0); 
+    T_DUMMY_ID = this->add_node(0, 0);
+
+    s_grid_id_ = t_grid_id_ = warthog::INF;
+    s_graph_id_ = t_graph_id_ = warthog::INF;
+
+    // map each graph node id to its corresponding grid id
+    for(uint32_t graph_id = 0; graph_id < g_->get_num_nodes(); graph_id++)
+    {
+        warthog::graph::node* n = g_->get_node(graph_id);
+        if(!n) { continue; } // skip padding at the start of the graph array
+
+        int32_t x, y;
+        g_->get_xy(graph_id, x, y);
+        assert(x != INT32_MAX && y != INT32_MAX);
+        uint32_t gm_id = gm->to_padded_id(x, y);
+        id_map_.insert(std::pair<uint32_t, uint32_t>(gm_id, graph_id));
+    }
 }
 
 warthog::graph::corner_graph::~corner_graph()
 {
     delete e_lab_index_;
-    delete g_;
     delete cpl_;
 }
 

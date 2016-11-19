@@ -13,6 +13,7 @@
 #include "chafbb_expansion_policy.h"
 #include "chase_search.h"
 #include "ch_expansion_policy.h"
+#include "cpg_expansion_policy.h"
 #include "contraction.h"
 #include "corner_graph.h"
 #include "corner_graph_expansion_policy.h"
@@ -81,8 +82,7 @@ help()
 	<< "\t--checkopt (optional)\n"
     << "\n OR \n\n"
     << "--format [dimacs]; followed by\n"
-    << "\t--gr [graph filename]\n"
-    << "\t--co [coordinates filename]\n"
+    << "\t--input [gr file] [co file] [(optional) other input files]\n"
     << "\t--problem [ss or p2p problem file]\n"
     << "\t--alg [astar | dijkstra | bi-astar | bi-dijkstra | ch | chf | chf-dd ]\n"
 	<< "\t--order [order-of-contraction file] (only with --alg ch)\n"
@@ -166,14 +166,18 @@ run_jpsplus(warthog::scenario_manager& scenmgr)
 void
 run_jpg(warthog::scenario_manager& scenmgr)
 {
-    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
-    warthog::jps::corner_point_locator cpl(&map);
 
-    warthog::graph::corner_graph* cpg = 
-        new warthog::graph::corner_graph(&map);
-	warthog::jps::jpg_expansion_policy expander(cpg);
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(
+                scenmgr.get_experiment(0)->map().c_str()));
 
-	warthog::octile_heuristic heuristic(map.width(), map.height());
+    std::shared_ptr<warthog::graph::corner_graph> cpg(
+            new warthog::graph::corner_graph(map));
+
+    warthog::jps::corner_point_locator cpl(map.get());
+	warthog::jps::jpg_expansion_policy expander(cpg.get());
+
+	warthog::octile_heuristic heuristic(map->width(), map->height());
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps::jpg_expansion_policy> 
@@ -185,9 +189,9 @@ run_jpg(warthog::scenario_manager& scenmgr)
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = map.to_padded_id( 
+		uint32_t startid = map->to_padded_id( 
                 exp->starty() * exp->mapwidth() + exp->startx());
-		uint32_t goalid = map.to_padded_id(
+		uint32_t goalid = map->to_padded_id(
                 exp->goaly() * exp->mapwidth() + exp->goalx());
 
         mytimer.start();
@@ -213,17 +217,18 @@ run_jpg(warthog::scenario_manager& scenmgr)
 		check_optimality(len, exp);
 	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
-    delete cpg;
 }
 
 void
 run_cpg(warthog::scenario_manager& scenmgr)
 {
-    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
-    warthog::graph::corner_graph* cpg = new warthog::graph::corner_graph(&map);
-	warthog::jps::corner_graph_expansion_policy expander(cpg);
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(scenmgr.get_experiment(0)->map().c_str()));
+    std::shared_ptr<warthog::graph::corner_graph> cpg(
+            new warthog::graph::corner_graph(map));
+	warthog::jps::corner_graph_expansion_policy expander(cpg.get());
 
-	warthog::octile_heuristic heuristic(map.width(), map.height());
+	warthog::octile_heuristic heuristic(map->width(), map->height());
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps::corner_graph_expansion_policy> 
@@ -235,9 +240,9 @@ run_cpg(warthog::scenario_manager& scenmgr)
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = map.to_padded_id( 
+		uint32_t startid = map->to_padded_id( 
                 exp->starty() * exp->mapwidth() + exp->startx());
-		uint32_t goalid = map.to_padded_id(
+		uint32_t goalid = map->to_padded_id(
                 exp->goaly() * exp->mapwidth() + exp->goalx());
 
         mytimer.start();
@@ -263,7 +268,85 @@ run_cpg(warthog::scenario_manager& scenmgr)
 		check_optimality(len, exp);
 	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
-    delete cpg;
+}
+
+void
+run_ch_cpg(warthog::scenario_manager& scenmgr, warthog::util::cfg& cfg)
+{
+    std::string grfile = cfg.get_param_value("gr");
+    std::string cofile = cfg.get_param_value("co");
+    std::string orderfile = cfg.get_param_value("order");
+    if(!grfile.compare("") || !cofile.compare("") || !orderfile.compare(""))
+    {
+        std::cerr << "insufficient params; algo ch_cpg requires "
+                  << "--gr [file] --co [file] --order [file]\n";
+    }
+    
+    // load up the node order
+    std::vector<uint32_t> order;
+    warthog::ch::load_node_order(orderfile.c_str(), order);
+    warthog::ch::value_index_swap_dimacs(order);
+
+    // we insert two extra elements in the event that we
+    // need to insert the start or target. the inserted start
+    // always has the lowest possible rank and the inserted target
+    // always has the highest possible rank
+    order.push_back(0);
+    order.push_back(order.size());
+    
+    // load up the grid
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(
+                scenmgr.get_experiment(0)->map().c_str()));
+            
+    // load up the graph 
+    std::shared_ptr<warthog::graph::planar_graph> pg(
+            new warthog::graph::planar_graph());
+    pg->load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+    // wrapper
+    warthog::graph::corner_graph cpg(map, pg);
+
+    // expander
+	warthog::zero_heuristic h;
+	warthog::ch::cpg_expansion_policy fexp(&cpg, &order);
+	warthog::ch::cpg_expansion_policy bexp(&cpg, &order, true);
+    warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+	alg.set_verbose(verbose);
+
+	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
+    warthog::timer mytimer;
+	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+		uint32_t startid = map->to_padded_id( 
+                exp->starty() * exp->mapwidth() + exp->startx());
+		uint32_t goalid = map->to_padded_id(
+                exp->goaly() * exp->mapwidth() + exp->goalx());
+
+        mytimer.start();
+        cpg.insert(startid, goalid);
+        startid = cpg.get_inserted_start_id();
+        goalid = cpg.get_inserted_target_id();
+		double len = alg.get_length(startid, goalid);
+        mytimer.stop();
+
+		if(len == warthog::INF)
+		{
+			len = 0;
+		}
+
+		std::cout << i<<"\t" << "cpg" << "\t" 
+		<< alg.get_nodes_expanded() << "\t" 
+		<< alg.get_nodes_generated() << "\t"
+		<< alg.get_nodes_touched() << "\t"
+		<< mytimer.elapsed_time_micro() << "\t"
+		<< len << "\t" 
+		<< scenmgr.last_file_loaded() << std::endl;
+
+		check_optimality(len, exp);
+	}
+	std::cerr << "done. total memory: "<< alg.mem() + scenmgr.mem() << "\n";
 }
 
 void
@@ -663,8 +746,8 @@ void
 run_dimacs(warthog::util::cfg& cfg)
 {
 
-    std::string grfile = cfg.get_param_value("gr");
-    std::string cofile = cfg.get_param_value("co");
+    std::string grfile = cfg.get_param_value("input");
+    std::string cofile = cfg.get_param_value("input");
     std::string problemfile = cfg.get_param_value("problem");
     std::string alg_name = cfg.get_param_value("alg");
 
@@ -1577,6 +1660,11 @@ run_grid(warthog::util::cfg& cfg)
     else if(alg == "cpg")
     {
         run_cpg(scenmgr);
+    }
+
+    else if(alg == "ch_cpg")
+    {
+        run_ch_cpg(scenmgr, cfg);
     }
 }
 

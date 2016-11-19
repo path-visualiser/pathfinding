@@ -1,9 +1,12 @@
+#include "corner_graph.h"
+#include "gridmap.h"
 #include "planar_graph.h"
 #include "scenario_manager.h"
 
 #include <cstring>
 #include <errno.h>
 #include <iostream>
+#include <memory>
 
 void
 help()
@@ -12,7 +15,12 @@ help()
        << "Converts between the graph and experiment formats used at the \n"
        << "Grid-based Path Planning Competition and the format used at \n"
        << "the 9th DIMACS Implementation Challenge\n"
-       << "Usage: ./grid2dimacs [map | scen] [grid file]\n";
+       << "Usage: ./grid2dimacs [map | corners | scen] [grid file]"
+       << "\n\nParameter descriptions: " 
+       << "\n\tmap: convert directly from a grid map to a dimacs graph"
+       << "\n\tcorners: create a graph using grid corner points only"
+       << "\n\tscen: convert a gridmap scenario file into a dimacs instance file\n";
+
 }
 
 int 
@@ -30,6 +38,18 @@ main(int argc, char** argv)
         g.load_grid(argv[2]);
         g.print_dimacs_gr(std::cout);
         g.print_dimacs_co(std::cout);
+    }
+    else if(strcmp(argv[1], "corners") == 0)
+    {
+        char* gridfile = argv[2];
+        std::shared_ptr<warthog::gridmap> 
+            gm(new warthog::gridmap(gridfile));
+
+        std::shared_ptr<warthog::graph::corner_graph> 
+            cg(new warthog::graph::corner_graph(gm));
+
+        cg->print_dimacs_gr(std::cout);
+        cg->print_dimacs_co(std::cout);
     }
     else if(strcmp(argv[1], "scen") == 0)
     {

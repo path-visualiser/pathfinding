@@ -71,18 +71,16 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     std::sort(dimacs.nodes_begin(), dimacs.nodes_end(), node_comparator);
     if(verbose_) { std::cerr << "nodes, sorted" << std::endl; }
     
-    delete [] xy_;
-    delete [] nodes_;
-
     // convert nodes. NB:
     // DIMACS format specifies that node ids should be 1-indexed but
     // our internal representation is 0-indexed. We add dummy elements
     // to the front of the node arrays so we can use the 1-indexed ids
     // without any internal conversion
     ID_OFFSET = (*dimacs.nodes_begin()).id_;
-    nodes_sz_ = dimacs.get_num_nodes() + ID_OFFSET;
-    xy_ = new int32_t[nodes_sz_*2];
-    nodes_ = new node[nodes_sz_];
+    uint32_t num_nodes_dimacs = dimacs.get_num_nodes() + ID_OFFSET;
+    resize(num_nodes_dimacs);
+    nodes_sz_ = num_nodes_dimacs;
+
     for(uint32_t i = 0; i < ID_OFFSET*2; i++)
     {
         xy_[i] = INT32_MAX;
@@ -180,7 +178,7 @@ warthog::graph::planar_graph::load_grid(
     this->nodes_ = new warthog::graph::node[nodes_sz_];
     this->xy_ = new int32_t[nodes_sz_*2];
 
-    uint32_t scale = 100000;
+    uint32_t scale = 100000; // convert grid edge costs to integers
     for(uint32_t y = 0; y < gm.header_height(); y++)
     {
         for(uint32_t x = 0; x < gm.header_width(); x++)
