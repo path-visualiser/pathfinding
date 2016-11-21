@@ -150,52 +150,52 @@ warthog::graph::corner_graph::insert_start(
         uint32_t start_grid_id, uint32_t target_grid_id)
 {
     id_map_iter myit = id_map_.find(start_grid_id);
-    if(myit == id_map_.end())
+    if(myit != id_map_.end())
     {
-        s_grid_id_ = start_grid_id;
-        s_graph_id_ = S_DUMMY_ID;
-
-        uint32_t sx, sy;
-        warthog::gridmap* gm = cpl_->get_map();
-        gm->to_unpadded_xy(start_grid_id, sx, sy);
-        g_->set_xy(s_graph_id_, (int32_t)sx, (int32_t)sy);
-
-        id_map_.insert(std::pair<uint32_t, uint32_t>(s_grid_id_, s_graph_id_));
-
-        // compute jump point successors for the start node
-        std::vector<uint32_t> corner_neis;
-        std::vector<double> costs;
-        for(uint32_t i = 0; i < 8; i++)
-        {
-            warthog::jps::direction d = (warthog::jps::direction)(1 << i);
-            cpl_->jump(d, start_grid_id, target_grid_id, corner_neis, costs);
-        }
-
-        warthog::graph::node* s = g_->get_node(s_graph_id_);
-        for(uint32_t i = 0; i < corner_neis.size(); i++)
-        {
-            warthog::jps::direction d = 
-                (warthog::jps::direction)(corner_neis[i] >> 24);
-            uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
-            double cost = costs[i];
-            uint32_t graph_id;
-            if(corner_id == target_grid_id)
-            {
-                graph_id = t_graph_id_;
-            }
-            else
-            {
-               id_map_iter corner_iter = id_map_.find(corner_id);
-               assert(corner_iter != id_map_.end());
-               graph_id = corner_iter->second;
-            }
-            s->add_outgoing(warthog::graph::edge(graph_id, cost, d));
-        }
-    }
-    else
-    {
+        // nothing to insert
         s_graph_id_ = myit->second;
         s_grid_id_ = start_grid_id;
+        return;
+    }
+
+    s_grid_id_ = start_grid_id;
+    s_graph_id_ = S_DUMMY_ID;
+
+    uint32_t sx, sy;
+    warthog::gridmap* gm = cpl_->get_map();
+    gm->to_unpadded_xy(start_grid_id, sx, sy);
+    g_->set_xy(s_graph_id_, (int32_t)sx, (int32_t)sy);
+
+    id_map_.insert(std::pair<uint32_t, uint32_t>(s_grid_id_, s_graph_id_));
+
+    // compute jump point successors for the start node
+    std::vector<uint32_t> corner_neis;
+    std::vector<double> costs;
+    for(uint32_t i = 0; i < 8; i++)
+    {
+        warthog::jps::direction d = (warthog::jps::direction)(1 << i);
+        cpl_->jump(d, start_grid_id, target_grid_id, corner_neis, costs);
+    }
+
+    warthog::graph::node* s = g_->get_node(s_graph_id_);
+    for(uint32_t i = 0; i < corner_neis.size(); i++)
+    {
+        warthog::jps::direction d = 
+            (warthog::jps::direction)(corner_neis[i] >> 24);
+        uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
+        double cost = costs[i];
+        uint32_t graph_id;
+        if(corner_id == target_grid_id)
+        {
+            graph_id = t_graph_id_;
+        }
+        else
+        {
+           id_map_iter corner_iter = id_map_.find(corner_id);
+           assert(corner_iter != id_map_.end());
+           graph_id = corner_iter->second;
+        }
+        s->add_outgoing(warthog::graph::edge(graph_id, cost, d));
     }
 }
 
@@ -206,19 +206,19 @@ warthog::graph::corner_graph::insert_target(
     t_grid_id_ = target_grid_id;
 
     id_map_iter myit = id_map_.find(target_grid_id);
-    if(myit == id_map_.end())
+    if(myit != id_map_.end())
     {
-        t_graph_id_ = T_DUMMY_ID;
-        uint32_t tx, ty;
-        warthog::gridmap* gm = cpl_->get_map();
-        gm->to_unpadded_xy(target_grid_id, tx, ty);
-        g_->set_xy(t_graph_id_, (int32_t)tx, (int32_t)ty);
-        id_map_.insert(std::pair<uint32_t, uint32_t>(t_grid_id_, t_graph_id_));
-    }
-    else
-    {
+        // nothing to insert
         t_graph_id_ = myit->second;
+        return;
     }
+
+    t_graph_id_ = T_DUMMY_ID;
+    uint32_t tx, ty;
+    warthog::gridmap* gm = cpl_->get_map();
+    gm->to_unpadded_xy(target_grid_id, tx, ty);
+    g_->set_xy(t_graph_id_, (int32_t)tx, (int32_t)ty);
+    id_map_.insert(std::pair<uint32_t, uint32_t>(t_grid_id_, t_graph_id_));
 
     std::vector<uint32_t> corner_neis;
     std::vector<double> costs;
@@ -257,6 +257,7 @@ warthog::graph::corner_graph::uninsert()
     if(t_graph_id_ == T_DUMMY_ID)
     {
         id_map_.erase(id_map_.find(t_grid_id_));
+        g_->get_node(t_graph_id_)->clear();
     }
     t_graph_id_ = warthog::INF;
     t_grid_id_ = warthog::INF;
