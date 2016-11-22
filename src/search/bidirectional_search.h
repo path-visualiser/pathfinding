@@ -131,6 +131,7 @@ class bidirectional_search : public warthog::search
         warthog::search_node* v_;
         warthog::search_node* w_;
         double best_cost_;
+        bool tentative_;
         warthog::problem_instance instance_;
 
         void
@@ -176,6 +177,7 @@ class bidirectional_search : public warthog::search
             // init
             this->reset_metrics();
             best_cost_ = warthog::INF;
+            tentative_ = true;
             v_ = w_ = 0;
             forward_next_ = true;
 
@@ -219,17 +221,25 @@ class bidirectional_search : public warthog::search
                 if(fopen_->size() > 0) { ftop = fopen_->peek(); } 
                 if(bopen_->size() > 0) { btop = bopen_->peek(); } 
 
+                uint32_t best_bound = std::min( 
+                    ftop->get_f(), btop->get_f());
+                
+                // FOR UNDIRECTED GRAPH SEARCH ONLY
                 // the way we calculate the lower-bound on solution cost 
                 // differs when we have a heuristic available vs not.
-                uint32_t best_bound_ = dijkstra_ ? 
+                //uint32_t best_bound = dijkstra_ ? 
                     // no heuristic
-                    (ftop->get_g() + btop->get_g()) : 
+                    //(ftop->get_g() + btop->get_g()) : 
                     // with a heuristic
-                    (std::min( 
-                        ftop->get_f(), btop->get_f()));
+                    //(std::min( 
+                    //    ftop->get_f(), btop->get_f()));
 
-                // terminate if we cannot improve the best solution found so far
-                if(best_bound_ > best_cost_)
+                // terminate if we cannot improve the best solution so far.
+                // NB: bidirectional dijkstra stops when the two search 
+                // frontiers expand the same node; bidirectional A* stops 
+                // when the best bound (in either direction) is larger than 
+                // the best available solution
+                if(best_bound > best_cost_ || (dijkstra_ && !tentative_)) 
                 {
 #ifndef NDEBUG
                     if(verbose_)
@@ -238,7 +248,6 @@ class bidirectional_search : public warthog::search
                             best_cost_ << std::endl;
                     }
 #endif
-                    break;
                 }
 
                 // ok, we still have hope. let's keep expanding. 
@@ -372,9 +381,9 @@ class bidirectional_search : public warthog::search
                         }
                         #endif
                     }
+                    #ifndef NDEBUG
                     else
                     {
-                        #ifndef NDEBUG
                         if(verbose_)
                         {
                             int32_t x, y;
@@ -385,8 +394,8 @@ class bidirectional_search : public warthog::search
                             n->print(std::cerr);
                             std::cerr << std::endl;
                         }
-                        #endif
                     }
+                    #endif
                 }
                 else
                 {
@@ -422,6 +431,7 @@ class bidirectional_search : public warthog::search
                         v_ = current;
                         w_ = reverse_n;
                         best_cost_ = current->get_g() + cost_to_n + reverse_n->get_g();
+                        tentative_ = !(v_->get_expanded() && w_->get_expanded());
 
                         #ifndef NDEBUG
                         if(verbose_)

@@ -32,6 +32,7 @@ main(int argc, char** argv)
         exit(0);
     }
 
+
     if(strcmp(argv[1], "map") == 0)
     {
         warthog::graph::planar_graph g;

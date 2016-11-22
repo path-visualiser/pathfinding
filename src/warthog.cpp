@@ -14,6 +14,7 @@
 #include "chase_search.h"
 #include "ch_expansion_policy.h"
 #include "cpg_expansion_policy.h"
+#include "constants.h"
 #include "contraction.h"
 #include "corner_graph.h"
 #include "corner_graph_expansion_policy.h"
@@ -205,6 +206,7 @@ run_jpg(warthog::scenario_manager& scenmgr)
 		{
 			len = 0;
 		}
+        len /= warthog::SCALE_FACTOR_DBL_TO_INT;
 
 		std::cout << i<<"\t" << "jpg" << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -256,6 +258,7 @@ run_cpg(warthog::scenario_manager& scenmgr)
 		{
 			len = 0;
 		}
+        len /= warthog::SCALE_FACTOR_DBL_TO_INT;
 
 		std::cout << i<<"\t" << "cpg" << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -288,11 +291,12 @@ run_ch_cpg(warthog::scenario_manager& scenmgr, warthog::util::cfg& cfg)
     warthog::ch::value_index_swap_dimacs(order);
 
     // we insert two extra elements in the event that we
-    // need to insert the start or target. the inserted start
-    // always has the lowest possible rank and the inserted target
-    // always has the highest possible rank
+    // need to insert the start or target. both have the lowest
+    // possible rank in the hierarchy (0 and 1)
+    // NB: along the way we need to increase all ranks by 2 
+    for(uint32_t i = 0; i < order.size(); i++) order.at(i)+=2;
     order.push_back(0);
-    order.push_back(order.size());
+    order.push_back(1);
     
     // load up the grid
     std::shared_ptr<warthog::gridmap> map(
@@ -335,8 +339,9 @@ run_ch_cpg(warthog::scenario_manager& scenmgr, warthog::util::cfg& cfg)
 		{
 			len = 0;
 		}
+        len /= warthog::SCALE_FACTOR_DBL_TO_INT;
 
-		std::cout << i<<"\t" << "cpg" << "\t" 
+		std::cout << i<<"\t" << "ch_cpg" << "\t" 
 		<< alg.get_nodes_expanded() << "\t" 
 		<< alg.get_nodes_generated() << "\t"
 		<< alg.get_nodes_touched() << "\t"
@@ -1611,7 +1616,7 @@ run_grid(warthog::util::cfg& cfg)
         run_jps2plus(scenmgr);
     }
 
-    if(alg == "jps")
+    else if(alg == "jps")
     {
         if(wgm)
         {
@@ -1665,6 +1670,10 @@ run_grid(warthog::util::cfg& cfg)
     else if(alg == "ch_cpg")
     {
         run_ch_cpg(scenmgr, cfg);
+    }
+    else
+    {
+        std::cerr << "err; invalid search algorithm: " << alg << "\n";
     }
 }
 

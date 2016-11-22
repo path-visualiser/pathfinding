@@ -1,3 +1,4 @@
+#include "constants.h"
 #include "corner_graph.h"
 #include "corner_point_locator.h"
 #include "jps.h"
@@ -117,8 +118,9 @@ warthog::graph::corner_graph::construct()
                 else { to_id = it_to_id->second; }
 
                 uint32_t label_id = __builtin_ffs(d)-1;
+                uint32_t jump_cost_int = jcosts[idx]*SCALE_FACTOR_DBL_TO_INT;
                 this->add_labeled_outgoing_edge(
-                        from_id, warthog::graph::edge(to_id, jcosts[idx]), 
+                        from_id, warthog::graph::edge(to_id, jump_cost_int),
                         label_id);
             }
         }
@@ -183,7 +185,7 @@ warthog::graph::corner_graph::insert_start(
         warthog::jps::direction d = 
             (warthog::jps::direction)(corner_neis[i] >> 24);
         uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
-        double cost = costs[i];
+        uint32_t int_cost = costs[i] * SCALE_FACTOR_DBL_TO_INT;
         uint32_t graph_id;
         if(corner_id == target_grid_id)
         {
@@ -195,7 +197,7 @@ warthog::graph::corner_graph::insert_start(
            assert(corner_iter != id_map_.end());
            graph_id = corner_iter->second;
         }
-        s->add_outgoing(warthog::graph::edge(graph_id, cost, d));
+        s->add_outgoing(warthog::graph::edge(graph_id, int_cost, d));
     }
 }
 
@@ -228,18 +230,21 @@ warthog::graph::corner_graph::insert_target(
         cpl_->jump(d, target_grid_id, warthog::INF, corner_neis, costs);
     }
 
+    warthog::graph::node* target = g_->get_node(t_graph_id_);
     for(uint32_t i = 0; i < corner_neis.size(); i++)
     {
         uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
-        double cost = costs[i];
+        uint32_t int_cost = costs[i] * SCALE_FACTOR_DBL_TO_INT;
         uint32_t graph_id = (*id_map_.find(corner_id)).second;
 
         // goal is always the last node in the edges array of nei
         warthog::graph::node* nei = g_->get_node(graph_id);
         warthog::graph::edge_iter eit = 
-            nei->add_outgoing(warthog::graph::edge(t_graph_id_, cost));
+            nei->add_outgoing(warthog::graph::edge(t_graph_id_, int_cost));
+
         t_incoming_.push_back(graph_id);
         t_incoming_iters_.push_back(eit);
+        target->add_incoming(warthog::graph::edge(graph_id, int_cost));
     }
 }
 

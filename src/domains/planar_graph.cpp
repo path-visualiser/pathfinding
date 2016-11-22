@@ -178,7 +178,6 @@ warthog::graph::planar_graph::load_grid(
     this->nodes_ = new warthog::graph::node[nodes_sz_];
     this->xy_ = new int32_t[nodes_sz_*2];
 
-    uint32_t scale = 100000; // convert grid edge costs to integers
     for(uint32_t y = 0; y < gm.header_height(); y++)
     {
         for(uint32_t x = 0; x < gm.header_width(); x++)
@@ -191,8 +190,8 @@ warthog::graph::planar_graph::load_grid(
             exp.expand(n, 0);
 
             //if(exp.num_neighbours() == 0) { continue; }
-            xy_[node_id*2] = x*scale;
-            xy_[node_id*2+1] = y*scale;
+            xy_[node_id*2] = x * SCALE_FACTOR_DBL_TO_INT;
+            xy_[node_id*2+1] = y * SCALE_FACTOR_DBL_TO_INT;
 
             // iterate over all the neighbours of n
             for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
@@ -200,7 +199,7 @@ warthog::graph::planar_graph::load_grid(
                 uint32_t nei_x, nei_y;
                 gm.to_unpadded_xy(nei->get_id(), nei_x, nei_y);
                 uint32_t nei_id = nei_y * gm.header_width() + nei_x;
-                uint32_t int_edge_cost = edge_cost*scale;
+                uint32_t int_edge_cost = edge_cost*SCALE_FACTOR_DBL_TO_INT;
 
                 nodes_[node_id].add_outgoing(
                         warthog::graph::edge(nei_id, int_edge_cost));
@@ -222,9 +221,11 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss)
     if(nodes_sz_ > 0)
     {
         // dimacs vertex ids should always begin from index 1
-        uint32_t offset = ID_OFFSET - (ID_OFFSET - 1);
+        // here we apply a delta to make sure that's always so
+        int32_t delta;
+        if(ID_OFFSET >= 1) { delta = ID_OFFSET - 1;  }
+        else { delta = -1; }
 
-        // -1 because dimacs ids are 1-indexed and we use 0-indexed arrays
         oss << "p sp " << (nodes_sz_ - ID_OFFSET) << " " << 
             this->get_num_edges() << std::endl;
         for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
@@ -233,7 +234,7 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss)
             for(warthog::graph::edge_iter it = n->outgoing_begin(); 
                     it != n->outgoing_end(); it++)
             {
-                oss << "a " << i + offset << " " << (*it).node_id_ + offset << " " 
+                oss << "a " << i - delta << " " << (*it).node_id_  - delta << " " 
                     << (uint32_t)((*it).wt_) << std::endl;
             }
         }
@@ -246,11 +247,15 @@ warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss)
     if(nodes_sz_ > 0)
     {
         // dimacs vertex ids should always begin from index 1
-        uint32_t offset = ID_OFFSET - (ID_OFFSET - 1);
+        // here we apply a delta to make sure that's always so
+        int32_t delta;
+        if(ID_OFFSET >= 1) { delta = ID_OFFSET - 1;  }
+        else { delta = -1; }
+
         oss << "p aux sp co " << (nodes_sz_ - ID_OFFSET) << std::endl;
         for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
         {
-            oss << "v " << i + offset << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
+            oss << "v " << i - delta << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
         }
     }
 }
