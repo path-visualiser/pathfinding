@@ -59,7 +59,7 @@ class corner_graph
     };
 
     public:
-        corner_graph(std::shared_ptr<warthog::gridmap> map );
+        corner_graph(std::shared_ptr<warthog::gridmap> gm );
         corner_graph(
                 std::shared_ptr<warthog::gridmap> gm, 
                 std::shared_ptr<warthog::graph::planar_graph> g);

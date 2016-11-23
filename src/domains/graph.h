@@ -30,16 +30,16 @@ typedef uintptr_t ELABEL_T;
 class edge
 {
     public:
-        edge() { node_id_ = UINT32_MAX; wt_ = DBL_MAX; label_ = UINTPTR_MAX;}
+        edge() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = UINTPTR_MAX;}
 
-        edge(uint32_t node_id, double wt, uintptr_t label)
+        edge(uint32_t node_id, uint32_t wt, uintptr_t label)
         {
             node_id_ = node_id;
             wt_ = wt;
             label_ = label;
         }
 
-        edge(uint32_t node_id, double wt)
+        edge(uint32_t node_id, uint32_t wt)
         {
             node_id_ = node_id;
             wt_ = wt;
@@ -65,7 +65,7 @@ class edge
         // we store only one id, typically the head node
         // the id of the other node is derived contextually
         uint32_t node_id_;
-        double wt_;
+        uint32_t wt_;
         ELABEL_T label_;
 };
 typedef edge* edge_iter;

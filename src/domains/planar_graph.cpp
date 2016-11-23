@@ -172,6 +172,12 @@ warthog::graph::planar_graph::load_grid(
     delete [] nodes_;
     delete [] xy_;
 
+    // grid costs have double precision edge weights 
+    // but our graphs use integer costs; we scale
+    // up all the grid costs to equivalent integers
+    // (NB: 10^5 precision, then floor)
+    uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
+
     warthog::gridmap gm(file);
     warthog::gridmap_expansion_policy exp(&gm);
     this->nodes_sz_ = gm.header_width() * gm.header_height();
@@ -189,9 +195,8 @@ warthog::graph::planar_graph::load_grid(
             double edge_cost = 0;
             exp.expand(n, 0);
 
-            //if(exp.num_neighbours() == 0) { continue; }
-            xy_[node_id*2] = x * SCALE_FACTOR_DBL_TO_INT;
-            xy_[node_id*2+1] = y * SCALE_FACTOR_DBL_TO_INT;
+            xy_[node_id*2] = x;
+            xy_[node_id*2+1] = y;
 
             // iterate over all the neighbours of n
             for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
@@ -199,15 +204,15 @@ warthog::graph::planar_graph::load_grid(
                 uint32_t nei_x, nei_y;
                 gm.to_unpadded_xy(nei->get_id(), nei_x, nei_y);
                 uint32_t nei_id = nei_y * gm.header_width() + nei_x;
-                uint32_t int_edge_cost = edge_cost*SCALE_FACTOR_DBL_TO_INT;
+                uint32_t edge_cost_int = edge_cost * EDGE_COST_SCALE_FACTOR;
 
                 nodes_[node_id].add_outgoing(
-                        warthog::graph::edge(nei_id, int_edge_cost));
+                        warthog::graph::edge(nei_id, edge_cost_int));
 
                 if(store_incoming)
                 {
                     nodes_[nei_id].add_incoming(
-                            warthog::graph::edge(node_id, int_edge_cost));
+                            warthog::graph::edge(node_id, edge_cost_int));
                 }
             }
         }

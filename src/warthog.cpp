@@ -179,6 +179,7 @@ run_jpg(warthog::scenario_manager& scenmgr)
 	warthog::jps::jpg_expansion_policy expander(cpg.get());
 
 	warthog::octile_heuristic heuristic(map->width(), map->height());
+    heuristic.set_hscale(warthog::ONE);
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps::jpg_expansion_policy> 
@@ -206,7 +207,7 @@ run_jpg(warthog::scenario_manager& scenmgr)
 		{
 			len = 0;
 		}
-        len /= warthog::SCALE_FACTOR_DBL_TO_INT;
+        len /= warthog::ONE;
 
 		std::cout << i<<"\t" << "jpg" << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -231,6 +232,7 @@ run_cpg(warthog::scenario_manager& scenmgr)
 	warthog::jps::corner_graph_expansion_policy expander(cpg.get());
 
 	warthog::octile_heuristic heuristic(map->width(), map->height());
+    heuristic.set_hscale(warthog::ONE);
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps::corner_graph_expansion_policy> 
@@ -258,7 +260,7 @@ run_cpg(warthog::scenario_manager& scenmgr)
 		{
 			len = 0;
 		}
-        len /= warthog::SCALE_FACTOR_DBL_TO_INT;
+        len /= warthog::ONE;
 
 		std::cout << i<<"\t" << "cpg" << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -339,7 +341,7 @@ run_ch_cpg(warthog::scenario_manager& scenmgr, warthog::util::cfg& cfg)
 		{
 			len = 0;
 		}
-        len /= warthog::SCALE_FACTOR_DBL_TO_INT;
+        len /= warthog::ONE;
 
 		std::cout << i<<"\t" << "ch_cpg" << "\t" 
 		<< alg.get_nodes_expanded() << "\t" 

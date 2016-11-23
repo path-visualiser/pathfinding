@@ -5,7 +5,8 @@
 
 typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
 
-warthog::graph::corner_graph::corner_graph(std::shared_ptr<warthog::gridmap> gm)
+warthog::graph::corner_graph::corner_graph(
+        std::shared_ptr<warthog::gridmap> gm)
 {
     g_ = std::shared_ptr<warthog::graph::planar_graph>(
             new warthog::graph::planar_graph());
@@ -99,6 +100,7 @@ warthog::graph::corner_graph::construct()
             warthog::jps::direction d = (warthog::jps::direction)(1 << i);
             std::vector<uint32_t> jpoints;
             std::vector<double> jcosts;
+            uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
             cpl_->jump(d, gm_id, warthog::INF, jpoints, jcosts);
             for(uint32_t idx = 0; idx < jpoints.size(); idx++)
             {
@@ -118,9 +120,9 @@ warthog::graph::corner_graph::construct()
                 else { to_id = it_to_id->second; }
 
                 uint32_t label_id = __builtin_ffs(d)-1;
-                uint32_t jump_cost_int = jcosts[idx]*SCALE_FACTOR_DBL_TO_INT;
+                uint32_t weight = jcosts[idx] * EDGE_COST_SCALE_FACTOR;
                 this->add_labeled_outgoing_edge(
-                        from_id, warthog::graph::edge(to_id, jump_cost_int),
+                        from_id, warthog::graph::edge(to_id, weight),
                         label_id);
             }
         }
@@ -179,13 +181,14 @@ warthog::graph::corner_graph::insert_start(
         cpl_->jump(d, start_grid_id, target_grid_id, corner_neis, costs);
     }
 
+    uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
     warthog::graph::node* s = g_->get_node(s_graph_id_);
     for(uint32_t i = 0; i < corner_neis.size(); i++)
     {
         warthog::jps::direction d = 
             (warthog::jps::direction)(corner_neis[i] >> 24);
         uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
-        uint32_t int_cost = costs[i] * SCALE_FACTOR_DBL_TO_INT;
+
         uint32_t graph_id;
         if(corner_id == target_grid_id)
         {
@@ -197,7 +200,9 @@ warthog::graph::corner_graph::insert_start(
            assert(corner_iter != id_map_.end());
            graph_id = corner_iter->second;
         }
-        s->add_outgoing(warthog::graph::edge(graph_id, int_cost, d));
+
+        double weight = costs[i] * EDGE_COST_SCALE_FACTOR;
+        s->add_outgoing(warthog::graph::edge(graph_id, weight, d));
     }
 }
 
@@ -230,21 +235,25 @@ warthog::graph::corner_graph::insert_target(
         cpl_->jump(d, target_grid_id, warthog::INF, corner_neis, costs);
     }
 
+    uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
     warthog::graph::node* target = g_->get_node(t_graph_id_);
     for(uint32_t i = 0; i < corner_neis.size(); i++)
     {
         uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
-        uint32_t int_cost = costs[i] * SCALE_FACTOR_DBL_TO_INT;
         uint32_t graph_id = (*id_map_.find(corner_id)).second;
+        uint32_t weight = costs[i] * EDGE_COST_SCALE_FACTOR;
 
-        // goal is always the last node in the edges array of nei
+        // add the target to the outgoing edges list of every 
+        // corner point we just found
         warthog::graph::node* nei = g_->get_node(graph_id);
-        warthog::graph::edge_iter eit = 
-            nei->add_outgoing(warthog::graph::edge(t_graph_id_, int_cost));
-
+        warthog::graph::edge_iter eit = nei->add_outgoing(
+               warthog::graph::edge(t_graph_id_, weight));
         t_incoming_.push_back(graph_id);
         t_incoming_iters_.push_back(eit);
-        target->add_incoming(warthog::graph::edge(graph_id, int_cost));
+
+        // also add every corner point to the incoming successor list
+        // of the node we are inserting 
+        target->add_incoming(warthog::graph::edge(graph_id, weight));
     }
 }
 
