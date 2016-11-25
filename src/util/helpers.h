@@ -33,7 +33,7 @@ index_to_xy(unsigned int id, unsigned int mapwidth,
 // line of the file contains a single integer.
 // Comments lines can exist in the file; these need to begin with one
 // of the following characters: #, %, c
-inline void
+inline bool
 load_integer_labels(const char* filename, std::vector<uint32_t>& labels)
 {
     std::ifstream ifs(filename, std::ios_base::in);
@@ -41,7 +41,7 @@ load_integer_labels(const char* filename, std::vector<uint32_t>& labels)
     {
         std::cerr << "\nerror trying to load file " << filename << std::endl;
         ifs.close();
-        return;
+        return false;
     }
 
     while(true)
@@ -58,16 +58,17 @@ load_integer_labels(const char* filename, std::vector<uint32_t>& labels)
         labels.push_back(tmp);
     }
     ifs.close();
+    return true;
 }
 
-inline void
+inline bool
 load_integer_labels_dimacs(const char* filename, std::vector<uint32_t>& labels)
 {
     // add a dummy to the front of the list if the labels are for use with
     // a dimacs graph. Such graphs use a 1-indexed scheme for node ids. we 
     // add the dummy so we can use the dimacs ids without conversion
     labels.push_back(0);
-    load_integer_labels(filename, labels);
+    return load_integer_labels(filename, labels);
 }
 
 

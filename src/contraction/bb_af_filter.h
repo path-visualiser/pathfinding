@@ -95,6 +95,9 @@ class bb_af_filter
         void
         print(std::ostream& out);
 
+        bool
+        load_labels(const char* filename);
+
     private:    
         uint32_t nparts_;
         warthog::graph::planar_graph* g_;
@@ -118,8 +121,6 @@ class bb_af_filter
                 std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
-        void
-        load_bb_af_file(const char* filename);
 };
 
 }

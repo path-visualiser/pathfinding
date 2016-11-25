@@ -15,7 +15,7 @@ warthog::down_distance_filter::down_distance_filter(
     g_ = g;
     rank_ = rank;
 
-    load_down_distance_values(ddfile);
+    load_labels(ddfile);
     start_id_ = 0;
     last_id_ = ddist_->size();
 }
@@ -131,8 +131,8 @@ warthog::down_distance_filter::print(std::ostream& out)
     }
 }
 
-void
-warthog::down_distance_filter::load_down_distance_values(const char* filename)
+bool
+warthog::down_distance_filter::load_labels(const char* filename)
 {
    ddist_->clear();
    std::ifstream ifs(filename, std::ios_base::in);
@@ -142,7 +142,7 @@ warthog::down_distance_filter::load_down_distance_values(const char* filename)
         std::cerr << "\nerror trying to load down-distance values from file " 
             << filename << std::endl;
         ifs.close();
-        return;
+        return false;
     }
 
     uint32_t lines = 0;
@@ -165,4 +165,5 @@ warthog::down_distance_filter::load_down_distance_values(const char* filename)
         lines++;
     }
     ifs.close();
+    return true;
 }

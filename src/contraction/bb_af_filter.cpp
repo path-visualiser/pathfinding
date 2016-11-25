@@ -25,7 +25,7 @@ warthog::bb_af_filter::bb_af_filter(
         const char* bb_af_file)
 {
     init(g, rank, part);
-    load_bb_af_file(bb_af_file);
+    load_labels(bb_af_file);
 }
 
 warthog::bb_af_filter::~bb_af_filter()
@@ -155,8 +155,8 @@ warthog::bb_af_filter::print(std::ostream& out)
     }
 }
 
-void
-warthog::bb_af_filter::load_bb_af_file(const char* filename)
+bool
+warthog::bb_af_filter::load_labels(const char* filename)
 {
     std::cerr << "loading bb_af file\n";
     std::ifstream ifs(filename);
@@ -206,7 +206,7 @@ warthog::bb_af_filter::load_bb_af_file(const char* filename)
     {
         std::cerr << "invalid header; required format: \n"
             << "firstnode [integer] lastnode [integer] partitions [integer]\n";
-        exit(0);
+        return false;
     }
 
     // read labels for each outgoing arc
@@ -225,7 +225,7 @@ warthog::bb_af_filter::load_bb_af_file(const char* filename)
                     std::cerr 
                         << "unexpected error reading arcflags data on line "
                         << lines << "; aborting\n";
-                    exit(0);
+                    return false;
                 }
 
                 uint64_t label;
@@ -240,7 +240,7 @@ warthog::bb_af_filter::load_bb_af_file(const char* filename)
                 std::cerr 
                     << "unexpected error reading arcflags data on line "
                     << lines << "; aborting\n";
-                exit(0);
+                return false;
             }
 
             uint32_t x1, y1, x2, y2;
@@ -252,6 +252,7 @@ warthog::bb_af_filter::load_bb_af_file(const char* filename)
             lines++;
        }
     }
+    return true;
 }
 
 void

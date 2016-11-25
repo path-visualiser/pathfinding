@@ -87,6 +87,9 @@ class arcflags_filter
         void
         print(std::ostream& out);
 
+        bool
+        load_arcflags_file(const char* filename);
+
     private:    
         uint32_t nparts_;
         warthog::graph::planar_graph* g_;
@@ -109,8 +112,6 @@ class arcflags_filter
                 std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
-        void
-        load_arcflags_file(const char* filename);
 };
 
 }

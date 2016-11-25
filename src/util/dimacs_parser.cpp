@@ -53,10 +53,10 @@ warthog::dimacs_parser::load_graph(const char* filename)
 	{
 		std::cerr << "err; dimacs_parser::dimacs_parser "
 			"cannot open file: "<<filename << std::endl;
-		exit(1);
+		return false;
 	}
 
-	uint32_t retval = 0;
+	bool retval = false;
 	char* buf = new char[1024];
 	const char* delim = " \t";
 	uint32_t line = 0;
@@ -78,7 +78,6 @@ warthog::dimacs_parser::load_graph(const char* filename)
 			else
 			{
 				std::cerr << "error; unrecognised problem line in dimacs file\n";
-				retval = 1;
 				break;
 			}
 		}
@@ -87,7 +86,7 @@ warthog::dimacs_parser::load_graph(const char* filename)
 
     delete fdimacs;
 	delete [] buf;
-	return retval;
+    return retval;
 }
 
 bool
@@ -135,8 +134,7 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 	}
 
 	delete [] buf;
-	return 0 | early_abort;
-
+	return !early_abort;
 }
 
 bool
@@ -184,7 +182,7 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 	}
 
 	delete [] buf;
-	return 0 | early_abort;
+	return !early_abort;
 }
 
 void
@@ -217,6 +215,7 @@ warthog::dimacs_parser::print(std::ostream& oss)
 bool
 warthog::dimacs_parser::load_instance(const char* dimacs_file)
 {
+    problemfile_ = std::string(dimacs_file);
 	std::ifstream infile;
 	infile.open(dimacs_file,std::ios::in);
 

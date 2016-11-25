@@ -54,8 +54,10 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
 {
     //warthog::dimacs_parser dimacs(gr_file, co_file);
     warthog::dimacs_parser dimacs;
-    dimacs.load_graph(gr_file);
-    dimacs.load_graph(co_file);
+    if(!( dimacs.load_graph(gr_file) && dimacs.load_graph(co_file) ))
+    {
+        return false;
+    }
     //std::cout << "loaded" << std::endl;
     
     filename_.assign(gr_file);

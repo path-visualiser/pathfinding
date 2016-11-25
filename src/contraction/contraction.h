@@ -49,7 +49,7 @@ enum search_direction { UP = 1, DOWN = 2, ANY = 3 };
 // @param lex_order: (default: false) when true, the contraction order is 
 // converted into a lexical order. This is equivalent to calling 
 // ::value_index_swap_dimacs after loading the contraction order
-void 
+bool
 load_node_order(const char* filename, 
         std::vector<uint32_t>& order, bool lex_order=false);
 

@@ -15,7 +15,7 @@ warthog::bbox_filter::bbox_filter(
     g_ = g;
     rank_ = rank;
 
-    load_bbox_values(ddfile);
+    load_labels(ddfile);
     start_id_ = 0;
     tx = ty = warthog::INF;
 }
@@ -187,8 +187,8 @@ warthog::bbox_filter::print(std::ostream& out)
     }
 }
 
-void
-warthog::bbox_filter::load_bbox_values(const char* filename)
+bool
+warthog::bbox_filter::load_labels(const char* filename)
 {
    std::ifstream ifs(filename, std::ios_base::in);
     
@@ -197,7 +197,7 @@ warthog::bbox_filter::load_bbox_values(const char* filename)
         std::cerr << "\nerror trying to load bbox values from file " 
             << filename << std::endl;
         ifs.close();
-        return;
+        return false;
     }
 
     uint32_t lines = 0;
@@ -223,7 +223,7 @@ warthog::bbox_filter::load_bbox_values(const char* filename)
     if(bad_header)
     {
         std::cerr << " invalid header in file " << filename << std::endl;
-        exit(0);
+        return false;
     }
 
     if(!(start_id_ < g_->get_num_nodes() && 
@@ -231,7 +231,7 @@ warthog::bbox_filter::load_bbox_values(const char* filename)
         start_id_ < last_id_)) 
     {
         std::cerr << " invalid header values in file " << filename << "\n";
-        exit(0);
+        return false;
     }
 
     for(uint32_t i = start_id_; i <= last_id_; i++)
@@ -242,13 +242,13 @@ warthog::bbox_filter::load_bbox_values(const char* filename)
             if(ifs.eof())
             {
                 std::cerr << "unexpected eof in file " << filename << "\n";
-                exit(0);
+                return false;
             }
             if(!ifs.good())
             {
                 std::cerr << "unexpected read error while loading " 
                     << filename << "\n";
-                exit(0);
+                return false;
             }
 
             int32_t x1, y1, x2, y2;
@@ -257,6 +257,7 @@ warthog::bbox_filter::load_bbox_values(const char* filename)
         }
     }
     ifs.close();
+    return true;
 }
 
 void

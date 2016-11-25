@@ -139,7 +139,7 @@ warthog::arcflags_filter::print(std::ostream& out)
     }
 }
 
-void
+bool
 warthog::arcflags_filter::load_arcflags_file(const char* filename)
 {
     std::cerr << "loading arcflags file\n";
@@ -176,10 +176,10 @@ warthog::arcflags_filter::load_arcflags_file(const char* filename)
             if(num_parts != nparts_)
             { 
                 std::cerr 
-                    << "err reading arcflags file; number of partitions \n"
+                    << "err; number of partitions in arcflags file\n"
                     << " does not match input graph (read: " << num_parts 
                     << " expected: " << nparts_ << ")\n";
-                exit(0);
+                return false;
             }
         }
         else { bad_header = true; }
@@ -188,9 +188,9 @@ warthog::arcflags_filter::load_arcflags_file(const char* filename)
 
     if(bad_header)
     {
-        std::cerr << "invalid header; required format: \n"
+        std::cerr << "err; arcflags file has invalid header. required format: \n"
             << "firstnode [integer] lastnode [integer] partitions [integer]\n";
-        exit(0);
+        return false;
     }
 
     // read labels for each outgoing arc
@@ -205,9 +205,9 @@ warthog::arcflags_filter::load_arcflags_file(const char* filename)
             {
                 if(!ifs.good())
                 {
-                    std::cerr << "unexpected read error loading arcflags; "
+                    std::cerr << "errr; unexpected read error loading arcflags; "
                         << "aborting\n";
-                    exit(0);
+                    return false;
                 }
 
                 uint64_t label;
@@ -218,6 +218,7 @@ warthog::arcflags_filter::load_arcflags_file(const char* filename)
             }
         }
     }
+    return true;
 }
 
 void

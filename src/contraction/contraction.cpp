@@ -34,7 +34,7 @@ warthog::ch::write_node_order(const char* filename, std::vector<uint32_t>& order
     ofs.close();
 }
 
-void 
+bool
 warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order,
         bool lex_order)
 {
@@ -45,7 +45,7 @@ warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order,
         std::cerr << "\nerror trying to load node order from file " 
             << filename << std::endl;
         ifs.close();
-        return;
+        return false;
     }
 
     while(true)
@@ -67,6 +67,7 @@ warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order,
     {
         warthog::ch::value_index_swap_dimacs(order);
     }
+    return true;
 }
 
 typedef std::set<uint32_t>::iterator set_iter;

@@ -60,6 +60,9 @@ class bbox_filter
         void
         compute();
 
+        bool
+        load_labels(const char* filename);
+
     private:
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* rank_;
@@ -67,8 +70,6 @@ class bbox_filter
         int32_t tx, ty;
         std::vector<std::vector<warthog::geom::rectangle>> labels_;
 
-        void
-        load_bbox_values(const char* filename);
 };
 
 }

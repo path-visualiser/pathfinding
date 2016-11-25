@@ -19,7 +19,7 @@ warthog::dcl_filter::dcl_filter(
     start_id_ = 0;
     tx = ty = warthog::INF;
     h_ = new warthog::euclidean_heuristic(g);
-    load_dcl_file(ddfile);
+    load_labels(ddfile);
 }
 
 warthog::dcl_filter::dcl_filter(
@@ -161,8 +161,8 @@ warthog::dcl_filter::print(std::ostream& out)
     }
 }
 
-void
-warthog::dcl_filter::load_dcl_file(const char* filename)
+bool
+warthog::dcl_filter::load_labels(const char* filename)
 {
    std::ifstream ifs(filename, std::ios_base::in);
     
@@ -171,7 +171,7 @@ warthog::dcl_filter::load_dcl_file(const char* filename)
         std::cerr << "\nerror trying to load down-distance values from file " 
             << filename << std::endl;
         ifs.close();
-        return;
+        return false;
     }
 
     uint32_t lines = 0;
@@ -197,6 +197,7 @@ warthog::dcl_filter::load_dcl_file(const char* filename)
         lines++;
     }
     ifs.close();
+    return true;
 }
 
 void

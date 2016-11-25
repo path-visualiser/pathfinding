@@ -114,7 +114,8 @@ class planar_graph
         inline warthog::graph::node* 
         get_node(uint32_t id)
         {
-            if(id >= ID_OFFSET && id < nodes_sz_)
+            //if(id >= ID_OFFSET && id < nodes_sz_)
+            if(id < nodes_sz_)
             {
                 return &nodes_[id];
             }

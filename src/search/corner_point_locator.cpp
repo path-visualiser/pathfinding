@@ -6,7 +6,7 @@
 #include <cassert>
 #include <climits>
 
-warthog::jps::corner_point_locator::corner_point_locator(warthog::gridmap* map)
+warthog::corner_point_locator::corner_point_locator(warthog::gridmap* map)
 	: map_(map), jumplimit_(UINT32_MAX)
 {
 	rmap_ = create_rmap(map_);
@@ -18,7 +18,7 @@ warthog::jps::corner_point_locator::corner_point_locator(warthog::gridmap* map)
 	current_goal_id_ = current_rgoal_id_ = warthog::INF;
 }
 
-warthog::jps::corner_point_locator::~corner_point_locator()
+warthog::corner_point_locator::~corner_point_locator()
 {
 	delete rmap_;
     delete cnr_map_;
@@ -28,7 +28,7 @@ warthog::jps::corner_point_locator::~corner_point_locator()
 // create a copy of the grid map which is rotated by 90 degrees clockwise.
 // this version will be used when jumping North or South. 
 warthog::gridmap*
-warthog::jps::corner_point_locator::create_rmap(warthog::gridmap* map)
+warthog::corner_point_locator::create_rmap(warthog::gridmap* map)
 {
 	uint32_t maph = map->header_height();
 	uint32_t mapw = map->header_width();
@@ -57,7 +57,7 @@ warthog::jps::corner_point_locator::create_rmap(warthog::gridmap* map)
 //
 // @return: the id of a jump point successor or warthog::INF if no jp exists.
 void
-warthog::jps::corner_point_locator::jump(warthog::jps::direction d,
+warthog::corner_point_locator::jump(warthog::jps::direction d,
 	   	uint32_t node_id, uint32_t goal_id, 
 		std::vector<uint32_t>& jpoints,
 		std::vector<double>& costs)
@@ -107,7 +107,7 @@ warthog::jps::corner_point_locator::jump(warthog::jps::direction d,
 }
 
 void
-warthog::jps::corner_point_locator::jump_north(
+warthog::corner_point_locator::jump_north(
 		std::vector<uint32_t>& jpoints,
 		std::vector<double>& costs)
 {
@@ -128,7 +128,7 @@ warthog::jps::corner_point_locator::jump_north(
 }
 
 void
-warthog::jps::corner_point_locator::__jump_north(uint32_t node_id, 
+warthog::corner_point_locator::__jump_north(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost,
 		warthog::gridmap* map, warthog::gridmap* cnr_map, bool jpcn)
 {
@@ -138,7 +138,7 @@ warthog::jps::corner_point_locator::__jump_north(uint32_t node_id,
 }
 
 void
-warthog::jps::corner_point_locator::jump_south(
+warthog::corner_point_locator::jump_south(
 		std::vector<uint32_t>& jpoints, 
 		std::vector<double>& costs)
 {
@@ -159,7 +159,7 @@ warthog::jps::corner_point_locator::jump_south(
 }
 
 void
-warthog::jps::corner_point_locator::__jump_south(uint32_t node_id, 
+warthog::corner_point_locator::__jump_south(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost,
 		warthog::gridmap* map, warthog::gridmap* cnr_map, bool jpcn)
 {
@@ -169,7 +169,7 @@ warthog::jps::corner_point_locator::__jump_south(uint32_t node_id,
 }
 
 void
-warthog::jps::corner_point_locator::jump_east(
+warthog::corner_point_locator::jump_east(
 		std::vector<uint32_t>& jpoints, 
 		std::vector<double>& costs)
 {
@@ -190,7 +190,7 @@ warthog::jps::corner_point_locator::jump_east(
 
 
 void
-warthog::jps::corner_point_locator::__jump_east(uint32_t node_id, 
+warthog::corner_point_locator::__jump_east(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost, 
 		warthog::gridmap* map, warthog::gridmap* cnr_map, 
         bool jpcn)
@@ -240,7 +240,7 @@ warthog::jps::corner_point_locator::__jump_east(uint32_t node_id,
 
 // analogous to ::jump_east 
 void
-warthog::jps::corner_point_locator::jump_west(
+warthog::corner_point_locator::jump_west(
 		std::vector<uint32_t>& jpoints, 
 		std::vector<double>& costs)
 {
@@ -260,7 +260,7 @@ warthog::jps::corner_point_locator::jump_west(
 }
 
 void
-warthog::jps::corner_point_locator::__jump_west(uint32_t node_id, 
+warthog::corner_point_locator::__jump_west(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost, 
 		warthog::gridmap* map, warthog::gridmap* cnr_map, 
         bool jpcn)
@@ -320,7 +320,7 @@ warthog::jps::corner_point_locator::__jump_west(uint32_t node_id,
 }
 
 void
-warthog::jps::corner_point_locator::jump_northeast(
+warthog::corner_point_locator::jump_northeast(
 		std::vector<uint32_t>& jpoints,
 		std::vector<double>& costs)
 {
@@ -373,7 +373,7 @@ warthog::jps::corner_point_locator::jump_northeast(
 }
 
 void
-warthog::jps::corner_point_locator::__jump_northeast(
+warthog::corner_point_locator::__jump_northeast(
 		uint32_t& node_id, uint32_t& rnode_id, 
 		uint32_t goal_id, uint32_t rgoal_id,
 		uint32_t& jumpnode_id, double& jumpcost, 
@@ -410,7 +410,7 @@ warthog::jps::corner_point_locator::__jump_northeast(
 }
 
 void
-warthog::jps::corner_point_locator::jump_northwest(
+warthog::corner_point_locator::jump_northwest(
 		std::vector<uint32_t>& jpoints,
 		std::vector<double>& costs)
 {
@@ -463,7 +463,7 @@ warthog::jps::corner_point_locator::jump_northwest(
 }
 
 void
-warthog::jps::corner_point_locator::__jump_northwest(
+warthog::corner_point_locator::__jump_northwest(
 		uint32_t& node_id, uint32_t& rnode_id, 
 		uint32_t goal_id, uint32_t rgoal_id,
 		uint32_t& jumpnode_id, double& jumpcost,
@@ -500,7 +500,7 @@ warthog::jps::corner_point_locator::__jump_northwest(
 }
 
 void
-warthog::jps::corner_point_locator::jump_southeast(
+warthog::corner_point_locator::jump_southeast(
 		std::vector<uint32_t>& jpoints,
 		std::vector<double>& costs)
 {
@@ -553,7 +553,7 @@ warthog::jps::corner_point_locator::jump_southeast(
 }
 
 void
-warthog::jps::corner_point_locator::__jump_southeast(
+warthog::corner_point_locator::__jump_southeast(
 		uint32_t& node_id, uint32_t& rnode_id, 
 		uint32_t goal_id, uint32_t rgoal_id,
 		uint32_t& jumpnode_id, double& jumpcost,
@@ -590,7 +590,7 @@ warthog::jps::corner_point_locator::__jump_southeast(
 }
 
 void
-warthog::jps::corner_point_locator::jump_southwest(
+warthog::corner_point_locator::jump_southwest(
 		std::vector<uint32_t>& jpoints,
 		std::vector<double>& costs)
 {
@@ -642,7 +642,7 @@ warthog::jps::corner_point_locator::jump_southwest(
 }
 
 void
-warthog::jps::corner_point_locator::__jump_southwest(
+warthog::corner_point_locator::__jump_southwest(
 		uint32_t& node_id, uint32_t& rnode_id, 
 		uint32_t goal_id, uint32_t rgoal_id,
 		uint32_t& jumpnode_id, double& jumpcost,
@@ -677,7 +677,7 @@ warthog::jps::corner_point_locator::__jump_southwest(
 }
 
 uint32_t 
-warthog::jps::corner_point_locator::mem()
+warthog::corner_point_locator::mem()
 {
     return sizeof(*this) + rmap_->mem();
 }

@@ -44,6 +44,8 @@ class down_distance_filter
         void
         compute();
 
+        bool
+        load_labels(const char* filename);
 
     private:
         std::vector<double>* ddist_;
@@ -51,8 +53,6 @@ class down_distance_filter
         std::vector<uint32_t>* rank_;
         uint32_t start_id_, last_id_;
 
-        void
-        load_down_distance_values(const char* filename);
 };
 
 }

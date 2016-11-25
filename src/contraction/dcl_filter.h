@@ -87,6 +87,9 @@ class dcl_filter
         void
         init(warthog::problem_instance* instance);
 
+        bool
+        load_labels(const char* filename);
+
 
     private:
         // vectors to store each label
@@ -99,8 +102,6 @@ class dcl_filter
         int32_t tx, ty;
         uint32_t target_lvl;
 
-        void
-        load_dcl_file(const char* filename);
 
 //        bool 
 //        dd_filter(uint32_t node_id, warthog::graph::edge* e, double g_value);

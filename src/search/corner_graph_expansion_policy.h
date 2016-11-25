@@ -27,9 +27,6 @@ namespace graph
 class corner_graph;
 }
 
-namespace jps
-{
-
 class corner_point_locator;
 class corner_graph_expansion_policy : public expansion_policy
 {
@@ -54,8 +51,6 @@ class corner_graph_expansion_policy : public expansion_policy
     private:
         warthog::graph::corner_graph* g_;
 };
-
-}
 
 }
 

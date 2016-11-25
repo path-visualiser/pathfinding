@@ -4,19 +4,19 @@
 #include "online_jump_point_locator2.h"
 #include "planar_graph.h"
 
-warthog::jps::corner_graph_expansion_policy::corner_graph_expansion_policy(
+warthog::corner_graph_expansion_policy::corner_graph_expansion_policy(
         warthog::graph::corner_graph* g) 
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
 }
 
-warthog::jps::corner_graph_expansion_policy::~corner_graph_expansion_policy()
+warthog::corner_graph_expansion_policy::~corner_graph_expansion_policy()
 {
 }
 
 void
-warthog::jps::corner_graph_expansion_policy::get_xy(
+warthog::corner_graph_expansion_policy::get_xy(
         warthog::search_node* n, int32_t& x, int32_t& y)
 {
     assert(n);
@@ -24,7 +24,7 @@ warthog::jps::corner_graph_expansion_policy::get_xy(
 }
 
 void 
-warthog::jps::corner_graph_expansion_policy::expand(
+warthog::corner_graph_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* problem)
 {
     reset();
@@ -40,7 +40,7 @@ warthog::jps::corner_graph_expansion_policy::expand(
 }
 
 size_t
-warthog::jps::corner_graph_expansion_policy::mem()
+warthog::corner_graph_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + sizeof(*this) + g_->mem();

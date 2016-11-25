@@ -10,7 +10,7 @@ warthog::graph::corner_graph::corner_graph(
 {
     g_ = std::shared_ptr<warthog::graph::planar_graph>(
             new warthog::graph::planar_graph());
-    cpl_ = new warthog::jps::corner_point_locator(gm.get());
+    cpl_ = new warthog::corner_point_locator(gm.get());
 
     e_lab_index_ = new std::vector<label_index>(g_->get_num_nodes());
 
@@ -32,7 +32,7 @@ warthog::graph::corner_graph::corner_graph(
         std::shared_ptr<warthog::graph::planar_graph> g)
 {
     g_ = g;
-    cpl_ = new warthog::jps::corner_point_locator(gm.get());
+    cpl_ = new warthog::corner_point_locator(gm.get());
 
     s_graph_id_ = t_graph_id_ = warthog::INF;
     e_lab_index_ = new std::vector<label_index>(g_->get_num_nodes());
@@ -201,7 +201,7 @@ warthog::graph::corner_graph::insert_start(
            graph_id = corner_iter->second;
         }
 
-        double weight = costs[i] * EDGE_COST_SCALE_FACTOR;
+        uint32_t weight = costs[i] * EDGE_COST_SCALE_FACTOR;
         s->add_outgoing(warthog::graph::edge(graph_id, weight, d));
     }
 }

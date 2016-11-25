@@ -29,18 +29,18 @@ all: dev
 
 .PHONY: fast
 fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
-fast: main ch
+fast: main 
 
 .PHONY: dev
 dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
-dev: main ch
+dev: main 
 
 .PHONY: profile
 profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES) 
 profile: main
 
-.PHONY: ch
-ch: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
+.PHONY: extras
+extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
 
 .PHONY: tags
 tags:
@@ -56,17 +56,18 @@ clean:
 .PHONY: main
 main: makedirs warthog 
 	@echo "linking..."
-	$(CC) warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) closure.cpp -o ./bin/closure -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/roadhog.cpp -o ./bin/roadhog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
-.PHONY: ch
-ch: makedirs warthog 
+.PHONY: extras
+extras: makedirs warthog 
 	@echo "linking..."
-	$(CC) ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) arclabels.cpp -o ./bin/arclabels -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) grid2dimacs.cpp -o ./bin/grid2dimacs -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/arclabels.cpp -o ./bin/arclabels -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/grid2dimacs.cpp -o ./bin/grid2dimacs -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/closure.cpp -o ./bin/closure -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: makedirs
 makedirs:

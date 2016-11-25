@@ -179,7 +179,7 @@ class corner_graph
     private:
         bool verbose_;
         std::shared_ptr<warthog::graph::planar_graph> g_;
-        warthog::jps::corner_point_locator* cpl_;
+        warthog::corner_point_locator* cpl_;
         
         // no copy ctor
         corner_graph(warthog::graph::corner_graph& other) : S_DUMMY_ID(0), T_DUMMY_ID(0) { }

@@ -125,6 +125,9 @@ class dimacs_parser
         void 
         print_undirected_unweighted_metis(std::ostream&);
 
+        inline std::string 
+        get_problemfile() { return problemfile_; }
+
     private:
         void init();
         bool load_co_file(std::istream& fdimacs);
@@ -133,6 +136,7 @@ class dimacs_parser
        std::vector<warthog::dimacs_parser::node>* nodes_;
        std::vector<warthog::dimacs_parser::edge>* edges_;
        std::vector<warthog::dimacs_parser::experiment>* experiments_;
+       std::string problemfile_;
 
 };
 

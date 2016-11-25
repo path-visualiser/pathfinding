@@ -3,16 +3,16 @@
 
 // search/chase_search.h
 //
-// An algorithm resembling CHASE. For theoretical details see
+// An algorithm resembling CHASE. For theoretical details see:
 //
-// NB: NOT FULLY IMPLEMENTED!! Only stalls nodes higher than 
-// some cutoff and resumes the search from these nodes if no
-// optimal path has been found.
-// 
 // [Bauer, Delling, Sanders, Schieferdecker, Schultes and Wagner, 
 // Combining Hierarchical and Goal-directed Speed-up Techniques 
 // for Dijkstra's Algorithm, Journal of Experimental Algorithms,
 // vol 15, 2010]
+//
+// NB: NOT FULLY IMPLEMENTED!! Only stalls nodes higher than 
+// some cutoff and resumes the search from these nodes if no
+// optimal path has been found.
 //
 // @author: dharabor
 // @created: 2016-09-10

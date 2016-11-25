@@ -30,9 +30,6 @@
 namespace warthog
 {
 
-namespace jps
-{
-
 class corner_point_locator
 {
 	public: 
@@ -191,8 +188,6 @@ class corner_point_locator
 		uint32_t current_node_id_;
 		uint32_t current_rnode_id_;
 };
-
-}
 
 }
 
