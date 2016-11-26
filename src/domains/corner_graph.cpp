@@ -48,12 +48,11 @@ warthog::graph::corner_graph::corner_graph(
     // map each graph node id to its corresponding grid id
     for(uint32_t graph_id = 0; graph_id < g_->get_num_nodes(); graph_id++)
     {
-        warthog::graph::node* n = g_->get_node(graph_id);
-        if(!n) { continue; } // skip padding at the start of the graph array
-
         int32_t x, y;
         g_->get_xy(graph_id, x, y);
-        assert(x != INT32_MAX && y != INT32_MAX);
+        if(x == INT32_MAX && y == INT32_MAX)
+        { continue; } // skip padding at the start of the graph array
+
         uint32_t gm_id = gm->to_padded_id(x, y);
         id_map_.insert(std::pair<uint32_t, uint32_t>(gm_id, graph_id));
     }

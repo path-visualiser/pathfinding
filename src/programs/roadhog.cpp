@@ -18,6 +18,8 @@
 #include "chafbb_expansion_policy.h"
 #include "constants.h"
 #include "contraction.h"
+#include "corner_graph.h"
+#include "cpg_expansion_policy.h"
 #include "dcl_filter.h"
 #include "dimacs_parser.h"
 #include "down_distance_filter.h"
@@ -64,7 +66,7 @@ help()
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tch, chase, chaf, chaf-bb\n"
+    << "\tch, chase, chaf, chaf-bb, ch-cpg\n"
     << "\tfch, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at runtime\n";
@@ -225,13 +227,128 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::ch::value_index_swap_dimacs(order);
 
     std::cerr << "preparing to search\n";
-    //warthog::zero_heuristic h;
+    warthog::zero_heuristic h;
+    //warthog::euclidean_heuristic h(&g);
+    warthog::ch_expansion_policy fexp(&g, &order);
+    warthog::ch_expansion_policy bexp (&g, &order, true);
+    warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+    //warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
+    alg.set_verbose(verbose);
+
+    std::cerr << "running experiments\n";
+    int i = 0;
+    std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+    for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+            it != parser.experiments_end(); it++)
+    {
+        warthog::dimacs_parser::experiment exp = (*it);
+        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+        std::cout << i++ <<"\t" << alg_name << "\t" 
+        << alg.get_nodes_expanded() << "\t" 
+        << alg.get_nodes_generated() << "\t"
+        << alg.get_nodes_touched() << "\t"
+        << alg.get_search_time()  << "\t"
+        << len << "\t" 
+        << gr << " " << parser.get_problemfile() << std::endl;
+    }
+}
+
+void
+run_ch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    if(orderfile == "")
+    {
+        std::cerr << "err; missing contraction order input file\n";
+        return;
+    }
+
+    // load up the graph 
+    warthog::graph::planar_graph g;
+    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
+
+    // load up the node order
+    std::vector<uint32_t> order;
+    warthog::ch::load_node_order(orderfile.c_str(), order);
+    warthog::ch::value_index_swap_dimacs(order);
+
+    std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(&g);
     warthog::ch_expansion_policy fexp(&g, &order);
     warthog::ch_expansion_policy bexp (&g, &order, true);
-    //warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
     warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
     alg.set_verbose(verbose);
+
+    std::cerr << "running experiments\n";
+    int i = 0;
+    std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+    for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+            it != parser.experiments_end(); it++)
+    {
+        warthog::dimacs_parser::experiment exp = (*it);
+        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+
+        std::cout << i++ <<"\t" << alg_name << "\t" 
+        << alg.get_nodes_expanded() << "\t" 
+        << alg.get_nodes_generated() << "\t"
+        << alg.get_nodes_touched() << "\t"
+        << alg.get_search_time()  << "\t"
+        << len << "\t" 
+        << gr << " " << parser.get_problemfile() << std::endl;
+    }
+}
+
+void
+run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    std::string gridmapfile = cfg.get_param_value("input");
+    if(!orderfile.compare(""))
+    {
+        std::cerr << "err; insufficient input params for alg " << alg_name 
+                  << ". required (in, order) "
+                  << "--input [ gr file ] [co file]"
+                  << " [contraction order file] [gridmap file]\n";
+        return;
+    }
+    
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load contraction order file\n";
+        return;
+    }
+
+    // we insert two extra elements in the event that we
+    // need to insert the start or target. both have the lowest
+    // possible rank in the hierarchy (0 and 1)
+    // NB: along the way we need to increase all ranks by 2 
+    for(uint32_t i = 0; i < order.size(); i++) order.at(i)+=2;
+    order.push_back(0);
+    order.push_back(1);
+
+    // load up the grid
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(gridmapfile.c_str()));
+            
+    // load up the graph 
+    std::shared_ptr<warthog::graph::planar_graph> pg(
+            new warthog::graph::planar_graph());
+    pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
+
+    // wrapper
+    warthog::graph::corner_graph cpg(map, pg);
+
+    // expander
+	warthog::zero_heuristic h;
+	warthog::ch::cpg_expansion_policy fexp(&cpg, &order);
+	warthog::ch::cpg_expansion_policy bexp(&cpg, &order, true);
+    warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+	alg.set_verbose(verbose);
 
     std::cerr << "running experiments\n";
     int i = 0;
@@ -1004,6 +1121,10 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_ch(cfg, parser, alg_name, gr, co);
     }
+    else if(alg_name == "ch-astar")
+    {
+        run_ch_astar(cfg, parser, alg_name, gr, co);
+    }
     else if(alg_name == "chase")
     {
         run_chase(cfg, parser, alg_name, gr, co);
@@ -1015,6 +1136,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "chaf-bb")
     {
         run_chaf_bb(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "ch-cpg")
+    {
+        run_ch_cpg(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch")
     {
@@ -1071,5 +1196,4 @@ main(int argc, char** argv)
 
     run_dimacs(cfg);
 }
-
 

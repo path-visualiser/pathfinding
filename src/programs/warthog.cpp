@@ -47,11 +47,15 @@ void
 help()
 {
 	std::cerr << "valid parameters:\n"
-	<< "\t--alg [astar | astar_wgm | jps_wgm | jps | jps2 | jps+ | jps2+ | jps | sssp ]\n"
+	<< "\t--alg []\n"
 	<< "\t--scen [scenario filename]\n"
 	<< "\t--gen [map filename] \n"
 	<< "\t--checkopt (optional)\n"
-	<< "\t--verbose (optional)\n";
+	<< "\t--verbose (optional)\n"
+    << "\nRecognised values for --alg:\n"
+    << "\tdijkstra, astar, astar_wgm, sssp\n"
+    << "\tjps, jps2, jps+, jps2+, jps, jps_wgm\n"
+    << "\tcpg, jpg\n";
 }
 
 void
@@ -271,6 +275,47 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
+	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
+	astar.set_verbose(verbose);
+
+
+	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
+	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+
+		int startid = exp->starty() * exp->mapwidth() + exp->startx();
+		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+		double len = astar.get_length(
+				map.to_padded_id(startid), 
+				map.to_padded_id(goalid));
+		if(len == warthog::INF)
+		{
+			len = 0;
+		}
+
+		std::cout << i<<"\t" << alg_name << "\t" 
+		<< astar.get_nodes_expanded() << "\t" 
+		<< astar.get_nodes_generated() << "\t"
+		<< astar.get_nodes_touched() << "\t"
+		<< astar.get_search_time()  << "\t"
+		<< len << "\t" 
+		<< scenmgr.last_file_loaded() << std::endl;
+
+		check_optimality(len, exp);
+	}
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
+run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::gridmap_expansion_policy expander(&map);
+	warthog::zero_heuristic heuristic;
+
+	warthog::flexible_astar<
+		warthog::zero_heuristic,
 	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
 	astar.set_verbose(verbose);
 
@@ -627,6 +672,11 @@ main(int argc, char** argv)
     else if(alg == "jps_wgm")
     {
         run_jps_wgm(scenmgr, alg);
+    }
+
+    else if(alg == "dijkstra")
+    {
+        run_dijkstra(scenmgr, alg); 
     }
 
     else if(alg == "astar")
