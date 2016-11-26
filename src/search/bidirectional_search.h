@@ -177,9 +177,9 @@ class bidirectional_search : public warthog::search
             // init
             this->reset_metrics();
             best_cost_ = warthog::INF;
-            tentative_ = true;
+            tentative_ = true; // can the best solution be improved?
             v_ = w_ = 0;
-            forward_next_ = true;
+            forward_next_ = false;
 
             #ifndef NDEBUG
             if(verbose_)
@@ -237,8 +237,7 @@ class bidirectional_search : public warthog::search
                 // terminate if we cannot improve the best solution so far.
                 // NB: bidirectional dijkstra stops when the two search 
                 // frontiers expand the same node; bidirectional A* stops 
-                // when the best bound (in either direction) is larger than 
-                // the best available solution
+                // when the best bound is larger than the best solution
                 if(best_bound > best_cost_ || (dijkstra_ && !tentative_)) 
                 {
 #ifndef NDEBUG
@@ -248,6 +247,7 @@ class bidirectional_search : public warthog::search
                             best_cost_ << std::endl;
                     }
 #endif
+                    break;
                 }
 
                 // ok, we still have hope. let's keep expanding. 
