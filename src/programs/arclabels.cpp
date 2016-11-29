@@ -1,9 +1,9 @@
 #include "apex_distance_filter.h"
+#include "af_filter.h"
 #include "afh_filter.h"
 #include "afhd_filter.h"
-#include "arcflags_filter.h"
 #include "bb_af_filter.h"
-#include "bbox_filter.h"
+#include "bb_filter.h"
 #include "cfg.h"
 #include "ch_expansion_policy.h"
 #include "dimacs_parser.h"
@@ -32,7 +32,7 @@ help()
 	std::cerr << "valid parameters:\n"
     << "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	<< "\t--order [order-of-contraction file]\n"
-    << "\t--type [downdist | arcflags | bbox | dcl | chaf | afh | afhd | bbaf ]\n"
+    << "\t--type [downdist | dcl | af | bb | bbaf | chaf | chbb | afh | afhd ]\n"
 	<< "\t--verbose (optional)\n";
 }
 
@@ -206,7 +206,7 @@ compute_apex_distance()
 }
 
 void
-compute_bbox_labels()
+compute_chbb_labels()
 {
     std::string grfile = cfg.get_param_value("dimacs");
     std::string cofile = cfg.get_param_value("dimacs");
@@ -226,7 +226,7 @@ compute_bbox_labels()
         warthog::ch::load_node_order(orderfile.c_str(), order, true);
 
         // compute down_distance
-        grfile.append(".bbox.arclabel");
+        grfile.append(".chbb.arclabel");
         uint32_t firstid = 0;
         uint32_t lastid = g.get_num_nodes();
         if(cfg.get_num_values("type") == 2)
@@ -247,8 +247,8 @@ compute_bbox_labels()
             grfile.append(".");
             grfile.append(std::to_string(lastid-1));
         }
-        warthog::bbox_filter filter(&g, &order);
-        filter.compute(firstid, lastid);
+        warthog::bb_filter filter(&g);
+        filter.compute_ch(firstid, lastid, &order);
         
         // save the result
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -269,9 +269,64 @@ compute_bbox_labels()
 }
 
 void
+compute_bb_labels()
+{
+    std::string grfile = cfg.get_param_value("dimacs");
+    std::string cofile = cfg.get_param_value("dimacs");
+    std::cerr << "param values " << std::endl;
+    std::string orderfile = cfg.get_param_value("order");
+    cfg.print_values("dimacs", std::cerr);
+
+    std::cerr << "grfile: "<< grfile << " cofile " << cofile << std::endl;
+
+    // load up (or create) the contraction hierarchy
+    warthog::graph::planar_graph g;
+    std::vector<uint32_t> order;
+
+    g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+    warthog::ch::load_node_order(orderfile.c_str(), order, true);
+
+    // compute down_distance
+    grfile.append(".bb.arclabel");
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes();
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid-1));
+    }
+    warthog::bb_filter filter(&g);
+    filter.compute(firstid, lastid);
+    
+    // save the result
+    std::cerr << "saving contracted graph to file " << grfile << std::endl;
+    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+    if(!out.good())
+    {
+        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+    }
+    filter.print(out);
+    out.close();
+    std::cerr << "all done!\n";
+}
+
+void
 compute_chaf_labels()
 {
-    std::cerr << "computing arcflags" << std::endl;
+    std::cerr << "computing ch arcflags " << std::endl;
     std::string grfile = cfg.get_param_value("dimacs");
     std::string cofile = cfg.get_param_value("dimacs");
     std::cerr << "param values " << std::endl;
@@ -286,14 +341,14 @@ compute_chaf_labels()
     std::vector<uint32_t> order;
     std::vector<uint32_t> part;
 
-    if(orderfile.compare("") != 0)
+    if(orderfile.compare("") != 0 && partfile.compare("") != 0)
     {
         g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
         warthog::ch::load_node_order(orderfile.c_str(), order, true);
         warthog::helpers::load_integer_labels_dimacs(partfile.c_str(), part);
 
         // output filename reflects the type and scope of the labeling
-        grfile.append(".af.arclabel");
+        grfile.append(".chaf.arclabel");
         uint32_t firstid = 0;
         uint32_t lastid = g.get_num_nodes();
         if(cfg.get_num_values("type") == 2)
@@ -316,8 +371,8 @@ compute_chaf_labels()
         }
 
         // compute down_distance
-        warthog::arcflags_filter filter(&g, &order, &part);
-        filter.compute(firstid, lastid);
+        warthog::af_filter filter(&g, &part);
+        filter.compute_ch(firstid, lastid, &order);
         
         // save the result
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -331,9 +386,71 @@ compute_chaf_labels()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "required params: --order [node order file] --part [graph partition]\n";
         return;
     }
+    std::cerr << "all done!\n";
+}
+
+void
+compute_af_labels()
+{
+    std::string grfile = cfg.get_param_value("dimacs");
+    std::string cofile = cfg.get_param_value("dimacs");
+    std::string partfile = cfg.get_param_value("part");
+
+    if( grfile == "" || cofile == "" || partfile == "")
+    {
+        std::cerr << "err; insufficient input parameters. required:\n "
+                  << " --dimacs [gr file] [co file] --part [graph partition file]\n";
+        return;
+    }
+    std::cerr << "computing arcflags" << std::endl;
+
+
+    // load up the graph
+    warthog::graph::planar_graph g;
+    g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+
+    // load up the partition info
+    std::vector<uint32_t> part;
+    warthog::helpers::load_integer_labels_dimacs(partfile.c_str(), part);
+
+    // output filename reflects the type and scope of the labeling
+    grfile.append(".af.arclabel");
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes();
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
+
+    warthog::af_filter filter(&g, &part);
+    filter.compute(firstid, lastid);
+    
+    // save the result
+    std::cerr << "saving contracted graph to file " << grfile << std::endl;
+    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+    if(!out.good())
+    {
+        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+    }
+    filter.print(out);
+    out.close();
     std::cerr << "all done!\n";
 }
 
@@ -572,7 +689,7 @@ int main(int argc, char** argv)
         exit(0);
     }
 
-    if(cfg.get_num_values("dimacs") != 2)
+    if(cfg.get_num_values("dimacs") < 2)
     {
         std::cerr << "insufficient values for param --dimacs (need gr and co files)\n";
         exit(0);
@@ -588,9 +705,15 @@ int main(int argc, char** argv)
     {
         compute_apex_distance();
     }
-    else if(arclabel.compare("bbox") == 0)
+    else if(arclabel.compare("chbb") == 0)
     {
-        compute_bbox_labels();
+        // faster precomputation when processing
+        // contraction hierarchies
+        compute_chbb_labels();
+    }
+    else if(arclabel.compare("bb") == 0)
+    {
+        compute_bb_labels();
     }
     else if(arclabel.compare("dcl") == 0)
     {
@@ -599,6 +722,10 @@ int main(int argc, char** argv)
     else if(arclabel.compare("chaf") == 0)
     {
         compute_chaf_labels();
+    }
+    else if(arclabel.compare("af") == 0)
+    {
+        compute_af_labels();
     }
     else if(arclabel.compare("afh") == 0)
     {

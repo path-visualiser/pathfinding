@@ -1,7 +1,7 @@
-#ifndef WARTHOG_FWD_CH_EXPANSION_POLICY_H
-#define WARTHOG_FWD_CH_EXPANSION_POLICY_H
+#ifndef WARTHOG_FCH_EXPANSION_POLICY_H
+#define WARTHOG_FCH_EXPANSION_POLICY_H
 
-// contraction/fwd_ch_expansion_policy.h
+// contraction/fch_expansion_policy.h
 //
 // An expansion policy for forward-driven
 // search in contraction hiearchies.
@@ -35,20 +35,20 @@ class planar_graph;
 
 class problem_instance;
 class search_node;
-class fwd_ch_expansion_policy : public expansion_policy
+class fch_expansion_policy : public expansion_policy
 {
     public:
-        fwd_ch_expansion_policy(
+        fch_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank);
 
-        ~fwd_ch_expansion_policy();
+        ~fch_expansion_policy();
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(warthog::search_node*, int32_t& x, int32_t& y);
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
         virtual inline size_t
         mem()

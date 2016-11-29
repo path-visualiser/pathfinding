@@ -17,7 +17,7 @@
 
 namespace warthog{
 
-class arcflags_filter;
+class af_filter;
 class problem_instance;
 class search_node;
 
@@ -39,7 +39,7 @@ class chaf_expansion_policy : public  expansion_policy
         // successors have a rank smaller than the current node 
         chaf_expansion_policy(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* rank, 
-                warthog::arcflags_filter* filter,
+                warthog::af_filter* filter,
                 bool backward=false,
                 warthog::ch::search_direction sd = warthog::ch::UP);
 
@@ -50,9 +50,9 @@ class chaf_expansion_policy : public  expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(warthog::search_node* n, int32_t& x, int32_t& y)
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y)
         {
-            g_->get_xy(n->get_id(), x, y);
+            g_->get_xy(node_id, x, y);
         }
 
         virtual size_t
@@ -63,7 +63,7 @@ class chaf_expansion_policy : public  expansion_policy
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* rank_;
         warthog::ch::search_direction sd_;
-        warthog::arcflags_filter* filter_;
+        warthog::af_filter* filter_;
         uint32_t search_id_;
 
         inline uint32_t

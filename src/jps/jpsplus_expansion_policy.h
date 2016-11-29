@@ -44,9 +44,9 @@ class jpsplus_expansion_policy : public expansion_policy
 		}
 
         virtual inline void
-        get_xy(warthog::search_node* n, int32_t& x, int32_t& y)
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y)
         {
-            map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
+            map_->to_unpadded_xy(node_id, (uint32_t&)x, (uint32_t&)y);
         }
 
 

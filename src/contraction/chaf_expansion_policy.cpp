@@ -1,4 +1,4 @@
-#include "arcflags_filter.h"
+#include "af_filter.h"
 #include "chaf_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
@@ -7,7 +7,7 @@
 warthog::chaf_expansion_policy::chaf_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank, 
-        warthog::arcflags_filter* filter,
+        warthog::af_filter* filter,
         bool backward,
         warthog::ch::search_direction sd)
     : expansion_policy(g->get_num_nodes())

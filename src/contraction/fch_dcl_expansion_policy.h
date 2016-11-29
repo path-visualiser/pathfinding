@@ -1,13 +1,14 @@
-#ifndef WARTHOG_FWD_CH_AF_EXPANSION_POLICY_H
-#define WARTHOG_FWD_CH_AF_EXPANSION_POLICY_H
+#ifndef WARTHOG_FCH_DCL_EXPANSION_POLICY
+#define WARTHOG_FCH_DCL_EXPANSION_POLICY
 
-// contraction/fwd_ch_af_expansion_policy.h
+// contraction/fch_dcl_expansion_policy.h
 //
-// Forward-driven search in contraction hiearchies using 
-// arc-flags to prune redundant up and down edges
+// An expansion policy for forward-driven
+// search in contraction hiearchies combined 
+// with a bounding-box filtering scheme
 //
 // @author: dharabor
-// @created: 2016-08-23
+// @created: 2016-08-02
 //
 
 #include "expansion_policy.h"
@@ -21,29 +22,32 @@ namespace graph
 class planar_graph;
 }
 
-class arcflags_filter;
 class problem_instance;
 class search_node;
-class fwd_ch_af_expansion_policy : public expansion_policy
+class euclidean_heuristic;
+class dcl_filter;
+
+class fch_dcl_expansion_policy : public expansion_policy
 {
     public:
-        fwd_ch_af_expansion_policy(
+        fch_dcl_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::arcflags_filter*);
+                warthog::dcl_filter* nf);
 
-        ~fwd_ch_af_expansion_policy();
+        ~fch_dcl_expansion_policy();
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(warthog::search_node*, int32_t& x, int32_t& y);
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
         void
         set_apex(uint32_t apex) 
         { 
             apex_ = apex; 
+            apex_reached_ = (apex == warthog::INF) ? true : false; 
         }
 
         virtual size_t
@@ -53,14 +57,12 @@ class fwd_ch_af_expansion_policy : public expansion_policy
                 sizeof(this);
         }
 
-
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
-        warthog::arcflags_filter* filter_;
-        uint32_t search_id_;
-        bool apex_reached_;
+        warthog::dcl_filter* nf_;
         uint32_t apex_;
+        bool apex_reached_;
 
         inline uint32_t
         get_rank(uint32_t id)

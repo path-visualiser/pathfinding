@@ -1,7 +1,7 @@
-#ifndef WARTHOG_FWD_CH_BBAF_EXPANSION_POLICY_H
-#define WARTHOG_FWD_CH_BBAF_EXPANSION_POLICY_H
+#ifndef WARTHOG_FCH_BBAF_EXPANSION_POLICY_H
+#define WARTHOG_FCH_BBAF_EXPANSION_POLICY_H
 
-// contraction/fwd_ch_bbaf_expansion_policy.h
+// contraction/fch_bbaf_expansion_policy.h
 //
 // Forward-driven search in contraction hiearchies using 
 // arc-flags + rectangular bounding boxes to prune redundant 
@@ -25,21 +25,21 @@ class planar_graph;
 class bb_af_filter;
 class problem_instance;
 class search_node;
-class fwd_ch_bbaf_expansion_policy : public expansion_policy
+class fch_bbaf_expansion_policy : public expansion_policy
 {
     public:
-        fwd_ch_bbaf_expansion_policy(
+        fch_bbaf_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank, 
                 warthog::bb_af_filter*);
 
-        ~fwd_ch_bbaf_expansion_policy();
+        ~fch_bbaf_expansion_policy();
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(warthog::search_node*, int32_t& x, int32_t& y);
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
         virtual size_t
         mem()

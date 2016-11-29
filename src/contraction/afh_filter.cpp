@@ -2,7 +2,7 @@
 #include "constants.h"
 #include "contraction.h"
 #include "flexible_astar.h"
-#include "fwd_ch_expansion_policy.h"
+#include "fch_expansion_policy.h"
 #include "planar_graph.h"
 #include "problem_instance.h"
 #include "zero_heuristic.h"

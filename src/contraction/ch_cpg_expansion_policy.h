@@ -1,7 +1,7 @@
-#ifndef WARTHOG_CPG_EXPANSION_POLICY_H
-#define WARTHOG_CPG_EXPANSION_POLICY_H
+#ifndef WARTHOG_CH_CPG_EXPANSION_POLICY_H
+#define WARTHOG_CH_CPG_EXPANSION_POLICY_H
 
-// contraction/cpg_expansion_policy.h
+// contraction/ch_cpg_expansion_policy.h
 //
 // An expansion policy for contraction hierarchies on 
 // top of corner point graphs.
@@ -12,7 +12,7 @@
 
 #include "contraction.h"
 #include "expansion_policy.h"
-#include "corner_graph.h"
+#include "corner_point_graph.h"
 
 #include <vector>
 
@@ -24,7 +24,7 @@ class search_node;
 namespace ch
 {
 
-class cpg_expansion_policy : public  expansion_policy
+class ch_cpg_expansion_policy : public  expansion_policy
 {
     public:
         // NB: @param rank: the contraction ordering used to create
@@ -40,21 +40,21 @@ class cpg_expansion_policy : public  expansion_policy
         // in the up graph all successors have a rank larger than the
         // current node (this is the default). in the down graph, all 
         // successors have a rank smaller than the current node 
-        cpg_expansion_policy(warthog::graph::corner_graph* g, 
+        ch_cpg_expansion_policy(warthog::graph::corner_point_graph* g, 
                 std::vector<uint32_t>* rank, 
                 bool backward=false,
                 warthog::ch::search_direction sd = warthog::ch::UP);
 
         virtual 
-        ~cpg_expansion_policy() { }
+        ~ch_cpg_expansion_policy() { }
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(warthog::search_node* n, int32_t& x, int32_t& y)
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y)
         {
-            g_->get_xy(n->get_id(), x, y);
+            g_->get_xy(node_id, x, y);
         }
 
         inline uint32_t
@@ -71,7 +71,7 @@ class cpg_expansion_policy : public  expansion_policy
 
     private:
         bool backward_;
-        warthog::graph::corner_graph* g_;
+        warthog::graph::corner_point_graph* g_;
         std::vector<uint32_t>* rank_;
         warthog::ch::search_direction sd_;
 

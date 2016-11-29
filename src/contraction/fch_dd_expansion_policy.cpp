@@ -1,12 +1,12 @@
 #include "contraction.h"
 #include "down_distance_filter.h"
 #include "euclidean_heuristic.h"
-#include "fwd_ch_dd_expansion_policy.h"
+#include "fch_dd_expansion_policy.h"
 #include "planar_graph.h"
 #include "search_node.h"
 #include "node_filter.h"
 
-warthog::fwd_ch_dd_expansion_policy::fwd_ch_dd_expansion_policy(
+warthog::fch_dd_expansion_policy::fch_dd_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank,
         warthog::down_distance_filter* nf,
@@ -18,12 +18,12 @@ warthog::fwd_ch_dd_expansion_policy::fwd_ch_dd_expansion_policy(
     heuristic_ = heuristic;
 }
 
-warthog::fwd_ch_dd_expansion_policy::~fwd_ch_dd_expansion_policy()
+warthog::fch_dd_expansion_policy::~fch_dd_expansion_policy()
 {
 }
 
 void
-warthog::fwd_ch_dd_expansion_policy::expand(
+warthog::fch_dd_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
@@ -81,9 +81,9 @@ warthog::fwd_ch_dd_expansion_policy::expand(
 }
 
 void
-warthog::fwd_ch_dd_expansion_policy::get_xy(
-        warthog::search_node* n, int32_t& x, int32_t& y)
+warthog::fch_dd_expansion_policy::get_xy(
+        uint32_t id, int32_t& x, int32_t& y)
 {
-    g_->get_xy(n->get_id(), x, y);
+    g_->get_xy(id, x, y);
 }
 

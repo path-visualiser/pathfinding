@@ -1,23 +1,28 @@
-#ifndef WARTHOG_ARCFLAGS_FILTER_H
-#define WARTHOG_ARCFLAGS_FILTER_H
+#ifndef WARTHOG_AF_FILTER_H
+#define WARTHOG_AF_FILTER_H
 
-// arcflags_filter.h
+// af_filter.h
 //
-// Given a partitioning of the graph, this class adds labels to every edge
-// indicating whether the edge appears on any optimal path from its tail node
-// to a any node in each partition. Each edge label is stored as a bitfield.
-// One bit per partition. The labels are used to filter nodes during search
-// as follows: if the edge used to reach a candidate node is not labeled
-// with a 1-value for the partition containing the goal node then the edge 
-// cannot possibly appear on any optimal path to the goal.
+// An arcflags filter. Works on regular graphs or contraction hierarchies.
+// The contraction hierarchy specialisation allows faster preprocessing by 
+// limiting the scope of each search; e.g. once a node is reached by following 
+// a down-arc the only successors which are generated and relaxed must also 
+// be reached by a down-arc.
 //
-// For theoretical details see:
+// For theoretical details relating to the basic arcflags technique see:
 //
 // [Fast Point-to-Point Shortest Path Computations with Arc-Flags,
 //  Ekkehard Ko ̈hler, Rolf H. Mo ̈hring, and Heiko Schilling,
 //  In The Shortest Path Problem: Ninth DIMACS Implementation Challenge, 
 //  Edited by Demetrescu, Camil and Goldberg, Andrew V. and Johnson, David S 
 //  pp 41-72, American Mathematical Society, 2009]
+//
+// For theoretical details on contraction hierarchies see:
+//
+// [Geisbergerger, Sanders, Schultes and Delling. 
+// Contraction Hierarchies: Faster and Simpler Hierarchical 
+// Routing in Road Networks. In Proceedings of the 2008
+// Workshop on Experimental Algorithms (WEA)]
 //
 // @author: dharabor
 // @created: 2016-08-16
@@ -41,23 +46,21 @@ class planar_graph;
 class problem_instance;
 class search_node;
 
-class arcflags_filter
+class af_filter
 {
     public:
         // @param g: the search graph
         // @param part: a partitioning of the graph nodes
-        arcflags_filter(
+        af_filter(
                 warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
-        arcflags_filter(
+        af_filter(
                 warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part,
                 const char* arcflags_file);
 
-        ~arcflags_filter();
+        ~af_filter();
 
         // return true if the ith edge of @param node_id
         // (as specified by @param edge_index) cannot possibly 
@@ -85,6 +88,12 @@ class arcflags_filter
         compute(uint32_t firstid, uint32_t lastid);
 
         void
+        compute_ch(std::vector<uint32_t>* rank);
+
+        void
+        compute_ch(uint32_t firstid, uint32_t lastid, std::vector<uint32_t>* rank);
+
+        void
         print(std::ostream& out);
 
         bool
@@ -94,7 +103,6 @@ class arcflags_filter
         uint32_t nparts_;
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* part_;
-        std::vector<uint32_t>* rank_;
         std::vector<std::vector<uint8_t*>> flags_;
 
         // sometimes we want to compute arcflags for just 
@@ -109,7 +117,6 @@ class arcflags_filter
         
         void 
         init(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
 };

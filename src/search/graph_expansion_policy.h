@@ -40,7 +40,7 @@ class graph_expansion_policy : public expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(warthog::search_node* n, int32_t& x, int32_t& y);
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
         inline void 
         set_filter(warthog::node_filter* filter) { nf_ = filter; }

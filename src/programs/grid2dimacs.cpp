@@ -1,4 +1,4 @@
-#include "corner_graph.h"
+#include "corner_point_graph.h"
 #include "gridmap.h"
 #include "planar_graph.h"
 #include "scenario_manager.h"
@@ -46,8 +46,8 @@ main(int argc, char** argv)
         std::shared_ptr<warthog::gridmap> 
             gm(new warthog::gridmap(gridfile));
 
-        std::shared_ptr<warthog::graph::corner_graph> 
-            cg(new warthog::graph::corner_graph(gm));
+        std::shared_ptr<warthog::graph::corner_point_graph> 
+            cg(new warthog::graph::corner_point_graph(gm));
 
         cg->print_dimacs_gr(std::cout);
         cg->print_dimacs_co(std::cout);

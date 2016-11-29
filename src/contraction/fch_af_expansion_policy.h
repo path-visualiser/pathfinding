@@ -1,14 +1,13 @@
-#ifndef WARTHOG_FWD_CH_BB_EXPANSION_POLICY
-#define WARTHOG_FWD_CH_BB_EXPANSION_POLICY
+#ifndef WARTHOG_FCH_AF_EXPANSION_POLICY_H
+#define WARTHOG_FCH_AF_EXPANSION_POLICY_H
 
-// contraction/fwd_ch_bb_expansion_policy.h
+// contraction/fch_af_expansion_policy.h
 //
-// An expansion policy for forward-driven
-// search in contraction hiearchies combined 
-// with a bounding-box filtering scheme
+// Forward-driven search in contraction hiearchies using 
+// arc-flags to prune redundant up and down edges
 //
 // @author: dharabor
-// @created: 2016-08-02
+// @created: 2016-08-23
 //
 
 #include "expansion_policy.h"
@@ -22,32 +21,29 @@ namespace graph
 class planar_graph;
 }
 
+class af_filter;
 class problem_instance;
 class search_node;
-class euclidean_heuristic;
-class bbox_filter;
-
-class fwd_ch_bb_expansion_policy : public expansion_policy
+class fch_af_expansion_policy : public expansion_policy
 {
     public:
-        fwd_ch_bb_expansion_policy(
+        fch_af_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::bbox_filter* nf);
+                warthog::af_filter*);
 
-        ~fwd_ch_bb_expansion_policy();
+        ~fch_af_expansion_policy();
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(warthog::search_node*, int32_t& x, int32_t& y);
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
         void
         set_apex(uint32_t apex) 
         { 
             apex_ = apex; 
-            apex_reached_ = (apex == warthog::INF) ? true : false; 
         }
 
         virtual size_t
@@ -57,12 +53,14 @@ class fwd_ch_bb_expansion_policy : public expansion_policy
                 sizeof(this);
         }
 
+
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
-        warthog::bbox_filter* nf_;
-        uint32_t apex_;
+        warthog::af_filter* filter_;
+        uint32_t search_id_;
         bool apex_reached_;
+        uint32_t apex_;
 
         inline uint32_t
         get_rank(uint32_t id)

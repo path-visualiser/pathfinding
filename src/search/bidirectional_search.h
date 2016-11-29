@@ -83,7 +83,7 @@ class bidirectional_search : public warthog::search
                 {
                     warthog::search_node* n = path.at(i);
                     int32_t x, y;
-                    fexpander_->get_xy(n, x, y);
+                    fexpander_->get_xy(n->get_id(), x, y);
                     if(&*n == &*apex)
                     {
                         std::cerr << "(apex)";
@@ -326,7 +326,7 @@ class bidirectional_search : public warthog::search
             if(verbose_)
             {
                 int32_t x, y;
-                expander->get_xy(current, x, y);
+                expander->get_xy(current->get_id(), x, y);
                 std::cerr << this->nodes_expanded_ << ". "
                     "expanding " << (instance_.get_goal() == tmp_goalid ? "(f)" : "(b)")
                     << " ("<<x<<", "<<y<<")...";
@@ -348,7 +348,7 @@ class bidirectional_search : public warthog::search
                     if(verbose_)
                     {
                         int32_t x, y;
-                        expander->get_xy(n, x, y);
+                        expander->get_xy(n->get_id(), x, y);
                         std::cerr << "  closed; (edgecost=" << cost_to_n << ") "
                             << "("<<x<<", "<<y<<")...";
                         n->print(std::cerr);
@@ -372,7 +372,7 @@ class bidirectional_search : public warthog::search
                         if(verbose_)
                         {
                             int32_t x, y;
-                            expander->get_xy(n, x, y);
+                            expander->get_xy(n->get_id(), x, y);
                             std::cerr << "  open; updating "
                                 << "(edgecost="<< cost_to_n<<") "
                                 << "("<<x<<", "<<y<<")...";
@@ -387,7 +387,7 @@ class bidirectional_search : public warthog::search
                         if(verbose_)
                         {
                             int32_t x, y;
-                            expander->get_xy(n, x, y);
+                            expander->get_xy(n->get_id(), x, y);
                             std::cerr << "  open; not updating "
                                 << "(edgecost=" << cost_to_n<< ") "
                                 << "("<<x<<", "<<y<<")...";
@@ -409,7 +409,7 @@ class bidirectional_search : public warthog::search
                     if(verbose_)
                     {
                         int32_t x, y;
-                        expander->get_xy(n, x, y);
+                        expander->get_xy(n->get_id(), x, y);
                         std::cerr << "  generating "
                             << "(edgecost=" << cost_to_n<<") " 
                             << "("<<x<<", "<<y<<")...";
@@ -437,7 +437,7 @@ class bidirectional_search : public warthog::search
                         if(verbose_)
                         {
                             int32_t x, y;
-                            expander->get_xy(current, x, y);
+                            expander->get_xy(current->get_id(), x, y);
                             std::cerr <<"new best solution!  cost=" << best_cost_<<std::endl;
                         }
                         #endif
@@ -449,7 +449,7 @@ class bidirectional_search : public warthog::search
             if(verbose_)
             {
                 int32_t x, y;
-                expander->get_xy(current, x, y);
+                expander->get_xy(current->get_id(), x, y);
                 std::cerr <<"closing ("<<x<<", "<<y<<")...";
                 current->print(std::cerr);
                 std::cerr << std::endl;

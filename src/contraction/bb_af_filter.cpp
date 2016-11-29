@@ -1,7 +1,7 @@
 #include "bb_af_filter.h"
 #include "constants.h"
 #include "flexible_astar.h"
-#include "fwd_ch_expansion_policy.h"
+#include "fch_expansion_policy.h"
 #include "planar_graph.h"
 #include "problem_instance.h"
 #include "zero_heuristic.h"
@@ -278,11 +278,11 @@ warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
         << "for all nodes in the id-range [" 
         << firstid_ << ", " << lastid_ << "]\n";
     warthog::zero_heuristic heuristic;
-    warthog::fwd_ch_expansion_policy expander(g_, rank_);
+    warthog::fch_expansion_policy expander(g_, rank_);
 
     warthog::flexible_astar<
         warthog::zero_heuristic,
-        warthog::fwd_ch_expansion_policy> dijkstra(&heuristic, &expander);
+        warthog::fch_expansion_policy> dijkstra(&heuristic, &expander);
 
     // need to keep track of the first edge on the way to the current node
     // (the solution is a bit hacky as we break the chain of backpointers 

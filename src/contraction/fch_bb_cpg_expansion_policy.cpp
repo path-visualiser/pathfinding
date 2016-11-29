@@ -1,29 +1,37 @@
 #include "contraction.h"
-#include "bbox_filter.h"
+#include "bb_filter.h"
 #include "euclidean_heuristic.h"
-#include "fwd_ch_bb_expansion_policy.h"
-#include "planar_graph.h"
+#include "fch_bb_cpg_expansion_policy.h"
+#include "corner_point_graph.h"
 #include "search_node.h"
 #include "node_filter.h"
 
-warthog::fwd_ch_bb_expansion_policy::fwd_ch_bb_expansion_policy(
-        warthog::graph::planar_graph* g, 
+warthog::fch_bb_cpg_expansion_policy::fch_bb_cpg_expansion_policy(
+        warthog::graph::corner_point_graph* g, 
         std::vector<uint32_t>* rank,
-        warthog::bbox_filter* nf)
+        warthog::bb_filter* nf)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
     nf_ = nf;
     apex_ = 0;
     apex_reached_ = false;
+
+    // we insert two extra elements in the event that we
+    // need to insert the start or target. both have the lowest
+    // possible rank in the hierarchy (0 and 1)
+    // NB: along the way we need to increase all ranks by 2 
+    for(uint32_t i = 0; i < rank_->size(); i++) rank_->at(i)+=2;
+    rank_->push_back(0);
+    rank_->push_back(1);
 }
 
-warthog::fwd_ch_bb_expansion_policy::~fwd_ch_bb_expansion_policy()
+warthog::fch_bb_cpg_expansion_policy::~fch_bb_cpg_expansion_policy()
 {
 }
 
 void
-warthog::fwd_ch_bb_expansion_policy::expand(
+warthog::fch_bb_cpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
@@ -88,9 +96,9 @@ warthog::fwd_ch_bb_expansion_policy::expand(
 }
 
 void
-warthog::fwd_ch_bb_expansion_policy::get_xy(
-        warthog::search_node* n, int32_t& x, int32_t& y)
+warthog::fch_bb_cpg_expansion_policy::get_xy(
+        uint32_t id, int32_t& x, int32_t& y)
 {
-    g_->get_xy(n->get_id(), x, y);
+    g_->get_xy(id, x, y);
 }
 

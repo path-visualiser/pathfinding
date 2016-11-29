@@ -97,7 +97,7 @@ class expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*) = 0;
 
         virtual void
-        get_xy(warthog::search_node*, int32_t& x, int32_t& y) = 0;
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y) = 0;
 
         // return a pointer to the memory allocated for node @param node_id
         // during search @param search_id. if the node was not generated 

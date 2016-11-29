@@ -84,8 +84,7 @@ warthog::wgridmap_expansion_policy::expand(warthog::search_node* current,
 }
 
 void
-warthog::wgridmap_expansion_policy::get_xy(warthog::search_node* n,
-        int32_t& x, int32_t& y)
+warthog::wgridmap_expansion_policy::get_xy(uint32_t id, int32_t& x, int32_t& y)
 {
-    map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
+    map_->to_unpadded_xy(id, (uint32_t&)x, (uint32_t&)y);
 }

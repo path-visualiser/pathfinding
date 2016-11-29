@@ -54,7 +54,7 @@ class jps_expansion_policy_wgm : public expansion_policy
 		}
 
         virtual void
-        get_xy(warthog::search_node*, int32_t& x, int32_t& y);
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
 	private:
 		warthog::weighted_gridmap* map_;

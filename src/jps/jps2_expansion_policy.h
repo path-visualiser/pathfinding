@@ -41,7 +41,7 @@ class jps2_expansion_policy : public expansion_policy
 		}
 
         virtual void
-        get_xy(warthog::search_node* n, int32_t& x, int32_t& y); 
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y); 
 
         // this function gets called whenever a successor node is relaxed. at that
         // point we set the node currently being expanded (==current) as the 

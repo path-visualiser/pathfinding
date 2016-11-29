@@ -1,30 +1,28 @@
-#include "arcflags_filter.h"
+#include "bb_af_filter.h"
 #include "contraction.h"
-#include "fwd_ch_af_expansion_policy.h"
+#include "fch_bbaf_expansion_policy.h"
 #include "planar_graph.h"
 #include "search_node.h"
 
-warthog::fwd_ch_af_expansion_policy::fwd_ch_af_expansion_policy(
+warthog::fch_bbaf_expansion_policy::fch_bbaf_expansion_policy(
         warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
-        warthog::arcflags_filter* filter)
+        warthog::bb_af_filter* filter)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
     filter_ = filter;
-    apex_ = warthog::INF;
-    apex_reached_ = false;
 }
 
-warthog::fwd_ch_af_expansion_policy::~fwd_ch_af_expansion_policy()
+warthog::fch_bbaf_expansion_policy::~fch_bbaf_expansion_policy()
 {
 }
 
 void
-warthog::fwd_ch_af_expansion_policy::expand(
+warthog::fch_bbaf_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    if(search_id_ != instance->get_searchid())
+    if(instance->get_searchid() != search_id_)
     {
         filter_->set_goal(instance->get_goal());
         search_id_ = instance->get_searchid();
@@ -50,10 +48,10 @@ warthog::fwd_ch_af_expansion_policy::expand(
         bool dn_succ = (get_rank(e.node_id_) < current_rank);
         if(up_travel || dn_succ)
         {
-            if(!filter_->filter(current_id, it - begin))
+            if(!filter_->filter(current_id, it - begin, dn_succ))
             {
-                // prune up successors above the apex
-                if(rank_->at(e.node_id_) > apex_) { continue; }
+                // prune down successors below the goal
+                if(dn_succ && rank_->at(e.node_id_) < rank_->at(instance->get_goal())) { continue; }
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
             }
         }
@@ -61,9 +59,9 @@ warthog::fwd_ch_af_expansion_policy::expand(
 }
 
 void
-warthog::fwd_ch_af_expansion_policy::get_xy(
-        warthog::search_node* n, int32_t& x, int32_t& y)
+warthog::fch_bbaf_expansion_policy::get_xy(
+        uint32_t id, int32_t& x, int32_t& y)
 {
-    g_->get_xy(n->get_id(), x, y);
+    g_->get_xy(id, x, y);
 }
 

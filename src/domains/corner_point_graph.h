@@ -1,9 +1,9 @@
-#ifndef WARTHOG_GRAPH_CORNER_GRAPH_H
-#define WARTHOG_GRAPH_CORNER_GRAPH_H
+#ifndef WARTHOG_GRAPH_CORNER_POINT_GRAPH_H
+#define WARTHOG_GRAPH_CORNER_POINT_GRAPH_H
 
-// domains/corner_graph.h
+// domains/corner_point_graph.h
 //
-// A corner_graph is wrapper around a planar graph created from a grid map.
+// A corner_point_graph is wrapper around a planar graph created from a grid map.
 // Typically the nodes of the wrapped graph are grid locations having 
 // two adjacent neighbours that are not co-visible. We refer to all such 
 // points as corner points.
@@ -40,7 +40,7 @@ class corner_point_locator;
 namespace graph
 {
 
-class corner_graph
+class corner_point_graph
 {
     // sometimes we want to label edges with grid-direction values
     // here we index the outgoing edges of each node in order to more 
@@ -50,21 +50,21 @@ class corner_graph
     {
         label_index()
         {
-            uint32_t num_labels = warthog::graph::corner_graph::NUM_LABELS;
+            uint32_t num_labels = warthog::graph::corner_point_graph::NUM_LABELS;
             for(uint32_t i = 0; i < num_labels; i++)
                 head_[i] = 0;
         }
 
-        warthog::graph::ECAP_T head_[warthog::graph::corner_graph::NUM_LABELS];
+        warthog::graph::ECAP_T head_[warthog::graph::corner_point_graph::NUM_LABELS];
     };
 
     public:
-        corner_graph(std::shared_ptr<warthog::gridmap> gm );
-        corner_graph(
+        corner_point_graph(std::shared_ptr<warthog::gridmap> gm );
+        corner_point_graph(
                 std::shared_ptr<warthog::gridmap> gm, 
                 std::shared_ptr<warthog::graph::planar_graph> g);
 
-        virtual ~corner_graph();
+        virtual ~corner_point_graph();
 
         inline void
         print_dimacs_gr(std::ostream& oss)
@@ -134,7 +134,7 @@ class corner_graph
         }
 
         // edges can be assigned one of a fixed number of labels
-        // (up to warthog::graph::corner_graph::NUM_LABELS)
+        // (up to warthog::graph::corner_point_graph::NUM_LABELS)
         // this function adds edges and indexes them by label type.
         warthog::graph::edge_iter
         add_labeled_outgoing_edge(
@@ -200,7 +200,7 @@ class corner_graph
         warthog::corner_point_locator* cpl_;
         
         // no copy ctor
-        corner_graph(warthog::graph::corner_graph& other) : S_DUMMY_ID(0), T_DUMMY_ID(0) { }
+        corner_point_graph(warthog::graph::corner_point_graph& other) : S_DUMMY_ID(0), T_DUMMY_ID(0) { }
 
         // below the line: variables and data structures and functions 
         // for connecting the start and target nodes to the rest of the graph

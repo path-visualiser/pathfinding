@@ -1,10 +1,10 @@
-#include "cpg_expansion_policy.h"
+#include "ch_cpg_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
 #include "search_node.h"
 
-warthog::ch::cpg_expansion_policy::cpg_expansion_policy(
-        warthog::graph::corner_graph* g, 
+warthog::ch::ch_cpg_expansion_policy::ch_cpg_expansion_policy(
+        warthog::graph::corner_point_graph* g, 
         std::vector<uint32_t>* rank, 
         bool backward,
         warthog::ch::search_direction sd)
@@ -14,10 +14,18 @@ warthog::ch::cpg_expansion_policy::cpg_expansion_policy(
     rank_ = rank;
     backward_ = backward;
     sd_ = sd;
+
+    // we insert two extra elements in the event that we
+    // need to insert the start or target. both have the lowest
+    // possible rank in the hierarchy (0 and 1)
+    // NB: along the way we need to increase all ranks by 2 
+    for(uint32_t i = 0; i < rank_->size(); i++) rank_->at(i)+=2;
+    rank_->push_back(0);
+    rank_->push_back(1);
 }
 
 void
-warthog::ch::cpg_expansion_policy::expand(warthog::search_node* current,
+warthog::ch::ch_cpg_expansion_policy::expand(warthog::search_node* current,
         warthog::problem_instance* problem)
 {
     reset();
@@ -57,7 +65,7 @@ warthog::ch::cpg_expansion_policy::expand(warthog::search_node* current,
 }
 
 size_t
-warthog::ch::cpg_expansion_policy::mem()
+warthog::ch::ch_cpg_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + 

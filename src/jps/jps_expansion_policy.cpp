@@ -53,8 +53,7 @@ warthog::jps_expansion_policy::expand(
 }
 
 void
-warthog::jps_expansion_policy::get_xy(
-        warthog::search_node* n, int32_t& x, int32_t& y)
+warthog::jps_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
 {
-    map_->to_unpadded_xy(n->get_id(), (uint32_t&)x, (uint32_t&)y);
+    map_->to_unpadded_xy(nid, (uint32_t&)x, (uint32_t&)y);
 }

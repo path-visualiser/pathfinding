@@ -1,8 +1,8 @@
 #include "jpg_expansion_policy.h"
-#include "corner_graph.h"
+#include "corner_point_graph.h"
 
 warthog::jps::jpg_expansion_policy::jpg_expansion_policy(
-        warthog::graph::corner_graph* g)
+        warthog::graph::corner_point_graph* g)
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
@@ -13,11 +13,9 @@ warthog::jps::jpg_expansion_policy::~jpg_expansion_policy()
 }
 
 void
-warthog::jps::jpg_expansion_policy::get_xy(
-        warthog::search_node* n, int32_t& x, int32_t& y)
+warthog::jps::jpg_expansion_policy::get_xy(uint32_t id, int32_t& x, int32_t& y)
 {
-    assert(n);
-    return g_->get_xy(n->get_id(), x, y);
+    return g_->get_xy(id, x, y);
 }
 
 void 
@@ -40,8 +38,8 @@ warthog::jps::jpg_expansion_policy::expand(
         // for all other nodes we need to compute the
         // travel direction from the parent
         int32_t px, py, x, y;
-        this->get_xy(current->get_parent(), px, py);
-        this->get_xy(current, x, y);
+        this->get_xy(graph_id, x, y);
+        this->get_xy(current->get_parent()->get_id(), px, py);
         warthog::jps::direction dir_c = 
             warthog::jps::compute_direction((uint32_t)px, (uint32_t)py, 
                     (uint32_t)x, (uint32_t)y);

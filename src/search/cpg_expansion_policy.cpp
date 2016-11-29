@@ -1,30 +1,28 @@
-#include "corner_graph.h"
-#include "corner_graph_expansion_policy.h"
+#include "corner_point_graph.h"
+#include "cpg_expansion_policy.h"
 #include "corner_point_locator.h"
 #include "online_jump_point_locator2.h"
 #include "planar_graph.h"
 
-warthog::corner_graph_expansion_policy::corner_graph_expansion_policy(
-        warthog::graph::corner_graph* g) 
+warthog::cpg_expansion_policy::cpg_expansion_policy(
+        warthog::graph::corner_point_graph* g) 
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
 }
 
-warthog::corner_graph_expansion_policy::~corner_graph_expansion_policy()
+warthog::cpg_expansion_policy::~cpg_expansion_policy()
 {
 }
 
 void
-warthog::corner_graph_expansion_policy::get_xy(
-        warthog::search_node* n, int32_t& x, int32_t& y)
+warthog::cpg_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
 {
-    assert(n);
-    g_->get_xy(n->get_id(), x, y);
+    g_->get_xy(nid, x, y);
 }
 
 void 
-warthog::corner_graph_expansion_policy::expand(
+warthog::cpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* problem)
 {
     reset();
@@ -40,7 +38,7 @@ warthog::corner_graph_expansion_policy::expand(
 }
 
 size_t
-warthog::corner_graph_expansion_policy::mem()
+warthog::cpg_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + sizeof(*this) + g_->mem();

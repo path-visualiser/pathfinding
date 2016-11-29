@@ -38,10 +38,9 @@ warthog::graph_expansion_policy::expand(
 }
 
 void
-warthog::graph_expansion_policy::get_xy(warthog::search_node* n, 
-        int32_t& x, int32_t& y)
+warthog::graph_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
 {
-    g_->get_xy(n->get_id(), x, y);
+    g_->get_xy(nid, x, y);
 }
 
 

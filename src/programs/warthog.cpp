@@ -9,8 +9,8 @@
 
 #include "cfg.h"
 #include "constants.h"
-#include "corner_graph.h"
-#include "corner_graph_expansion_policy.h"
+#include "corner_point_graph.h"
+#include "cpg_expansion_policy.h"
 #include "flexible_astar.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
@@ -502,8 +502,8 @@ run_jpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     std::shared_ptr<warthog::gridmap> map(
             new warthog::gridmap(scenmgr.get_experiment(0)->map().c_str()));
-    std::shared_ptr<warthog::graph::corner_graph> cpg(
-            new warthog::graph::corner_graph(map));
+    std::shared_ptr<warthog::graph::corner_point_graph> cpg(
+            new warthog::graph::corner_point_graph(map));
 	warthog::jps::jpg_expansion_policy expander(cpg.get());
 
 	warthog::octile_heuristic heuristic(map->width(), map->height());
@@ -555,15 +555,15 @@ run_cpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     std::shared_ptr<warthog::gridmap> map(
             new warthog::gridmap(scenmgr.get_experiment(0)->map().c_str()));
-    std::shared_ptr<warthog::graph::corner_graph> cpg(
-            new warthog::graph::corner_graph(map));
-	warthog::corner_graph_expansion_policy expander(cpg.get());
+    std::shared_ptr<warthog::graph::corner_point_graph> cpg(
+            new warthog::graph::corner_point_graph(map));
+	warthog::cpg_expansion_policy expander(cpg.get());
 
 	warthog::octile_heuristic heuristic(map->width(), map->height());
     heuristic.set_hscale(warthog::ONE);
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::corner_graph_expansion_policy> 
+	   	warthog::cpg_expansion_policy> 
             astar(&heuristic, &expander);
 	astar.set_verbose(verbose);
 

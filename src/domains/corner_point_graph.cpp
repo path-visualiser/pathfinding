@@ -1,11 +1,11 @@
 #include "constants.h"
-#include "corner_graph.h"
+#include "corner_point_graph.h"
 #include "corner_point_locator.h"
 #include "jps.h"
 
 typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
 
-warthog::graph::corner_graph::corner_graph(
+warthog::graph::corner_point_graph::corner_point_graph(
         std::shared_ptr<warthog::gridmap> gm)
 {
     g_ = std::shared_ptr<warthog::graph::planar_graph>(
@@ -27,7 +27,7 @@ warthog::graph::corner_graph::corner_graph(
     s_graph_id_ = t_graph_id_ = warthog::INF;
 }
 
-warthog::graph::corner_graph::corner_graph(
+warthog::graph::corner_point_graph::corner_point_graph(
         std::shared_ptr<warthog::gridmap> gm, 
         std::shared_ptr<warthog::graph::planar_graph> g)
 {
@@ -58,14 +58,14 @@ warthog::graph::corner_graph::corner_graph(
     }
 }
 
-warthog::graph::corner_graph::~corner_graph()
+warthog::graph::corner_point_graph::~corner_point_graph()
 {
     delete e_lab_index_;
     delete cpl_;
 }
 
 void
-warthog::graph::corner_graph::construct()
+warthog::graph::corner_point_graph::construct()
 {
     warthog::gridmap* gm = cpl_->get_map();
     warthog::gridmap* corner_map = cpl_->get_corner_map();
@@ -129,14 +129,14 @@ warthog::graph::corner_graph::construct()
 }
 
 void
-warthog::graph::corner_graph::get_xy(uint32_t graph_id, int32_t& x, int32_t& y)
+warthog::graph::corner_point_graph::get_xy(uint32_t graph_id, int32_t& x, int32_t& y)
 {
     g_->get_xy(graph_id, x, y);
 }
 
 
 void
-warthog::graph::corner_graph::insert(
+warthog::graph::corner_point_graph::insert(
         uint32_t start_grid_id, uint32_t target_grid_id)
 {
     // clear any previous insertion data
@@ -149,7 +149,7 @@ warthog::graph::corner_graph::insert(
 }
 
 void
-warthog::graph::corner_graph::insert_start(
+warthog::graph::corner_point_graph::insert_start(
         uint32_t start_grid_id, uint32_t target_grid_id)
 {
     id_map_iter myit = id_map_.find(start_grid_id);
@@ -206,7 +206,7 @@ warthog::graph::corner_graph::insert_start(
 }
 
 void
-warthog::graph::corner_graph::insert_target(
+warthog::graph::corner_point_graph::insert_target(
         uint32_t start_grid_id, uint32_t target_grid_id)
 {
     t_grid_id_ = target_grid_id;
@@ -257,7 +257,7 @@ warthog::graph::corner_graph::insert_target(
 }
 
 void
-warthog::graph::corner_graph::uninsert()
+warthog::graph::corner_point_graph::uninsert()
 {
     if(s_graph_id_ == S_DUMMY_ID)
     {
@@ -285,7 +285,7 @@ warthog::graph::corner_graph::uninsert()
 }
 
 size_t
-warthog::graph::corner_graph::mem()
+warthog::graph::corner_point_graph::mem()
 {
     size_t mem_sz = g_->mem() + cpl_->mem() + sizeof(*this);
     if(e_lab_index_)
@@ -296,7 +296,7 @@ warthog::graph::corner_graph::mem()
 }
 
 warthog::graph::edge_iter
-warthog::graph::corner_graph::add_labeled_outgoing_edge(
+warthog::graph::corner_point_graph::add_labeled_outgoing_edge(
         uint32_t node_id, warthog::graph::edge e, uint32_t label_id)
 {
     assert(label_id < NUM_LABELS);
