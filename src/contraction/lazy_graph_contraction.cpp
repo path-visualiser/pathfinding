@@ -208,7 +208,8 @@ warthog::ch::lazy_graph_contraction::witness_search(
 
     alg_->set_cost_cutoff(via_len);
     alg_->set_max_expansions_cutoff(ws_max_expansions_);
-    double witness_len = alg_->get_length(from_id, to_id);
+    double witness_len = alg_->get_length(
+            warthog::problem_instance(from_id, to_id));
     total_expansions_ += alg_->get_nodes_expanded();
     total_searches_++;
     return witness_len;

@@ -95,7 +95,8 @@ run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -130,7 +131,8 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -165,7 +167,8 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -195,8 +198,8 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, 
-                (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -244,7 +247,8 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -290,7 +294,8 @@ run_ch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -357,7 +362,8 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         cpg.insert(startid, targetid);
         startid = cpg.get_inserted_start_id();
         targetid = cpg.get_inserted_target_id();
-		double len = alg.get_length(startid, targetid);
+		double len = alg.get_length(warthog::problem_instance(
+                    startid, targetid));
         mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
@@ -399,7 +405,8 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -478,7 +485,8 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -556,7 +564,8 @@ run_chaf_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -606,8 +615,8 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, 
-                (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -683,7 +692,7 @@ run_fch_dd(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             std::set<uint32_t> tmp;
             for(uint32_t i = 0; i < order.size(); i++)
             {
-                warthog::search_node* n = fexp.get_ptr(i, alg.get_searchid());
+                warthog::search_node* n = fexp.get_ptr(i, alg.get_search_id());
                 if(n && order.at(n->get_id()) > apex)
                 { 
                     tmp.insert(n->get_id());
@@ -692,7 +701,7 @@ run_fch_dd(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
             for(uint32_t j = 0; j < order.size(); j++)
             {
-                warthog::search_node* n = fexp.get_ptr(j, alg.get_searchid());
+                warthog::search_node* n = fexp.get_ptr(j, alg.get_search_id());
                 warthog::search_node* m = n;
                 while(m)
                 {
@@ -719,7 +728,8 @@ run_fch_dd(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -802,7 +812,8 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -868,7 +879,8 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -946,7 +958,8 @@ run_fch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1022,7 +1035,7 @@ run_fch_dcl(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             std::set<uint32_t> tmp;
             for(uint32_t i = 0; i < order.size(); i++)
             {
-                warthog::search_node* n = fexp.get_ptr(i, alg.get_searchid());
+                warthog::search_node* n = fexp.get_ptr(i, alg.get_search_id());
                 if(n && order.at(n->get_id()) > apex)
                 { 
                     tmp.insert(n->get_id());
@@ -1031,7 +1044,7 @@ run_fch_dcl(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
             for(uint32_t j = 0; j < order.size(); j++)
             {
-                warthog::search_node* n = fexp.get_ptr(j, alg.get_searchid());
+                warthog::search_node* n = fexp.get_ptr(j, alg.get_search_id());
                 warthog::search_node* m = n;
                 while(m)
                 {
@@ -1058,7 +1071,8 @@ run_fch_dcl(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        double len = alg.get_length(exp.source, (exp.p2p ? exp.target : warthog::INF));
+        double len = alg.get_length(warthog::problem_instance(
+                    exp.source, (exp.p2p ? exp.target : warthog::INF)));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1136,7 +1150,8 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         cpg.insert(startid, targetid);
         startid = cpg.get_inserted_start_id();
         targetid = cpg.get_inserted_target_id();
-		double len = alg.get_length(startid, targetid);
+		double len = alg.get_length(warthog::problem_instance(
+                    startid, targetid));
         mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
@@ -1239,7 +1254,8 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         cpg.insert(startid, targetid);
         startid = cpg.get_inserted_start_id();
         targetid = cpg.get_inserted_target_id();
-		double len = alg.get_length(startid, targetid);
+		double len = alg.get_length(warthog::problem_instance(
+                    startid, targetid));
         mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
@@ -1320,7 +1336,8 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         cpg.insert(startid, targetid);
         startid = cpg.get_inserted_start_id();
         targetid = cpg.get_inserted_target_id();
-		double len = alg.get_length(startid, targetid);
+		double len = alg.get_length(warthog::problem_instance(
+                    startid, targetid));
         mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 

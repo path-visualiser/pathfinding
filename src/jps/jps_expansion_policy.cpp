@@ -31,7 +31,7 @@ warthog::jps_expansion_policy::expand(
 	// look for jump points in the direction of each natural 
 	// and forced neighbour
 	uint32_t succ_dirs = warthog::jps::compute_successors(dir_c, c_tiles);
-	uint32_t goal_id = problem->get_goal();
+	uint32_t goal_id = problem->get_target_id();
     //uint32_t search_id = problem->get_searchid();
 	for(uint32_t i = 0; i < 8; i++)
 	{

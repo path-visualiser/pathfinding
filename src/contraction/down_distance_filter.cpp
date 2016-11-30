@@ -102,7 +102,7 @@ warthog::down_distance_filter::compute(uint32_t startid, uint32_t endid)
     for(uint32_t i = startid; i < endid; i++)
     {
         std::cerr << "\rprogress: " << (i+1) << " / " << endid;
-        dijkstra.get_length(i, warthog::INF);
+        dijkstra.get_length(warthog::problem_instance(i, warthog::INF));
 
         // scan the closed list and get the max g-value
         double max = 0;

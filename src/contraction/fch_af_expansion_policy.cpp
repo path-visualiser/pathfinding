@@ -24,10 +24,10 @@ warthog::fch_af_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    if(search_id_ != instance->get_searchid())
+    if(search_id_ != instance->get_search_id())
     {
-        filter_->set_goal(instance->get_goal());
-        search_id_ = instance->get_searchid();
+        filter_->set_goal(instance->get_target_id());
+        search_id_ = instance->get_search_id();
     }
 
     warthog::search_node* pn = current->get_parent();

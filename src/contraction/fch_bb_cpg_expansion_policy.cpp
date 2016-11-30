@@ -68,7 +68,8 @@ warthog::fch_bb_cpg_expansion_policy::expand(
             // prune down successors before the apex is reached
             if(apex_ != warthog::INF && !apex_reached_) { continue; }
             // prune down successors below the goal
-            if(rank_->at(e.node_id_) < rank_->at(instance->get_goal())) { continue; }
+            if(rank_->at(e.node_id_) < rank_->at(instance->get_target_id())) 
+            { continue; }
 
             //std::cerr << " (D) ";
 

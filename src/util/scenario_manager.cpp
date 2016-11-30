@@ -1,5 +1,6 @@
-#include "scenario_manager.h"
 #include "flexible_astar.h"
+#include "scenario_manager.h"
+#include "problem_instance.h"
 
 #include <cstdlib>
 #include <string>
@@ -86,7 +87,8 @@ warthog::scenario_manager::generate_single_experiment(warthog::gridmap* map)
 	int id2_ = (raw_mapsize - ((rand() % window_size) + tail_offset)) % raw_mapsize;
 	int id1 = map->to_padded_id(id1_);
 	int id2 = map->to_padded_id(id2_);
-	double dist = astar.get_length(map->to_padded_id(id1), map->to_padded_id(id2));
+    warthog::problem_instance pi(map->to_padded_id(id1), map->to_padded_id(id2));
+	double dist = astar.get_length(pi);
 	double inf = warthog::INF;
 
 	if(dist == inf)

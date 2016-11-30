@@ -9,36 +9,60 @@ namespace warthog
 class problem_instance
 {
 	public:
-		problem_instance() :  goal_(0), start_(0)  { }
+        problem_instance(uint32_t startid, uint32_t targetid) :
+            start_id_(startid), target_id_(targetid), search_id_(0) { }
+        
+		problem_instance() :  start_id_(0), target_id_(0), search_id_(0) { }
+
 		~problem_instance() { } 
 
+		problem_instance(const warthog::problem_instance& other) 
+        { 
+            this->start_id_ = other.start_id_;
+            this->target_id_ = other.target_id_;
+            this->search_id_ = other.search_id_;
+        }
+
+		warthog::problem_instance& 
+		operator=(const warthog::problem_instance& other) 
+        { 
+            this->start_id_ = other.start_id_;
+            this->target_id_ = other.target_id_;
+            this->search_id_ = other.search_id_;
+            return *this; 
+        }
+
 		inline void
-		set_goal(uint32_t goal_id) { goal_ = goal_id; }
+		set_target_id(uint32_t target_id_id) { target_id_ = target_id_id; }
 
 		inline uint32_t
-		get_goal() { return goal_; }
+		get_target_id() { return target_id_; }
 
 		inline uint32_t
-		get_start() { return start_; }
+		get_start_id() { return start_id_; }
 
 		inline void
-		set_start(uint32_t start_id) { start_ = start_id; }
+		set_start_id(uint32_t start_id_id) { start_id_ = start_id_id; }
 
 		inline uint32_t
-		get_searchid() { return search_id_; } 
+		get_search_id() { return search_id_; } 
 
 		inline void
-		set_searchid(uint32_t search_id) { search_id_ = search_id; }
+		set_search_id(uint32_t search_id) { search_id_ = search_id; }
+
+        void
+        print(std::ostream& out)
+        {
+            out << "problem instance; start_id = " << start_id_ << " "
+                << " target_id " << target_id_ << " " << " search_id " 
+                << search_id_;
+        }
 
 	private:
-		uint32_t goal_;
-		uint32_t start_;
+		uint32_t start_id_;
+		uint32_t target_id_;
 		uint32_t search_id_;
 
-		// no copy
-		problem_instance(const warthog::problem_instance& other) { }
-		warthog::problem_instance& 
-		operator=(const warthog::problem_instance& other) { return *this; } 
 };
 
 }

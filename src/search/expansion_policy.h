@@ -28,14 +28,6 @@ class expansion_policy
         uint32_t
         get_nodes_pool_size() { return nodes_pool_size_; } 
        
-		// create a warthog::search_node object from a state description
-		// (in this case, an id)
-		inline warthog::search_node*
-		generate(uint32_t node_id)
-		{
-            return nodepool_->generate(node_id);
-		}
-
         inline void
         clear()
         {
@@ -93,20 +85,45 @@ class expansion_policy
             nodepool_->mem();
 		}
 
+        // the expand function is responsible for generating the 
+        // successors of a search node. each generated successor
+        // should be added to the list of neighbours via 
+        // ::add_neighbour
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*) = 0;
 
+        // these next two function are responsible for generating the 
+        // starting node and the target node. the simplest concrete
+        // implementation is to call ::generate. more sophisticated
+        // versions may be required; e.g. if online insertion of 
+        // start and target points is required
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi) 
+        { return generate(pi->get_start_id()); }
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi)
+        { return generate(pi->get_target_id()); }
+      
         virtual void
         get_xy(uint32_t node_id, int32_t& x, int32_t& y) = 0;
 
-        // return a pointer to the memory allocated for node @param node_id
-        // during search @param search_id. if the node was not generated 
-        // during this search, or if the id is invalid, return 0
+        // get a search_node memory pointer associated with @param node_id. 
+        // (value is null if @param node_id is bigger than nodes_pool_size_)
+		inline warthog::search_node*
+		generate(uint32_t node_id)
+		{
+            return nodepool_->generate(node_id);
+		}
+
+        // get the search_node memory pointer associated with @param node_id
+        // value is null if this node has not been previously allocated 
+        // or if node_id is bigger than nodes_pool_size_
         warthog::search_node*
         get_ptr(uint32_t node_id, uint32_t search_id)
         {
             warthog::search_node* tmp = nodepool_->get_ptr(node_id);
-            if(tmp && tmp->get_searchid() == search_id) 
+            if(tmp && tmp->get_search_id() == search_id) 
             {
                 return tmp;
             }
@@ -127,7 +144,7 @@ class expansion_policy
         // return the index associated with the successor ::n()
         inline uint32_t 
         get_current_successor_index() { return current_; }
-      
+
     private:
 
         struct neighbour_record

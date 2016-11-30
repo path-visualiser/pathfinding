@@ -26,10 +26,10 @@ warthog::chaf_expansion_policy::expand(warthog::search_node* current,
         warthog::problem_instance* problem)
 {
     reset();
-    if(problem->get_searchid() != search_id_)
+    if(problem->get_search_id() != search_id_)
     {
-        search_id_ = problem->get_searchid();
-        filter_->set_goal(problem->get_goal());
+        search_id_ = problem->get_search_id();
+        filter_->set_goal(problem->get_target_id());
     }
 
     uint32_t current_id = current->get_id();

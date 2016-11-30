@@ -58,21 +58,21 @@ class flexible_astar : public warthog::search
 		}
 
 		inline std::stack<uint32_t>
-		get_path(uint32_t startid, uint32_t goalid)
+		get_path(warthog::problem_instance pi)
 		{
+			warthog::search_node* target = search(pi);
 			std::stack<uint32_t> path;
-			warthog::search_node* goal = search(startid, goalid);
-			if(goal)
+			if(target)
 			{
 				// follow backpointers to extract the path
-				assert(goal->get_id() == goalid);
-				for(warthog::search_node* cur = goal;
+				assert(target->get_id() == pi.get_target_id());
+				for(warthog::search_node* cur = target;
 						cur != 0;
 					    cur = cur->get_parent())
                 {
 					path.push(cur->get_id());
 				}
-				assert(path.top() == startid);
+				assert(path.top() == pi.get_start_id());
 			}
 			//cleanup();
 			return path;
@@ -111,21 +111,21 @@ class flexible_astar : public warthog::search
 
         // no cleanup after search
 		double
-		get_length(uint32_t startid, uint32_t goalid)
+		get_length(warthog::problem_instance pi)
 		{
-			warthog::search_node* goal = search(startid, goalid);
+			warthog::search_node* target = search(pi);
 			double len = warthog::INF;
-			if(goal)
+			if(target)
 			{
-				assert(goal->get_id() == goalid);
-				len = goal->get_g();
+				assert(target->get_id() == pi.get_target_id());
+				len = target->get_g();
 			}
 
             #ifndef NDEBUG
 			if(verbose_)
 			{
 				std::stack<warthog::search_node*> path;
-				warthog::search_node* current = goal;
+				warthog::search_node* current = target;
 				while(current != 0)	
 				{
 					path.push(current);
@@ -149,7 +149,7 @@ class flexible_astar : public warthog::search
 		}
 
         // set a cost-cutoff to run a bounded-cost A* search.
-        // the search terminates when the goal is found or the f-cost 
+        // the search terminates when the target is found or the f-cost 
         // limit is reached.
         inline void
         set_cost_cutoff(double cutoff) { cost_cutoff_ = cutoff; }
@@ -158,7 +158,7 @@ class flexible_astar : public warthog::search
         get_cost_cutoff() { return cost_cutoff_; }
 
         // set a cutoff on the maximum number of node expansions.
-        // the search terminates when the goal is found or when
+        // the search terminates when the target is found or when
         // the limit is reached
         inline void
         set_max_expansions_cutoff(uint32_t cutoff) { exp_cutoff_ = cutoff; }
@@ -200,7 +200,7 @@ class flexible_astar : public warthog::search
 		operator=(const flexible_astar& other) { return *this; }
 
 		warthog::search_node*
-		search(uint32_t startid, uint32_t goalid)
+		search(warthog::problem_instance& instance)
 		{
             cleanup();
 			nodes_expanded_ = nodes_generated_ = 0;
@@ -210,33 +210,30 @@ class flexible_astar : public warthog::search
 			warthog::timer mytimer;
 			mytimer.start();
 
-			warthog::problem_instance instance;
-			instance.set_goal(goalid);
-			instance.set_start(startid);
-			instance.set_searchid(++(this->searchid_));
+			instance.set_search_id(++(this->searchid_));
 
 			#ifndef NDEBUG
 			if(verbose_)
 			{
-				std::cerr << "search: startid="<<startid<<" goalid=" <<goalid 
-                    << " (searchid: " << instance.get_searchid() 
+				std::cerr << "search: startid="<<instance.get_start_id()<<" targetid=" 
+                    <<instance.get_target_id() << " (searchid: " << instance.get_search_id()
                     << ")" << std::endl;
 			}
 			#endif
 
-			warthog::search_node* goal = 0;
-			warthog::search_node* start = expander_->generate(startid);
+			warthog::search_node* target = expander_->generate_target_node(&instance);
+			warthog::search_node* start = expander_->generate_start_node(&instance);
             int32_t sx, sy, gx, gy;
-            expander_->get_xy(startid, sx, sy);
-            expander_->get_xy(goalid, gx, gy);
-			start->init(instance.get_searchid(), 0, 0, 
+            expander_->get_xy(target->get_id(), sx, sy);
+            expander_->get_xy(target->get_id(), gx, gy);
+			start->init(instance.get_search_id(), 0, 0, 
                     heuristic_->h(sx, sy, gx, gy));
 			open_->push(start);
 
 			while(open_->size())
 			{
 				nodes_touched_++;
-				if(open_->peek()->get_id() == goalid)
+				if(open_->peek()->get_id() == target->get_id())
 				{
 					#ifndef NDEBUG
 					if(verbose_)
@@ -244,12 +241,12 @@ class flexible_astar : public warthog::search
 						int32_t x, y;
 						warthog::search_node* current = open_->peek();
                         expander_->get_xy(current->get_id(), x, y);
-						std::cerr << "goal found ("<<x<<", "<<y<<")...";
+						std::cerr << "target found ("<<x<<", "<<y<<")...";
 						current->print(std::cerr);
 						std::cerr << std::endl;
 					}
 					#endif
-					goal = open_->peek();
+					target = open_->peek();
 					break;
 				}
 
@@ -347,7 +344,7 @@ class flexible_astar : public warthog::search
 						double gval = current->get_g() + cost_to_n;
                         int32_t nx, ny;
                         expander_->get_xy(n->get_id(), nx, ny);
-                        n->init(instance.get_searchid(), current, 
+                        n->init(instance.get_search_id(), current, 
                             gval, gval + heuristic_->h(nx, ny, gx, gy));
                         
                         // but only if the node is not provably redundant
@@ -389,7 +386,7 @@ class flexible_astar : public warthog::search
             #ifndef NDEBUG
             if(verbose_)
             {
-                if(goal == 0) 
+                if(target == 0) 
                 {
                     std::cerr << "search failed; no solution exists " << std::endl;
                 }
@@ -398,7 +395,7 @@ class flexible_astar : public warthog::search
 
 			mytimer.stop();
 			search_time_ = mytimer.elapsed_time_micro();
-			return goal;
+			return target;
 		}
 
 		void

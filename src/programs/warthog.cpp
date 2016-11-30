@@ -111,9 +111,9 @@ run_jpsplus(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid));
+			   	map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -158,9 +158,9 @@ run_jps2plus(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid));
+			   	map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -205,9 +205,9 @@ run_jps2(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid));
+			   	map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -245,9 +245,9 @@ run_jps(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid));
+			   	map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -286,9 +286,9 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid), 
-				map.to_padded_id(goalid));
+				map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -327,9 +327,9 @@ run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid), 
-				map.to_padded_id(goalid));
+				map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -372,9 +372,9 @@ run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid), 
-				map.to_padded_id(goalid));
+				map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -411,7 +411,8 @@ run_wgm_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 		warthog::experiment* exp = scenmgr.get_experiment(i);
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		astar.get_length(map.to_padded_id(startid), warthog::INF);
+		astar.get_length(warthog::problem_instance(
+                    map.to_padded_id(startid), warthog::INF));
 
 		std::cout << i<<"\t" << alg_name << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -441,7 +442,8 @@ run_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 		warthog::experiment* exp = scenmgr.get_experiment(i);
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		astar.get_length(map.to_padded_id(startid), warthog::INF);
+		astar.get_length(warthog::problem_instance(
+                    map.to_padded_id(startid), warthog::INF));
 
 		std::cout << i<<"\t" << alg_name << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -476,9 +478,9 @@ run_jps_wgm(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
+		double len = astar.get_length(warthog::problem_instance(
 				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid));
+			   	map.to_padded_id(goalid)));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -528,7 +530,8 @@ run_jpg(warthog::scenario_manager& scenmgr, std::string alg_name)
         cpg->insert(startid, goalid);
         startid = cpg->get_inserted_start_id();
         goalid = cpg->get_inserted_target_id();
-		double len = astar.get_length(startid, goalid);
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
         mytimer.stop();
 
 		if(len == warthog::INF)
@@ -581,7 +584,8 @@ run_cpg(warthog::scenario_manager& scenmgr, std::string alg_name)
         cpg->insert(startid, goalid);
         startid = cpg->get_inserted_start_id();
         goalid = cpg->get_inserted_target_id();
-		double len = astar.get_length(startid, goalid);
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
         mytimer.stop();
 
 		if(len == warthog::INF)

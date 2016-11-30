@@ -273,7 +273,8 @@ warthog::af_filter::compute_ch(
         std::cerr << "\rprocessing node " << i << "; continues until node " 
             << (lastid_-firstid_) << "\r";
         uint32_t source_id = i + firstid_;
-        dijkstra.get_length(source_id, warthog::INF);
+        warthog::problem_instance pi(source_id, warthog::INF);
+        dijkstra.get_length(pi);
 
         // now we analyse the closed list to compute arc flags
         warthog::graph::node* source = g_->get_node(source_id);
@@ -368,7 +369,8 @@ warthog::af_filter::compute(uint32_t firstid, uint32_t lastid)
         std::cerr << "\rprocessing node " << i << "; continues until node " 
             << (lastid_-firstid_) << "\r";
         uint32_t source_id = i + firstid_;
-        dijkstra.get_length(source_id, warthog::INF);
+        warthog::problem_instance pi(source_id, warthog::INF);
+        dijkstra.get_length(pi);
 
         // now we analyse the closed list to compute arc flags
         warthog::graph::node* source = g_->get_node(source_id);

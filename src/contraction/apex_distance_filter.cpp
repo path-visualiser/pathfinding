@@ -136,7 +136,8 @@ warthog::apex_distance_filter::compute(
     for(uint32_t i = startid; i < endid; i++)
     {
         std::cerr << "\rprogress: " << (i+1) << " / " << endid;
-        dijkstra.get_length(i, warthog::INF);
+        warthog::problem_instance pi(i, warthog::INF);
+        dijkstra.get_length(pi);
         max_apex = 0;
         dijkstra.apply_to_closed(fn);
         apex_dist_->push_back(max_apex);

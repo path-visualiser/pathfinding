@@ -37,7 +37,7 @@ warthog::jps_expansion_policy_wgm::expand(
 
     // jump in the direction of each forced or natural neighbour, generating
     // any jump points we find.
-	uint32_t goal_id = problem->get_goal();
+	uint32_t goal_id = problem->get_target_id();
 	for(uint32_t i = 0; i < 8; i++)
 	{
 		warthog::jps::direction d = (warthog::jps::direction) (1 << i);

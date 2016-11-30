@@ -20,6 +20,8 @@
 // @created: 21/08/2012
 //
 
+#include "problem_instance.h"
+
 #include <iostream>
 #include <string>
 
@@ -73,6 +75,14 @@ class experiment
 
 		void
 		print(std::ostream& out);
+
+        warthog::problem_instance
+        get_instance()
+        {
+            return warthog::problem_instance(
+                    starty_ * mapwidth_ + startx_, 
+                    goaly_ * mapwidth_ + goalx_);
+        }
 
 	private:
 		unsigned int startx_, starty_, goalx_, goaly_;

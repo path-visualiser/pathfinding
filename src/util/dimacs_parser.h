@@ -10,6 +10,8 @@
 // @created: 2015-01-08
 //
 
+#include "problem_instance.h"
+
 #include <stdint.h>
 #include <vector>
 #include <fstream>
@@ -46,6 +48,10 @@ class dimacs_parser
             uint32_t source;
             uint32_t target;
             bool p2p; // true indicates point-to-point instance; else SSSP
+
+            warthog::problem_instance
+            get_instance() 
+            { return warthog::problem_instance(source, target); }
         };
 
 

@@ -46,7 +46,7 @@ class search_node
 		}
 
 		inline uint32_t
-		get_searchid()
+		get_search_id()
 		{
 			return searchid_;
 		}

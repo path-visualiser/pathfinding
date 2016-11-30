@@ -22,10 +22,10 @@ warthog::fch_bbaf_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    if(instance->get_searchid() != search_id_)
+    if(instance->get_search_id() != search_id_)
     {
-        filter_->set_goal(instance->get_goal());
-        search_id_ = instance->get_searchid();
+        filter_->set_goal(instance->get_target_id());
+        search_id_ = instance->get_search_id();
     }
 
     warthog::search_node* pn = current->get_parent();
@@ -51,7 +51,9 @@ warthog::fch_bbaf_expansion_policy::expand(
             if(!filter_->filter(current_id, it - begin, dn_succ))
             {
                 // prune down successors below the goal
-                if(dn_succ && rank_->at(e.node_id_) < rank_->at(instance->get_goal())) { continue; }
+                if(dn_succ && rank_->at(e.node_id_) < 
+                        rank_->at(instance->get_target_id())) 
+                { continue; }
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
             }
         }

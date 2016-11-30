@@ -47,7 +47,7 @@ class search
 		get_verbose() { return verbose_; }
 
         inline uint32_t
-        get_searchid () { return searchid_; }
+        get_search_id () { return searchid_; }
 
 		inline void
 		set_verbose(bool verbose) { verbose_ = verbose; } 

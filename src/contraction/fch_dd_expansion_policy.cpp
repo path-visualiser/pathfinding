@@ -48,7 +48,7 @@ warthog::fch_dd_expansion_policy::expand(
         if(nf_ && (get_rank(e.node_id_) < current_rank))
         {
             double ddist = nf_->get_down_distance(e.node_id_);
-            double hval = heuristic_->h(e.node_id_, instance->get_goal());
+            double hval = heuristic_->h(e.node_id_, instance->get_target_id());
             if(ddist >= hval)
             {
                 warthog::search_node* tmp = this->generate(e.node_id_);
