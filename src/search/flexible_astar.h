@@ -209,14 +209,18 @@ class flexible_astar : public warthog::search
 			warthog::timer mytimer;
 			mytimer.start();
 
+            // we keep an internal count of how many searches so far
+            // (this stuff is used for memory bookkeeping)
+			instance.set_search_id(++(this->searchid_));
+
+            // generate the start and goal 
 			warthog::search_node* target = 
                 expander_->generate_target_node(&instance);
 			warthog::search_node* start = 
                 expander_->generate_start_node(&instance);
 
-            // update the instance with internal ids and 
-            // search specific info
-			instance.set_search_id(++(this->searchid_));
+            // update the instance with internal ids 
+            // (this is just to make debugging easier)
             instance.set_start_id(start->get_id());
             instance.set_target_id(target->get_id());
 
