@@ -22,6 +22,7 @@ warthog::ch::ch_cpg_expansion_policy::ch_cpg_expansion_policy(
     for(uint32_t i = 0; i < rank_->size(); i++) rank_->at(i)+=2;
     rank_->push_back(0);
     rank_->push_back(1);
+    search_id_at_last_insert_ = warthog::INF;
 }
 
 void

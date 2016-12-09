@@ -113,7 +113,8 @@ void online_jps_test()
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(startid, goalid);
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -178,7 +179,8 @@ void flexible_astar_test()
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(startid, goalid);
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;

@@ -14,7 +14,7 @@ warthog::fch_bb_expansion_policy::fch_bb_expansion_policy(
 {
     rank_ = rank;
     nf_ = nf;
-    apex_ = 0;
+    apex_ = warthog::INF;
     apex_reached_ = false;
 }
 
@@ -59,6 +59,7 @@ warthog::fch_bb_expansion_policy::expand(
         {
             // prune down successors before the apex is reached
             if(apex_ != warthog::INF && !apex_reached_) { continue; }
+            
             // prune down successors below the goal
             if(rank_->at(e.node_id_) < rank_->at(instance->get_target_id())) 
             { continue; }

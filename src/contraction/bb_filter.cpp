@@ -278,7 +278,7 @@ void
 warthog::bb_filter::print(std::ostream& out)
 {
     out << "# Bounding box edge labels for the graph file \n"
-        << g_->get_filename() << "\n" 
+        << "# " << g_->get_filename() << "\n" 
         << "# Before printing labels are sorted by tail index. \n"
         << "# Ties are broken using the original input ordering \n"
         << "# (lower is better)\n";

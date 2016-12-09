@@ -313,7 +313,7 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 {
     std::string orderfile = cfg.get_param_value("input");
     std::string gridmapfile = cfg.get_param_value("input");
-    if(!orderfile.compare(""))
+    if(!orderfile.compare("") || !gridmapfile.compare(""))
     {
         std::cerr << "err; insufficient input params for alg " << alg_name 
                   << ". required (in, order) "
@@ -352,19 +352,14 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     std::cerr << "running experiments\n";
     int i = 0;
     std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
-    warthog::timer mytimer;
     for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
         uint32_t startid = map.get()->to_padded_id(exp.source);
         uint32_t targetid = map.get()->to_padded_id(exp.target);
-        cpg.insert(startid, targetid);
-        startid = cpg.get_inserted_start_id();
-        targetid = cpg.get_inserted_target_id();
 		double len = alg.get_length(warthog::problem_instance(
                     startid, targetid));
-        mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1136,7 +1131,6 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     alg.set_verbose(verbose);
 
     std::cerr << "running experiments\n";
-    warthog::timer mytimer;
     int i = 0;
     std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
     for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
@@ -1144,21 +1138,16 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     {
         warthog::dimacs_parser::experiment exp = (*it);
 
-        mytimer.start();
         uint32_t startid = map.get()->to_padded_id(exp.source);
         uint32_t targetid = map.get()->to_padded_id(exp.target);
-        cpg.insert(startid, targetid);
-        startid = cpg.get_inserted_start_id();
-        targetid = cpg.get_inserted_target_id();
 		double len = alg.get_length(warthog::problem_instance(
                     startid, targetid));
-        mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
         << alg.get_nodes_generated() << "\t"
         << alg.get_nodes_touched() << "\t"
-        << mytimer.elapsed_time_micro()  << "\t"
+        << alg.get_search_time()  << "\t"
         << len << "\t" 
         << gr << " " << parser.get_problemfile() << std::endl;
     }
@@ -1325,20 +1314,14 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     std::cerr << "running experiments\n";
     int i = 0;
     std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
-    warthog::timer mytimer;
     for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        mytimer.start();
         uint32_t startid = map.get()->to_padded_id(exp.source);
         uint32_t targetid = map.get()->to_padded_id(exp.target);
-        cpg.insert(startid, targetid);
-        startid = cpg.get_inserted_start_id();
-        targetid = cpg.get_inserted_target_id();
 		double len = alg.get_length(warthog::problem_instance(
                     startid, targetid));
-        mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 

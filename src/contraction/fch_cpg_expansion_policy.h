@@ -39,6 +39,12 @@ class fch_cpg_expansion_policy : public expansion_policy
         virtual void
         get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi);
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi);
+
         virtual inline size_t
         mem()
         {
@@ -47,6 +53,7 @@ class fch_cpg_expansion_policy : public expansion_policy
         }
 
     private:
+        uint32_t search_id_at_last_insert_;
         std::vector<uint32_t>* rank_;
         warthog::graph::corner_point_graph* g_;
 

@@ -50,6 +50,12 @@ class fch_bb_cpg_expansion_policy : public expansion_policy
             apex_reached_ = (apex == warthog::INF) ? true : false; 
         }
 
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi);
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi);
+
         virtual size_t
         mem()
         {
@@ -63,6 +69,7 @@ class fch_bb_cpg_expansion_policy : public expansion_policy
         warthog::bb_filter* nf_;
         uint32_t apex_;
         bool apex_reached_;
+        uint32_t search_id_at_last_insert_;
 
         inline uint32_t
         get_rank(uint32_t id)

@@ -74,7 +74,7 @@ class af_filter
         }
 
         void
-        set_goal(uint32_t goal_id) 
+        set_target(uint32_t goal_id) 
         { 
             uint32_t t_part = part_->at(goal_id);
             t_byte_ = t_part >> 3;

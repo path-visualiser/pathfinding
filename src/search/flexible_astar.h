@@ -117,7 +117,6 @@ class flexible_astar : public warthog::search
 			double len = warthog::INF;
 			if(target)
 			{
-				assert(target->get_id() == pi.get_target_id());
 				len = target->get_g();
 			}
 
@@ -210,7 +209,16 @@ class flexible_astar : public warthog::search
 			warthog::timer mytimer;
 			mytimer.start();
 
+			warthog::search_node* target = 
+                expander_->generate_target_node(&instance);
+			warthog::search_node* start = 
+                expander_->generate_start_node(&instance);
+
+            // update the instance with internal ids and 
+            // search specific info
 			instance.set_search_id(++(this->searchid_));
+            instance.set_start_id(start->get_id());
+            instance.set_target_id(target->get_id());
 
 			#ifndef NDEBUG
 			if(verbose_)
@@ -221,8 +229,7 @@ class flexible_astar : public warthog::search
 			}
 			#endif
 
-			warthog::search_node* target = expander_->generate_target_node(&instance);
-			warthog::search_node* start = expander_->generate_start_node(&instance);
+
             int32_t sx, sy, gx, gy;
             expander_->get_xy(target->get_id(), sx, sy);
             expander_->get_xy(target->get_id(), gx, gy);

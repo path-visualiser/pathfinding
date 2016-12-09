@@ -26,7 +26,7 @@ warthog::fch_af_expansion_policy::expand(
     reset();
     if(search_id_ != instance->get_search_id())
     {
-        filter_->set_goal(instance->get_target_id());
+        filter_->set_target(instance->get_target_id());
         search_id_ = instance->get_search_id();
     }
 

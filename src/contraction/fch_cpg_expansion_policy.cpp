@@ -25,6 +25,7 @@ warthog::fch_cpg_expansion_policy::init()
     for(uint32_t i = 0; i < rank_->size(); i++) rank_->at(i)+=2;
     rank_->push_back(0);
     rank_->push_back(1);
+    search_id_at_last_insert_ = warthog::INF;
 }
 
 void
@@ -63,3 +64,26 @@ warthog::fch_cpg_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
     g_->get_xy(nid, x, y);
 }
 
+warthog::search_node* 
+warthog::fch_cpg_expansion_policy::generate_start_node(
+        warthog::problem_instance* pi)
+{
+    if(pi->get_search_id() != search_id_at_last_insert_)
+    {
+        g_->insert(pi->get_start_id(), pi->get_target_id());
+        search_id_at_last_insert_ = pi->get_search_id();
+    }
+    return this->generate(g_->get_inserted_start_id());
+}
+
+warthog::search_node*
+warthog::fch_cpg_expansion_policy::generate_target_node(
+        warthog::problem_instance* pi)
+{
+    if(pi->get_search_id() != search_id_at_last_insert_)
+    {
+        g_->insert(pi->get_start_id(), pi->get_target_id());
+        search_id_at_last_insert_ = pi->get_search_id();
+    }
+    return this->generate(g_->get_inserted_target_id());
+}

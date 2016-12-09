@@ -72,7 +72,6 @@ class bb_filter
         uint32_t start_id_, last_id_;
         int32_t tx, ty;
         std::vector<std::vector<warthog::geom::rectangle>> labels_;
-
 };
 
 }

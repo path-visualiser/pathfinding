@@ -66,10 +66,33 @@ class ch_cpg_expansion_policy : public  expansion_policy
         inline uint32_t
         get_num_nodes() { return g_->get_num_nodes(); }
 
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi)
+        {
+            if(pi->get_search_id() != search_id_at_last_insert_)
+            {
+                g_->insert(pi->get_start_id(), pi->get_target_id());
+                search_id_at_last_insert_ = pi->get_search_id();
+            }
+            return this->generate(g_->get_inserted_start_id());
+        }
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi)
+        {
+            if(pi->get_search_id() != search_id_at_last_insert_)
+            {
+                g_->insert(pi->get_start_id(), pi->get_target_id());
+                search_id_at_last_insert_ = pi->get_search_id();
+            }
+            return this->generate(g_->get_inserted_target_id());
+        }
+
         virtual size_t
         mem();
 
     private:
+        uint32_t search_id_at_last_insert_;
         bool backward_;
         warthog::graph::corner_point_graph* g_;
         std::vector<uint32_t>* rank_;
