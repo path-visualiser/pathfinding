@@ -23,8 +23,7 @@ struct rectangle
 
     rectangle()
     { 
-        x1 = y1 = INT32_MAX;
-        x2 = y2 = INT32_MIN;
+        clear();
     }
 
     rectangle(int32_t x1, int32_t y1, int32_t x2, int32_t y2)
@@ -41,11 +40,14 @@ struct rectangle
         y2 = other.y2;
     }
 
-    int32_t
+    uint32_t
     get_width() { return x2 - x1; }
 
-    int32_t
+    uint32_t
     get_height() { return y2 - y1; }
+
+    uint32_t
+    get_area() { return (x2 - x1) * (y2 - y1); }
 
     void
     grow(int32_t x, int32_t y)
@@ -72,6 +74,18 @@ struct rectangle
     }
 
     bool 
+    intersects(warthog::geom::rectangle& r)
+    {
+        rectangle tmp(*this);
+        tmp.grow(r);
+        uint32_t bound = 
+            (this->get_width() + r.get_width()) *
+            (this->get_height() + r.get_height());
+        if(tmp.get_area() > bound) { return false; }
+        return true;
+    }
+
+    bool 
     is_valid() { return x2 >= x1 && y2 >= y1; }
 
     void
@@ -79,7 +93,14 @@ struct rectangle
     {
         out << " rect " << x1 << "\t" << y1 << "\t"
             << x2 << "\t" << y2 <<std::endl;
-        }
+    }
+
+    void
+    clear()
+    {
+        x1 = y1 = INT32_MAX;
+        x2 = y2 = INT32_MIN;
+    }
 };
 
 }

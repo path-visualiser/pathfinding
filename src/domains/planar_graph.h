@@ -25,15 +25,16 @@
 
 namespace warthog
 {
+class gridmap;
+
 namespace graph
 {
-
-class gridmap;
 class planar_graph
 {
 
     public:
         planar_graph();
+        planar_graph(warthog::gridmap* gm, bool store_incoming=true);
         planar_graph(warthog::graph::planar_graph& other);
         ~planar_graph();
 
@@ -186,6 +187,8 @@ class planar_graph
         size_t
         resize(uint32_t new_cap);
 
+        bool
+        grid2graph(warthog::gridmap*, bool);
 };
 
 }

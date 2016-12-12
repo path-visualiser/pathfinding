@@ -60,11 +60,22 @@ warthog::fch_bb_cpg_expansion_policy::expand(
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
 
+        // hacky fix:
+        // the target is inserted into the graph but not into 
+        // the filter. one way to get around this is to just
+        // generate the goal whenever we encounter it, ignoring the 
+        // filter altogether
+        if(e.node_id_ == instance->get_target_id())
+        {
+            this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            continue;
+        }
+
         // try to prune every down successor, regardless of 
         // wheter the parent was reached by an up edge or a
         // down edge
         bool down_succ = get_rank(e.node_id_) < current_rank;
-        if(down_succ && !nf_->filter__(current_id, (it - begin)))
+        if(down_succ && !filter(current_id, it - begin))
         {
             // prune down successors before the apex is reached
             if(apex_ != warthog::INF && !apex_reached_) { continue; }
@@ -125,5 +136,64 @@ warthog::fch_bb_cpg_expansion_policy::generate_target_node(
         g_->insert(pi->get_start_id(), pi->get_target_id());
         search_id_at_last_insert_ = pi->get_search_id();
     }
+
+    r_.clear();
+    if(g_->get_inserted_target_id() != g_->get_dummy_target_id())
+    {
+       int32_t my_x, my_y;
+       g_->get_xy(g_->get_inserted_target_id(), my_x, my_y);
+       r_.grow(my_x, my_y);
+    }
+    else
+    {
+        warthog::graph::node* target = 
+            g_->get_node(g_->get_inserted_target_id());
+        for( warthog::graph::edge_iter it = target->incoming_begin();
+             it != target->incoming_end(); it++ )
+        {
+           int32_t my_x, my_y;
+           g_->get_xy(it->node_id_, my_x, my_y);
+           r_.grow(my_x, my_y);
+        }
+    }
+
+//    proxy_xy_.clear();
+//    if(g_->get_inserted_target_id() != g_->get_dummy_target_id())
+//    {
+//       int32_t my_x, my_y;
+//       g_->get_xy(g_->get_inserted_target_id(), my_x, my_y);
+//       proxy_xy_.push_back(my_x);
+//       proxy_xy_.push_back(my_y);
+//    }
+//    else
+//    {
+//        warthog::graph::node* target = 
+//            g_->get_node(g_->get_inserted_target_id());
+//        for( warthog::graph::edge_iter it = target->incoming_begin();
+//             it != target->incoming_end(); it++ )
+//        {
+//           int32_t my_x, my_y;
+//           g_->get_xy(it->node_id_, my_x, my_y);
+//           proxy_xy_.push_back(my_x);
+//           proxy_xy_.push_back(my_y);
+//        }
+//    }
+//
     return this->generate(g_->get_inserted_target_id());
+}
+
+bool
+warthog::fch_bb_cpg_expansion_policy::filter(
+        uint32_t node_id, uint32_t edge_id)
+{
+    warthog::geom::rectangle rect = 
+    nf_->get_label(node_id, edge_id);
+    return r_.intersects(rect) == 0;
+
+    //bool retval = 0;
+    //for(uint32_t i = 0; i < proxy_xy_.size(); i+=2)
+    //{
+    //    retval |= rect.contains(proxy_xy_.at(i), proxy_xy_.at(i+1));
+    //}
+    //return retval == 0;
 }

@@ -67,6 +67,12 @@ class bb_filter
         bool
         load_labels(const char* filename);
 
+        warthog::geom::rectangle
+        get_label(uint32_t node_id, uint32_t edge_id)
+        {
+            return labels_.at(node_id).at(edge_id);
+        }
+
     private:
         warthog::graph::planar_graph* g_;
         uint32_t start_id_, last_id_;

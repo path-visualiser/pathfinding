@@ -1304,6 +1304,8 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     warthog::euclidean_heuristic h(pg.get());
+    h.set_hscale(warthog::ONE);
+
     warthog::fch_bb_cpg_expansion_policy fexp(&cpg, &order, &filter);
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 

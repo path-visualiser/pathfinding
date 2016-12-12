@@ -70,12 +70,17 @@ class fch_bb_cpg_expansion_policy : public expansion_policy
         uint32_t apex_;
         bool apex_reached_;
         uint32_t search_id_at_last_insert_;
+        std::vector<uint32_t> proxy_xy_;
+        warthog::geom::rectangle r_;
 
         inline uint32_t
         get_rank(uint32_t id)
         {
             return rank_->at(id);
         }
+
+        bool
+        filter(uint32_t node_id, uint32_t edge_id);
 };
 }
 
