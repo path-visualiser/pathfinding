@@ -12,43 +12,46 @@
 #include "bb_filter.h"
 #include "bidirectional_search.h"
 #include "cfg.h"
-#include "chase_search.h"
 #include "ch_expansion_policy.h"
 #include "chaf_expansion_policy.h"
 #include "chafbb_expansion_policy.h"
+#include "chase_search.h"
 #include "constants.h"
 #include "contraction.h"
 #include "corner_point_graph.h"
-#include "ch_cpg_expansion_policy.h"
 #include "dcl_filter.h"
 #include "dimacs_parser.h"
 #include "down_distance_filter.h"
 #include "dummy_filter.h"
 #include "euclidean_heuristic.h"
+#include "fch_af_expansion_policy.h"
+#include "fch_bb_expansion_policy.h"
+#include "fch_bbaf_expansion_policy.h"
+#include "fch_dcl_expansion_policy.h"
+#include "fch_dd_expansion_policy.h"
+#include "fch_expansion_policy.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
-#include "fch_expansion_policy.h"
-#include "fch_af_expansion_policy.h"
-#include "fch_bbaf_expansion_policy.h"
-#include "fch_dd_expansion_policy.h"
-#include "fch_bb_expansion_policy.h"
-#include "fch_dcl_expansion_policy.h"
-#include "fch_bb_cpg_expansion_policy.h"
-#include "fch_cpg_expansion_policy.h"
 #include "graph_expansion_policy.h"
 #include "lazy_graph_contraction.h"
 #include "planar_graph.h"
 #include "timer.h"
 #include "zero_heuristic.h"
 
+// stuff for searching corner point graphs
+#include "ch_cpg_expansion_policy.h"
+#include "fch_af_cpg_expansion_policy.h"
+#include "fch_bb_cpg_expansion_policy.h"
+#include "fch_cpg_expansion_policy.h"
+
 #include "getopt.h"
 
 #include <fstream>
 #include <functional>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 #include <tr1/unordered_map>
-#include <memory>
 
 // check computed solutions are optimal
 int checkopt = 0;
@@ -458,7 +461,7 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the arc-flags
     warthog::af_filter filter(&g, &part);
-    if(!filter.load_arcflags_file(arclabels_file.c_str()))
+    if(!filter.load_labels(arclabels_file.c_str()))
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
@@ -786,7 +789,7 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the arc-flags
     warthog::af_filter filter(&g, &part);
-    if(!filter.load_arcflags_file(arclabels_file.c_str()))
+    if(!filter.load_labels(arclabels_file.c_str()))
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
@@ -1211,25 +1214,24 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the arc-flags
     warthog::af_filter filter(pg.get(), &part);
-    if(!filter.load_arcflags_file(arclabels_file.c_str()))
+    if(!filter.load_labels(arclabels_file.c_str()))
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
 
     // expander
-    warthog::fch_af_expansion_policy fexp(pg.get(), &order, &filter);
+    warthog::fch_af_cpg_expansion_policy fexp(&cpg, &order, &filter);
 
     // heuristic 
     warthog::euclidean_heuristic h(pg.get());
     h.set_hscale(warthog::ONE);
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_af_expansion_policy> alg(&h, &fexp);
+        warthog::fch_af_cpg_expansion_policy> alg(&h, &fexp);
     alg.set_verbose(verbose);
 
     std::cerr << "running experiments\n";
-    warthog::timer mytimer;
     int i = 0;
     std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
     for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
@@ -1237,21 +1239,16 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     {
         warthog::dimacs_parser::experiment exp = (*it);
 
-        mytimer.start();
         uint32_t startid = map.get()->to_padded_id(exp.source);
         uint32_t targetid = map.get()->to_padded_id(exp.target);
-        cpg.insert(startid, targetid);
-        startid = cpg.get_inserted_start_id();
-        targetid = cpg.get_inserted_target_id();
 		double len = alg.get_length(warthog::problem_instance(
                     startid, targetid));
-        mytimer.stop();
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
         << alg.get_nodes_generated() << "\t"
         << alg.get_nodes_touched() << "\t"
-        << mytimer.elapsed_time_micro()  << "\t"
+        << alg.get_search_time()  << "\t"
         << len << "\t" 
         << gr << " " << parser.get_problemfile() << std::endl;
     }

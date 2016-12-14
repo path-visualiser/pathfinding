@@ -96,6 +96,7 @@ warthog::bb_filter::compute(uint32_t startid, uint32_t endid)
                 }
             };
     dijkstra.apply_on_relax(relax_fn);
+    dijkstra.set_verbose(true);
 
     for(uint32_t i = 0; i < ((last_id_ - start_id_)+1); i++)
     {
@@ -283,7 +284,7 @@ warthog::bb_filter::print(std::ostream& out)
         << "# Ties are broken using the original input ordering \n"
         << "# (lower is better)\n";
     out << "firstnode " << start_id_ << " lastnode " << last_id_ << "\n";
-    for(uint32_t i = start_id_; i <= last_id_; i++)
+    for(uint32_t i = 0; i < labels_.size(); i++)
     {
         std::vector<warthog::geom::rectangle> vrect = labels_.at(i);
         for(uint32_t j = 0; j < vrect.size(); j++)

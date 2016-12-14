@@ -24,7 +24,7 @@ warthog::af_filter::af_filter(
         const char* arcflags_file)
 {
     init(g, part);
-    load_arcflags_file(arcflags_file);
+    load_labels(arcflags_file);
 }
 
 warthog::af_filter::~af_filter()
@@ -66,7 +66,7 @@ warthog::af_filter::init(
     assert(*id_set.rbegin() == (nparts_-1));
 
     bytes_per_label_ = nparts_ / 8;
-    if((nparts_ & 7) > 0)
+    if((nparts_ % 8) > 0)
     {
         bytes_per_label_++;
     }
@@ -102,8 +102,9 @@ warthog::af_filter::print(std::ostream& out)
         << " partitions " << nparts_ << std::endl;
 
     // we split labels into 64bit words for printing
-    uint32_t words_per_label = bytes_per_label_ / 8;
-    if((bytes_per_label_ % 8) > 0) words_per_label++;
+    const uint32_t word_sz = sizeof(uint64_t);
+    uint32_t words_per_label = bytes_per_label_ / word_sz;
+    if((bytes_per_label_ % word_sz) > 0) words_per_label++;
 
     // iterate over the labels for each outgoing arc of each node
     for(uint32_t i = firstid_; i <= lastid_; i++)
@@ -114,13 +115,13 @@ warthog::af_filter::print(std::ostream& out)
             uint8_t* label = node_flags.at(j);
             for(uint32_t word = 0; word < words_per_label; word++)
             {
-                uint8_t printed_word[8];
-                for(uint32_t k = 0; k < 8; k++)
+                uint8_t printed_word[word_sz];
+                for(uint32_t k = 0; k < word_sz; k++)
                 {
                     // read the label, byte by byte, one word at a time
-                    if((word*8+k) < bytes_per_label_)
+                    if((word*word_sz+k) < bytes_per_label_)
                     {
-                        printed_word[k] = label[word*8+k];
+                        printed_word[k] = label[word*word_sz+k];
                     }
                     // pad the last word with leading zeroes if necessary
                     else
@@ -137,7 +138,7 @@ warthog::af_filter::print(std::ostream& out)
 }
 
 bool
-warthog::af_filter::load_arcflags_file(const char* filename)
+warthog::af_filter::load_labels(const char* filename)
 {
     std::cerr << "loading arcflags file\n";
     std::ifstream ifs(filename);
@@ -191,8 +192,8 @@ warthog::af_filter::load_arcflags_file(const char* filename)
     }
 
     // read labels for each outgoing arc
-    uint32_t words_per_label = (bytes_per_label_ / 8);
-    if((bytes_per_label_ % 8) != 0) { bytes_per_label_++; }
+    const uint32_t word_sz = sizeof(uint64_t);
+    uint32_t words_per_label = ceil(bytes_per_label_ / (double)word_sz);
     for(uint32_t i = firstid_; i < (lastid_+1); i++)
     {
         warthog::graph::node* n = g_->get_node(i);
@@ -207,10 +208,12 @@ warthog::af_filter::load_arcflags_file(const char* filename)
                     return false;
                 }
 
-                uint64_t label;
+                uint64_t label = 0;
                 ifs >> label;
-                *((uint64_t*)&flags_.at(i).at(j)[word*8]) = label;
-                assert(*((uint64_t*)&flags_.at(i).at(j)[word*8])
+                //std::cout << "node " << i << " arc " << j << 
+                //" label " << label << std::endl;
+                *((uint64_t*)&flags_.at(i).at(j)[word*word_sz]) = label;
+                assert(*((uint64_t*)&flags_.at(i).at(j)[word*word_sz])
                             == label);
             }
         }

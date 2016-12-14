@@ -65,7 +65,7 @@ warthog::fch_bb_cpg_expansion_policy::expand(
         // the filter. one way to get around this is to just
         // generate the goal whenever we encounter it, ignoring the 
         // filter altogether
-        if(e.node_id_ == instance->get_target_id())
+        if(e.node_id_ == g_->get_inserted_target_id())
         {
             this->add_neighbour(this->generate(e.node_id_), e.wt_);
             continue;

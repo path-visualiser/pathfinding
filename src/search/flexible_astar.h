@@ -213,16 +213,21 @@ class flexible_astar : public warthog::search
             // (this stuff is used for memory bookkeeping)
 			instance.set_search_id(++(this->searchid_));
 
-            // generate the start and goal 
-			warthog::search_node* target = 
-                expander_->generate_target_node(&instance);
-			warthog::search_node* start = 
-                expander_->generate_start_node(&instance);
-
-            // update the instance with internal ids 
+            // generate the start and goal. then
+            // update the instance with their internal ids 
             // (this is just to make debugging easier)
+			warthog::search_node* start;
+            if(instance.get_start_id() == warthog::INF) { return 0; }
+            start = expander_->generate_start_node(&instance);
             instance.set_start_id(start->get_id());
-            instance.set_target_id(target->get_id());
+
+			warthog::search_node* target = 0;
+            if(instance.get_target_id() != warthog::INF)
+            { 
+                target = expander_->generate_target_node(&instance); 
+                instance.set_target_id(target->get_id());
+            }
+
 
 			#ifndef NDEBUG
 			if(verbose_)
@@ -235,8 +240,8 @@ class flexible_astar : public warthog::search
 
 
             int32_t sx, sy, gx, gy;
-            expander_->get_xy(target->get_id(), sx, sy);
-            expander_->get_xy(target->get_id(), gx, gy);
+            expander_->get_xy(instance.get_start_id(), sx, sy);
+            expander_->get_xy(instance.get_target_id(), gx, gy);
 			start->init(instance.get_search_id(), 0, 0, 
                     heuristic_->h(sx, sy, gx, gy));
 			open_->push(start);
@@ -244,7 +249,7 @@ class flexible_astar : public warthog::search
 			while(open_->size())
 			{
 				nodes_touched_++;
-				if(open_->peek()->get_id() == target->get_id())
+				if(open_->peek()->get_id() == instance.get_target_id())
 				{
 					#ifndef NDEBUG
 					if(verbose_)

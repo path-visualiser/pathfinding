@@ -93,7 +93,7 @@ compute_down_distance()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "missing required parameter: --order [file]\n";
         return;
     }
     std::cerr << "all done!\n";
@@ -136,7 +136,7 @@ compute_dcl_labels()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "missing required parameter: --order [file]\n";
         return;
     }
     std::cerr << "all done!\n";
@@ -182,7 +182,7 @@ compute_apex_distance()
             grfile.append(".");
             grfile.append(first);
             grfile.append(".");
-            grfile.append(std::to_string(lastid-1));
+            grfile.append(std::to_string(lastid));
         }
         warthog::apex_distance_filter apexfilter(&g, &order);
         apexfilter.compute(firstid, lastid);
@@ -199,7 +199,7 @@ compute_apex_distance()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "missing required parameter: --order [file]\n";
         return;
     }
     std::cerr << "all done!\n";
@@ -245,7 +245,7 @@ compute_chbb_labels()
             grfile.append(".");
             grfile.append(first);
             grfile.append(".");
-            grfile.append(std::to_string(lastid-1));
+            grfile.append(std::to_string(lastid));
         }
         warthog::bb_filter filter(&g);
         filter.compute_ch(firstid, lastid, &order);
@@ -262,7 +262,7 @@ compute_chbb_labels()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "missing required parameter: --order [file]\n";
         return;
     }
     std::cerr << "all done!\n";
@@ -306,7 +306,7 @@ compute_bb_labels()
         grfile.append(".");
         grfile.append(first);
         grfile.append(".");
-        grfile.append(std::to_string(lastid-1));
+        grfile.append(std::to_string(lastid));
     }
     warthog::bb_filter filter(&g);
     filter.compute(firstid, lastid);
@@ -523,7 +523,7 @@ compute_bbaf_labels()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "missing required parameter: --order [file]\n";
         return;
     }
     std::cerr << "all done!\n";
@@ -592,7 +592,7 @@ compute_afh_labels()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "missing required parameter: --order [file]\n";
         return;
     }
     std::cerr << "all done!\n";
@@ -661,7 +661,7 @@ compute_afhd_labels()
     }
     else
     {
-        std::cerr << "required: node order file. aborting.\n";
+        std::cerr << "missing required parameter: --order [file]\n";
         return;
     }
     std::cerr << "all done!\n";

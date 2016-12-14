@@ -93,11 +93,25 @@ class af_filter
         void
         compute_ch(uint32_t firstid, uint32_t lastid, std::vector<uint32_t>* rank);
 
+        uint8_t*
+        get_label(uint32_t node_id, uint32_t edge_index)
+        { return flags_.at(node_id).at(edge_index); }
+        
+        size_t 
+        get_label_size() 
+        { return bytes_per_label_; }
+
+        uint32_t
+        get_partition(uint32_t node_id)
+        {
+            return part_->at(node_id);
+        }
+
         void
         print(std::ostream& out);
 
         bool
-        load_arcflags_file(const char* filename);
+        load_labels(const char* filename);
 
     private:    
         uint32_t nparts_;
