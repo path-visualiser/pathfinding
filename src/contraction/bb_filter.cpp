@@ -96,7 +96,6 @@ warthog::bb_filter::compute(uint32_t startid, uint32_t endid)
                 }
             };
     dijkstra.apply_on_relax(relax_fn);
-    dijkstra.set_verbose(true);
 
     for(uint32_t i = 0; i < ((last_id_ - start_id_)+1); i++)
     {

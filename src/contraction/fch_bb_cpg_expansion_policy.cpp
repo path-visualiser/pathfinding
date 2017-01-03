@@ -60,11 +60,10 @@ warthog::fch_bb_cpg_expansion_policy::expand(
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
 
-        // hacky fix:
         // the target is inserted into the graph but not into 
-        // the filter. one way to get around this is to just
-        // generate the goal whenever we encounter it, ignoring the 
-        // filter altogether
+        // the filter. one way to get around this (HACK HACK HACK)
+        // is to just generate the goal whenever we encounter it, 
+        // ignoring the filter altogether
         if(e.node_id_ == g_->get_inserted_target_id())
         {
             this->add_neighbour(this->generate(e.node_id_), e.wt_);
@@ -127,6 +126,24 @@ warthog::fch_bb_cpg_expansion_policy::generate_start_node(
     return this->generate(g_->get_inserted_start_id());
 }
 
+// when inserting the target node there are two cases to consider
+// (i) the target node is a corner node.
+// (ii) the target not is not a corner node
+//
+// Consider case (i). Since the target is in the corner graph we need
+// only look at the label of the current edge and see if the edge can 
+// appear on any optimal path to the target. so far, nothing has changed.
+//
+// Consider case (ii). Since the target is not in the corner graph
+// we need to insert it. Insertion yields a set of successors, S.
+// From a goal pruning perspective, the target is now not a single
+// node but the entire set of nodes S. During search, if any edge can
+// appear on an optimal path to any s \in S, we should relax the edge.
+//
+// Depending on |S| this might be slow. In the case of geometric containers 
+// we can construct a bounding box for all nodes in S \cup { t } and check 
+// if the bounding box stored with the current edge overlaps with the 
+// bounding box containing the target and all of its successors. 
 warthog::search_node*
 warthog::fch_bb_cpg_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
@@ -151,9 +168,9 @@ warthog::fch_bb_cpg_expansion_policy::generate_target_node(
         for( warthog::graph::edge_iter it = target->incoming_begin();
              it != target->incoming_end(); it++ )
         {
-           int32_t my_x, my_y;
-           g_->get_xy(it->node_id_, my_x, my_y);
-           r_.grow(my_x, my_y);
+            int32_t my_x, my_y;
+            g_->get_xy(it->node_id_, my_x, my_y);
+            r_.grow(my_x, my_y);
         }
     }
 

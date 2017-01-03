@@ -1,7 +1,8 @@
-#include "bb_af_filter.h"
+#include "bbaf_filter.h"
 #include "constants.h"
 #include "flexible_astar.h"
 #include "fch_expansion_policy.h"
+#include "graph_expansion_policy.h"
 #include "planar_graph.h"
 #include "problem_instance.h"
 #include "zero_heuristic.h"
@@ -10,25 +11,13 @@
 #include <iostream>
 #include <set>
 
-warthog::bb_af_filter::bb_af_filter(
-        warthog::graph::planar_graph* g,
-        std::vector<uint32_t>* rank,
-        std::vector<uint32_t>* part)
+warthog::bbaf_filter::bbaf_filter(
+        warthog::graph::planar_graph* g, std::vector<uint32_t>* part)
 {
-    init(g, rank, part);
+    init(g, part);
 }
 
-warthog::bb_af_filter::bb_af_filter(
-        warthog::graph::planar_graph* g,
-        std::vector<uint32_t>* rank,
-        std::vector<uint32_t>* part,
-        const char* bb_af_file)
-{
-    init(g, rank, part);
-    load_labels(bb_af_file);
-}
-
-warthog::bb_af_filter::~bb_af_filter()
+warthog::bbaf_filter::~bbaf_filter()
 {
     for(uint32_t i = 0; i < labels_.size(); i++)
     {
@@ -43,14 +32,12 @@ warthog::bb_af_filter::~bb_af_filter()
 }
 
 void 
-warthog::bb_af_filter::init(
+warthog::bbaf_filter::init(
         warthog::graph::planar_graph* g, 
-        std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part)
 {
     g_ = g;
     part_ = part;
-    rank_ = rank;
 
     firstid_ = lastid_ = 0;
 
@@ -98,7 +85,7 @@ warthog::bb_af_filter::init(
 }
 
 void
-warthog::bb_af_filter::print(std::ostream& out)
+warthog::bbaf_filter::print(std::ostream& out)
 {
     out 
     << "# Each line (aside from comments & header) is an edge label.\n"
@@ -156,9 +143,9 @@ warthog::bb_af_filter::print(std::ostream& out)
 }
 
 bool
-warthog::bb_af_filter::load_labels(const char* filename)
+warthog::bbaf_filter::load_labels(const char* filename)
 {
-    std::cerr << "loading bb_af file\n";
+    std::cerr << "loading bbaf file\n";
     std::ifstream ifs(filename);
 
     uint32_t num_parts;
@@ -256,19 +243,119 @@ warthog::bb_af_filter::load_labels(const char* filename)
 }
 
 void
-warthog::bb_af_filter::compute()
+warthog::bbaf_filter::compute()
 {
 
     compute(0, g_->get_num_nodes()-1);
 
 }
 
+void
+warthog::bbaf_filter::compute_ch( uint32_t startid, uint32_t endid, 
+            std::vector<uint32_t>* rank )
+{
+    if(!g_ || !rank) { return; } 
+
+    firstid_ = startid;
+    lastid_ = endid;
+    if(lastid_ >= g_->get_num_nodes()) { lastid_ = g_->get_num_nodes() - 1; }
+
+    std::cerr << "computing ch arcflag labels " 
+        << "for all nodes in the id-range [" 
+        << firstid_ << ", " << lastid_ << "]\n";
+    warthog::zero_heuristic heuristic;
+    warthog::fch_expansion_policy expander(g_, rank);
+
+    warthog::flexible_astar<
+        warthog::zero_heuristic,
+        warthog::fch_expansion_policy> dijkstra(&heuristic, &expander);
+
+    // need to keep track of the first edge on the way to the current node
+    // (the solution is a bit hacky as we break the chain of backpointers 
+    // to achieve this; it doesn't matter, we don't care about the path)
+    std::function<void(warthog::search_node*)> relax_fn = 
+            [] (warthog::search_node* n) -> void
+            {
+                // the start node and its children don't need their 
+                // parent pointers updated. for all other nodes the
+                // grandparent becomes the parent
+                if(n->get_parent()->get_parent() != 0)
+                {
+                    if(n->get_parent()->get_parent()->get_parent() != 0)
+                    {
+                        n->set_parent(n->get_parent()->get_parent());
+                    }
+                }
+            };
+    dijkstra.apply_on_relax(relax_fn);
+
+    for(uint32_t i = 0; i < (lastid_-firstid_)+1; i++)
+    {
+        // run a dijkstra search from each node
+        std::cerr << "\rprocessing node " << i << "; continues until node " 
+            << (lastid_-firstid_) << "\r";
+        uint32_t source_id = i + firstid_;
+        warthog::problem_instance pi(source_id, warthog::INF);
+        dijkstra.get_length(pi);
+
+        // now we analyse the closed list to compute arc flags
+        warthog::graph::node* source = g_->get_node(source_id);
+
+        // first, we need an easy way to convert between the ids of nodes
+        // adjacent to the source and their corresponding edge index
+        std::unordered_map<uint32_t, uint32_t> idmap;
+        uint32_t edge_idx = 0;
+        for(warthog::graph::edge_iter it = source->outgoing_begin(); 
+                it != source->outgoing_end(); it++)
+        {
+            idmap.insert(
+                    std::pair<uint32_t, uint32_t>((*it).node_id_, edge_idx));
+            edge_idx++;
+        }
+
+        // analyse the nodes on the closed list and label the edges of the 
+        // source node accordingly
+        std::function<void(warthog::search_node*)> fn_arcflags =
+                [this, rank, &source_id, &idmap](warthog::search_node* n) -> void
+                {
+                    // skip the source
+                    assert(n);
+                    if(n->get_id() == source_id) { return; } 
+                    assert(n->get_parent());
+
+                    // label the edges of the source
+                    // (TODO: make this stuff faster)
+                    uint32_t part_id = part_->at(n->get_id());
+                    uint32_t e_idx  = (*idmap.find(
+                            n->get_parent()->get_id() == source_id ? 
+                            n->get_id() : n->get_parent()->get_id())).second;
+                    labels_.at(source_id).at(e_idx).flags_[part_id >> 3]
+                        |= (1 << (part_id & 7));
+
+                    // only nodes that are in the down-closure get added
+                    // to the bounding box
+                    if(rank->at(n->get_id()) < rank->at(source_id))
+                    {
+                        int32_t x, y;
+                        this->g_->get_xy(n->get_id(), x, y);
+                        assert(x != warthog::INF && y != warthog::INF);
+                        labels_.at(source_id).at(e_idx).bbox_.grow(x, y);
+                        assert(labels_.at(source_id).at(e_idx).bbox_.is_valid());
+                    }
+
+                };
+        dijkstra.apply_to_closed(fn_arcflags);
+    }
+    std::cerr << "\nall done\n"<< std::endl;
+
+}
+
 // compute arclabels for all nodes whose ids are in
 // the range [firstid, lastid]
 void
-warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
+warthog::bbaf_filter::compute(uint32_t firstid, uint32_t lastid)
 {
-    if(!g_ || !rank_) { return; } 
+    if(!g_) { return; } 
 
     firstid_ = firstid;
     lastid_ = lastid;
@@ -278,11 +365,11 @@ warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
         << "for all nodes in the id-range [" 
         << firstid_ << ", " << lastid_ << "]\n";
     warthog::zero_heuristic heuristic;
-    warthog::fch_expansion_policy expander(g_, rank_);
+    warthog::graph_expansion_policy expander(g_);
 
     warthog::flexible_astar<
         warthog::zero_heuristic,
-        warthog::fch_expansion_policy> dijkstra(&heuristic, &expander);
+        warthog::graph_expansion_policy> dijkstra(&heuristic, &expander);
 
     // need to keep track of the first edge on the way to the current node
     // (the solution is a bit hacky as we break the chain of backpointers 
@@ -346,17 +433,11 @@ warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
                     labels_.at(source_id).at(e_idx).flags_[part_id >> 3]
                         |= (1 << (part_id & 7));
 
-                    // only nodes that are in the down-closure get added
-                    // to the bounding box
-                    if(this->rank_->at(n->get_id()) < rank_->at(source_id))
-                    {
-                        int32_t x, y;
-                        this->g_->get_xy(n->get_id(), x, y);
-                        assert(x != warthog::INF && y != warthog::INF);
-                        labels_.at(source_id).at(e_idx).bbox_.grow(x, y);
-                        assert(labels_.at(source_id).at(e_idx).bbox_.is_valid());
-                    }
-
+                    int32_t x, y;
+                    this->g_->get_xy(n->get_id(), x, y);
+                    assert(x != warthog::INF && y != warthog::INF);
+                    labels_.at(source_id).at(e_idx).bbox_.grow(x, y);
+                    assert(labels_.at(source_id).at(e_idx).bbox_.is_valid());
                 };
         dijkstra.apply_to_closed(fn_arcflags);
     }
@@ -364,7 +445,7 @@ warthog::bb_af_filter::compute(uint32_t firstid, uint32_t lastid)
 }
 
 void
-warthog::bb_af_filter::set_goal(uint32_t goalid)
+warthog::bbaf_filter::set_goal(uint32_t goalid)
 {
     uint32_t t_part = part_->at(goalid);
     t_byte_ = t_part >> 3;

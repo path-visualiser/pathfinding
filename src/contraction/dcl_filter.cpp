@@ -10,11 +10,9 @@
 #include <algorithm>
 
 warthog::dcl_filter::dcl_filter(
-        const char* ddfile, warthog::graph::planar_graph* g, 
-        std::vector<uint32_t>* rank)
+        const char* ddfile, warthog::graph::planar_graph* g)
 {
     g_ = g;
-    rank_ = rank;
 
     start_id_ = 0;
     tx = ty = warthog::INF;
@@ -23,10 +21,9 @@ warthog::dcl_filter::dcl_filter(
 }
 
 warthog::dcl_filter::dcl_filter(
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank)
+        warthog::graph::planar_graph* g)
 {
     g_ = g;
-    rank_ = rank;
     start_id_ = last_id_ = warthog::INF;
     tx = ty = warthog::INF;
     h_ = new warthog::euclidean_heuristic(g);
@@ -95,18 +92,18 @@ warthog::dcl_filter::edgebb_filter(uint32_t node_id, warthog::graph::edge* e)
 //}
 
 void
-warthog::dcl_filter::compute()
+warthog::dcl_filter::compute(std::vector<uint32_t>* rank)
 {
-    if(!g_ || !rank_) { return; } 
+    if(!g_) { return; } 
 
     start_id_ = 0;
     last_id_ = g_->get_num_nodes() - 1;
 
     std::cerr << "computing down-closure bbox labels\n";
-    //labels_.resize(rank_->size());
+    labels_.resize(g_->get_num_nodes());
 
     std::function<void(uint32_t)> top_down;
-    top_down = [&top_down, this](uint32_t node_id) 
+    top_down = [&top_down, rank, this](uint32_t node_id) 
         -> void
     {
         warthog::graph::node* n = g_->get_node(node_id);
@@ -121,7 +118,7 @@ warthog::dcl_filter::compute()
                 it != n->outgoing_end(); it++)
         {
             uint32_t nei_id = (*it).node_id_;
-            if(rank_->at(nei_id) < rank_->at(node_id))
+            if(rank->at(nei_id) < rank->at(node_id))
             {
                 if(!labels_.at(nei_id).bbox_.is_valid()) { top_down(nei_id); }
                 label.bbox_.grow(labels_.at(nei_id).bbox_);
@@ -205,5 +202,5 @@ warthog::dcl_filter::init(warthog::problem_instance* instance)
 {
     assert(instance);
     g_->get_xy(instance->get_target_id(), tx, ty);
-    target_lvl = rank_->at(instance->get_target_id());
+    //target_lvl = rank_->at(instance->get_target_id());
 }

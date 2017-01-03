@@ -14,20 +14,18 @@
 
 warthog::afh_filter::afh_filter(
         warthog::graph::planar_graph* g,
-        std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part)
 {
-    init(g, rank, part);
+    init(g, part);
 }
 
 warthog::afh_filter::afh_filter(
         warthog::graph::planar_graph* g,
-        std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part,
         const char* afh_file)
 {
-    init(g, rank, part);
-    load_afh_file(afh_file);
+    init(g, part);
+    load_labels(afh_file);
 }
 
 warthog::afh_filter::~afh_filter()
@@ -47,12 +45,10 @@ warthog::afh_filter::~afh_filter()
 void 
 warthog::afh_filter::init(
         warthog::graph::planar_graph* g, 
-        std::vector<uint32_t>* rank,
         std::vector<uint32_t>* part)
 {
     g_ = g;
     part_ = part;
-    rank_ = rank;
 
     firstid_ = lastid_ = 0;
 
@@ -142,8 +138,9 @@ warthog::afh_filter::print(std::ostream& out)
     }
 }
 
-void
-warthog::afh_filter::load_afh_file(const char* filename)
+
+bool
+warthog::afh_filter::load_labels(const char* filename)
 {
     std::cerr << "loading arcflags file\n";
     std::ifstream ifs(filename);
@@ -182,7 +179,7 @@ warthog::afh_filter::load_afh_file(const char* filename)
                     << "err reading arcflags file; number of partitions \n"
                     << " does not match input graph (read: " << num_parts 
                     << " expected: " << nparts_ << ")\n";
-                exit(0);
+                return false;
             }
         }
         else { bad_header = true; }
@@ -193,7 +190,7 @@ warthog::afh_filter::load_afh_file(const char* filename)
     {
         std::cerr << "invalid header; required format: \n"
             << "firstnode [integer] lastnode [integer] partitions [integer]\n";
-        exit(0);
+        return false;
     }
 
     // read labels for each outgoing arc
@@ -210,7 +207,7 @@ warthog::afh_filter::load_afh_file(const char* filename)
                 {
                     std::cerr << "unexpected read error loading arcflags; "
                         << "aborting\n";
-                    exit(0);
+                    return false;
                 }
 
                 uint64_t label;
@@ -221,49 +218,53 @@ warthog::afh_filter::load_afh_file(const char* filename)
             }
         }
     }
+    return true;
 }
 
 void
-warthog::afh_filter::compute()
+warthog::afh_filter::compute(std::vector<uint32_t>* rank)
 {
 
-    compute(0, g_->get_num_nodes()-1);
+    compute(0, g_->get_num_nodes()-1, rank);
 
 }
 
 // compute arclabels for all nodes whose ids are in
 // the range [firstid, lastid]
 void
-warthog::afh_filter::compute(uint32_t firstid, uint32_t lastid)
+warthog::afh_filter::compute(uint32_t firstid, uint32_t lastid,
+        std::vector<uint32_t>* rank)
 {
-    if(!g_ || !rank_) { return; } 
+    if(!g_ || !rank) { return; } 
 
     firstid_ = firstid;
     lastid_ = lastid;
     if(lastid_ >= g_->get_num_nodes()) { lastid_ = g_->get_num_nodes() - 1; }
 
     // create an array with node ids ordered by rank
-    std::vector<uint32_t> ids_by_rank(*rank_); 
+    std::vector<uint32_t> ids_by_rank(*rank); 
     warthog::ch::value_index_swap_dimacs(ids_by_rank);
 
     std::cerr << "computing afh down-labels\n";
-    compute_down_flags(ids_by_rank);
+    compute_down_flags(&ids_by_rank, rank);
 
     std::cerr << "computing afh up-labels\n";
-    compute_up_flags(ids_by_rank);
+    compute_up_flags(&ids_by_rank, rank);
 
     std::cerr << "\nall done\n"<< std::endl;
 }
 
 void
-warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
+warthog::afh_filter::compute_up_flags(
+        std::vector<uint32_t>* ids_by_rank,
+        std::vector<uint32_t>* rank)
 {
     // traverse the hierarchy top-to-bottom
-    for(int32_t idx = ids_by_rank.size()-1; idx >= 0; idx--)
+    for(int32_t idx = ids_by_rank->size()-1; idx >= 0; idx--)
     {
         std::cerr << "\rprocessing node ranked " << idx 
             << "; continues until rank 0";
-        uint32_t n_id = ids_by_rank.at(idx);
+        uint32_t n_id = ids_by_rank->at(idx);
 
         // iterate over up edges leading into node n;
         // i.e. (m, n) \in E | n > m
@@ -273,7 +274,7 @@ warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
         {
             // ignore edges where m > n (we want to label up only)
             uint32_t m_id = (*in_it).node_id_;
-            if(rank_->at(m_id) > rank_->at(n_id)) { continue;  }
+            if(rank->at(m_id) > rank->at(n_id)) { continue;  }
             warthog::graph::node* m = g_->get_node(m_id);
 
             // identify the outgoing version of (m, n)
@@ -359,14 +360,16 @@ warthog::afh_filter::compute_up_flags(std::vector<uint32_t>& ids_by_rank)
 //}
 
 void
-warthog::afh_filter::compute_down_flags(std::vector<uint32_t>& ids_by_rank)
+warthog::afh_filter::compute_down_flags(
+        std::vector<uint32_t>* ids_by_rank,
+        std::vector<uint32_t>* rank)
 {
     // compute down-flags. 
-    for(uint32_t idx = 0; idx < ids_by_rank.size(); idx++)
+    for(uint32_t idx = 0; idx < ids_by_rank->size(); idx++)
     {
         std::cerr << "\rprocessing node ranked " << idx 
-            << "; continues until rank " << (ids_by_rank.size()-1);
-        uint32_t n_id = ids_by_rank.at(idx);
+            << "; continues until rank " << (ids_by_rank->size()-1);
+        uint32_t n_id = ids_by_rank->at(idx);
 
         warthog::graph::node* n = g_->get_node(n_id);
         uint32_t n_col = part_->at(n_id);
@@ -378,7 +381,7 @@ warthog::afh_filter::compute_down_flags(std::vector<uint32_t>& ids_by_rank)
         {
             // we focus on down edges where m > n 
             uint32_t m_id = (*ei_mn).node_id_;
-            if(rank_->at(m_id) < rank_->at(n_id)) { continue; }
+            if(rank->at(m_id) < rank->at(n_id)) { continue; }
 
             // to avoid redundant paths we build a set with down-successors
             // of m which might also be down-successors of n
@@ -387,7 +390,7 @@ warthog::afh_filter::compute_down_flags(std::vector<uint32_t>& ids_by_rank)
             for(warthog::graph::edge_iter em = m->outgoing_begin();
                     em != m->outgoing_end(); em++)
             {
-                if(rank_->at((*em).node_id_) > rank_->at(n_id)) { continue; }
+                if(rank->at((*em).node_id_) > rank->at(n_id)) { continue; }
                 m_down.insert(
                         std::pair<uint32_t, warthog::graph::edge>(
                             (*em).node_id_, *em));
@@ -405,7 +408,7 @@ warthog::afh_filter::compute_down_flags(std::vector<uint32_t>& ids_by_rank)
                     en != n->outgoing_end(); en++)
             {
                 // only down successors
-                if(rank_->at((*en).node_id_) > rank_->at(n_id)) { continue; }
+                if(rank->at((*en).node_id_) > rank->at(n_id)) { continue; }
 
                 // only if the down path <m, n, n'> is not redundant
                 std::unordered_map<uint32_t, warthog::graph::edge>::iterator mit

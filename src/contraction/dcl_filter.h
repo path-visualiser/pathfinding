@@ -3,7 +3,7 @@
 
 // contraction/dcl_filter.h
 //
-// Collects a variety of different edge labels that we can compute for 
+// Collects a variety of different labels that we can compute for 
 // the down-closure of a node. Intended for use with forward-driven 
 // contraction hierarchies.
 //
@@ -57,12 +57,10 @@ class dcl_filter
     public:
         dcl_filter(
                 const char* ddfile, 
-                warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank);
+                warthog::graph::planar_graph* g);
 
         dcl_filter(
-                warthog::graph::planar_graph* g,
-                std::vector<uint32_t>* rank);
+                warthog::graph::planar_graph* g);
 
         ~dcl_filter();
 
@@ -79,10 +77,7 @@ class dcl_filter
         print(std::ostream& out);
 
         void
-        compute(uint32_t startid, uint32_t endid);
-                
-        void
-        compute();
+        compute(std::vector<uint32_t>* rank);
 
         void
         init(warthog::problem_instance* instance);
@@ -97,7 +92,6 @@ class dcl_filter
         warthog::euclidean_heuristic* h_;
 
         warthog::graph::planar_graph* g_;
-        std::vector<uint32_t>* rank_;
         uint32_t start_id_, last_id_;
         int32_t tx, ty;
         uint32_t target_lvl;

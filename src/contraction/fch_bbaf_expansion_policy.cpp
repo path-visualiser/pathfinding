@@ -1,4 +1,4 @@
-#include "bb_af_filter.h"
+#include "bbaf_filter.h"
 #include "contraction.h"
 #include "fch_bbaf_expansion_policy.h"
 #include "planar_graph.h"
@@ -6,7 +6,7 @@
 
 warthog::fch_bbaf_expansion_policy::fch_bbaf_expansion_policy(
         warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
-        warthog::bb_af_filter* filter)
+        warthog::bbaf_filter* filter)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;

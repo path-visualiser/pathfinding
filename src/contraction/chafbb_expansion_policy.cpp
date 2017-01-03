@@ -1,4 +1,4 @@
-#include "bb_af_filter.h"
+#include "bbaf_filter.h"
 #include "chafbb_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
@@ -7,7 +7,7 @@
 warthog::chafbb_expansion_policy::chafbb_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank, 
-        warthog::bb_af_filter* filter,
+        warthog::bbaf_filter* filter,
         bool backward,
         warthog::ch::search_direction sd)
     : expansion_policy(g->get_num_nodes())

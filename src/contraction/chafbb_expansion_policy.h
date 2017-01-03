@@ -17,7 +17,7 @@
 
 namespace warthog{
 
-class bb_af_filter;
+class bbaf_filter;
 class problem_instance;
 class search_node;
 
@@ -39,7 +39,7 @@ class chafbb_expansion_policy : public  expansion_policy
         // successors have a rank smaller than the current node 
         chafbb_expansion_policy(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* rank, 
-                warthog::bb_af_filter* filter,
+                warthog::bbaf_filter* filter,
                 bool backward=false,
                 warthog::ch::search_direction sd = warthog::ch::UP);
 
@@ -63,7 +63,7 @@ class chafbb_expansion_policy : public  expansion_policy
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* rank_;
         warthog::ch::search_direction sd_;
-        warthog::bb_af_filter* filter_;
+        warthog::bbaf_filter* filter_;
         uint32_t search_id_;
 
         inline uint32_t

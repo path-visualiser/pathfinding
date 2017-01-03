@@ -22,7 +22,7 @@ namespace graph
 class planar_graph;
 }
 
-class bb_af_filter;
+class bbaf_filter;
 class problem_instance;
 class search_node;
 class fch_bbaf_expansion_policy : public expansion_policy
@@ -31,7 +31,7 @@ class fch_bbaf_expansion_policy : public expansion_policy
         fch_bbaf_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::bb_af_filter*);
+                warthog::bbaf_filter*);
 
         ~fch_bbaf_expansion_policy();
 
@@ -51,7 +51,7 @@ class fch_bbaf_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
-        warthog::bb_af_filter* filter_;
+        warthog::bbaf_filter* filter_;
         uint32_t search_id_;
 
         inline uint32_t

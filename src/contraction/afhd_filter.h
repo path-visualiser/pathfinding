@@ -33,12 +33,10 @@ class afhd_filter
         // @param part: a partitioning of the graph nodes
         afhd_filter(
                 warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
         afhd_filter(
                 warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part,
                 const char* afhd_file);
 
@@ -64,19 +62,22 @@ class afhd_filter
         }
 
         void
-        compute();
+        compute(std::vector<uint32_t>* rank);
 
         void
-        compute(uint32_t firstid, uint32_t lastid);
+        compute(uint32_t firstid, uint32_t lastid, 
+                std::vector<uint32_t>* labels);
 
         void
         print(std::ostream& out);
+
+        bool
+        load_labels(const char* filename);
 
     private:    
         uint32_t nparts_;
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* part_;
-        std::vector<uint32_t>* rank_;
         std::vector<std::vector<uint8_t*>> flags_;
 
         // sometimes we want to compute arcflags for just 
@@ -91,17 +92,18 @@ class afhd_filter
         
         void 
         init(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
         void
-        load_afhd_file(const char* filename);
+        compute_down_flags(
+                std::vector<uint32_t>* ids_by_rank, 
+                std::vector<uint32_t>* rank);
 
         void
-        compute_down_flags(std::vector<uint32_t>& ids_by_rank);
+        compute_up_flags(
+                std::vector<uint32_t>* ids_by_rank,
+                std::vector<uint32_t>* rank);
 
-        void
-        compute_up_flags(std::vector<uint32_t>& ids_by_rank);
 };
 
 }

@@ -1,7 +1,7 @@
-#ifndef WARTHOG_BB_AF_FILTER_H
-#define WARTHOG_BB_AF_FILTER_H
+#ifndef WARTHOG_BBAF_FILTER_H
+#define WARTHOG_BBAF_FILTER_H
 
-// bb_af_filter.h
+// bbaf_filter.h
 //
 // combined arcflags and bounding box filter
 //
@@ -29,10 +29,9 @@ class planar_graph;
 class problem_instance;
 class search_node;
 
-class bb_af_filter
+class bbaf_label
 {
-    struct bbaf_label
-    {
+    public:
         bbaf_label()
         {
             flags_ = 0;
@@ -47,23 +46,19 @@ class bb_af_filter
         uint8_t* flags_;
         warthog::geom::rectangle bbox_;
 
-    };
+};
+
+class bbaf_filter
+{
 
     public:
         // @param g: the search graph
         // @param part: a partitioning of the graph nodes
-        bb_af_filter(
+        bbaf_filter(
                 warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
-        bb_af_filter(
-                warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
-                std::vector<uint32_t>* part,
-                const char* bb_af_file);
-
-        ~bb_af_filter();
+        ~bbaf_filter();
 
         // return true if the ith edge of @param node_id
         // (as specified by @param edge_index) cannot possibly 
@@ -93,19 +88,37 @@ class bb_af_filter
         compute(uint32_t firstid, uint32_t lastid);
 
         void
+        compute_ch(uint32_t startid, uint32_t endid, 
+                    std::vector<uint32_t>* rank);
+
+        void
         print(std::ostream& out);
 
         bool
         load_labels(const char* filename);
 
+        uint32_t
+        get_partition(uint32_t node_id)
+        {
+            return part_->at(node_id);
+        }
+
+        bbaf_label
+        get_label(uint32_t node_id, uint32_t edge_id)
+        {
+            return labels_.at(node_id).at(edge_id);
+        }
+
+
+
+
     private:    
         uint32_t nparts_;
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* part_;
-        std::vector<uint32_t>* rank_;
         std::vector<std::vector<bbaf_label>> labels_;
 
-        // sometimes we want to compute bb_af for just 
+        // sometimes we want to compute bbaf for just 
         // a subset of nodes; those in the range [firstid, lastid)
         uint32_t firstid_;
         uint32_t lastid_;
@@ -118,7 +131,6 @@ class bb_af_filter
         
         void 
         init(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank,
                 std::vector<uint32_t>* part);
 
 };
