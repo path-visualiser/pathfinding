@@ -282,7 +282,11 @@ warthog::afhd_filter::compute_up_flags(
 
             std::set<uint32_t> intermediate;
             warthog::ch::unpack(m_id, it_e_mn, g_, intermediate);
-            assert(intermediate.size() >= 2);
+
+            // skip edges that aren't shortcuts
+            if(intermediate.size() == 0) { continue; }
+
+            //assert(intermediate.size() >= 2);
             for(warthog::graph::edge_iter out_it = n->outgoing_begin(); 
                     out_it != n->outgoing_end(); out_it++)
             {
