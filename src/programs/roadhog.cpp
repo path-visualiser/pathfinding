@@ -656,7 +656,7 @@ run_fch_dd(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     g.load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // load up the arc-flags
-    warthog::down_distance_filter filter(&g, &order);
+    warthog::down_distance_filter filter(&g);
     if(!filter.load_labels(arclabels_file.c_str()))
     {
         std::cerr << "err; could not load arcflags file\n";
