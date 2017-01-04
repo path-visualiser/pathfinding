@@ -8,12 +8,10 @@
 #include <algorithm>
 
 warthog::down_distance_filter::down_distance_filter(
-        const char* ddfile, warthog::graph::planar_graph* g, 
-        std::vector<uint32_t>* rank)
+        const char* ddfile, warthog::graph::planar_graph* g)
 {
     ddist_ = new std::vector<double>();
     g_ = g;
-    rank_ = rank;
 
     load_labels(ddfile);
     start_id_ = 0;
@@ -21,11 +19,10 @@ warthog::down_distance_filter::down_distance_filter(
 }
 
 warthog::down_distance_filter::down_distance_filter(
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank)
+        warthog::graph::planar_graph* g)
 {
     ddist_ = new std::vector<double>();
     g_ = g;
-    rank_ = rank;
     start_id_ = last_id_ = warthog::INF;
 }
 
@@ -66,32 +63,32 @@ warthog::down_distance_filter::filter(
 }
 
 void
-warthog::down_distance_filter::compute()
+warthog::down_distance_filter::compute(std::vector<uint32_t>* rank)
 {
-    if(g_ && rank_)
+    if(g_ && rank)
     {
-        compute(0, g_->get_num_nodes());
+        compute(0, g_->get_num_nodes()-1, rank);
     }
 }
 
 void
-warthog::down_distance_filter::compute(uint32_t startid, uint32_t endid)
+warthog::down_distance_filter::compute(
+        uint32_t startid, uint32_t endid, std::vector<uint32_t>* rank)
 {
-    if(!g_ || !rank_) { return; } 
+    if(!g_ || !rank) { return; } 
 
     if(startid > g_->get_num_nodes())
     { return; }
-    start_id_ = startid;
 
-    if(endid > g_->get_num_nodes())
-    {
-        endid = g_->get_num_nodes();
-    }
+    if(endid < startid || endid >= g_->get_num_nodes())
+    { return; }
+
+    start_id_ = startid;
     last_id_ = endid;
 
     std::cerr << "computing downdistance labels\n";
     warthog::zero_heuristic heuristic;
-    warthog::ch_expansion_policy expander(g_, rank_, false, warthog::ch::DOWN);
+    warthog::ch_expansion_policy expander(g_, rank, false, warthog::ch::DOWN);
 
     warthog::flexible_astar<
         warthog::zero_heuristic,
@@ -99,9 +96,9 @@ warthog::down_distance_filter::compute(uint32_t startid, uint32_t endid)
 
 
     ddist_->clear();
-    for(uint32_t i = startid; i < endid; i++)
+    for(uint32_t i = start_id_; i <= last_id_; i++)
     {
-        std::cerr << "\rprogress: " << (i+1) << " / " << endid;
+        std::cerr << "\rprocessing node " << i << ". continues to " << last_id_;
         dijkstra.get_length(warthog::problem_instance(i, warthog::INF));
 
         // scan the closed list and get the max g-value

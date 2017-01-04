@@ -270,12 +270,12 @@ warthog::af_filter::compute_ch(
             };
     dijkstra.apply_on_relax(relax_fn);
 
-    for(uint32_t i = 0; i < (lastid_-firstid_)+1; i++)
+    for(uint32_t i = firstid; i <= lastid; i++)
     {
         // run a dijkstra search from each node
         std::cerr << "\rprocessing node " << i << "; continues until node " 
-            << (lastid_-firstid_) << "\r";
-        uint32_t source_id = i + firstid_;
+            << (lastid) << "\r";
+        uint32_t source_id = i;
         warthog::problem_instance pi(source_id, warthog::INF);
         dijkstra.get_length(pi);
 

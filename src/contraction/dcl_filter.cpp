@@ -14,7 +14,6 @@ warthog::dcl_filter::dcl_filter(
 {
     g_ = g;
 
-    start_id_ = 0;
     tx = ty = warthog::INF;
     h_ = new warthog::euclidean_heuristic(g);
     load_labels(ddfile);
@@ -24,7 +23,6 @@ warthog::dcl_filter::dcl_filter(
         warthog::graph::planar_graph* g)
 {
     g_ = g;
-    start_id_ = last_id_ = warthog::INF;
     tx = ty = warthog::INF;
     h_ = new warthog::euclidean_heuristic(g);
 }
@@ -95,9 +93,6 @@ void
 warthog::dcl_filter::compute(std::vector<uint32_t>* rank)
 {
     if(!g_) { return; } 
-
-    start_id_ = 0;
-    last_id_ = g_->get_num_nodes() - 1;
 
     std::cerr << "computing down-closure bbox labels\n";
     labels_.resize(g_->get_num_nodes());

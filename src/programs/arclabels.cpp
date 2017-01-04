@@ -67,12 +67,29 @@ compute_down_distance()
         return;
     }
 
-    // compute down_distance
+    // compute labels
     grfile.append(".ddist.arclabel");
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
-    warthog::down_distance_filter ddfilter(&g, &order);
-    ddfilter.compute(firstid, lastid);
+    uint32_t lastid = g.get_num_nodes()-1;
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
+    warthog::down_distance_filter ddfilter(&g);
+    ddfilter.compute(firstid, lastid, &order);
     
     // save the result
     std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -168,10 +185,31 @@ compute_chbb_labels()
         return;
     }
     
-    // compute down_distance
+    // compute labels
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes()-1;
     grfile.append(".ch-bb.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
+    
+    // compute down_distance
     warthog::bb_filter filter(&g);
-    filter.compute_ch(&order);
+    filter.compute_ch(firstid, lastid, &order);
     
     // save the result
     std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -207,9 +245,28 @@ compute_bb_labels()
     }
 
     // compute bounding box labels
+
     grfile.append(".bb.arclabel");
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes();
+
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
     warthog::bb_filter filter(&g);
     filter.compute(firstid, lastid);
     
@@ -230,8 +287,8 @@ compute_chaf_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
-    std::string partfile = cfg.get_param_value("part");
-    std::string orderfile = cfg.get_param_value("part");
+    std::string partfile = cfg.get_param_value("input");
+    std::string orderfile = cfg.get_param_value("input");
 
     if( grfile == "" || cofile == "" || partfile == "" || orderfile == "")
     {
@@ -260,12 +317,29 @@ compute_chaf_labels()
         return;
     }
 
-    // output filename reflects the type and scope of the labeling
-    grfile.append(".ch-af.arclabel");
-
     // compute labels
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes()-1;
+    grfile.append(".ch-af.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
     warthog::af_filter filter(&g, &part);
-    filter.compute_ch(&order);
+    filter.compute_ch(firstid, lastid, &order);
     
     // save the result
     std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -284,7 +358,7 @@ compute_af_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
-    std::string partfile = cfg.get_param_value("part");
+    std::string partfile = cfg.get_param_value("input");
 
     if( grfile == "" || cofile == "" || partfile == "")
     {
@@ -312,12 +386,30 @@ compute_af_labels()
         return;
     }
 
-    // output filename reflects the type and scope of the labeling
-    grfile.append(".af.arclabel");
 
     // compute labels
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes()-1;
+    grfile.append(".af.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
     warthog::af_filter filter(&g, &part);
-    filter.compute();
+    filter.compute(firstid, lastid);
     
     // save the result
     std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -364,12 +456,31 @@ compute_bbaf_labels()
         return;
     }
 
-    // output filename reflects the type of labeling
+    // compute labels
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes()-1;
     grfile.append(".bbaf.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
 
     // compute down_distance
     warthog::bbaf_filter filter(&g, &part);
-    filter.compute();
+    filter.compute(firstid, lastid);
     
     // save the result
     std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -426,12 +537,29 @@ compute_chbbaf_labels()
         return;
     }
 
-    // output filename reflects the type and scope of the labeling
+    // compute labels
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes()-1;
     grfile.append(".ch-bbaf.arclabel");
-
-    // compute down_distance
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        grfile.append(".");
+        grfile.append(first);
+        grfile.append(".");
+        grfile.append(std::to_string(lastid));
+    }
     warthog::bbaf_filter filter(&g, &part);
-    filter.compute_ch(0, g.get_num_nodes()-1, &order);
+    filter.compute_ch(firstid, lastid, &order);
     
     // save the result
     std::cerr << "saving contracted graph to file " << grfile << std::endl;
@@ -589,7 +717,6 @@ int main(int argc, char** argv)
         exit(0);
     }
 
-
     std::string arclabel = cfg.get_param_value("type");
     if(arclabel.compare("downdist") == 0)
     {
@@ -597,8 +724,6 @@ int main(int argc, char** argv)
     }
     else if(arclabel.compare("chbb") == 0)
     {
-        // faster precomputation when processing
-        // contraction hierarchies
         compute_chbb_labels();
     }
     else if(arclabel.compare("bb") == 0)

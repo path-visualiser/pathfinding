@@ -20,12 +20,10 @@ class down_distance_filter
     public:
         down_distance_filter(
                 const char* ddfile, 
-                warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* rank);
+                warthog::graph::planar_graph* g);
 
         down_distance_filter(
-                warthog::graph::planar_graph* g,
-                std::vector<uint32_t>* rank);
+                warthog::graph::planar_graph* g);
 
         ~down_distance_filter();
 
@@ -39,10 +37,11 @@ class down_distance_filter
         print(std::ostream& out);
 
         void
-        compute(uint32_t startid, uint32_t endid);
+        compute(uint32_t startid, uint32_t endid, 
+                std::vector<uint32_t>* rank);
                 
         void
-        compute();
+        compute(std::vector<uint32_t>* rank);
 
         bool
         load_labels(const char* filename);
@@ -50,7 +49,6 @@ class down_distance_filter
     private:
         std::vector<double>* ddist_;
         warthog::graph::planar_graph* g_;
-        std::vector<uint32_t>* rank_;
         uint32_t start_id_, last_id_;
 
 };
