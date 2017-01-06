@@ -88,8 +88,6 @@ run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::graph_expansion_policy expander(&g);
 
     warthog::euclidean_heuristic h(&g);
-    h.set_hscale(warthog::ONE);
-
     warthog::flexible_astar<
         warthog::euclidean_heuristic, 
         warthog::graph_expansion_policy> alg(&h, &expander);
@@ -1226,7 +1224,6 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // heuristic 
     warthog::euclidean_heuristic h(pg.get());
-    h.set_hscale(warthog::ONE);
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 
         warthog::fch_cpg_expansion_policy> alg(&h, &fexp);

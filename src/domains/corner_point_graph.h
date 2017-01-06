@@ -94,8 +94,13 @@ class corner_point_graph
             return g_->get_num_edges();
         }
 
-        void
-        get_xy(uint32_t graph_id, int32_t& x, int32_t& y);
+        // retrieve the xy coordinates of a node
+        // @param graph_id: the id of the desired node
+        // @return x: the x-coordinate of @param graph_id
+        // @return y: the y-coordinate of @param graph_id
+        inline void
+        get_xy(uint32_t graph_id, int32_t& x, int32_t& y)
+        { g_->get_xy(graph_id, x, y); }
 
         inline warthog::graph::node* 
         get_node(uint32_t id)
@@ -212,6 +217,7 @@ class corner_point_graph
 
         void
         uninsert();
+
 };
 
 }

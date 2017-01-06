@@ -194,12 +194,6 @@ warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incomi
     this->nodes_ = new warthog::graph::node[nodes_sz_];
     this->xy_ = new int32_t[nodes_sz_*2];
 
-    // grid costs have double precision edge weights 
-    // but our graphs use integer costs; we scale
-    // up all the grid costs to equivalent integers
-    // (NB: 10^5 precision, then floor)
-    uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
-
     for(uint32_t y = 0; y < gm->header_height(); y++)
     {
         for(uint32_t x = 0; x < gm->header_width(); x++)
@@ -211,8 +205,8 @@ warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incomi
             double edge_cost = 0;
             exp.expand(n, 0);
 
-            xy_[node_id*2] = x;
-            xy_[node_id*2+1] = y;
+            xy_[node_id*2] = x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+            xy_[node_id*2+1] = y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
 
             // iterate over all the neighbours of n
             for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
@@ -220,7 +214,8 @@ warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incomi
                 uint32_t nei_x, nei_y;
                 gm->to_unpadded_xy(nei->get_id(), nei_x, nei_y);
                 uint32_t nei_id = to_graph_id( nei_y * gm->header_width() + nei_x );
-                uint32_t edge_cost_int = edge_cost * EDGE_COST_SCALE_FACTOR;
+                uint32_t edge_cost_int = edge_cost * 
+                    warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
 
                 nodes_[node_id].add_outgoing(
                         warthog::graph::edge(nei_id, edge_cost_int));

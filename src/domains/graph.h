@@ -381,6 +381,13 @@ class node
 
 };
 typedef node* node_iter;
+        
+// grid costs have double precision edge weights 
+// but our graphs use integer costs; we scale
+// up all the grid costs to equivalent integers.
+// we also scale the x and y coordinates in the 
+// same fashion.
+const uint32_t GRID_TO_GRAPH_SCALE_FACTOR = warthog::ONE;
 
 }
 }

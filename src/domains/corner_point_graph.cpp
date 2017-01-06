@@ -1,6 +1,7 @@
 #include "constants.h"
 #include "corner_point_graph.h"
 #include "corner_point_locator.h"
+#include "graph.h"
 #include "jps.h"
 
 typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
@@ -49,7 +50,12 @@ warthog::graph::corner_point_graph::corner_point_graph(
     for(uint32_t graph_id = 0; graph_id < g_->get_num_nodes(); graph_id++)
     {
         int32_t x, y;
-        g_->get_xy(graph_id, x, y);
+        get_xy(graph_id, x, y);
+        assert(x == 0 || x >= warthog::ONE);
+        assert(y == 0 || y >= warthog::ONE);
+        x /= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+        y /= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+
         if(x == INT32_MAX && y == INT32_MAX)
         { continue; } // skip padding at the start of the graph array
 
@@ -71,8 +77,11 @@ warthog::graph::corner_point_graph::construct()
     warthog::gridmap* corner_map = cpl_->get_corner_map();
     uint32_t mapwidth = gm->header_width();
     uint32_t mapheight = gm->header_height();
+    
+    // construct the graph
     for(uint32_t index = 0; index < mapheight*mapwidth; index++)
     {
+        // filter out source nodes that aren't corners
         uint32_t gm_id = gm->to_padded_id(index);
         if(!corner_map->get_label(gm_id)) { continue; } 
 
@@ -86,20 +95,21 @@ warthog::graph::corner_point_graph::construct()
         it_from_id = id_map_.find(gm_id);
         if(it_from_id == id_map_.end())
         {
-            from_id = this->add_node(gm_x, gm_y);
+            int32_t x = gm_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+            int32_t y = gm_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+            from_id = this->add_node(x, y);
             id_map_.insert(std::pair<uint32_t, uint32_t>(gm_id, from_id));
         }
         else { from_id = it_from_id->second; }
 
-        // identify other corner points by scanning the map and adding them 
-        // to the graph as necessary. also added are edges between corner 
-        // points to their immediate corner-point successors
+        // identify corner points adjacent to the source by scanning the 
+        // map. we add each such point to the graph (if it hasn't been
+        // added already) and we add an edge between it and the source
         for(uint32_t i = 0; i < 8; i++)
         {
             warthog::jps::direction d = (warthog::jps::direction)(1 << i);
             std::vector<uint32_t> jpoints;
             std::vector<double> jcosts;
-            uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
             cpl_->jump(d, gm_id, warthog::INF, jpoints, jcosts);
             for(uint32_t idx = 0; idx < jpoints.size(); idx++)
             {
@@ -113,13 +123,16 @@ warthog::graph::corner_point_graph::construct()
                 {
                     uint32_t jp_x, jp_y;
                     gm->to_unpadded_xy(jp_id, jp_x, jp_y);
-                    to_id = this->add_node(jp_x, jp_y);
+                    int32_t x = jp_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+                    int32_t y = jp_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+                    to_id = this->add_node(x, y);
                     id_map_.insert(std::pair<uint32_t, uint32_t>(jp_id, to_id));
                 }
                 else { to_id = it_to_id->second; }
 
                 uint32_t label_id = __builtin_ffs(d)-1;
-                uint32_t weight = jcosts[idx] * EDGE_COST_SCALE_FACTOR;
+                uint32_t weight = jcosts[idx] * 
+                    warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
                 this->add_labeled_outgoing_edge(
                         from_id, warthog::graph::edge(to_id, weight),
                         label_id);
@@ -127,13 +140,6 @@ warthog::graph::corner_point_graph::construct()
         }
     }
 }
-
-void
-warthog::graph::corner_point_graph::get_xy(uint32_t graph_id, int32_t& x, int32_t& y)
-{
-    g_->get_xy(graph_id, x, y);
-}
-
 
 void
 warthog::graph::corner_point_graph::insert(
@@ -167,6 +173,8 @@ warthog::graph::corner_point_graph::insert_start(
     uint32_t sx, sy;
     warthog::gridmap* gm = cpl_->get_map();
     gm->to_unpadded_xy(start_grid_id, sx, sy);
+    sx *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+    sy = warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
     g_->set_xy(s_graph_id_, (int32_t)sx, (int32_t)sy);
 
     id_map_.insert(std::pair<uint32_t, uint32_t>(s_grid_id_, s_graph_id_));
@@ -180,7 +188,6 @@ warthog::graph::corner_point_graph::insert_start(
         cpl_->jump(d, start_grid_id, target_grid_id, corner_neis, costs);
     }
 
-    uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
     warthog::graph::node* s = g_->get_node(s_graph_id_);
     for(uint32_t i = 0; i < corner_neis.size(); i++)
     {
@@ -200,7 +207,7 @@ warthog::graph::corner_point_graph::insert_start(
            graph_id = corner_iter->second;
         }
 
-        uint32_t weight = costs[i] * EDGE_COST_SCALE_FACTOR;
+        uint32_t weight = costs[i] * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
         s->add_outgoing(warthog::graph::edge(graph_id, weight, d));
     }
 }
@@ -223,6 +230,8 @@ warthog::graph::corner_point_graph::insert_target(
     uint32_t tx, ty;
     warthog::gridmap* gm = cpl_->get_map();
     gm->to_unpadded_xy(target_grid_id, tx, ty);
+    tx *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+    ty *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
     g_->set_xy(t_graph_id_, (int32_t)tx, (int32_t)ty);
     id_map_.insert(std::pair<uint32_t, uint32_t>(t_grid_id_, t_graph_id_));
 
@@ -234,13 +243,12 @@ warthog::graph::corner_point_graph::insert_target(
         cpl_->jump(d, target_grid_id, warthog::INF, corner_neis, costs);
     }
 
-    uint32_t EDGE_COST_SCALE_FACTOR = warthog::ONE;
     warthog::graph::node* target = g_->get_node(t_graph_id_);
     for(uint32_t i = 0; i < corner_neis.size(); i++)
     {
         uint32_t corner_id = corner_neis[i] & warthog::jps::ID_MASK;
         uint32_t graph_id = (*id_map_.find(corner_id)).second;
-        uint32_t weight = costs[i] * EDGE_COST_SCALE_FACTOR;
+        uint32_t weight = costs[i] * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
 
         // add the target to the outgoing edges list of every 
         // corner point we just found
