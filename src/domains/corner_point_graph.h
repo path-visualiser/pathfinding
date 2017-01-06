@@ -69,31 +69,15 @@ class corner_point_graph
         inline void
         print_dimacs_gr(std::ostream& oss)
         {
-            g_->print_dimacs_gr(oss);
+            // omit dummy start and target nodes which were added
+            g_->print_dimacs_gr(oss, 0, g_->get_num_nodes()-2);
         }
 
         inline void
         print_dimacs_co(std::ostream& oss)
         {
-            int32_t nodes_sz = g_->get_num_nodes();
-            nodes_sz -= 2; // omit dummy start and target nodes
-            if(nodes_sz > 0)
-            {
-                // dimacs vertex ids should always begin from index 1
-                // here we apply a delta to make sure that's always so
-                int32_t delta;
-                uint32_t ID_OFFSET = g_->id_offset();
-                if(ID_OFFSET >= 1) { delta = ID_OFFSET - 1;  }
-                else { delta = -1; }
-
-                oss << "p aux sp co " << (nodes_sz - ID_OFFSET) << std::endl;
-                for(int32_t i = ID_OFFSET; i < nodes_sz; i++)
-                {
-                    int32_t x, y;
-                    g_->get_xy(i, x, y);
-                    oss << "v " << i - delta << " " << x << " " << y << std::endl;
-                }
-            }
+            // omit dummy start and target nodes which were added
+            g_->print_dimacs_co(oss, 0, g_->get_num_nodes()-2);
         }
 
         // returns number of nodes + ID_OFFSET number of

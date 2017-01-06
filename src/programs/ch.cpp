@@ -69,7 +69,7 @@ contract_graph()
         {
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
-        g.print_dimacs_gr(ch_out);
+        g.print_dimacs_gr(ch_out, 0, g.get_num_nodes());
         ch_out.close();
     }
     else if(order_type == "lazy")
@@ -94,7 +94,7 @@ contract_graph()
         {
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
-        g.print_dimacs_gr(ch_out);
+        g.print_dimacs_gr(ch_out, 0, g.get_num_nodes());
         ch_out.close();
     }
     else
@@ -113,7 +113,7 @@ int main(int argc, char** argv)
 	warthog::util::param valid_args[] = 
 	{
 		{"verbose", no_argument, &verbose, 1},
-		{"dimacs",  required_argument, 0, 2},
+		{"input",  required_argument, 0, 2},
 		{"order",  required_argument, 0, 1}
 	};
 	cfg.parse_args(argc, argv, "-hvd:o:", valid_args);
@@ -121,12 +121,6 @@ int main(int argc, char** argv)
     if(argc == 1)
     {
 		help();
-        exit(0);
-    }
-
-    if(cfg.get_num_values("dimacs") != 2)
-    {
-        std::cerr << "insufficient values for param --dimacs (need gr and co files)\n";
         exit(0);
     }
 

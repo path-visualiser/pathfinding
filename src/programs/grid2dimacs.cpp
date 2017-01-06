@@ -37,8 +37,8 @@ main(int argc, char** argv)
     {
         warthog::graph::planar_graph g;
         g.load_grid(argv[2]);
-        g.print_dimacs_gr(std::cout);
-        g.print_dimacs_co(std::cout);
+        g.print_dimacs_gr(std::cout, 0, g.get_num_nodes());
+        g.print_dimacs_co(std::cout, 0, g.get_num_nodes());
     }
     else if(strcmp(argv[1], "corners") == 0)
     {
@@ -75,10 +75,7 @@ main(int argc, char** argv)
                 exp->starty() * exp->mapwidth() + exp->startx();
             uint32_t goal_id  = 
                 exp->goaly() * exp->mapwidth() + exp->goalx();
-
-            // we add +1 because gridmap ids are zero indexed and dimacs
-            // ids are 1-indexed
-            std::cout << "q " << start_id+1 << " " << goal_id+1 << std::endl;
+            std::cout << "q " << start_id << " " << goal_id << std::endl;
         }
     }
     else

@@ -72,7 +72,7 @@ warthog::ch::lazy_graph_contraction::preliminaries()
     total_expansions_ = 0;
     total_lazy_updates_ = 0;
    
-    for(uint32_t i = get_graph()->id_offset(); 
+    for(uint32_t i = 0;
         i < get_graph()->get_num_nodes(); i++)
     {
         std::cerr << i << " / " << get_graph()->get_num_nodes() << "\r";

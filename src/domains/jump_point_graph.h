@@ -64,13 +64,13 @@ class jump_point_graph
         inline void
         print_dimacs_gr(std::ostream& oss)
         {
-            g_->print_dimacs_gr(oss);
+            g_->print_dimacs_gr(oss, 0, g_->get_num_nodes());
         }
 
         inline void
         print_dimacs_co(std::ostream& oss)
         {
-            g_->print_dimacs_co(oss);
+            g_->print_dimacs_co(oss, 0, g_->get_num_nodes());
         }
 
         // returns number of nodes + ID_OFFSET number of

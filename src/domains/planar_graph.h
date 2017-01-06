@@ -58,36 +58,40 @@ class planar_graph
                 bool store_incoming_edges = false,
                 bool enforce_euclidean=true);
 
+        // print text descriptions of the set of arcs associated with 
+        // all nodes in the range [firstid, lastid)
+        // NB: if the range is invalid, nothing is printed
         void
-        print_dimacs_gr(std::ostream& oss);
+        print_dimacs_gr(std::ostream& oss, uint32_t first_id, uint32_t last_id);
 
+        // print text descriptions of the set of nodes 
+        // in the range [firstid, lastid)
+        // NB: if the range is invalid, nothing is printed
         void
-        print_dimacs_co(std::ostream& oss);
+        print_dimacs_co(std::ostream& oss, uint32_t first_id, uint32_t last_id);
 
-        // returns number of nodes + ID_OFFSET number of
-        // dummy elements located at the start of the nodes array
         inline uint32_t
         get_num_nodes()
         {
             return nodes_sz_;
         }
 
-        // returns the number of dummy nodes at the start 
-        // of the nodes array
-        inline uint32_t
-        id_offset() { return ID_OFFSET; }
-
         inline uint32_t 
         get_num_edges()
         {
             uint32_t num_edges = 0;
-            for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
+            for(uint32_t i = 0; i < nodes_sz_; i++)
             {
                 num_edges += nodes_[i].out_degree();
             }
             return num_edges;
         }
 
+        // Fetch the planar coordinates of a node
+        //
+        // @param id: an internal graph id
+        // @return x: the x coordinate of node @param id
+        // @return y: the y coordinate of node @param id
         inline void
         get_xy(uint32_t id, int32_t& x, int32_t& y)
         {
@@ -102,6 +106,11 @@ class planar_graph
             }
         }
 
+        // Set the planar coordinates of a node
+        //
+        // @param id: an internal graph id
+        // @param x: the x coordinate of node @param id
+        // @param y: the y coordinate of node @param id
         inline void
         set_xy(uint32_t id, int32_t x, int32_t y)
         {
@@ -112,6 +121,10 @@ class planar_graph
             }
         }
 
+        // Fetch a node
+        //
+        // @param id: an internal graph id
+        // @return: the node object associated with @param id
         inline warthog::graph::node* 
         get_node(uint32_t id)
         {
@@ -123,6 +136,11 @@ class planar_graph
             return 0;
         }
 
+        // Add a new node into the graph
+        //
+        // @param x: the x-coordinate of the new node
+        // @param y: the y-coordinate of the new node
+        // @return: the internal graph id of the new node
         inline uint32_t
         add_node(int32_t x, int32_t y)
         {
@@ -137,12 +155,15 @@ class planar_graph
             return index;
         }
 
+        // print extra stuff to std::err 
         inline void 
         set_verbose(bool verbose) { verbose_ = verbose; } 
 
         inline bool
         get_verbose() { return verbose_; }
 
+        // @return the name of the file from which the 
+        // current graph object was constructed
         inline const char* 
         get_filename() { return filename_.c_str(); }
 
@@ -164,7 +185,16 @@ class planar_graph
                 sizeof(*this);
             return mem;
         }
+        
+        // convert an external node id (e.g. as it appears in an input file)
+        // to the equivalent internal id used by the current graph
+        inline uint32_t 
+        to_graph_id(uint32_t ex_id) { return ex_id - ID_OFFSET; }
 
+        // convert an internal node id (i.e. as used by the current graph
+        // to the equivalent external id (e.g. as appears in an input file)
+        inline uint32_t 
+        to_external_id(uint32_t in_id) { return in_id + ID_OFFSET; }
 
     private:
         std::string filename_;
@@ -179,9 +209,8 @@ class planar_graph
 
         bool verbose_;
 
-        // DIMACS-fomat node ids are specified as 1-indexed. Our internal
-        // representation is zero indexed. We convert between them by 
-        // adding an offset
+        // Sometimes graphs are given with id ranges that do not begin from
+        // zero. We convert these to a 0-indexed scheme by way of an offset
         uint32_t ID_OFFSET; 
 
         size_t
@@ -189,6 +218,7 @@ class planar_graph
 
         bool
         grid2graph(warthog::gridmap*, bool);
+
 };
 
 }

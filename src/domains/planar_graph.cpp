@@ -88,23 +88,17 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     
     // convert nodes. NB:
     // DIMACS format specifies that node ids should be 1-indexed but
-    // our internal representation is 0-indexed. We add dummy elements
-    // to the front of the node arrays so we can use the 1-indexed ids
-    // without any internal conversion
+    // our internal representation is 0-indexed. We keep track of
+    // the offset and convert ids internally
     ID_OFFSET = (*dimacs.nodes_begin()).id_;
-    uint32_t num_nodes_dimacs = dimacs.get_num_nodes() + ID_OFFSET;
+    uint32_t num_nodes_dimacs = dimacs.get_num_nodes();
     resize(num_nodes_dimacs);
     nodes_sz_ = num_nodes_dimacs;
-
-    for(uint32_t i = 0; i < ID_OFFSET*2; i++)
-    {
-        xy_[i] = INT32_MAX;
-    }
 
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)
     {
-       uint32_t index = (*it).id_;
+       uint32_t index = to_graph_id( (*it).id_ );
        xy_[index*2] = (*it).x_;
        xy_[index*2+1] = (*it).y_;
     }
@@ -115,8 +109,8 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
             it != dimacs.edges_end(); it++)
     {
-        uint32_t hid = (*it).head_id_;
-        uint32_t tid = (*it).tail_id_;
+        uint32_t hid = to_graph_id( (*it).head_id_ );
+        uint32_t tid = to_graph_id( (*it).tail_id_ );
 
         // in a reverse graph the head and tail of every 
         // edge are swapped
@@ -210,7 +204,7 @@ warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incomi
     {
         for(uint32_t x = 0; x < gm->header_width(); x++)
         {
-            uint32_t node_id = y * gm->header_width() + x;
+            uint32_t node_id = to_graph_id( y * gm->header_width() + x );
             uint32_t gm_id = gm->to_padded_id(node_id);
             warthog::search_node* n = exp.generate(gm_id);
             warthog::search_node* nei = 0;
@@ -225,7 +219,7 @@ warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incomi
             {
                 uint32_t nei_x, nei_y;
                 gm->to_unpadded_xy(nei->get_id(), nei_x, nei_y);
-                uint32_t nei_id = nei_y * gm->header_width() + nei_x;
+                uint32_t nei_id = to_graph_id( nei_y * gm->header_width() + nei_x );
                 uint32_t edge_cost_int = edge_cost * EDGE_COST_SCALE_FACTOR;
 
                 nodes_[node_id].add_outgoing(
@@ -243,46 +237,46 @@ warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incomi
 }
 
 void
-warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss)
+warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss,
+                uint32_t first_id, uint32_t last_id)
 {
+    if(first_id > last_id || last_id > nodes_sz_)
+    { return; }
+
     if(nodes_sz_ > 0)
     {
-        // dimacs vertex ids should always begin from index 1
-        // here we apply a delta to make sure that's always so
-        int32_t delta;
-        if(ID_OFFSET >= 1) { delta = ID_OFFSET - 1;  }
-        else { delta = -1; }
-
-        oss << "p sp " << (nodes_sz_ - ID_OFFSET) << " " << 
+        oss << "p sp " << nodes_sz_ << " " << 
             this->get_num_edges() << std::endl;
-        for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
+        for(uint32_t i = first_id; i < last_id; i++)
         {
             warthog::graph::node* n = get_node(i);
             for(warthog::graph::edge_iter it = n->outgoing_begin(); 
                     it != n->outgoing_end(); it++)
             {
-                oss << "a " << i - delta << " " << (*it).node_id_  - delta << " " 
-                    << (uint32_t)((*it).wt_) << std::endl;
+                oss << "a " << to_external_id(i) << " " 
+                    << to_external_id((*it).node_id_)
+                    << " " << (uint32_t)((*it).wt_) << std::endl;
             }
         }
     }
 }
 
 void
-warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss)
+warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss,
+                uint32_t first_id, uint32_t last_id)
 {
+    if(first_id > last_id || last_id > nodes_sz_)
+    { return; }
+
     if(nodes_sz_ > 0)
     {
         // dimacs vertex ids should always begin from index 1
         // here we apply a delta to make sure that's always so
-        int32_t delta;
-        if(ID_OFFSET >= 1) { delta = ID_OFFSET - 1;  }
-        else { delta = -1; }
-
-        oss << "p aux sp co " << (nodes_sz_ - ID_OFFSET) << std::endl;
-        for(uint32_t i = ID_OFFSET; i < nodes_sz_; i++)
+        oss << "p aux sp co " << nodes_sz_ << std::endl;
+        for(uint32_t i = first_id; i < last_id; i++)
         {
-            oss << "v " << i - delta << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
+            oss << "v " << to_external_id(i) 
+                << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
         }
     }
 }

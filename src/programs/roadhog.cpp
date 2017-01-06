@@ -89,6 +89,7 @@ run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::euclidean_heuristic h(&g);
     h.set_hscale(warthog::ONE);
+
     warthog::flexible_astar<
         warthog::euclidean_heuristic, 
         warthog::graph_expansion_policy> alg(&h, &expander);
@@ -1191,7 +1192,7 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 {
     std::string orderfile = cfg.get_param_value("input");
     std::string gridmapfile = cfg.get_param_value("input");
-    if(!orderfile.compare(""))
+    if(co == "" || gr == "" || orderfile == "" || gridmapfile == "")
     {
         std::cerr << "err; insufficient input params for alg " << alg_name 
                   << ". required (in, order) "
