@@ -75,7 +75,10 @@ main(int argc, char** argv)
                 exp->starty() * exp->mapwidth() + exp->startx();
             uint32_t goal_id  = 
                 exp->goaly() * exp->mapwidth() + exp->goalx();
-            std::cout << "q " << start_id << " " << goal_id << std::endl;
+
+            // we add +1 because gridmap ids are zero indexed and dimacs
+            // ids are 1-indexed
+            std::cout << "q " << start_id+1 << " " << goal_id+1 << std::endl;
         }
     }
     else

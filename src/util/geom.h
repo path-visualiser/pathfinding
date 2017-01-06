@@ -40,6 +40,20 @@ struct rectangle
         y2 = other.y2;
     }
 
+    bool
+    operator==(const rectangle& other)
+    {
+        return 
+            x1 == other.x1 && x2 == other.x2 &&
+            y1 == other.y1 && y2 == other.y2;
+    }
+
+    bool
+    operator!=(const rectangle& other)
+    {
+        return !this->operator==(other);
+    }
+
     uint32_t
     get_width() { return x2 - x1; }
 

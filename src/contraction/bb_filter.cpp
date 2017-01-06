@@ -141,8 +141,6 @@ warthog::bb_filter::compute(uint32_t startid, uint32_t endid)
                     // all the other nodes
                     { it = idmap.find(n->get_parent()->get_id()); }
 
-
-
                     if(it == idmap.end())
                     {
                         std::cerr << "err; invalid first edge; "
@@ -210,10 +208,10 @@ warthog::bb_filter::compute_ch(
             };
     dijkstra.apply_on_relax(relax_fn);
 
-    for(uint32_t i = 0; i < ((last_id_ - start_id_)+1); i++)
+    for(uint32_t i = start_id_; i <= last_id_; i++)
     {
-        std::cerr << "\rprogress: " << (i+start_id_) << " / " << endid;
-        uint32_t source_id = i + start_id_;
+        std::cerr << "\rprocessing node: " << i << ". continue to " << last_id_;
+        uint32_t source_id = i;
         dijkstra.get_length( warthog::problem_instance(
                     source_id, warthog::INF));
         
@@ -226,14 +224,14 @@ warthog::bb_filter::compute_ch(
         // we need an easy way to convert between the ids of nodes
         // adjacent to the source and their corresponding edge index
         std::unordered_map<uint32_t, uint32_t> idmap;
-        uint32_t edge_idx = 0;
         for(warthog::graph::edge_iter it = source->outgoing_begin(); 
                 it != source->outgoing_end(); it++)
         {
+            uint32_t edge_idx = it - source->outgoing_begin();
             idmap.insert(
                     std::pair<uint32_t, uint32_t>((*it).node_id_, edge_idx));
-            edge_idx++;
         }
+        assert(idmap.size() == source->out_degree());
 
         // compute the extent of each rectangle bounding box
         std::function<void(warthog::search_node*)> bbox_fn = 
@@ -269,6 +267,7 @@ warthog::bb_filter::compute_ch(
                     this->labels_.back().at((*it).second).grow(x, y);
                     assert(this->labels_.back().at((*it).second).is_valid());
                 };
+
         dijkstra.apply_to_closed(bbox_fn);
     }
     std::cerr << "\nall done\n"<< std::endl;
@@ -283,13 +282,17 @@ warthog::bb_filter::print(std::ostream& out)
         << "# Ties are broken using the original input ordering \n"
         << "# (lower is better)\n";
     out << "firstnode " << start_id_ << " lastnode " << last_id_ << "\n";
+    warthog::geom::rectangle dummy;
     for(uint32_t i = 0; i < labels_.size(); i++)
     {
         std::vector<warthog::geom::rectangle> vrect = labels_.at(i);
         for(uint32_t j = 0; j < vrect.size(); j++)
         {
             warthog::geom::rectangle rect = vrect.at(j);
-            out << rect.x1 << "\t" << rect.y1 << "\t"
+            if(rect != dummy) { assert(rect.is_valid()); }
+            out 
+                //<< i << " " << j << " " << 
+                << rect.x1 << "\t" << rect.y1 << "\t"
                 << rect.x2 << "\t" << rect.y2 << "\t"
                 << std::endl;
         }
@@ -342,7 +345,9 @@ warthog::bb_filter::load_labels(const char* filename)
         std::cerr << " invalid header values in file " << filename << "\n";
         return false;
     }
+    lines++;
 
+    warthog::geom::rectangle dummy;
     for(uint32_t i = start_id_; i <= last_id_; i++)
     {
         warthog::graph::node* n = g_->get_node(i);
@@ -362,7 +367,15 @@ warthog::bb_filter::load_labels(const char* filename)
 
             int32_t x1, y1, x2, y2;
             ifs >> x1 >> y1 >> x2 >> y2;
-            labels_.at(i).push_back(warthog::geom::rectangle(x1, y1, x2, y2));
+            warthog::geom::rectangle rect = warthog::geom::rectangle(x1, y1, x2, y2);
+            if(rect != dummy && !rect.is_valid())
+            {
+                std::cerr << "err; invalid label on line " << lines <<"\n";
+                labels_.clear();
+                return false;
+            }
+            labels_.at(i).push_back(rect);
+            lines++;
         }
     }
     ifs.close();

@@ -226,6 +226,7 @@ class flexible_astar : public warthog::search
             { 
                 target = expander_->generate_target_node(&instance); 
                 instance.set_target_id(target->get_id());
+                target = 0; // just need the id; FIXME: hacky 
             }
 
 

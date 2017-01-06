@@ -132,7 +132,6 @@ class bbaf_filter
         void 
         init(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* part);
-
 };
 
 }

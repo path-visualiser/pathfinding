@@ -11,6 +11,8 @@
 #include <iostream>
 #include <set>
 
+const size_t word_sz = sizeof(uint64_t);
+
 warthog::bbaf_filter::bbaf_filter(
         warthog::graph::planar_graph* g, std::vector<uint32_t>* part)
 {
@@ -103,10 +105,11 @@ warthog::bbaf_filter::print(std::ostream& out)
         << " partitions " << nparts_ << std::endl;
 
     // we split labels into 64bit words for printing
-    uint32_t words_per_label = bytes_per_label_ / 8;
-    if((bytes_per_label_ % 8) > 0) words_per_label++;
+    uint32_t words_per_label = bytes_per_label_ / word_sz;
+    if((bytes_per_label_ % word_sz) > 0) words_per_label++;
 
     // iterate over the labels for each outgoing arc of each node
+    warthog::geom::rectangle dummy;
     for(uint32_t i = firstid_; i <= lastid_; i++)
     {
         std::vector<bbaf_label>& arclabs = labels_.at(i);
@@ -116,13 +119,13 @@ warthog::bbaf_filter::print(std::ostream& out)
             bbaf_label& label = arclabs.at(j);
             for(uint32_t word = 0; word < words_per_label; word++)
             {
-                uint8_t printed_word[8];
-                for(uint32_t k = 0; k < 8; k++)
+                uint8_t printed_word[word_sz];
+                for(uint32_t k = 0; k < word_sz; k++)
                 {
                     // read the flag label, byte by byte, one word at a time
-                    if((word*8+k) < bytes_per_label_)
+                    if((word*word_sz+k) < bytes_per_label_)
                     {
-                        printed_word[k] = label.flags_[word*8+k];
+                        printed_word[k] = label.flags_[word*word_sz+k];
                     }
                     // pad the last word with leading zeroes if necessary
                     else
@@ -134,9 +137,9 @@ warthog::bbaf_filter::print(std::ostream& out)
             }
 
             // print the bounding box
+            assert(label.bbox_ == dummy || label.bbox_.is_valid());
             out << label.bbox_.x1 << " " << label.bbox_.y1 << " " 
-                << label.bbox_.y1 << " " << label.bbox_.y2;
-
+                << label.bbox_.x2 << " " << label.bbox_.y2;
             out << std::endl;
         }
     }
@@ -149,11 +152,12 @@ warthog::bbaf_filter::load_labels(const char* filename)
     std::ifstream ifs(filename);
 
     uint32_t num_parts;
+    uint32_t lines = 1;
 
     // skip comment lines
     while(ifs.peek() == '#')
     {
-        while(ifs.get() != '\n');
+        while(ifs.get() != '\n') { lines++; }
     }
 
     // read header
@@ -195,11 +199,12 @@ warthog::bbaf_filter::load_labels(const char* filename)
             << "firstnode [integer] lastnode [integer] partitions [integer]\n";
         return false;
     }
+    lines++;
 
     // read labels for each outgoing arc
-    uint32_t words_per_label = (bytes_per_label_ / 8);
-    if((bytes_per_label_ % 8) != 0) { bytes_per_label_++; }
-    uint32_t lines = 0;
+    uint32_t words_per_label = (bytes_per_label_ / word_sz);
+    if(bytes_per_label_ % word_sz != 0) { words_per_label++; }
+
     for(uint32_t i = firstid_; i < (lastid_+1); i++)
     {
         warthog::graph::node* n = g_->get_node(i);
@@ -212,13 +217,14 @@ warthog::bbaf_filter::load_labels(const char* filename)
                     std::cerr 
                         << "unexpected error reading arcflags data on line "
                         << lines << "; aborting\n";
+                    labels_.clear();
                     return false;
                 }
 
                 uint64_t label;
                 ifs >> label;
-                *((uint64_t*)&labels_.at(i).at(j).flags_[word*8]) = label;
-                assert(*((uint64_t*)&labels_.at(i).at(j).flags_[word*8])
+                *((uint64_t*)&labels_.at(i).at(j).flags_[word*word_sz]) = label;
+                assert(*((uint64_t*)&labels_.at(i).at(j).flags_[word*word_sz])
                             == label);
             }
 
@@ -227,11 +233,19 @@ warthog::bbaf_filter::load_labels(const char* filename)
                 std::cerr 
                     << "unexpected error reading arcflags data on line "
                     << lines << "; aborting\n";
+                labels_.clear();
                 return false;
             }
 
             uint32_t x1, y1, x2, y2;
             ifs >> x1 >> y1 >> x2 >> y2;
+            if(x2 < x1 || y2 < y1)
+            {
+                std::cerr << "err; invalid label on line " << lines <<"\n";
+                labels_.clear();
+                return false;
+            }
+
             labels_.at(i).at(j).bbox_.x1 = x1;
             labels_.at(i).at(j).bbox_.y1 = y1;
             labels_.at(i).at(j).bbox_.x2 = x2;
@@ -269,6 +283,7 @@ warthog::bbaf_filter::compute_ch( uint32_t startid, uint32_t endid,
     warthog::flexible_astar<
         warthog::zero_heuristic,
         warthog::fch_expansion_policy> dijkstra(&heuristic, &expander);
+    //dijkstra.set_verbose(true);
 
     // need to keep track of the first edge on the way to the current node
     // (the solution is a bit hacky as we break the chain of backpointers 
@@ -315,6 +330,7 @@ warthog::bbaf_filter::compute_ch( uint32_t startid, uint32_t endid,
 
         // analyse the nodes on the closed list and label the edges of the 
         // source node accordingly
+        //std::cerr << "\n";
         std::function<void(warthog::search_node*)> fn_arcflags =
                 [this, rank, &source_id, &idmap](warthog::search_node* n) -> void
                 {
@@ -322,6 +338,7 @@ warthog::bbaf_filter::compute_ch( uint32_t startid, uint32_t endid,
                     assert(n);
                     if(n->get_id() == source_id) { return; } 
                     assert(n->get_parent());
+
 
                     // label the edges of the source
                     // (TODO: make this stuff faster)
@@ -332,6 +349,9 @@ warthog::bbaf_filter::compute_ch( uint32_t startid, uint32_t endid,
                     labels_.at(source_id).at(e_idx).flags_[part_id >> 3]
                         |= (1 << (part_id & 7));
 
+                    //std::cerr << "source " << source_id << " e_idx " << e_idx << " ";
+                    //n->print(std::cerr);
+
                     // only nodes that are in the down-closure get added
                     // to the bounding box
                     if(rank->at(n->get_id()) < rank->at(source_id))
@@ -341,10 +361,24 @@ warthog::bbaf_filter::compute_ch( uint32_t startid, uint32_t endid,
                         assert(x != warthog::INF && y != warthog::INF);
                         labels_.at(source_id).at(e_idx).bbox_.grow(x, y);
                         assert(labels_.at(source_id).at(e_idx).bbox_.is_valid());
+                        //std::cerr << " GROWBB ";
                     }
+                    //std::cerr << std::endl;
 
                 };
         dijkstra.apply_to_closed(fn_arcflags);
+        //std::cerr << "\n";
+
+//        for(warthog::graph::edge_iter it = source->outgoing_begin(); 
+//                it != source->outgoing_end(); it++)
+//        {
+//            uint32_t edge_idx = it - source->outgoing_begin();
+//            warthog::geom::rectangle rect = labels_.at(i).at(edge_idx).bbox_;
+//            std::cerr 
+//                << i << " " << edge_idx  << " " 
+//                << rect.x1 << " " << rect.y1  << " "
+//                << rect.x2 << " " << rect.y2 << "\n";
+//        }
     }
     std::cerr << "\nall done\n"<< std::endl;
 
