@@ -760,7 +760,7 @@ int main(int argc, char** argv)
     }
     else
     {
-        std::cerr << "invalid or missing argument: --type";
+        std::cerr << "invalid or missing argument: --type\n";
     }
     return 0;
 }

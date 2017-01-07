@@ -60,8 +60,8 @@ struct rectangle
     uint32_t
     get_height() { return y2 - y1; }
 
-    uint32_t
-    get_area() { return (x2 - x1) * (y2 - y1); }
+    uint64_t
+    get_area() { return (uint64_t)(x2 - x1) * (uint64_t)(y2 - y1); }
 
     void
     grow(int32_t x, int32_t y)
@@ -87,16 +87,39 @@ struct rectangle
         return x >= x1 && x <= x2 && y >= y1 && y <= y2;
     }
 
+    // we compute the intersection of two rectangles 
+    // r1 and r2 as follows: 
+    // (1) create a bounding box r3 that contains r1 and r2
+    // call its area A_r3
+    // (2) create a rectangle r4 with dimensions
+    // width = r1.width + r2.width and 
+    // height = r1.height + r2.height
+    // Call its area A_r4
+    //
+    // If A_r3 > A_r4 there cannot be any overlap
+    // If A_r3 < A_r4 r1 and r2 definitely overlap
+    // If A_r3 == A_r4 then r1 and r2 touch
+    //
+    // If the area from (2) is less than the area 
+    // of (1) there is no overlap. 
+    // if there is no overlap. On the other hand
+    // if the area from (1) is smaller, the rectangles 
+    // must overlap 
     bool 
     intersects(warthog::geom::rectangle& r)
     {
-        rectangle tmp(*this);
-        tmp.grow(r);
-        
-        uint64_t bound = 
-            (this->get_width() + r.get_width()) *
-            (this->get_height() + r.get_height());
-        if(tmp.get_area() < bound) { return true; }
+        rectangle r3(*this);
+        r3.grow(r);
+
+        rectangle r4;
+        r4.x1 = r3.x1;
+        r4.y1 = r3.y1;
+        r4.y2 = r4.y1 + (this->get_height() + r.get_height());
+        r4.x2 = r4.x1 + (this->get_width() + r.get_width());
+
+        uint64_t r3_area = r3.get_area();
+        uint64_t r4_area = r4.get_area();
+        if(r3_area <= r4_area) { return true; }
         return false;
     }
 
