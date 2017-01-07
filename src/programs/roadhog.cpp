@@ -1396,11 +1396,9 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
+    // create a search algo
     warthog::euclidean_heuristic h(pg.get());
-    h.set_hscale(warthog::ONE);
-
     warthog::fch_bb_cpg_expansion_policy fexp(&cpg, &order, &filter);
-
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_bb_cpg_expansion_policy>
     alg(&h, &fexp);
@@ -1454,6 +1452,11 @@ run_dimacs(warthog::util::cfg& cfg)
 
     warthog::dimacs_parser parser;
     parser.load_instance(problemfile.c_str());
+    if(parser.num_experiments() == 0)
+    {
+        std::cerr << "err; specified problem file contains no instances\n";
+        return;
+    }
 
     if(alg_name == "dijkstra")
     {

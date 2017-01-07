@@ -174,7 +174,7 @@ warthog::graph::corner_point_graph::insert_start(
     warthog::gridmap* gm = cpl_->get_map();
     gm->to_unpadded_xy(start_grid_id, sx, sy);
     sx *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-    sy = warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+    sy *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
     g_->set_xy(s_graph_id_, (int32_t)sx, (int32_t)sy);
 
     id_map_.insert(std::pair<uint32_t, uint32_t>(s_grid_id_, s_graph_id_));

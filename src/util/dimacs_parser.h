@@ -116,6 +116,10 @@ class dimacs_parser
             return experiments_->begin();
         }
 
+        inline uint32_t 
+        num_experiments() { return experiments_->size(); }
+
+
 
         inline warthog::dimacs_parser::experiment_iterator
         experiments_end()

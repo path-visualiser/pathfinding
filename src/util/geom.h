@@ -92,11 +92,12 @@ struct rectangle
     {
         rectangle tmp(*this);
         tmp.grow(r);
-        uint32_t bound = 
+        
+        uint64_t bound = 
             (this->get_width() + r.get_width()) *
             (this->get_height() + r.get_height());
-        if(tmp.get_area() > bound) { return false; }
-        return true;
+        if(tmp.get_area() < bound) { return true; }
+        return false;
     }
 
     bool 
