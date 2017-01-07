@@ -338,13 +338,19 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
     }
     std::cerr << "conversion done; " << nodes.size() << " nodes and " << num_undirected_edges << " edges; printing\n";
 
+    uint32_t id_offset = 0;
+    if(*nodes.begin() == 0)
+    {
+        id_offset = 1;
+    }
+
     out << nodes.size() << " " << num_undirected_edges << std::endl;
     for(auto it = nodes.begin(); it != nodes.end(); it++)
     {
         std::set<uint32_t>& neis = adj.find(*it)->second;
         for(auto nit = neis.begin();  nit != neis.end(); nit++)
         {
-            out << *nit << " "; 
+            out << (*nit) + id_offset << " "; 
         }
         out << std::endl;
     }

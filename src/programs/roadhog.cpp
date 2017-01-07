@@ -73,7 +73,7 @@ help()
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tch, chase, chaf, chaf-bb, ch-cpg\n"
     << "\tfch, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
-    << "\tfch-cpg, fch-bb-cpg\n"
+    << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at uuntime\n";
 }
@@ -1034,11 +1034,9 @@ run_fch_bbaf_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
+    // search algo
     warthog::euclidean_heuristic h(pg.get());
-    h.set_hscale(warthog::ONE);
-
     warthog::fch_bbaf_cpg_expansion_policy fexp(&cpg, &order, &filter);
-
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_bbaf_cpg_expansion_policy>
     alg(&h, &fexp);
@@ -1316,13 +1314,9 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // expander
-    warthog::fch_af_cpg_expansion_policy fexp(&cpg, &order, &filter);
-
-    // heuristic 
+    // search algo
     warthog::euclidean_heuristic h(pg.get());
-    h.set_hscale(warthog::ONE);
-
+    warthog::fch_af_cpg_expansion_policy fexp(&cpg, &order, &filter);
     warthog::flexible_astar< warthog::euclidean_heuristic, 
         warthog::fch_af_cpg_expansion_policy> alg(&h, &fexp);
     alg.set_verbose(verbose);
