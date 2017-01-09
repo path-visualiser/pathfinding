@@ -71,6 +71,7 @@ warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order,
 }
 
 typedef std::set<uint32_t>::iterator set_iter;
+
 void
 warthog::ch::compute_closure(uint32_t source, 
         warthog::graph::planar_graph* g, std::set<uint32_t>* closure, 
@@ -104,6 +105,38 @@ warthog::ch::compute_closure(uint32_t source,
                 it++)
         {
             stack.push(std::pair<uint32_t, uint32_t>((*it).node_id_, depth+1));
+        }
+    }
+}
+
+void
+warthog::ch::compute_down_closure(uint32_t source, 
+        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
+        std::set<uint32_t>* closure)
+{
+    closure->insert(source);
+
+    std::stack<uint32_t> stack; 
+    stack.push(source);
+    while(stack.size() != 0)
+    {
+        uint32_t top_id = stack.top();
+        stack.pop();
+
+        warthog::graph::node* top = g->get_node(top_id);
+        for( warthog::graph::edge_iter it = top->outgoing_begin(); 
+                it != top->outgoing_end(); 
+                it++)
+        {
+            uint32_t next_id = it->node_id_; 
+            if(rank->at(next_id) < rank->at(top_id)) 
+            { 
+                if(closure->find(next_id) == closure->end())
+                {
+                    stack.push(next_id); 
+                    closure->insert(next_id);
+                }
+            }
         }
     }
 }

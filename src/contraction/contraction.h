@@ -76,6 +76,11 @@ void
 compute_closure(uint32_t source, warthog::graph::planar_graph* g, 
         std::set<uint32_t>* closure, uint32_t maxdepth=warthog::INF);
 
+void
+compute_down_closure(uint32_t source, 
+        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
+        std::set<uint32_t>* closure);
+
 // given an existing contraction hierarchy, create a partition
 // of the nodes using a greedy bottom-up partitioning scheme.
 // the result of the partitioning is a labeling of each node with
