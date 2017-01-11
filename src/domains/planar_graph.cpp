@@ -278,7 +278,7 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss,
 
     if(nodes_sz_ > 0)
     {
-        oss << "p sp " << nodes_sz_ << " " << 
+        oss << "p sp " << (last_id - first_id) << " " << 
             this->get_num_edges() << std::endl;
         for(uint32_t i = first_id; i < last_id; i++)
         {
@@ -303,9 +303,7 @@ warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss,
 
     if(nodes_sz_ > 0)
     {
-        // dimacs vertex ids should always begin from index 1
-        // here we apply a delta to make sure that's always so
-        oss << "p aux sp co " << nodes_sz_ << std::endl;
+        oss << "p aux sp co " << (last_id - first_id) << std::endl;
         for(uint32_t i = first_id; i < last_id; i++)
         {
             oss << "v " << to_external_id(i) 

@@ -287,16 +287,16 @@ compute_chaf_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
-    std::string partfile = cfg.get_param_value("input");
     std::string orderfile = cfg.get_param_value("input");
+    std::string partfile = cfg.get_param_value("input");
 
     if( grfile == "" || cofile == "" || partfile == "" || orderfile == "")
     {
         std::cerr << "err; insufficient input parameters."
                   << " required, in order:\n"
                   << " --input [gr file] [co file]"
-                  << " [graph partition file]"
-                  << " [node ordering file]\n";
+                  << " [node ordering file]"
+                  << " [graph partition file]\n";
         return;
     }
     std::cerr << "computing labels" << std::endl;
@@ -499,16 +499,16 @@ compute_chbbaf_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
-    std::string partfile = cfg.get_param_value("input");
     std::string orderfile = cfg.get_param_value("input");
+    std::string partfile = cfg.get_param_value("input");
 
     if( grfile == "" || cofile == "" || partfile == "" || orderfile == "")
     {
         std::cerr << "err; insufficient input parameters."
                   << " required, in order:\n"
                   << " --input [gr file] [co file]"
-                  << " [graph partition file]"
-                  << " [node ordering file]\n";
+                  << " [node ordering file]"
+                  << " [graph partition file]\n";
         return;
     }
     std::cerr << "computing labels" << std::endl;

@@ -337,10 +337,16 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
     }
     std::cerr << "conversion done; " << nodes.size() << " nodes and " << num_undirected_edges << " edges; printing\n";
 
-    uint32_t id_offset = 0;
-    if(*nodes.begin() == 0)
+    // ids need to be a contiguous series, from 1 to nodes.size()
+    // here we convert the identifiers (since the input file may 
+    // not be dimacs compliant in this respect)
+    std::unordered_map<uint32_t, uint32_t> id_map;
+    uint32_t current_id = 1;
+    for(std::set<uint32_t>::iterator it = nodes.begin(); 
+            it != nodes.end(); it++)
     {
-        id_offset = 1;
+        id_map.insert(std::pair<uint32_t, uint32_t>(*it, current_id));
+        current_id++;
     }
 
     out << nodes.size() << " " << num_undirected_edges << std::endl;
@@ -349,7 +355,7 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
         std::set<uint32_t>& neis = adj.find(*it)->second;
         for(auto nit = neis.begin();  nit != neis.end(); nit++)
         {
-            out << (*nit) + id_offset << " "; 
+            out << (*id_map.find((*nit))).second << " "; 
         }
         out << std::endl;
     }

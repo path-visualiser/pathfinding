@@ -109,9 +109,9 @@ class corner_point_graph
         }
 
         inline uint32_t
-        add_node(int32_t x, int32_t y)
+        add_node(int32_t x, int32_t y, uint32_t ext_id = warthog::INF)
         {
-            uint32_t graph_id = g_->add_node(x, y);
+            uint32_t graph_id = g_->add_node(x, y, ext_id);
             if(e_lab_index_)
             {
                 if(graph_id >= e_lab_index_->size())

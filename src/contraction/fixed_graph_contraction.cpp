@@ -78,9 +78,15 @@ warthog::ch::fixed_graph_contraction::witness_search(
     // only search for witness paths between uncontracted neighbours
     if(filter_->get_flag(from_id) || filter_->get_flag(to_id)) { return 0; }
 
+    // pathfinding queries must specify an external start and target id
+    // (i.e. as they appear in the input file)
+    warthog::graph::planar_graph* g = this->get_graph();
+    uint32_t ext_from_id = g->to_external_id(from_id);
+    uint32_t ext_to_id = g->to_external_id(to_id);
+
     // run the search
     alg_->set_cost_cutoff(via_len);
-    warthog::problem_instance pi(from_id, to_id);
+    warthog::problem_instance pi(ext_from_id, ext_to_id);
     double witness_len = alg_->get_length(pi);
     total_expansions_ += alg_->get_nodes_expanded();
     total_searches_++;

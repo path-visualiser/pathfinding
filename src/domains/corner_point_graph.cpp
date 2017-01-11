@@ -97,7 +97,7 @@ warthog::graph::corner_point_graph::construct()
         {
             int32_t x = gm_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
             int32_t y = gm_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-            from_id = this->add_node(x, y);
+            from_id = this->add_node(x, y, index);
             id_map_.insert(std::pair<uint32_t, uint32_t>(gm_id, from_id));
         }
         else { from_id = it_from_id->second; }
@@ -125,7 +125,7 @@ warthog::graph::corner_point_graph::construct()
                     gm->to_unpadded_xy(jp_id, jp_x, jp_y);
                     int32_t x = jp_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
                     int32_t y = jp_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-                    to_id = this->add_node(x, y);
+                    to_id = this->add_node(x, y, jp_y * gm->header_width() + jp_x);
                     id_map_.insert(std::pair<uint32_t, uint32_t>(jp_id, to_id));
                 }
                 else { to_id = it_to_id->second; }

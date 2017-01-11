@@ -101,7 +101,8 @@ warthog::bb_filter::compute(uint32_t startid, uint32_t endid)
     {
         std::cerr << "\rprogress: " << (i+start_id_) << " / " << endid;
         uint32_t source_id = i + start_id_;
-        warthog::problem_instance pi(source_id, warthog::INF);
+        uint32_t ext_source_id = g_->to_external_id(source_id);
+        warthog::problem_instance pi(ext_source_id, warthog::INF);
         dijkstra.get_length(pi);
         
         // create a rectangle label for every outgoing edge
@@ -212,8 +213,9 @@ warthog::bb_filter::compute_ch(
     {
         std::cerr << "\rprocessing node: " << i << ". continue to " << last_id_;
         uint32_t source_id = i;
-        dijkstra.get_length( warthog::problem_instance(
-                    source_id, warthog::INF));
+        uint32_t ext_source_id = g_->to_external_id(source_id);
+        dijkstra.get_length( 
+                warthog::problem_instance(ext_source_id, warthog::INF));
         
         // create a rectangle label for every outgoing edge
         warthog::graph::node* source = g_->get_node(source_id);

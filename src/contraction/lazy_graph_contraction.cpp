@@ -208,8 +208,15 @@ warthog::ch::lazy_graph_contraction::witness_search(
 
     alg_->set_cost_cutoff(via_len);
     alg_->set_max_expansions_cutoff(ws_max_expansions_);
-    double witness_len = alg_->get_length(
-            warthog::problem_instance(from_id, to_id));
+    warthog::graph::planar_graph* g = this->get_graph();
+
+    // need to specify start + target ids using the identifier
+    // that appears in the input file
+    uint32_t ext_from_id = g->to_external_id(from_id);
+    uint32_t ext_to_id = g->to_external_id(to_id);
+
+    warthog::problem_instance pi(ext_from_id, ext_to_id);
+    double witness_len = alg_->get_length(pi);
     total_expansions_ += alg_->get_nodes_expanded();
     total_searches_++;
     return witness_len;
