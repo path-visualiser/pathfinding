@@ -111,9 +111,8 @@ run_jpsplus(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -158,9 +157,8 @@ run_jps2plus(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -205,9 +203,8 @@ run_jps2(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -245,9 +242,8 @@ run_jps(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -286,9 +282,8 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid), 
-				map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -327,9 +322,9 @@ run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid), 
-				map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
+				
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -372,9 +367,8 @@ run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid), 
-				map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -411,8 +405,7 @@ run_wgm_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 		warthog::experiment* exp = scenmgr.get_experiment(i);
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		astar.get_length(warthog::problem_instance(
-                    map.to_padded_id(startid), warthog::INF));
+		astar.get_length(warthog::problem_instance(startid, warthog::INF));
 
 		std::cout << i<<"\t" << alg_name << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -442,8 +435,7 @@ run_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 		warthog::experiment* exp = scenmgr.get_experiment(i);
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		astar.get_length(warthog::problem_instance(
-                    map.to_padded_id(startid), warthog::INF));
+		astar.get_length(warthog::problem_instance(startid, warthog::INF));
 
 		std::cout << i<<"\t" << alg_name << "\t" 
 		<< astar.get_nodes_expanded() << "\t" 
@@ -478,9 +470,8 @@ run_jps_wgm(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(warthog::problem_instance(
-				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid)));
+		double len = astar.get_length(
+                warthog::problem_instance(startid, goalid));
 		if(len == warthog::INF)
 		{
 			len = 0;
@@ -509,7 +500,6 @@ run_jpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::jps::jpg_expansion_policy expander(cpg.get());
 
 	warthog::octile_heuristic heuristic(map->width(), map->height());
-    heuristic.set_hscale(warthog::ONE);
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps::jpg_expansion_policy> 
@@ -521,15 +511,10 @@ run_jpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = map->to_padded_id( 
-                exp->starty() * exp->mapwidth() + exp->startx());
-		uint32_t goalid = map->to_padded_id(
-                exp->goaly() * exp->mapwidth() + exp->goalx());
+		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
+		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
 
         mytimer.start();
-        cpg->insert(startid, goalid);
-        startid = cpg->get_inserted_start_id();
-        goalid = cpg->get_inserted_target_id();
 		double len = astar.get_length(
                 warthog::problem_instance(startid, goalid));
         mytimer.stop();
@@ -563,7 +548,6 @@ run_cpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::cpg_expansion_policy expander(cpg.get());
 
 	warthog::octile_heuristic heuristic(map->width(), map->height());
-    heuristic.set_hscale(warthog::ONE);
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::cpg_expansion_policy> 
@@ -575,15 +559,10 @@ run_cpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = map->to_padded_id( 
-                exp->starty() * exp->mapwidth() + exp->startx());
-		uint32_t goalid = map->to_padded_id(
-                exp->goaly() * exp->mapwidth() + exp->goalx());
+		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
+		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
 
         mytimer.start();
-        cpg->insert(startid, goalid);
-        startid = cpg->get_inserted_start_id();
-        goalid = cpg->get_inserted_target_id();
 		double len = astar.get_length(
                 warthog::problem_instance(startid, goalid));
         mytimer.stop();

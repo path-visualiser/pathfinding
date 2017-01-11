@@ -13,7 +13,7 @@
 // 2^32 nodes and edges.
 //
 // @author: dharabor
-// @created: 2015-01-07
+// @created: 2016-01-07
 //
 
 #include "constants.h"
@@ -37,6 +37,9 @@ class planar_graph
         planar_graph(warthog::gridmap* gm, bool store_incoming=true);
         planar_graph(warthog::graph::planar_graph& other);
         ~planar_graph();
+
+        warthog::graph::planar_graph&
+        operator=(const warthog::graph::planar_graph& other);
 
         // read in a grid map in the format used at the 
         // international Grid-based Path Planning Competition
@@ -140,20 +143,10 @@ class planar_graph
         //
         // @param x: the x-coordinate of the new node
         // @param y: the y-coordinate of the new node
+        // @param ext_id: an (optional) external id for this node
         // @return: the internal graph id of the new node
-        inline uint32_t
-        add_node(int32_t x, int32_t y)
-        {
-            if(nodes_cap_ == nodes_sz_)
-            {
-                resize(nodes_cap_ == 0 ? 1 : (nodes_cap_*2));
-            }
-            uint32_t index = nodes_sz_;
-            nodes_sz_++;
-            xy_[index*2] = x;
-            xy_[index*2+1] = y;
-            return index;
-        }
+        uint32_t
+        add_node(int32_t x, int32_t y, uint32_t ext_id = warthog::INF);
 
         // print extra stuff to std::err 
         inline void 
@@ -188,16 +181,50 @@ class planar_graph
         
         // convert an external node id (e.g. as it appears in an input file)
         // to the equivalent internal id used by the current graph
+        //
+        // @param ex_id: the external id of the node
+        // @return: the corresponding internal id for @param ex_id
+        // if ex_id did not appear in the input file (or if the graph
+        // was not created from an input file) the function returns
+        // the value warthog::INF
         inline uint32_t 
-        to_graph_id(uint32_t ex_id) { return ex_id - ID_OFFSET; }
+        to_graph_id(uint32_t ex_id) 
+        { 
+            if(id_map_.size() == 0) { return warthog::INF; }
+
+            uint32_t min = 0;
+            uint32_t max = id_map_.size()-1;
+            uint32_t pos = max >> 1;
+            while(min <= max)
+            {
+                uint32_t current = id_map_.at(pos);
+                if(current == ex_id) { return pos; }
+                if(ex_id < current) { max = pos-1; }
+                else { min = pos+1; }
+                pos = (max+min) >> 1;
+            } 
+            return warthog::INF;
+        }
 
         // convert an internal node id (i.e. as used by the current graph
         // to the equivalent external id (e.g. as appears in an input file)
+        //
+        // @param ex_id: the external id of the node
+        // @return: the corresponding internal id for @param ex_id
+        // if ex_id did not appear in the input file (or if the graph
+        // was not created from an input file) the function returns
+        // the value warthog::INF
         inline uint32_t 
-        to_external_id(uint32_t in_id) { return in_id + ID_OFFSET; }
+        to_external_id(uint32_t in_id) 
+        { 
+            if(in_id > nodes_sz_) { return warthog::INF; }
+            return id_map_.at(in_id);
+        }
+
 
     private:
         std::string filename_;
+        std::vector<uint32_t> id_map_;
         
         // the set of nodes that comprise the graph
         uint32_t nodes_sz_;
@@ -208,10 +235,6 @@ class planar_graph
         int32_t* xy_;
 
         bool verbose_;
-
-        // Sometimes graphs are given with id ranges that do not begin from
-        // zero. We convert these to a 0-indexed scheme by way of an offset
-        uint32_t ID_OFFSET; 
 
         size_t
         resize(uint32_t new_cap);

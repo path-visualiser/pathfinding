@@ -95,3 +95,28 @@ warthog::chafbb_expansion_policy::mem()
         expansion_policy::mem() + 
         sizeof(this);
 }
+
+void
+warthog::chafbb_expansion_policy::get_xy(
+        uint32_t node_id, int32_t& x, int32_t& y)
+{
+    g_->get_xy(node_id, x, y);
+}
+
+warthog::search_node* 
+warthog::chafbb_expansion_policy::generate_start_node(
+        warthog::problem_instance* pi)
+{
+    uint32_t s_graph_id = g_->to_graph_id(pi->get_start_id());
+    if(s_graph_id == warthog::INF) { return 0; }
+    return generate(s_graph_id);
+}
+
+warthog::search_node*
+warthog::chafbb_expansion_policy::generate_target_node(
+        warthog::problem_instance* pi)
+{
+    uint32_t t_graph_id = g_->to_graph_id(pi->get_target_id());
+    if(t_graph_id == warthog::INF) { return 0; }
+    return generate(t_graph_id);
+}

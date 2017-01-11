@@ -334,7 +334,6 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
         assert(iter1 != adj.end() && iter2 != adj.end());
         iter1->second.insert(id2);
         iter2->second.insert(id1);
-
     }
     std::cerr << "conversion done; " << nodes.size() << " nodes and " << num_undirected_edges << " edges; printing\n";
 

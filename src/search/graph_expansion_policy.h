@@ -48,6 +48,12 @@ class graph_expansion_policy : public expansion_policy
         inline warthog::node_filter* 
         get_filter() { return nf_; }
 
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi);
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi);
+
         virtual size_t
 		mem();
 

@@ -6,6 +6,7 @@ warthog::jps::jpg_expansion_policy::jpg_expansion_policy(
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
+    search_id_ = warthog::INF;
 }
 
 warthog::jps::jpg_expansion_policy::~jpg_expansion_policy()
@@ -40,6 +41,16 @@ warthog::jps::jpg_expansion_policy::expand(
         int32_t px, py, x, y;
         this->get_xy(graph_id, x, y);
         this->get_xy(current->get_parent()->get_id(), px, py);
+        
+        // TODO: fix these hacky divs. What's needed here is for
+        // warthog::corner_point_graph to allow easy conversion 
+        // between the graph id of a node and its grid id
+        // then, we call gm->to_unpadded_xy or similar
+        x /= warthog::ONE;
+        y /= warthog::ONE;
+        px /= warthog::ONE;
+        py /= warthog::ONE;
+
         warthog::jps::direction dir_c = 
             warthog::jps::compute_direction((uint32_t)px, (uint32_t)py, 
                     (uint32_t)x, (uint32_t)y);
@@ -83,3 +94,26 @@ warthog::jps::jpg_expansion_policy::mem()
         expansion_policy::mem() + sizeof(*this) + g_->mem();
 }
 
+warthog::search_node* 
+warthog::jps::jpg_expansion_policy::generate_start_node(
+        warthog::problem_instance* pi)
+{
+    if(pi->get_search_id() != search_id_)
+    {
+        g_->insert(pi->get_start_id(), pi->get_target_id());
+        search_id_ = pi->get_search_id();
+    }
+    return this->generate(g_->get_inserted_start_id());
+}
+
+warthog::search_node*
+warthog::jps::jpg_expansion_policy::generate_target_node(
+        warthog::problem_instance* pi)
+{
+    if(pi->get_search_id() != search_id_)
+    {
+        g_->insert(pi->get_start_id(), pi->get_target_id());
+        search_id_ = pi->get_search_id();
+    }
+    return this->generate(g_->get_inserted_target_id());
+}

@@ -68,6 +68,12 @@ class ch_expansion_policy : public  expansion_policy
         inline uint32_t
         get_num_nodes() { return g_->get_num_nodes(); }
 
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi);
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi);
+
         virtual size_t
         mem();
 

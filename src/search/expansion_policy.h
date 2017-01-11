@@ -77,6 +77,9 @@ class expansion_policy
             return (neis_->back()).node_;
         }
 
+        inline uint32_t 
+        get_num_neighbours() { return neis_->size(); } 
+
 		virtual size_t
 		mem()
 		{
@@ -92,18 +95,33 @@ class expansion_policy
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*) = 0;
 
-        // these next two function are responsible for generating the 
-        // starting node and the target node. the simplest concrete
-        // implementation is to call ::generate. more sophisticated
-        // versions may be required; e.g. if online insertion of 
-        // start and target points is required
+        // this function creates a warthog::search_node object for
+        // represent a given start state described by @param pi.
+        // the simplest concrete implementation is to call ::generate but 
+        // this assumes the identifier specified by @param pi is the same
+        // as the one used internally by the domain model the expansion
+        // policy is wrapping (e.g. a grid or a graph)
+        //
+        // @param pi: an problem describing a concrete start state
+        // @return: a warthog::search_node object representing 
+        // the start state. if the start state is invalid the
+        // function returns 0
         virtual warthog::search_node* 
-        generate_start_node(warthog::problem_instance* pi) 
-        { return generate(pi->get_start_id()); }
+        generate_start_node(warthog::problem_instance* pi) = 0;
 
+        // this function creates a warthog::search_node object for
+        // represent a given target state described by @param pi.
+        // the simplest concrete implementation is to call ::generate but 
+        // this assumes the identifier specified by @param pi is the same
+        // as the one used internally by the domain model the expansion
+        // policy is wrapping (e.g. a grid or a graph)
+        //
+        // @param pi: an problem describing a concrete target state
+        // @return: a warthog::search_node object representing 
+        // the target state. if the target state is invalid the
+        // function returns 0
         virtual warthog::search_node*
-        generate_target_node(warthog::problem_instance* pi)
-        { return generate(pi->get_target_id()); }
+        generate_target_node(warthog::problem_instance* pi) = 0;
       
         virtual void
         get_xy(uint32_t node_id, int32_t& x, int32_t& y) = 0;
@@ -137,9 +155,6 @@ class expansion_policy
             neis_->push_back(neighbour_record(nei, cost));
             //std::cout << " neis_.size() == " << neis_->size() << std::endl;
         }
-
-        inline uint32_t 
-        get_num_neighbours() { return neis_->size(); } 
 
         // return the index associated with the successor ::n()
         inline uint32_t 

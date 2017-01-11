@@ -48,3 +48,29 @@ warthog::jpsplus_expansion_policy::expand(
 	}
 }
 
+void
+warthog::jpsplus_expansion_policy::get_xy(
+        uint32_t node_id, int32_t& x, int32_t& y)
+{
+    map_->to_unpadded_xy(node_id, (uint32_t&)x, (uint32_t&)y);
+}
+
+warthog::search_node* 
+warthog::jpsplus_expansion_policy::generate_start_node(
+        warthog::problem_instance* pi)
+{ 
+    uint32_t max_id = map_->header_width() * map_->header_height();
+    if(pi->get_start_id() >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(pi->get_start_id());
+    return generate(padded_id);
+}
+
+warthog::search_node*
+warthog::jpsplus_expansion_policy::generate_target_node(
+        warthog::problem_instance* pi)
+{
+    uint32_t max_id = map_->header_width() * map_->header_height();
+    if(pi->get_target_id() >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(pi->get_target_id());
+    return generate(padded_id);
+}

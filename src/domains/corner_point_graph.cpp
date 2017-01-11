@@ -150,29 +150,46 @@ warthog::graph::corner_point_graph::insert(
 
     // NB: order is important here 
     // (target before start, lest we jump over the target)
-    insert_target(start_grid_id, target_grid_id);
-    insert_start(start_grid_id, target_grid_id);
+
+    warthog::gridmap* gm = cpl_->get_map();
+    uint32_t t_gm_id = gm->to_padded_id(target_grid_id);
+    uint32_t s_gm_id = gm->to_padded_id(start_grid_id);
+
+    id_map_iter myit = id_map_.find(t_gm_id);
+    if(myit != id_map_.end())
+    {
+        // nothing to insert
+        t_graph_id_ = myit->second;
+        t_grid_id_ = t_gm_id;
+    }
+    else
+    {
+        insert_target(s_gm_id, t_gm_id);
+    }
+    
+    myit = id_map_.find(s_gm_id);
+    if(myit != id_map_.end())
+    {
+        // nothing to insert
+        s_graph_id_ = myit->second;
+        s_grid_id_ = s_gm_id;
+    }
+    else
+    {
+        insert_start(s_gm_id, t_gm_id);
+    }
 }
 
 void
 warthog::graph::corner_point_graph::insert_start(
         uint32_t start_grid_id, uint32_t target_grid_id)
 {
-    id_map_iter myit = id_map_.find(start_grid_id);
-    if(myit != id_map_.end())
-    {
-        // nothing to insert
-        s_graph_id_ = myit->second;
-        s_grid_id_ = start_grid_id;
-        return;
-    }
-
     s_grid_id_ = start_grid_id;
     s_graph_id_ = S_DUMMY_ID;
 
-    uint32_t sx, sy;
     warthog::gridmap* gm = cpl_->get_map();
-    gm->to_unpadded_xy(start_grid_id, sx, sy);
+    uint32_t sx, sy;
+    gm->to_unpadded_xy(s_grid_id_, sx, sy);
     sx *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
     sy *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
     g_->set_xy(s_graph_id_, (int32_t)sx, (int32_t)sy);
@@ -185,7 +202,7 @@ warthog::graph::corner_point_graph::insert_start(
     for(uint32_t i = 0; i < 8; i++)
     {
         warthog::jps::direction d = (warthog::jps::direction)(1 << i);
-        cpl_->jump(d, start_grid_id, target_grid_id, corner_neis, costs);
+        cpl_->jump(d, s_grid_id_, target_grid_id, corner_neis, costs);
     }
 
     warthog::graph::node* s = g_->get_node(s_graph_id_);
@@ -216,17 +233,9 @@ void
 warthog::graph::corner_point_graph::insert_target(
         uint32_t start_grid_id, uint32_t target_grid_id)
 {
+    t_graph_id_ = T_DUMMY_ID;
     t_grid_id_ = target_grid_id;
 
-    id_map_iter myit = id_map_.find(target_grid_id);
-    if(myit != id_map_.end())
-    {
-        // nothing to insert
-        t_graph_id_ = myit->second;
-        return;
-    }
-
-    t_graph_id_ = T_DUMMY_ID;
     uint32_t tx, ty;
     warthog::gridmap* gm = cpl_->get_map();
     gm->to_unpadded_xy(target_grid_id, tx, ty);

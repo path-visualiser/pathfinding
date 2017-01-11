@@ -43,12 +43,14 @@ class jpsplus_expansion_policy : public expansion_policy
                 map_->mem() + jpl_->mem();
 		}
 
-        virtual inline void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y)
-        {
-            map_->to_unpadded_xy(node_id, (uint32_t&)x, (uint32_t&)y);
-        }
+        virtual void
+        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi);
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi);
 
 	private:
 		warthog::gridmap* map_;

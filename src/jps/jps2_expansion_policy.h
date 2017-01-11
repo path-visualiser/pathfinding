@@ -43,6 +43,12 @@ class jps2_expansion_policy : public expansion_policy
         virtual void
         get_xy(uint32_t node_id, int32_t& x, int32_t& y); 
 
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi);
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi);
+
         // this function gets called whenever a successor node is relaxed. at that
         // point we set the node currently being expanded (==current) as the 
         // parent of n and label node n with the direction of travel, 

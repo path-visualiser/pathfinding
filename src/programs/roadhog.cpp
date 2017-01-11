@@ -45,6 +45,8 @@
 #include "fch_bbaf_cpg_expansion_policy.h"
 #include "fch_cpg_expansion_policy.h"
 
+#include "fch_jpg_expansion_policy.h"
+
 #include "getopt.h"
 
 #include <fstream>
@@ -74,6 +76,7 @@ help()
     << "\tch, chase, chaf, chaf-bb, ch-cpg\n"
     << "\tfch, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
+    << "\tfch-jpg\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at uuntime\n";
 }
@@ -360,10 +363,8 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        uint32_t startid = map.get()->to_padded_id(exp.source);
-        uint32_t targetid = map.get()->to_padded_id(exp.target);
-		double len = alg.get_length(warthog::problem_instance(
-                    startid, targetid));
+		double len = alg.get_length(
+                warthog::problem_instance(exp.source, exp.target));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1049,10 +1050,8 @@ run_fch_bbaf_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        uint32_t startid = map.get()->to_padded_id(exp.source);
-        uint32_t targetid = map.get()->to_padded_id(exp.target);
-		double len = alg.get_length(warthog::problem_instance(
-                    startid, targetid));
+		double len = alg.get_length(
+                warthog::problem_instance(exp.source, exp.target));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1235,10 +1234,74 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     {
         warthog::dimacs_parser::experiment exp = (*it);
 
-        uint32_t startid = map.get()->to_padded_id(exp.source);
-        uint32_t targetid = map.get()->to_padded_id(exp.target);
-		double len = alg.get_length(warthog::problem_instance(
-                    startid, targetid));
+		double len = alg.get_length(
+                warthog::problem_instance(exp.source, exp.target));
+
+        std::cout << i++ <<"\t" << alg_name << "\t" 
+        << alg.get_nodes_expanded() << "\t" 
+        << alg.get_nodes_generated() << "\t"
+        << alg.get_nodes_touched() << "\t"
+        << alg.get_search_time()  << "\t"
+        << len << "\t" 
+        << gr << " " << parser.get_problemfile() << std::endl;
+    }
+}
+
+void
+run_fch_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    std::string gridmapfile = cfg.get_param_value("input");
+    if(co == "" || gr == "" || orderfile == "" || gridmapfile == "")
+    {
+        std::cerr << "err; insufficient input params for alg " << alg_name 
+                  << ". required (in, order) "
+                  << "--input [ gr file ] [co file]"
+                  << " [contraction order file] [gridmap file]\n";
+        return;
+    }
+    
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load contraction order file\n";
+        return;
+    }
+
+    // load up the grid
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(gridmapfile.c_str()));
+            
+    // load up the graph 
+    std::shared_ptr<warthog::graph::planar_graph> pg(
+            new warthog::graph::planar_graph());
+    pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
+
+    // wrapper
+    warthog::graph::corner_point_graph cpg(map, pg);
+
+    // expander
+    warthog::fch_jpg_expansion_policy fexp(&cpg, &order); 
+
+    // heuristic 
+    warthog::euclidean_heuristic h(pg.get());
+
+    warthog::flexible_astar< warthog::euclidean_heuristic, 
+        warthog::fch_jpg_expansion_policy> alg(&h, &fexp);
+    alg.set_verbose(verbose);
+
+    std::cerr << "running experiments\n";
+    int i = 0;
+    std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+    for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+            it != parser.experiments_end(); it++)
+    {
+        warthog::dimacs_parser::experiment exp = (*it);
+
+		double len = alg.get_length(
+                warthog::problem_instance(exp.source, exp.target));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1329,10 +1392,8 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     {
         warthog::dimacs_parser::experiment exp = (*it);
 
-        uint32_t startid = map.get()->to_padded_id(exp.source);
-        uint32_t targetid = map.get()->to_padded_id(exp.target);
-		double len = alg.get_length(warthog::problem_instance(
-                    startid, targetid));
+		double len = alg.get_length(
+                warthog::problem_instance(exp.source, exp.target));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1405,10 +1466,8 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             it != parser.experiments_end(); it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-        uint32_t startid = map.get()->to_padded_id(exp.source);
-        uint32_t targetid = map.get()->to_padded_id(exp.target);
-		double len = alg.get_length(warthog::problem_instance(
-                    startid, targetid));
+		double len = alg.get_length(
+                warthog::problem_instance(exp.source, exp.target));
 
         std::cout << i++ <<"\t" << alg_name << "\t" 
         << alg.get_nodes_expanded() << "\t" 
@@ -1531,6 +1590,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch-bbaf-cpg")
     {
         run_fch_bbaf_cpg(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "fch-jpg")
+    {
+        run_fch_jpg(cfg, parser, alg_name, gr, co);
     }
     else
     {

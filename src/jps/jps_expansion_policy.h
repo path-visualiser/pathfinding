@@ -41,7 +41,13 @@ class jps_expansion_policy : public expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y); 
+        get_xy(uint32_t nid, int32_t& x, int32_t& y);
+
+        virtual warthog::search_node* 
+        generate_start_node(warthog::problem_instance* pi);
+
+        virtual warthog::search_node*
+        generate_target_node(warthog::problem_instance* pi);
 
 		virtual inline size_t
 		mem()

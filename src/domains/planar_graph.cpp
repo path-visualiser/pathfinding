@@ -18,7 +18,6 @@ warthog::graph::planar_graph::planar_graph()
     nodes_sz_ = 0;
     nodes_cap_ = 0;
     verbose_ = false;
-    ID_OFFSET=0;
 }
 
 warthog::graph::planar_graph::planar_graph(
@@ -29,7 +28,6 @@ warthog::graph::planar_graph::planar_graph(
     nodes_sz_ = 0;
     nodes_cap_ = 0;
     verbose_ = false;
-    ID_OFFSET=0;
 
     grid2graph(map, store_incoming);
 }
@@ -37,12 +35,15 @@ warthog::graph::planar_graph::planar_graph(
 warthog::graph::planar_graph::planar_graph(
         warthog::graph::planar_graph& other)
 {
+    (*this) = other;
+}
+
+warthog::graph::planar_graph&
+warthog::graph::planar_graph::operator=(const warthog::graph::planar_graph& other)
+{
     verbose_ = other.verbose_;
     filename_ = other.filename_;
-    nodes_sz_ = other.nodes_sz_;
-    nodes_ = new warthog::graph::node[nodes_sz_];
-    xy_ = new int32_t[nodes_sz_*2];
-    ID_OFFSET = other.ID_OFFSET;
+    resize(other.nodes_sz_); // NB: minimum memory for new graph
 
     for(uint32_t i = 0; i < nodes_sz_; i++)
     {
@@ -50,6 +51,13 @@ warthog::graph::planar_graph::planar_graph(
         xy_[2*i] = other.xy_[2*i];
         xy_[2*i+1] = other.xy_[2*i+1];
     }
+
+    id_map_.clear();
+    for(uint32_t i = 0; i < other.id_map_.size(); i++)
+    {
+        id_map_.push_back(other.id_map_.at(i));
+    }
+    return *this;
 }
 
 warthog::graph::planar_graph::~planar_graph()
@@ -86,23 +94,15 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     std::sort(dimacs.nodes_begin(), dimacs.nodes_end(), node_comparator);
     if(verbose_) { std::cerr << "nodes, sorted" << std::endl; }
     
-    // convert nodes. NB:
-    // DIMACS format specifies that node ids should be 1-indexed but
-    // our internal representation is 0-indexed. We keep track of
-    // the offset and convert ids internally
-    ID_OFFSET = (*dimacs.nodes_begin()).id_;
     uint32_t num_nodes_dimacs = dimacs.get_num_nodes();
     resize(num_nodes_dimacs);
-    nodes_sz_ = num_nodes_dimacs;
 
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)
     {
-       uint32_t index = to_graph_id( (*it).id_ );
-       xy_[index*2] = (*it).x_;
-       xy_[index*2+1] = (*it).y_;
+       add_node((*it).x_, (*it).y_, (*it).id_);
     }
-    if(verbose_) { std::cout << "nodes, converted" << std::endl; }
+    if(verbose_) { std::cerr << "nodes, converted" << std::endl; }
 
     // convert edges to graph format
     warthog::euclidean_heuristic h(0);
@@ -128,9 +128,11 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
         // as large as the euclidean norm between the edge endpoints
         if(enforce_euclidean)
         {
-            double hdist = 
-                h.h(xy_[tid*2], xy_[tid*2+1], 
-                    xy_[hid*2], xy_[hid*2+1]);
+            int32_t tx, ty, hx, hy;
+            get_xy(tid, tx, ty);
+            get_xy(hid, hx, hy);
+
+            double hdist = h.h(tx, ty, hx, hy);
             if(e.wt_ < hdist)
             {
                 e.wt_ = ceil(hdist);
@@ -188,44 +190,80 @@ warthog::graph::planar_graph::load_grid(
 bool
 warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incoming)
 {
+    // enumerate the traversable nodes with degree > 0
+    struct edge_tuple 
+    {
+        uint32_t from;
+        uint32_t to;
+        uint32_t wt;
+    };
+
     filename_ = gm->filename();
     warthog::gridmap_expansion_policy exp(gm);
-    this->nodes_sz_ = gm->header_width() * gm->header_height();
-    this->nodes_ = new warthog::graph::node[nodes_sz_];
-    this->xy_ = new int32_t[nodes_sz_*2];
-
+    std::vector<uint32_t> nodes;
+    std::vector<edge_tuple> edges;
     for(uint32_t y = 0; y < gm->header_height(); y++)
     {
         for(uint32_t x = 0; x < gm->header_width(); x++)
         {
-            uint32_t node_id = to_graph_id( y * gm->header_width() + x );
+            uint32_t node_id = y * gm->header_width() + x;
             uint32_t gm_id = gm->to_padded_id(node_id);
+
+            // skip obstacles
+            if(!gm->get_label(gm_id)) { continue; }
+
+            // each traversable node appears in the graph
+            add_node(x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
+                     y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
+                     node_id);
+
             warthog::search_node* n = exp.generate(gm_id);
             warthog::search_node* nei = 0;
             double edge_cost = 0;
             exp.expand(n, 0);
-
-            xy_[node_id*2] = x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-            xy_[node_id*2+1] = y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-
-            // iterate over all the neighbours of n
             for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
             {
+                //// each traversable node with degree > 0 
+                //// appears in the graph
+                //if(id_map_.size() == 0 || id_map_.back() != node_id) 
+                //{ 
+                //    add_node(x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
+                //             y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
+                //             node_id);
+                //}
+
+                // track the list of traversable edges
                 uint32_t nei_x, nei_y;
                 gm->to_unpadded_xy(nei->get_id(), nei_x, nei_y);
-                uint32_t nei_id = to_graph_id( nei_y * gm->header_width() + nei_x );
-                uint32_t edge_cost_int = edge_cost * 
-                    warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+                uint32_t nei_id = nei_y * gm->header_width() + nei_x;
 
-                nodes_[node_id].add_outgoing(
-                        warthog::graph::edge(nei_id, edge_cost_int));
+                assert(edge_cost > 0);
 
-                if(store_incoming)
-                {
-                    nodes_[nei_id].add_incoming(
-                            warthog::graph::edge(node_id, edge_cost_int));
-                }
+                edge_tuple e;
+                e.from = node_id, 
+                e.to = nei_id, 
+                e.wt = edge_cost * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+                edges.push_back(e);
             }
+        }
+    }
+
+    for(uint32_t i = 0; i < edges.size(); i++)
+    {
+        edge_tuple tuple = edges.at(i);    
+        uint32_t from_id = to_graph_id(tuple.from);
+        uint32_t to_id = to_graph_id(tuple.to);
+        assert(from_id != warthog::INF && to_id != INF);
+
+        warthog::graph::node* from = this->get_node(from_id);
+        warthog::graph::node* to = this->get_node(to_id);
+        assert(from && to);
+
+        warthog::graph::edge e(to_id, tuple.wt);
+        from->add_outgoing(warthog::graph::edge(to_id, tuple.wt));
+        if(store_incoming)
+        {
+            to->add_incoming(warthog::graph::edge(from_id, tuple.wt));
         }
     }
     return true;
@@ -296,4 +334,24 @@ warthog::graph::planar_graph::resize(uint32_t new_cap)
     nodes_cap_ = new_cap;
 
     return nodes_cap_;
+}
+
+
+uint32_t
+warthog::graph::planar_graph::add_node(int32_t x, int32_t y, uint32_t ext_id)
+{
+    if(nodes_cap_ == nodes_sz_)
+    {
+        resize(nodes_cap_ == 0 ? 1 : (nodes_cap_*2));
+    }
+    uint32_t index = nodes_sz_;
+    nodes_sz_++;
+    xy_[index*2] = x;
+    xy_[index*2+1] = y;
+    
+    if(ext_id != warthog::INF)
+    {
+        id_map_.push_back(ext_id);
+    }
+    return index;
 }
