@@ -1,16 +1,19 @@
-WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) $(wildcard search/*.cpp) \
-$(wildcard experimental/*.cpp) $(wildcard heuristics/*.cpp) $(wildcard jps/*.cpp) \
-$(wildcard contraction/*.cpp) 
+WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
+			  $(wildcard search/*.cpp) $(wildcard experimental/*.cpp) \
+			  $(wildcard heuristics/*.cpp) $(wildcard jps/*.cpp) \
+			  $(wildcard contraction/*.cpp) 
 
 WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 
-D_WARTHOG_INCLUDES = -I./domains -I./util -I./search -I./experimental -I./heuristics \
-					 -I./jps -I./contraction
+D_WARTHOG_INCLUDES = -I./domains -I./util -I./search -I./experimental \
+					 -I./heuristics -I./jps -I./contraction
+
 D_INCLUDES = -I/usr/include -I/opt/local/include $(D_WARTHOG_INCLUDES)
 D_LIBS = -L/usr/local/lib -L./lib
 
 CC = g++
-CFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations -Werror
+CFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long \
+		 -Wno-deprecated -Wno-deprecated-declarations -Werror
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0
 PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG
@@ -45,6 +48,8 @@ extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES)
 .PHONY: tags
 tags:
 	ctags -R .
+	find . | grep -E "\.((h(pp)*\$$)|(c(pp)+\$$))"	> cscope.in
+	cscope -b -i cscope.in
 
 .PHONY: clean
 clean:

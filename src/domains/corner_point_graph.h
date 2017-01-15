@@ -183,17 +183,24 @@ class corner_point_graph
         warthog::graph::planar_graph*
         get_planar_graph() { return g_.get(); }
 
+        // post-hoc edge indexing
+        // (essentially, index the edges of each node by their direction 
+        // labels; allows faster identification of relevant edges during JPS)
+        void
+        build_edge_label_index();
+
     private:
         bool verbose_;
         std::shared_ptr<warthog::graph::planar_graph> g_;
         warthog::corner_point_locator* cpl_;
         
         // no copy ctor
-        corner_point_graph(warthog::graph::corner_point_graph& other) : S_DUMMY_ID(0), T_DUMMY_ID(0) { }
+        corner_point_graph(warthog::graph::corner_point_graph& other) 
+            : S_DUMMY_ID(0), T_DUMMY_ID(0) { }
 
-        // below the line: variables and data structures and functions 
-        // for connecting the start and target nodes to the rest of the graph
-        // -------------------------------------------------------------------
+        // below the line: variables and data structures and functions for 
+        // connecting the start and target nodes to the rest of the graph
+        // ----------------------------------------------------------------
         uint32_t s_graph_id_, s_grid_id_;
         uint32_t t_graph_id_, t_grid_id_;
         uint32_t S_DUMMY_ID, T_DUMMY_ID; 
@@ -217,7 +224,6 @@ class corner_point_graph
 
         void
         uninsert();
-
 };
 
 }

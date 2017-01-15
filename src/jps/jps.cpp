@@ -278,7 +278,8 @@ warthog::jps::create_corner_map(warthog::gridmap* gm)
 }
 
 warthog::jps::direction
-warthog::jps::compute_direction(uint32_t px, uint32_t py, uint32_t x, uint32_t y)
+warthog::jps::compute_direction(
+        uint32_t px, uint32_t py, uint32_t x, uint32_t y)
 {
     warthog::jps::direction dir = warthog::jps::NONE;
     if(y == py)

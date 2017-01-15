@@ -224,48 +224,35 @@ warthog::ch::unpack(uint32_t from_id,
 }
 
 void
-warthog::ch::unpack_list_edges(uint32_t from_id,
-        warthog::graph::edge_iter it_e,
-        warthog::graph::planar_graph* g,
-        std::vector<warthog::graph::edge*>& edges)
+warthog::ch::unpack_and_list_edges(warthog::graph::edge* scut,
+        uint32_t scut_tail_id, warthog::graph::planar_graph* g,
+        std::vector<warthog::graph::edge*>& unpacked, bool recurse)
 {
-    warthog::graph::node* from = g->get_node(from_id);
-    assert(it_e >= from->outgoing_begin() && it_e < from->outgoing_end());
+    warthog::graph::node* from = g->get_node(scut_tail_id);
 
-    warthog::graph::edge* e_ft = &*it_e;
-    uint32_t to_id = e_ft->node_id_;
-
-    bool unpacked = false;
-    for(warthog::graph::edge_iter it = from->outgoing_begin(); 
-            it < from->outgoing_end(); it++)
+    // we want to unpack each shortcut edge and find the 
+    // two underlying edges that the shortcut is bypassing
+    for(warthog::graph::edge_iter it_e1 = from->outgoing_begin(); 
+            it_e1 < from->outgoing_end(); it_e1++)
     {
-        warthog::graph::node* succ = g->get_node((*it).node_id_);
-        warthog::graph::edge_iter it_e_succ = succ->outgoing_begin();
-        while(true)
+        warthog::graph::node* nei = g->get_node(it_e1->node_id_);
+        for(warthog::graph::edge_iter it_e2 = nei->outgoing_begin();
+            it_e2 != nei->outgoing_end(); it_e2++)
         {
-            it_e_succ = succ->find_edge(to_id, it_e_succ);
-            if(it_e_succ == succ->outgoing_end()) { break; }
-            assert( it_e_succ >= succ->outgoing_begin() && 
-                    it_e_succ <= succ->outgoing_end());
-
-            warthog::graph::edge* e_st = &*it_e_succ;
-            if(((*it).wt_ + e_st->wt_) == e_ft->wt_) { break; }
-            it_e_succ++;
+            if( (it_e2->node_id_ == scut->node_id_) &&
+                ((it_e1->wt_ + it_e2->wt_) == scut->wt_) )
+            { 
+                unpacked.push_back(&*it_e1);
+                unpacked.push_back(&*it_e2);
+                if(recurse)
+                {
+                    unpack_and_list_edges(it_e1, scut_tail_id, g, unpacked);
+                    unpack_and_list_edges(it_e2,it_e1->node_id_,g,unpacked);
+                }
+                break; 
+            }
         }
-        if(it_e_succ == succ->outgoing_end()) { continue; } 
-
-        // recursively unpack the two edges being represented by
-        // the single shortcut edge (from_id, to_id)
-        unpack_list_edges(from_id, it, g, edges);
-
-        succ = g->get_node((*it).node_id_);
-        unpack_list_edges((*it).node_id_, it_e_succ, g, edges);
-        unpacked = true;
-        break;
-    }
-
-    if(!unpacked)
-    {
-        edges.push_back(e_ft);
     }
 }
+
+

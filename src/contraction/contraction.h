@@ -93,15 +93,15 @@ partition_greedy_bottom_up(
         uint32_t nparts, 
         std::vector<uint32_t>* part);
 
-// recursively unpack a shortut edge and 
-// collect all the intermediae edges, in order
+// unpack a shortcut edge by locating the two intermediate edges
+// that are being bypassed
 void
-unpack_list_edges(uint32_t from_id,
-        warthog::graph::edge_iter it_e,
-        warthog::graph::planar_graph* g,
-        std::vector<warthog::graph::edge*>& edges);
+unpack_and_list_edges(warthog::graph::edge* scut,
+        uint32_t scut_tail_id, warthog::graph::planar_graph* g,
+        std::vector<warthog::graph::edge*>& unpacked, bool recurse=true);
 
-// recursively unpack a shortcut edge
+// recursively unpack a shortcut edge and
+// collect all the intermediate nodes, in order
 void
 unpack(uint32_t from_id,
         warthog::graph::edge_iter it_e,

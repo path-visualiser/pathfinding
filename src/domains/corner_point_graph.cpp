@@ -4,6 +4,8 @@
 #include "graph.h"
 #include "jps.h"
 
+#include <algorithm>
+
 typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
 
 warthog::graph::corner_point_graph::corner_point_graph(
@@ -123,10 +125,15 @@ warthog::graph::corner_point_graph::construct()
                 {
                     uint32_t jp_x, jp_y;
                     gm->to_unpadded_xy(jp_id, jp_x, jp_y);
-                    int32_t x = jp_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-                    int32_t y = jp_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-                    to_id = this->add_node(x, y, jp_y * gm->header_width() + jp_x);
-                    id_map_.insert(std::pair<uint32_t, uint32_t>(jp_id, to_id));
+
+                    int32_t x, y;
+                    x = jp_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+                    y = jp_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+
+                    to_id = this->add_node(
+                            x, y, jp_y * gm->header_width() + jp_x);
+                    id_map_.insert(
+                            std::pair<uint32_t, uint32_t>(jp_id, to_id));
                 }
                 else { to_id = it_to_id->second; }
 
@@ -331,5 +338,38 @@ warthog::graph::corner_point_graph::add_labeled_outgoing_edge(
         e_lab_index_->at(node_id).head_[i]++;
     }
     return ret;
+}
+
+void
+warthog::graph::corner_point_graph::build_edge_label_index()
+{
+    for(uint32_t node_id = 0; node_id < get_num_nodes(); node_id++)
+    {
+        warthog::graph::node* n = get_node(node_id);
+
+        // sort the edges by label before building the index
+        bool (*edge_comparator) 
+        (warthog::graph::edge, warthog::graph::edge) =
+            [](warthog::graph::edge e1, warthog::graph::edge e2) -> bool
+            {
+                return ((uint8_t*)&e1.label_)[0] < ((uint8_t*)&e2.label_)[0];
+            };
+        std::sort(n->outgoing_begin(), n->outgoing_end(), edge_comparator);
+
+        // build the index
+        for(warthog::graph::edge_iter it = n->outgoing_begin();
+                it != n->outgoing_end(); it++)
+        {
+            warthog::jps::direction dir = 
+                (warthog::jps::direction)((uint8_t*)(&(it->label_)))[0];
+            uint32_t label_id = __builtin_ffs(dir)-1;
+            assert(label_id < NUM_LABELS);
+
+            int32_t head = e_lab_index_->at(node_id).head_[label_id];
+            assert(e_lab_index_->at(node_id).head_[label_id] >= head);
+
+            e_lab_index_->at(node_id).head_[label_id]++;
+        }
+    }
 }
 
