@@ -356,20 +356,31 @@ warthog::graph::corner_point_graph::build_edge_label_index()
             };
         std::sort(n->outgoing_begin(), n->outgoing_end(), edge_comparator);
 
-        // build the index
+        // build the index 
+        //std::cerr << "\n node " << node_id;
         for(warthog::graph::edge_iter it = n->outgoing_begin();
                 it != n->outgoing_end(); it++)
         {
             warthog::jps::direction dir = 
                 (warthog::jps::direction)((uint8_t*)(&(it->label_)))[0];
+            //std::cerr << " " << dir;
             uint32_t label_id = __builtin_ffs(dir)-1;
             assert(label_id < NUM_LABELS);
 
+            // increment subsequent indexes 
             int32_t head = e_lab_index_->at(node_id).head_[label_id];
-            assert(e_lab_index_->at(node_id).head_[label_id] >= head);
-
-            e_lab_index_->at(node_id).head_[label_id]++;
+            for(uint32_t i = label_id+1; i < NUM_LABELS; i++)
+            {
+                assert(e_lab_index_->at(node_id).head_[i] >= head);
+                e_lab_index_->at(node_id).head_[i]++;
+            }
         }
+
+        //std::cerr << "\n labels " << node_id;
+        //for(uint32_t i = 0; i < NUM_LABELS; i++)
+        //{
+        //    std::cerr << " " << e_lab_index_->at(node_id).head_[i];
+        //}
     }
 }
 
