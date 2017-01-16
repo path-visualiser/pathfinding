@@ -76,24 +76,43 @@ warthog::fch_jpg_expansion_policy::expand(
     bool up_travel = !parent || (current_rank > get_rank(parent->get_id()));
 
     warthog::graph::node* n = g_->get_node(current_id);
-    for(warthog::graph::edge_iter it = n->outgoing_begin();
-        it != n->outgoing_end(); it++)
+    warthog::graph::edge_iter eit = n->outgoing_begin();
+    while(succ_dirs)
     {
-        warthog::graph::edge& e = *it;
-        assert(e.node_id_ < g_->get_num_nodes());
-        
-        // prune the following successors:
-        // (i) those that aren't forced or natural (in JPS terminology)
-        // (ii) those that don't jive with FCH up/down rules; i.e.
-        // traveling up the hierarchy we generate all neighbours;
-        // traveling down, we generate only "down" neighbours
-        warthog::jps::direction s_dir = get_dir(&e, FIRST);
-
-        if((s_dir & succ_dirs) &&
-           (up_travel || (get_rank(e.node_id_) < current_rank)))
+        uint32_t label = __builtin_ffs(succ_dirs)-1;
+        uint32_t first = g_->labelled_edge_offset(current_id, label);
+        uint32_t last = g_->labelled_edge_offset(current_id, label+1);
+        for( uint32_t i = first; i < last; i++)
         {
-            this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            warthog::graph::edge& e = *(eit+i);
+            assert(e.node_id_ < g_->get_num_nodes());
+            
+            // prune the following successors:
+            // (i) those that aren't forced or natural (in JPS terminology)
+            // (ii) those that don't jive with FCH up/down rules; i.e.
+            // traveling up the hierarchy we generate all neighbours;
+            // traveling down, we generate only "down" neighbours
+            warthog::jps::direction s_dir = get_dir(&e, FIRST);
+            assert((current_id == problem->get_start_id()) ||
+                    (succ_dirs & s_dir));
+            
+            if((up_travel || (get_rank(e.node_id_) < current_rank)))
+            {
+                this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            }
         }
+        succ_dirs = succ_dirs & ~(1 << label);
+    }
+
+    // dumb hacky goal test. necessary because the goal is never 
+    // inserted into the direction-index maintained by 
+    // corner_point_graph (we use the index to limit the set of
+    // successors being scanned to just those which are in a 
+    // forced or natural direction)
+    eit += n->out_degree() - 1;
+    if(eit->node_id_ == g_->get_inserted_target_id())
+    {
+        add_neighbour(generate(eit->node_id_), eit->wt_);
     }
 }
 
@@ -167,6 +186,15 @@ warthog::fch_jpg_expansion_policy::process_edge(
     warthog::graph::edge* e1 = intermediate.at(0);
     warthog::graph::edge* e2 = intermediate.at(1);
     assert(e2->node_id_ == e->node_id_);
+
+    process_edge(e1, e_tail_id, pg);
+    process_edge(e2, e1->node_id_, pg);
+    assert(get_dir(e1, step_type::FIRST) != 255);
+//    {
+//        std::cerr << "wtf " << e_tail_id << " " << e->node_id_ << std::endl;
+//        assert(false);
+//    }
+    assert(get_dir(e1, step_type::LAST) != 255);
     set_dir(e, step_type::FIRST, get_dir(e1, step_type::FIRST));
     set_dir(e, step_type::LAST, get_dir(e2, step_type::LAST));
 }
