@@ -48,16 +48,21 @@ warthog::gridmap::init_db()
 	// fetching the neighbours of a node. 
 	this->padded_rows_before_first_row_ = 3;
 	this->padded_rows_after_last_row_ = 3;
-	this->dbheight_ = this->header_.height_ + 
+	this->padded_height_ = this->header_.height_ + 
 		padded_rows_after_last_row_ +
 		padded_rows_before_first_row_;
-	this->dbwidth_  = (this->header_.width_ >> warthog::LOG2_DBWORD_BITS) + 1;
 
 	// calculate # of extra/redundant padding bits required,
 	// per row, to align map width with dbword size
-	this->padded_height_ = this->dbheight_;
-	this->padded_width_ = (this->dbwidth_ * warthog::DBWORD_BITS);
+	this->padded_width_  = this->header_.width_ + 1;
+    if((padded_width_ % 32) != 0) 
+    {
+        padded_width_ = (this->header_.width_ / 32 + 1) * 32;
+    }
 	this->padding_per_row_ = this->padded_width_ - this->header_.width_;
+
+    this->dbheight_ = padded_height_;
+    this->dbwidth_ = padded_width_ >> warthog::LOG2_DBWORD_BITS;
 	this->db_size_ = this->dbwidth_ * this->dbheight_;
 
 	// create a one dimensional dbword array to store the grid
