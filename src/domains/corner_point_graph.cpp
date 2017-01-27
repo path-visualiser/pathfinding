@@ -231,8 +231,13 @@ warthog::graph::corner_point_graph::insert_start(
            graph_id = corner_iter->second;
         }
 
-        uint32_t weight = costs[i] * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-        s->add_outgoing(warthog::graph::edge(graph_id, weight, d));
+        uint32_t weight = 
+            costs[i] * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+        
+        // we affix to each inserted edge a label that indicates the last 
+        // direction we travel in when jumping from s to its successor
+        // this label is stored in bits 8-15 (the second byte) 
+        s->add_outgoing(warthog::graph::edge(graph_id, weight, (d << 8)));
     }
 }
 
