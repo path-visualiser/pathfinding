@@ -49,6 +49,8 @@ class flexible_astar : public warthog::search
             cost_cutoff_ = warthog::INF;
             exp_cutoff_ = warthog::INF;
             on_relax_fn_ = [](warthog::search_node*){ };
+            on_norelax_fn_ = 
+                [](warthog::search_node*, warthog::search_node*, double){ };
 		}
 
 		virtual ~flexible_astar()
@@ -107,6 +109,17 @@ class flexible_astar : public warthog::search
         apply_on_relax(std::function<void(warthog::search_node*)>& fn)
         {
             on_relax_fn_ = fn;
+        }
+
+        // apply @param fn every time a node is reached from a new parent
+        // with the same cost as a previous parent
+        void
+        apply_on_norelax( std::function<void(
+                    warthog::search_node* n, 
+                    warthog::search_node* current, 
+                    double edge_cost)>& fn)
+        {
+            on_norelax_fn_ = fn;
         }
 
         // no cleanup after search
@@ -191,7 +204,14 @@ class flexible_astar : public warthog::search
         double cost_cutoff_; 
         uint32_t exp_cutoff_;
 
+        // callback for when a node is relaxex
         std::function<void(warthog::search_node*)> on_relax_fn_;
+
+        // callback for when a node is not relaxed
+        std::function<void(
+                warthog::search_node*, 
+                warthog::search_node*, 
+                double edge_cost)> on_norelax_fn_;
 
 		// no copy ctor
 		flexible_astar(const flexible_astar& other) { } 
@@ -341,6 +361,8 @@ class flexible_astar : public warthog::search
 						}
 						else
 						{
+                            on_norelax_fn_(n, current, cost_to_n);
+
 							#ifndef NDEBUG
 							if(verbose_)
 							{
