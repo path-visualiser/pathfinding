@@ -44,7 +44,6 @@ warthog::fch_bb_jpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* problem)
 {
     reset();
-    nf_->init(problem);
 
     // determine which directions contain jump point successors
     // NB: we treat the start node as a special case since it has
@@ -191,28 +190,13 @@ warthog::fch_bb_jpg_expansion_policy::generate_target_node(
         }
     }
 
-//    proxy_xy_.clear();
-//    if(g_->get_inserted_target_id() != g_->get_dummy_target_id())
-//    {
-//       int32_t my_x, my_y;
-//       g_->get_xy(g_->get_inserted_target_id(), my_x, my_y);
-//       proxy_xy_.push_back(my_x);
-//       proxy_xy_.push_back(my_y);
-//    }
-//    else
-//    {
-//        warthog::graph::node* target = 
-//            g_->get_node(g_->get_inserted_target_id());
-//        for( warthog::graph::edge_iter it = target->incoming_begin();
-//             it != target->incoming_end(); it++ )
-//        {
-//           int32_t my_x, my_y;
-//           g_->get_xy(it->node_id_, my_x, my_y);
-//           proxy_xy_.push_back(my_x);
-//           proxy_xy_.push_back(my_y);
-//        }
-//    }
-//
+    // update the filter with the new target location
+    {
+        int32_t tx, ty;
+        g_->get_xy(g_->get_inserted_target_id(), tx, ty);
+        nf_->set_target_xy(tx, ty);
+    }
+
     return this->generate(g_->get_inserted_target_id());
 }
 

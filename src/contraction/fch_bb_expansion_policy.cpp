@@ -27,7 +27,6 @@ warthog::fch_bb_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    nf_->init(instance);
 
     warthog::search_node* pn = current->get_parent();
     uint32_t current_id = current->get_id();
@@ -55,7 +54,7 @@ warthog::fch_bb_expansion_policy::expand(
         // wheter the parent was reached by an up edge or a
         // down edge
         bool down_succ = get_rank(e.node_id_) < current_rank;
-        if(down_succ && !nf_->filter__(current_id, (it - begin)))
+        if(down_succ && !nf_->filter(current_id, (it - begin)))
         {
             // prune down successors before the apex is reached
             if(apex_ != warthog::INF && !apex_reached_) { continue; }
@@ -111,5 +110,14 @@ warthog::fch_bb_expansion_policy::generate_target_node(
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->get_target_id());
     if(t_graph_id == warthog::INF) { return 0; }
+
+    // update the filter with the new target location
+    {
+        int32_t tx, ty;
+        g_->get_xy(t_graph_id, tx, ty);
+        nf_->set_target_xy(tx, ty);
+    }
+    
+    // finally, generate the inserted target node
     return generate(t_graph_id);
 }

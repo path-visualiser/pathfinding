@@ -31,53 +31,43 @@ class bb_filter
 {
 
     public:
-        bb_filter(
-                const char* ddfile, 
-                warthog::graph::planar_graph* g);
-
-        bb_filter(
-                warthog::graph::planar_graph* g);
+        bb_filter();
 
         ~bb_filter();
 
-        void
-        init(warthog::problem_instance* instance);
+        inline void
+        set_target_xy(int32_t tx, int32_t ty) { tx_ = tx; ty_ = ty; }
 
-        bool 
-        filter(warthog::search_node* n, uint32_t edge_id);
-
-        bool 
-        filter__(uint32_t node_id, uint32_t edge_id);
+        inline bool 
+        filter(uint32_t node_id, uint32_t edge_id)
+        {
+            // prune any node whose bounding-box 
+            // does not contain the target
+            if(labels_.at(node_id).at(edge_id).contains(tx_, ty_))
+            {
+                return false;
+            }
+            return true;
+        }
 
         void
         print(std::ostream& out);
 
-        void
-        compute();
-
-        void
-        compute(uint32_t startid, uint32_t endid);
-
-        void
-        compute_ch(std::vector<uint32_t>* rank);
-
-        void
-        compute_ch( uint32_t startid, uint32_t endid, 
-                    std::vector<uint32_t>* rank );
         bool
-        load_labels(const char* filename);
+        load_labels(const char* filename, warthog::graph::planar_graph* g);
 
-        warthog::geom::rectangle
+        inline warthog::geom::rectangle
         get_label(uint32_t node_id, uint32_t edge_id)
         {
             return labels_.at(node_id).at(edge_id);
         }
 
     private:
-        warthog::graph::planar_graph* g_;
-        uint32_t start_id_, last_id_;
-        int32_t tx, ty;
+        int32_t tx_, ty_;
         std::vector<std::vector<warthog::geom::rectangle>> labels_;
+
+        warthog::graph::planar_graph* g_;
+
 };
 
 }

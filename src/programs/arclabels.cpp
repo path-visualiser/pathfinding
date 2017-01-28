@@ -1,3 +1,4 @@
+#include "arclabels_bb.h"
 #include "af_filter.h"
 #include "afh_filter.h"
 #include "afhd_filter.h"
@@ -185,41 +186,21 @@ compute_chbb_labels()
         return;
     }
     
-    // compute labels
-    uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes()-1;
-    grfile.append(".ch-bb.arclabel");
-    if(cfg.get_num_values("type") == 2)
-    {
-        std::string first = cfg.get_param_value("type");
-        std::string last = cfg.get_param_value("type");
-        if(strtol(first.c_str(), 0, 10) != 0)
-        {
-            firstid = strtol(first.c_str(), 0, 10);
-        }
-        if(strtol(last.c_str(), 0, 10) != 0)
-        {
-            lastid = strtol(last.c_str(), 0, 10);
-        }
-        grfile.append(".");
-        grfile.append(first);
-        grfile.append(".");
-        grfile.append(std::to_string(lastid));
-    }
     
-    // compute down_distance
-    warthog::bb_filter filter(&g);
-    filter.compute_ch(firstid, lastid, &order);
-    
-    // save the result
-    std::cerr << "saving contracted graph to file " << grfile << std::endl;
-    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-    if(!out.good())
+    // compute bounding boxes & save the result
+    std::string outfile(grfile);
+    outfile.append(".ch-bb.arclabel");
+    std::cerr << "creating ch-bb arclabels; output to " << outfile << "\n";
+    std::fstream fs_out(outfile.c_str(), 
+                        std::ios_base::out | std::ios_base::trunc);
+    if(!fs_out.good())
     {
-        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-    filter.print(out);
-    out.close();
+
+    warthog::arclabels_ch_bb_compute(&g, &order, fs_out);
+
+    fs_out.close();
     std::cerr << "all done!\n";
 }
 
@@ -244,42 +225,23 @@ compute_bb_labels()
         return;
     }
 
-    // compute bounding box labels
-
-    grfile.append(".bb.arclabel");
-    uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
-
-    if(cfg.get_num_values("type") == 2)
-    {
-        std::string first = cfg.get_param_value("type");
-        std::string last = cfg.get_param_value("type");
-        if(strtol(first.c_str(), 0, 10) != 0)
-        {
-            firstid = strtol(first.c_str(), 0, 10);
-        }
-        if(strtol(last.c_str(), 0, 10) != 0)
-        {
-            lastid = strtol(last.c_str(), 0, 10);
-        }
-        grfile.append(".");
-        grfile.append(first);
-        grfile.append(".");
-        grfile.append(std::to_string(lastid));
-    }
-    warthog::bb_filter filter(&g);
-    filter.compute(firstid, lastid);
+    // compute bounding boxes & save the result
+    std::string outfile(grfile);
+    outfile.append(".bb.arclabel");
     
-    // save the result
-    std::cerr << "saving contracted graph to file " << grfile << std::endl;
-    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-    if(!out.good())
+    std::cerr << "creating ch-bb arclabels; output to " << outfile << "\n";
+    std::fstream fs_out(outfile.c_str(), 
+                        std::ios_base::out | std::ios_base::trunc);
+    if(!fs_out.good())
     {
-        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-    filter.print(out);
-    out.close();
+
+    warthog::arclabels_bb_compute(&g, fs_out);
+
+    fs_out.close();
     std::cerr << "all done!\n";
+    
 }
 
 void

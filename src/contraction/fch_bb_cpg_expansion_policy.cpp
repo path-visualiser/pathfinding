@@ -25,6 +25,7 @@ warthog::fch_bb_cpg_expansion_policy::fch_bb_cpg_expansion_policy(
     rank_->push_back(0);
     rank_->push_back(1);
     search_id_at_last_insert_ = warthog::INF;
+    instance_ = 0;
 }
 
 warthog::fch_bb_cpg_expansion_policy::~fch_bb_cpg_expansion_policy()
@@ -36,7 +37,6 @@ warthog::fch_bb_cpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    nf_->init(instance);
 
     warthog::search_node* pn = current->get_parent();
     uint32_t current_id = current->get_id();
@@ -173,29 +173,15 @@ warthog::fch_bb_cpg_expansion_policy::generate_target_node(
             r_.grow(my_x, my_y);
         }
     }
-
-//    proxy_xy_.clear();
-//    if(g_->get_inserted_target_id() != g_->get_dummy_target_id())
-//    {
-//       int32_t my_x, my_y;
-//       g_->get_xy(g_->get_inserted_target_id(), my_x, my_y);
-//       proxy_xy_.push_back(my_x);
-//       proxy_xy_.push_back(my_y);
-//    }
-//    else
-//    {
-//        warthog::graph::node* target = 
-//            g_->get_node(g_->get_inserted_target_id());
-//        for( warthog::graph::edge_iter it = target->incoming_begin();
-//             it != target->incoming_end(); it++ )
-//        {
-//           int32_t my_x, my_y;
-//           g_->get_xy(it->node_id_, my_x, my_y);
-//           proxy_xy_.push_back(my_x);
-//           proxy_xy_.push_back(my_y);
-//        }
-//    }
-//
+    
+    // update the filter with the new target location
+    {
+        int32_t tx, ty;
+        g_->get_xy(g_->get_inserted_target_id(), tx, ty);
+        nf_->set_target_xy(tx, ty);
+    }
+    
+    // finally, generate the inserted target node
     return this->generate(g_->get_inserted_target_id());
 }
 
