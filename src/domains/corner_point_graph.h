@@ -85,7 +85,8 @@ class corner_point_graph
         inline uint32_t
         get_num_nodes()
         {
-            return g_->get_num_nodes();
+            // omit dummy start and target nodes which were added
+            return g_->get_num_nodes()-2;
         }
 
         inline uint32_t 

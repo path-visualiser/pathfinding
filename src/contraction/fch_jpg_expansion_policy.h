@@ -45,6 +45,15 @@ class fch_jpg_expansion_policy : public expansion_policy
         virtual warthog::search_node*
         generate_target_node(warthog::problem_instance* pi);
 
+        // when true, the expansion policy only generates
+        // successors reached by down edges
+        inline void
+        down_successors_only(bool value) 
+        {
+            down_successors_only_ = value;
+        }
+
+
         virtual inline size_t
         mem()
         {
@@ -56,6 +65,7 @@ class fch_jpg_expansion_policy : public expansion_policy
         uint32_t search_id_at_last_insert_;
         std::vector<uint32_t>* rank_;
         warthog::graph::corner_point_graph* g_;
+        bool down_successors_only_;
         
         // we label each edge of the CH with two pieces of information:
         // (1) a FIRST label that specifies the direction of the first

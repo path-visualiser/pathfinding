@@ -58,7 +58,7 @@ warthog::fch_bb_cpg_expansion_policy::expand(
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;
-        assert(e.node_id_ < g_->get_num_nodes());
+        //assert(e.node_id_ < g_->get_num_nodes());
 
         // the target is inserted into the graph but not into 
         // the filter. one way to get around this (HACK HACK HACK)

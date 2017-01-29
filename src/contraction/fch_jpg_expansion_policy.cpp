@@ -28,6 +28,7 @@ warthog::fch_jpg_expansion_policy::init()
     rank_->push_back(0);
     rank_->push_back(1);
     search_id_at_last_insert_ = warthog::INF;
+    down_successors_only_ = false;
 }
 
 // TODO: 
@@ -74,6 +75,7 @@ warthog::fch_jpg_expansion_policy::expand(
     warthog::search_node* parent = current->get_parent();
     uint32_t current_rank = get_rank(current_id);
     bool up_travel = !parent || (current_rank > get_rank(parent->get_id()));
+    up_travel = up_travel && !down_successors_only_;
 
     warthog::graph::node* n = g_->get_node(current_id);
     warthog::graph::edge_iter eit = n->outgoing_begin();

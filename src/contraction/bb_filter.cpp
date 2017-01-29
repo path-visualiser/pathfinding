@@ -1,4 +1,4 @@
-#include "arclabels_bb.h"
+#include "arclabels.h"
 #include "ch_expansion_policy.h"
 #include "bb_filter.h"
 #include "flexible_astar.h"
@@ -23,7 +23,7 @@ warthog::bb_filter::~bb_filter()
 void
 warthog::bb_filter::print(std::ostream& out)
 {
-    if(g_) { warthog::arclabels_bb_print(labels_, g_, out); }
+    if(g_) { warthog::arclabels::bb_print(labels_, g_, out); }
 }
 
 bool

@@ -55,7 +55,7 @@
 #include <iomanip>
 #include <memory>
 #include <sstream>
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 // check computed solutions are optimal
 int checkopt = 0;
@@ -345,7 +345,12 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // load up the graph 
     std::shared_ptr<warthog::graph::planar_graph> pg(
             new warthog::graph::planar_graph());
-    pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
+    if(!pg->load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
 
     // wrapper
     warthog::graph::corner_point_graph cpg(map, pg);

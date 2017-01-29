@@ -148,6 +148,10 @@ warthog::graph::corner_point_graph::construct()
     }
 }
 
+// TODO: should this code live in an expansion policy??
+// seems like the graph should be oblivious to things like 
+// the target needing to be inserted before the start and 
+// also dummy targets
 void
 warthog::graph::corner_point_graph::insert(
         uint32_t start_grid_id, uint32_t target_grid_id)
@@ -165,13 +169,23 @@ warthog::graph::corner_point_graph::insert(
     id_map_iter myit = id_map_.find(t_gm_id);
     if(myit != id_map_.end())
     {
-        // nothing to insert
+        // target is a node already in the graph; nothing to insert
         t_graph_id_ = myit->second;
         t_grid_id_ = t_gm_id;
     }
     else
     {
-        insert_target(s_gm_id, t_gm_id);
+        // special case that's sometimes useful: unreachable dummy target
+        if(target_grid_id == warthog::INF)
+        {
+            t_graph_id_ = T_DUMMY_ID;
+            t_grid_id_ = target_grid_id;
+            g_->set_xy(T_DUMMY_ID, 0, 0);
+        }
+        else
+        {
+            insert_target(s_gm_id, t_gm_id);
+        }
     }
     
     myit = id_map_.find(s_gm_id);
@@ -247,6 +261,7 @@ warthog::graph::corner_point_graph::insert_target(
 {
     t_graph_id_ = T_DUMMY_ID;
     t_grid_id_ = target_grid_id;
+    id_map_.insert(std::pair<uint32_t, uint32_t>(t_grid_id_, t_graph_id_));
 
     uint32_t tx, ty;
     warthog::gridmap* gm = cpl_->get_map();
@@ -254,7 +269,6 @@ warthog::graph::corner_point_graph::insert_target(
     tx *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
     ty *= warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
     g_->set_xy(t_graph_id_, (int32_t)tx, (int32_t)ty);
-    id_map_.insert(std::pair<uint32_t, uint32_t>(t_grid_id_, t_graph_id_));
 
     std::vector<uint32_t> corner_neis;
     std::vector<double> costs;
@@ -298,8 +312,12 @@ warthog::graph::corner_point_graph::uninsert()
 
     if(t_graph_id_ == T_DUMMY_ID)
     {
-        id_map_.erase(id_map_.find(t_grid_id_));
-        g_->get_node(t_graph_id_)->clear();
+        // only when the target is not an unreachable dummy
+        if(t_grid_id_ != warthog::INF)
+        {
+            id_map_.erase(id_map_.find(t_grid_id_));
+            g_->get_node(t_graph_id_)->clear();
+        }
     }
     t_graph_id_ = warthog::INF;
     t_grid_id_ = warthog::INF;

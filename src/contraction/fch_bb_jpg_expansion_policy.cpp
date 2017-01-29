@@ -104,7 +104,7 @@ warthog::fch_bb_jpg_expansion_policy::expand(
             
             bool down_succ = get_rank(e.node_id_) < current_rank;
             if((up_travel && !down_succ) || 
-               (down_succ && !filter(current_id, i - first)))
+               (down_succ && !filter(current_id, i)))
             {
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
             }

@@ -1,4 +1,4 @@
-#include "arclabels_bb.h"
+#include "arclabels.h"
 #include "af_filter.h"
 #include "afh_filter.h"
 #include "afhd_filter.h"
@@ -6,16 +6,19 @@
 #include "bb_filter.h"
 #include "cfg.h"
 #include "ch_expansion_policy.h"
+#include "corner_point_graph.h"
 #include "dimacs_parser.h"
 #include "dcl_filter.h"
 #include "down_distance_filter.h"
 #include "fixed_graph_contraction.h"
 #include "graph.h"
+#include "gridmap.h"
 #include "helpers.h"
 #include "lazy_graph_contraction.h"
 #include "planar_graph.h"
 
 #include <iostream>
+#include <memory>
 #include <string>
 
 int verbose=false;
@@ -32,7 +35,8 @@ help()
 	std::cerr << "valid parameters:\n"
     //<< "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	//<< "\t--order [order-of-contraction file]\n"
-    << "\t--type [ downdist | dcl | af | bb | bbaf | chaf | chbb | chbbaf | afh | afhd ]\n"
+    << "\t--type [ downdist | dcl | af | bb | bbaf | chaf | chbb | chbbaf "
+    << "| chbb-jpg | afh | afhd ]\n"
     << "\t--input [ algorithm-specific input files (omit to show options) ]\n" 
 	<< "\t--verbose (optional)\n";
 }
@@ -198,7 +202,66 @@ compute_chbb_labels()
         std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
 
-    warthog::arclabels_ch_bb_compute(&g, &order, fs_out);
+    warthog::arclabels::ch_bb_compute(&g, &order, fs_out);
+
+    fs_out.close();
+    std::cerr << "all done!\n";
+}
+
+void
+compute_chbbjpg_labels()
+{
+    std::string grfile = cfg.get_param_value("input");
+    std::string cofile = cfg.get_param_value("input");
+    std::string orderfile = cfg.get_param_value("input");
+    std::string gridmapfile = cfg.get_param_value("input");
+
+    if( grfile == "" || cofile == "" || orderfile == "" || gridmapfile == "")
+    {
+        std::cerr << "err; insufficient input parameters."
+                  << " required, in order:\n"
+                  << " --input [gr file] [co file]"
+                  << " [node ordering file] [gridmap]\n";
+        return;
+    }
+    std::cerr << "computing labels" << std::endl;
+
+    // load up the grid
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(gridmapfile.c_str()));
+
+    // load up the graph 
+    std::shared_ptr<warthog::graph::planar_graph> pg(
+            new warthog::graph::planar_graph());
+    if(!pg->load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
+    warthog::graph::corner_point_graph cpg(map, pg);
+
+    // load up the node ordering
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+    
+    
+    // compute bounding boxes & save the result
+    std::string outfile(grfile);
+    outfile.append(".ch-bb-jpg.arclabel");
+    std::cerr << "creating ch-bb arclabels; output to " << outfile << "\n";
+    std::fstream fs_out(outfile.c_str(), 
+                        std::ios_base::out | std::ios_base::trunc);
+    if(!fs_out.good())
+    {
+        std::cerr << "\nerror opening output file " << outfile << std::endl;
+    }
+
+    warthog::arclabels::ch_bb_jpg_compute(&cpg, &order, fs_out);
 
     fs_out.close();
     std::cerr << "all done!\n";
@@ -237,7 +300,7 @@ compute_bb_labels()
         std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
 
-    warthog::arclabels_bb_compute(&g, fs_out);
+    warthog::arclabels::bb_compute(&g, fs_out);
 
     fs_out.close();
     std::cerr << "all done!\n";
@@ -719,6 +782,10 @@ int main(int argc, char** argv)
     else if(arclabel.compare("chbbaf") == 0)
     {
         compute_chbbaf_labels();
+    }
+    else if(arclabel.compare("chbb-jpg") == 0)
+    {
+        compute_chbbjpg_labels();
     }
     else
     {
