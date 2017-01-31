@@ -32,7 +32,7 @@ all: dev
 
 .PHONY: fast
 fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
-fast: main 
+fast: main extras__
 
 .PHONY: dev
 dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
@@ -44,6 +44,7 @@ profile: main
 
 .PHONY: extras
 extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
+extras: extras__
 
 .PHONY: tags
 tags:
@@ -64,8 +65,8 @@ main: makedirs warthog
 	$(CC) programs/warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/roadhog.cpp -o ./bin/roadhog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
-.PHONY: extras
-extras: makedirs warthog 
+.PHONY: extras__
+extras__: makedirs warthog 
 	@echo "linking..."
 	$(CC) programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/labelmaker.cpp -o ./bin/labelmaker -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
