@@ -391,7 +391,9 @@ warthog::graph::corner_point_graph::build_edge_label_index()
             assert(label_id < NUM_LABELS);
 
             // increment subsequent indexes 
+#ifndef NDEBUG
             int32_t head = e_lab_index_->at(node_id).head_[label_id];
+#endif
             for(uint32_t i = label_id+1; i < NUM_LABELS; i++)
             {
                 assert(e_lab_index_->at(node_id).head_[i] >= head);

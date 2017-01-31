@@ -98,9 +98,11 @@ warthog::fch_bb_jpg_expansion_policy::expand(
             // (ii) those that don't jive with FCH up/down rules; i.e.
             // traveling up the hierarchy we generate all neighbours;
             // traveling down, we generate only "down" neighbours
+#ifndef NDEBUG
             warthog::jps::direction s_dir = get_dir(&e, FIRST);
             assert((current_id == problem->get_start_id()) ||
                     (succ_dirs & s_dir));
+#endif
             
             bool down_succ = get_rank(e.node_id_) < current_rank;
             if((up_travel && !down_succ) || 
