@@ -24,11 +24,6 @@ warthog::fch_af_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    if(search_id_ != instance->get_search_id())
-    {
-        filter_->set_target(instance->get_target_id());
-        search_id_ = instance->get_search_id();
-    }
 
     warthog::search_node* pn = current->get_parent();
     uint32_t current_id = current->get_id();
@@ -82,5 +77,6 @@ warthog::fch_af_expansion_policy::generate_target_node(
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->get_target_id());
     if(t_graph_id == warthog::INF) { return 0; }
+    filter_->set_target(pi->get_target_id());
     return generate(t_graph_id);
 }

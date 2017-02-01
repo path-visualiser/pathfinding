@@ -28,6 +28,8 @@
 // @created: 2016-08-16
 //
 
+#include "arclabels.h"
+
 #include <vector>
 #include <cassert>
 #include <cstdint>
@@ -36,6 +38,9 @@
 namespace warthog
 {
 
+class problem_instance;
+class search_node;
+
 namespace graph
 {
 
@@ -43,22 +48,12 @@ class planar_graph;
 
 }
 
-class problem_instance;
-class search_node;
-
 class af_filter
 {
     public:
         // @param g: the search graph
         // @param part: a partitioning of the graph nodes
-        af_filter(
-                warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* part);
-
-        af_filter(
-                warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* part,
-                const char* arcflags_file);
+        af_filter(std::vector<uint32_t>* part);
 
         ~af_filter();
 
@@ -73,7 +68,7 @@ class af_filter
             return (label[t_byte_] & t_bitmask_) == 0;
         }
 
-        void
+        inline void
         set_target(uint32_t goal_id) 
         { 
             uint32_t t_part = part_->at(goal_id);
@@ -81,58 +76,31 @@ class af_filter
             t_bitmask_ = 1 << (t_part & 7);
         }
 
-        void
-        compute();
-
-        void
-        compute(uint32_t firstid, uint32_t lastid);
-
-        void
-        compute_ch(std::vector<uint32_t>* rank);
-
-        void
-        compute_ch(uint32_t firstid, uint32_t lastid, std::vector<uint32_t>* rank);
-
-        uint8_t*
+        inline uint8_t*
         get_label(uint32_t node_id, uint32_t edge_index)
         { return flags_.at(node_id).at(edge_index); }
         
-        size_t 
-        get_label_size() 
-        { return bytes_per_label_; }
-
-        uint32_t
+        inline uint32_t
         get_partition(uint32_t node_id)
         {
             return part_->at(node_id);
         }
 
-        void
+        inline void
         print(std::ostream& out);
 
         bool
-        load_labels(const char* filename);
+        load_labels(const char* filename, warthog::graph::planar_graph* g);
 
     private:    
-        uint32_t nparts_;
-        warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* part_;
         std::vector<std::vector<uint8_t*>> flags_;
+        warthog::arclabels::af_params par_;
+        warthog::graph::planar_graph* g_;
 
-        // sometimes we want to compute arcflags for just 
-        // a subset of nodes; those in the range [firstid, lastid)
-        uint32_t firstid_;
-        uint32_t lastid_;
-
-        // values to quickly extract the flag bit for the target at hand
-        uint32_t bytes_per_label_;
+        // we cache which bit corresponds to the target partition
         uint32_t t_byte_;
         uint32_t t_bitmask_;
-        
-        void 
-        init(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* part);
-
 };
 
 }

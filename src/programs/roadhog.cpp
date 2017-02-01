@@ -468,8 +468,8 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the arc-flags
-    warthog::af_filter filter(&g, &part);
-    if(!filter.load_labels(arclabels_file.c_str()))
+    warthog::af_filter filter(&part);
+    if(!filter.load_labels(arclabels_file.c_str(), &g))
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
@@ -796,8 +796,8 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the arc-flags
-    warthog::af_filter filter(&g, &part);
-    if(!filter.load_labels(arclabels_file.c_str()))
+    warthog::af_filter filter(&part);
+    if(!filter.load_labels(arclabels_file.c_str(), &g))
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
@@ -1376,8 +1376,8 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::graph::corner_point_graph cpg(map, pg);
 
     // load up the arc-flags
-    warthog::af_filter filter(pg.get(), &part);
-    if(!filter.load_labels(arclabels_file.c_str()))
+    warthog::af_filter filter(&part);
+    if(!filter.load_labels(arclabels_file.c_str(), pg.get()))
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
