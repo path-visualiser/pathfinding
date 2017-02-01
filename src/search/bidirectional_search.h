@@ -137,7 +137,7 @@ class bidirectional_search : public warthog::search
         void
         reconstruct_path(std::vector<warthog::search_node*>& path)
         {
-            if(&*v_ == &*bexpander_->generate(v_->get_id()))
+            if(v_ && (&*v_ == &*bexpander_->generate(v_->get_id())))
             {
                 warthog::search_node* tmp = v_;
                 v_ = w_;
@@ -194,14 +194,19 @@ class bidirectional_search : public warthog::search
             #endif
 
 
+            // generate the start and target nodes. also, we update the 
+            // problem instance with internal ids (makes debugging easier)
             warthog::search_node* start = fexpander_->generate_start_node(&pi_);
-            start->init(pi_.get_search_id(), 0, 0, heuristic_->h(
-                        pi_.get_start_id(), pi_.get_target_id()));
-            fopen_->push(start);
-
             warthog::search_node* target = bexpander_->generate_target_node(&pi_);
-            target->init(pi_.get_search_id(), 0, 0, heuristic_->h(
-                        pi_.get_start_id(), pi_.get_target_id()));
+            pi_.set_start_id(start->get_id());
+            pi_.set_target_id(target->get_id());
+
+            // compute an initial priority for both the start and target
+            start->init(pi_.get_search_id(), 0, 0, 
+                        heuristic_->h(start->get_id(), target->get_id()));
+            target->init(pi_.get_search_id(), 0, 0, 
+                         heuristic_->h(start->get_id(), target->get_id()));
+            fopen_->push(start);
             bopen_->push(target);
 
             // interleave search; we terminate when the best lower bound
@@ -432,7 +437,8 @@ class bidirectional_search : public warthog::search
                 {
                     if((current->get_g() + cost_to_n + reverse_n->get_g()) < best_cost_)
                     {
-                        v_ = current;
+                        //v_ = current;
+                        v_ = n;
                         w_ = reverse_n;
                         best_cost_ = current->get_g() + cost_to_n + reverse_n->get_g();
                         tentative_ = !(v_->get_expanded() && w_->get_expanded());

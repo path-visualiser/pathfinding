@@ -35,8 +35,8 @@ warthog::ch::write_node_order(const char* filename, std::vector<uint32_t>& order
 }
 
 bool
-warthog::ch::load_node_order(const char* filename, std::vector<uint32_t>& order,
-        bool lex_order)
+warthog::ch::load_node_order(const char* filename, 
+        std::vector<uint32_t>& order, bool lex_order)
 {
     order.clear();
     std::ifstream ifs(filename, std::ios_base::in);

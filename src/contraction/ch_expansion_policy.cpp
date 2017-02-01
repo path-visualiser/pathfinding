@@ -14,8 +14,6 @@ warthog::ch_expansion_policy::ch_expansion_policy(
     rank_ = rank;
     backward_ = backward;
     sd_ = sd;
-
-    assert(g->get_num_nodes() == rank->size());
 }
 
 void
