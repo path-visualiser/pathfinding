@@ -131,7 +131,6 @@ class bidirectional_search : public warthog::search
         warthog::search_node* v_;
         warthog::search_node* w_;
         double best_cost_;
-        bool tentative_;
         warthog::problem_instance pi_;
 
         void
@@ -177,7 +176,6 @@ class bidirectional_search : public warthog::search
             // init
             this->reset_metrics();
             best_cost_ = warthog::INF;
-            tentative_ = true; // can the best solution be improved?
             v_ = w_ = 0;
             forward_next_ = false;
 
@@ -229,9 +227,10 @@ class bidirectional_search : public warthog::search
                 uint32_t best_bound = std::min( 
                     ftop->get_f(), btop->get_f());
                 
-                // FOR UNDIRECTED GRAPH SEARCH ONLY
-                // the way we calculate the lower-bound on solution cost 
-                // differs when we have a heuristic available vs not.
+                // The commented code below can terminate bi-dijkstra search 
+                // more quickly by computing the bound as the sum of g-values
+                // at the top of the open list in both directions. This works
+                // for UNDIRECTED GRAPHS ONLY
                 //uint32_t best_bound = dijkstra_ ? 
                     // no heuristic
                     //(ftop->get_g() + btop->get_g()) : 
@@ -243,7 +242,9 @@ class bidirectional_search : public warthog::search
                 // NB: bidirectional dijkstra stops when the two search 
                 // frontiers expand the same node; bidirectional A* stops 
                 // when the best bound is larger than the best solution
-                if(best_bound > best_cost_ || (dijkstra_ && !tentative_)) 
+                if(best_bound > best_cost_ || 
+                        (dijkstra_ && v_ && w_ && 
+                         v_->get_expanded() && w_->get_expanded()))
                 {
 #ifndef NDEBUG
                     if(verbose_)
@@ -441,7 +442,6 @@ class bidirectional_search : public warthog::search
                         v_ = n;
                         w_ = reverse_n;
                         best_cost_ = current->get_g() + cost_to_n + reverse_n->get_g();
-                        tentative_ = !(v_->get_expanded() && w_->get_expanded());
 
                         #ifndef NDEBUG
                         if(verbose_)
