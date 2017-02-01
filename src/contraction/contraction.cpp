@@ -154,19 +154,11 @@ warthog::ch::value_index_swap_dimacs(
         tmp.at(i) = vec.at(i);
     }
 
-    // because DIMACS graphs are stupid and 1-indexed 
-    // we need to insert extra elements for padding
-    uint32_t min_id = *(std::min_element(tmp.begin(), tmp.end()));
-    vec.clear();
-    vec.resize(tmp.size() + min_id);
-    for(uint32_t i = 0; i < min_id; i++)
-    {
-        vec.at(i) = 0;
-    }
-
+    assert( (*std::min_element(tmp.begin(), tmp.end())) == 0);
+    assert( (*std::max_element(tmp.begin(), tmp.end())) == vec.size()-1);
     for(uint32_t i = 0; i < tmp.size(); i++)
     {
-        vec.at(tmp.at(i)) = i + min_id;
+        vec.at(tmp.at(i)) = i;
     }
 }
 
