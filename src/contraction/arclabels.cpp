@@ -430,33 +430,30 @@ warthog::arclabels::af_print( t_arclabels_af& flags_,
     }
 }
 
-void
+warthog::arclabels::t_arclabels_af*
 warthog::arclabels::af_compute(warthog::graph::planar_graph* g_, 
-        std::vector<uint32_t>* part_)
+        std::vector<uint32_t>* part_, warthog::arclabels::af_params par)
 {
-    if(!g_) { return; } 
+    if(!g_) { return 0; } 
 
     uint32_t firstid_ = 0;
     uint32_t lastid_ = g_->get_num_nodes() - 1;
 
-    warthog::arclabels::af_params par = 
-        warthog::arclabels::get_af_params(part_);
-
     // allocate memory for arcflag labels. 
-    std::vector<std::vector<uint8_t*>> flags_;
-    flags_.resize(g_->get_num_nodes());
+    t_arclabels_af* flags_ = new t_arclabels_af();
+    flags_->resize(g_->get_num_nodes());
 
     for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
     {
         warthog::graph::node* n = g_->get_node(i);
-        flags_.at(i).resize(n->out_degree());
+        flags_->at(i).resize(n->out_degree());
 
         for(uint32_t j = 0; j < n->out_degree(); j++)
         {
             // allocate memory for each label and initialise 
             // each bit to zero
             uint8_t* label = new uint8_t[par.bytes_per_label_];
-            flags_.at(i).at(j) = label;
+            flags_->at(i).at(j) = label;
             for(uint32_t k = 0; k < par.bytes_per_label_; k++)
             {
                 label[k] = 0;
@@ -491,7 +488,7 @@ warthog::arclabels::af_compute(warthog::graph::planar_graph* g_,
             };
     dijkstra.apply_on_relax(relax_fn);
 
-    for(uint32_t i = firstid_; i < lastid_; i++)
+    for(uint32_t i = firstid_; i <= lastid_; i++)
     {
         // run a dijkstra search from each node
         std::cerr << "\rprocessing node " << i << "; continues until node " 
@@ -533,41 +530,40 @@ warthog::arclabels::af_compute(warthog::graph::planar_graph* g_,
                     uint32_t edge_index  = (*idmap.find(
                             n->get_parent()->get_id() == source_id ? 
                             n->get_id() : n->get_parent()->get_id())).second;
-                    flags_.at(source_id).at(edge_index)[part_id >> 3]
+                    flags_->at(source_id).at(edge_index)[part_id >> 3]
                         |= (1 << (part_id & 7));
                 };
         dijkstra.apply_to_closed(fn_arcflags);
     }
     std::cerr << "\nall done\n"<< std::endl;
+    return flags_;
 }
 
-void
+warthog::arclabels::t_arclabels_af*
 warthog::arclabels::ch_af_compute(warthog::graph::planar_graph* g_, 
-        std::vector<uint32_t>* part_, std::vector<uint32_t>* rank)
+        std::vector<uint32_t>* part_, std::vector<uint32_t>* rank, 
+        warthog::arclabels::af_params par)
 {
-    if(!g_ || !rank) { return; } 
+    if(!g_ || !rank) { return 0; } 
 
     uint32_t firstid = 0;
     uint32_t lastid = g_->get_num_nodes()-1; 
 
-    warthog::arclabels::af_params par =
-        warthog::arclabels::get_af_params(part_);
-
-    // allocate memory for arcflag labels. 
-    std::vector<std::vector<uint8_t*>> flags_;
-    flags_.resize(g_->get_num_nodes());
+    // allocate memory for each node
+    t_arclabels_af* flags_ = new t_arclabels_af();
+    flags_->resize(g_->get_num_nodes());
 
     for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
     {
         warthog::graph::node* n = g_->get_node(i);
-        flags_.at(i).resize(n->out_degree());
+        flags_->at(i).resize(n->out_degree());
 
         for(uint32_t j = 0; j < n->out_degree(); j++)
         {
             // allocate memory for each label and initialise 
             // each bit to zero
             uint8_t* label = new uint8_t[par.bytes_per_label_];
-            flags_.at(i).at(j) = label;
+            flags_->at(i).at(j) = label;
             for(uint32_t k = 0; k < par.bytes_per_label_; k++)
             {
                 label[k] = 0;
@@ -643,16 +639,19 @@ warthog::arclabels::ch_af_compute(warthog::graph::planar_graph* g_,
                     uint32_t edge_index  = (*idmap.find(
                             n->get_parent()->get_id() == source_id ? 
                             n->get_id() : n->get_parent()->get_id())).second;
-                    flags_.at(source_id).at(edge_index)[part_id >> 3]
+                    flags_->at(source_id).at(edge_index)[part_id >> 3]
                         |= (1 << (part_id & 7));
                 };
         dijkstra.apply_to_closed(fn_arcflags);
     }
     std::cerr << "\nall done\n"<< std::endl;
+    return flags_;
 }
 
-void
+warthog::arclabels::t_arclabels_af*
 warthog::arclabels::ch_af_jpg_compute(warthog::graph::corner_point_graph* g, 
-        std::vector<uint32_t>* part, std::vector<uint32_t>* rank)
+        std::vector<uint32_t>* part, std::vector<uint32_t>* rank,
+        warthog::arclabels::af_params par)
 {
+    return 0;
 }

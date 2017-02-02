@@ -343,38 +343,32 @@ compute_chaf_labels()
     }
 
     // compute labels
-    uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes()-1;
-    grfile.append(".ch-af.arclabel");
-    if(cfg.get_num_values("type") == 2)
-    {
-        std::string first = cfg.get_param_value("type");
-        std::string last = cfg.get_param_value("type");
-        if(strtol(first.c_str(), 0, 10) != 0)
-        {
-            firstid = strtol(first.c_str(), 0, 10);
-        }
-        if(strtol(last.c_str(), 0, 10) != 0)
-        {
-            lastid = strtol(last.c_str(), 0, 10);
-        }
-        grfile.append(".");
-        grfile.append(first);
-        grfile.append(".");
-        grfile.append(std::to_string(lastid));
-    }
-    warthog::af_filter filter(&g, &part);
-    filter.compute_ch(firstid, lastid, &order);
+    warthog::arclabels::af_params par = 
+        warthog::arclabels::get_af_params(&part);
+
+    warthog::arclabels::t_arclabels_af* flags = 
+        warthog::arclabels::ch_af_compute(&g, &part, &order, par);
     
     // save the result
-    std::cerr << "saving contracted graph to file " << grfile << std::endl;
-    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+    std::string outfile = grfile;
+    outfile.append(".ch-af.arclabel");
+    std::cerr << "saving contracted graph to file " << outfile << std::endl;
+    std::fstream out(outfile.c_str(), 
+        std::ios_base::out | std::ios_base::trunc);
     if(!out.good())
     {
         std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
     }
-    filter.print(out);
+
+    warthog::arclabels::af_print(*flags, par, out);
     out.close();
+
+    // cleanup
+    for(const std::vector<uint8_t*>& coll : *flags)
+    {
+        for(uint8_t* i : coll) { delete [] i;}
+    }
+
     std::cerr << "all done!\n";
 }
 
@@ -411,40 +405,31 @@ compute_af_labels()
         return;
     }
 
-
-    // compute labels
-    uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes()-1;
-    grfile.append(".af.arclabel");
-    if(cfg.get_num_values("type") == 2)
-    {
-        std::string first = cfg.get_param_value("type");
-        std::string last = cfg.get_param_value("type");
-        if(strtol(first.c_str(), 0, 10) != 0)
-        {
-            firstid = strtol(first.c_str(), 0, 10);
-        }
-        if(strtol(last.c_str(), 0, 10) != 0)
-        {
-            lastid = strtol(last.c_str(), 0, 10);
-        }
-        grfile.append(".");
-        grfile.append(first);
-        grfile.append(".");
-        grfile.append(std::to_string(lastid));
-    }
-    warthog::af_filter filter(&g, &part);
-    filter.compute(firstid, lastid);
+    // create the labeling
+    warthog::arclabels::af_params par = 
+        warthog::arclabels::get_af_params(&part);
+    warthog::arclabels::t_arclabels_af* flags =
+    warthog::arclabels::af_compute(&g, &part, par);
     
     // save the result
-    std::cerr << "saving contracted graph to file " << grfile << std::endl;
-    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
+    std::string outfile = grfile;
+    outfile.append(".af.arclabel");
+    std::cerr << "saving contracted graph to file " << outfile << std::endl;
+    std::fstream out(outfile.c_str(), 
+            std::ios_base::out | std::ios_base::trunc);
     if(!out.good())
     {
         std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
     }
-    filter.print(out);
+    warthog::arclabels::af_print(*flags, par, out);
     out.close();
+
+    // cleanup
+    for(const std::vector<uint8_t*>& coll : *flags)
+    {
+        for(uint8_t* i : coll) { delete [] i;}
+    }
+
     std::cerr << "all done!\n";
 }
 

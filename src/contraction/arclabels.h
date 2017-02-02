@@ -70,6 +70,7 @@ bb_print( t_arclabels_bb& labels,
 // be loaded, right before commencing search
 
 typedef std::vector<std::vector<uint8_t*>> t_arclabels_af;
+
 struct af_params
 {
     uint32_t bytes_per_label_;
@@ -93,25 +94,27 @@ af_print( t_arclabels_af& flags_,
 // bits are set to true if the edge at hand appears on any optimal path
 // to any node in its associated partition and false if it fails to appear
 // on any optimal path to a node in its associated partition.
-void
-af_compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part);
+warthog::arclabels::t_arclabels_af*
+af_compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part,
+        warthog::arclabels::af_params par);
 
 // arcflags computed on a graph that is a contraction hierarchy.
 // In a CH edges are either "up" or "down". Nodes reached via an up edge
 // have all of their successors generated and relaxed. Nodes reached via
 // a down edge only generate and relax those successors further down 
 // in the hierarchy.
-void
+warthog::arclabels::t_arclabels_af*
 ch_af_compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part,
-        std::vector<uint32_t>* rank);
+        std::vector<uint32_t>* rank, warthog::arclabels::af_params par);
 
 // arcflags that are:
 //  - computed on a corner point graph
 //  - the graph is also a contraction hierarchy 
 //  - the set of successors are pruned ala Jump Point Search
-void
+warthog::arclabels::t_arclabels_af*
 ch_af_jpg_compute(warthog::graph::corner_point_graph* g, 
-        std::vector<uint32_t>* part, std::vector<uint32_t>* rank);
+        std::vector<uint32_t>* part, std::vector<uint32_t>* rank, 
+        warthog::arclabels::af_params);
 
 
 
