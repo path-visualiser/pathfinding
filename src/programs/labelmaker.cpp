@@ -209,7 +209,7 @@ compute_chbb_labels()
 }
 
 void
-compute_chbbjpg_labels()
+compute_chbb_jpg_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
@@ -248,7 +248,6 @@ compute_chbbjpg_labels()
         std::cerr << "err; could not load node order input file\n";
         return;
     }
-    
     
     // compute bounding boxes & save the result
     std::string outfile(grfile);
@@ -352,6 +351,85 @@ compute_chaf_labels()
     // save the result
     std::string outfile = grfile;
     outfile.append(".ch-af.arclabel");
+    std::cerr << "saving contracted graph to file " << outfile << std::endl;
+    std::fstream out(outfile.c_str(), 
+        std::ios_base::out | std::ios_base::trunc);
+    if(!out.good())
+    {
+        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+    }
+
+    warthog::arclabels::af_print(*flags, par, out);
+    out.close();
+
+    // cleanup
+    for(const std::vector<uint8_t*>& coll : *flags)
+    {
+        for(uint8_t* i : coll) { delete [] i;}
+    }
+
+    std::cerr << "all done!\n";
+}
+
+void
+compute_chaf_jpg_labels()
+{
+    std::string grfile = cfg.get_param_value("input");
+    std::string cofile = cfg.get_param_value("input");
+    std::string orderfile = cfg.get_param_value("input");
+    std::string partfile = cfg.get_param_value("input");
+    std::string gridmapfile = cfg.get_param_value("input");
+
+    if( grfile == "" || cofile == "" || partfile == "" ||
+            orderfile == "" || gridmapfile == "")
+    {
+        std::cerr << "err; insufficient input parameters."
+                  << " required, in order:\n"
+                  << " --input [gr file] [co file]"
+                  << " [node ordering file]"
+                  << " [graph partition file]"
+                  << " [gridmap]\n";
+        return;
+    }
+    std::cerr << "computing labels" << std::endl;
+
+    // load up the grid
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(gridmapfile.c_str()));
+
+    // load up the graph
+    std::shared_ptr<warthog::graph::planar_graph> pg(
+            new warthog::graph::planar_graph());
+    if(!pg->load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
+    warthog::graph::corner_point_graph cpg(map, pg);
+
+    // load up the partition info
+    std::vector<uint32_t> part;
+    warthog::helpers::load_integer_labels_dimacs(partfile.c_str(), part);
+
+    // load up the node ordering
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+
+    // compute labels
+    warthog::arclabels::af_params par = 
+        warthog::arclabels::get_af_params(&part);
+
+    warthog::arclabels::t_arclabels_af* flags = 
+        warthog::arclabels::ch_af_jpg_compute(&cpg, &part, &order, par);
+    
+    // save the result
+    std::string outfile = grfile;
+    outfile.append(".ch-af-jpg.arclabel");
     std::cerr << "saving contracted graph to file " << outfile << std::endl;
     std::fstream out(outfile.c_str(), 
         std::ios_base::out | std::ios_base::trunc);
@@ -770,7 +848,11 @@ int main(int argc, char** argv)
     }
     else if(arclabel.compare("chbb-jpg") == 0)
     {
-        compute_chbbjpg_labels();
+        compute_chbb_jpg_labels();
+    }
+    else if(arclabel.compare("chaf-jpg") == 0)
+    {
+        compute_chaf_jpg_labels();
     }
     else
     {

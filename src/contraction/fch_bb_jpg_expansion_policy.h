@@ -69,20 +69,6 @@ class fch_bb_jpg_expansion_policy : public expansion_policy
         bool
         filter(uint32_t node_id, uint32_t edge_id);
 
-        // *** JPS STUFF ***
-        
-        // we label each edge of the CH with two pieces of information:
-        // (1) a FIRST label that specifies the direction of the first
-        // step on the diagonal-first path that begins at the edge's 
-        // tail node and finishes at its head node. 
-        // (2) a LAST label that is similar and which specifies the 
-        // direction of the last step on the path
-        enum step_type
-        {
-            FIRST = 0,
-            LAST = 1
-        };
-
         inline uint32_t
         get_rank(uint32_t id)
         {
@@ -92,31 +78,6 @@ class fch_bb_jpg_expansion_policy : public expansion_policy
         void
         init();
 
-        void
-        compute_direction_labels();
-
-        void
-        label_edge(
-                warthog::graph::edge* e, uint32_t e_tail_id, 
-                warthog::graph::planar_graph* pg);
-
-        void
-        process_edge(warthog::graph::edge* e, uint32_t e_tail_id,
-                     warthog::graph::planar_graph* g);
-
-        inline warthog::jps::direction
-        get_dir(warthog::graph::edge* e, step_type which)
-        {
-            return (warthog::jps::direction)
-                ((uint8_t*)(&e->label_))[which && which];
-        }
-
-        inline void
-        set_dir(warthog::graph::edge* e, step_type which, 
-                warthog::jps::direction d)
-        {
-            ((uint8_t*)(&e->label_))[which && which] = d;
-        }
 };
 }
 

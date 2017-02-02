@@ -1,47 +1,29 @@
-#include "bb_filter.h"
+#include "af_filter.h"
 #include "contraction.h"
 #include "corner_point_graph.h"
-#include "fch_bb_jpg_expansion_policy.h"
+#include "fch_af_jpg_expansion_policy.h"
 #include "jpg.h"
 #include "search_node.h"
 
-warthog::fch_bb_jpg_expansion_policy::fch_bb_jpg_expansion_policy(
-        warthog::graph::corner_point_graph* g, 
-        std::vector<uint32_t>* rank,
-        warthog::bb_filter* nf)
+warthog::fch_af_jpg_expansion_policy::fch_af_jpg_expansion_policy(
+        warthog::graph::corner_point_graph* g, std::vector<uint32_t>* rank,
+        warthog::af_filter* filter)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
-    nf_ = nf;
+    filter_ = filter;
+    apex_ = warthog::INF;
+    apex_reached_ = false;
 
-    warthog::jpg::compute_direction_labels(g);
-    g_->build_edge_label_index();
-
-    init();
+    warthog::jpg::compute_direction_labels(g_);
 }
 
-warthog::fch_bb_jpg_expansion_policy::~fch_bb_jpg_expansion_policy()
+warthog::fch_af_jpg_expansion_policy::~fch_af_jpg_expansion_policy()
 {
 }
 
 void
-warthog::fch_bb_jpg_expansion_policy::init()
-{
-    // we insert two extra elements in the event that we
-    // need to insert the start or target. both have the lowest
-    // possible rank in the hierarchy (0 and 1)
-    // NB: along the way we need to increase all ranks by 2 
-    for(uint32_t i = 0; i < rank_->size(); i++) rank_->at(i)+=2;
-    rank_->push_back(0);
-    rank_->push_back(1);
-    search_id_at_last_insert_ = warthog::INF;
-}
-
-// TODO: 
-// 1. ::expand
-// 2. ::generate / insert
-void
-warthog::fch_bb_jpg_expansion_policy::expand(
+warthog::fch_af_jpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* problem)
 {
     reset();
@@ -62,8 +44,7 @@ warthog::fch_bb_jpg_expansion_policy::expand(
         uint32_t parent_id = current->get_parent()->get_id();
         warthog::graph::node* parent = g_->get_node(parent_id);
         warthog::graph::edge* e_pn = parent->find_edge(current_id);
-        warthog::jps::direction d_last = warthog::jpg::get_dir(
-                e_pn, warthog::jpg::LAST);
+        warthog::jps::direction d_last = get_dir(e_pn, warthog::jpg::LAST);
 
         // using d_last we now compute a set of directions in which we 
         // should look for successors; we will only generate successors
@@ -101,8 +82,7 @@ warthog::fch_bb_jpg_expansion_policy::expand(
             // traveling up the hierarchy we generate all neighbours;
             // traveling down, we generate only "down" neighbours
 #ifndef NDEBUG
-            warthog::jps::direction s_dir = 
-                warthog::jpg::get_dir(&e, warthog::jpg::FIRST);
+            warthog::jps::direction s_dir = get_dir(&e, warthog::jpg::FIRST);
             assert((current_id == problem->get_start_id()) ||
                     (succ_dirs & s_dir));
 #endif
@@ -130,93 +110,66 @@ warthog::fch_bb_jpg_expansion_policy::expand(
 }
 
 void
-warthog::fch_bb_jpg_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
+warthog::fch_af_jpg_expansion_policy::get_xy(
+        uint32_t id, int32_t& x, int32_t& y)
 {
-    g_->get_xy(nid, x, y);
+    g_->get_xy(id, x, y);
 }
 
 warthog::search_node* 
-warthog::fch_bb_jpg_expansion_policy::generate_start_node(
+warthog::fch_af_jpg_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_at_last_insert_)
+    if(pi->get_search_id() != search_id_)
     {
         g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_at_last_insert_ = pi->get_search_id();
+        search_id_ = pi->get_search_id();
     }
     return this->generate(g_->get_inserted_start_id());
 }
 
-// when inserting the target node there are two cases to consider
-// (i) the target node is a corner node.
-// (ii) the target not is not a corner node
-//
-// Consider case (i). Since the target is in the corner graph we need
-// only look at the label of the current edge and see if the edge can 
-// appear on any optimal path to the target. so far, nothing has changed.
-//
-// Consider case (ii). Since the target is not in the corner graph
-// we need to insert it. Insertion yields a set of successors, S.
-// From a goal pruning perspective, the target is now not a single
-// node but the entire set of nodes S. During search, if any edge can
-// appear on an optimal path to any s \in S, we should relax the edge.
-//
-// Depending on |S| this might be slow. In the case of geometric containers 
-// we can construct a bounding box for all nodes in S \cup { t } and check 
-// if the bounding box stored with the current edge overlaps with the 
-// bounding box containing the target and all of its successors. 
 warthog::search_node*
-warthog::fch_bb_jpg_expansion_policy::generate_target_node(
+warthog::fch_af_jpg_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_at_last_insert_)
+    if(pi->get_search_id() != search_id_)
     {
         g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_at_last_insert_ = pi->get_search_id();
+        search_id_ = pi->get_search_id();
     }
 
-    r_.clear();
-    if(g_->get_inserted_target_id() != g_->get_dummy_target_id())
+    t_part_.clear();
+    uint32_t t_id = g_->get_inserted_target_id();
+    if(t_id != g_->get_dummy_target_id())
     {
-       int32_t my_x, my_y;
-       g_->get_xy(g_->get_inserted_target_id(), my_x, my_y);
-       r_.grow(my_x, my_y);
+        t_part_.insert(filter_->get_partition(t_id));
     }
     else
     {
-        warthog::graph::node* target = 
-            g_->get_node(g_->get_inserted_target_id());
+        warthog::graph::node* target = g_->get_node(t_id);
         for( warthog::graph::edge_iter it = target->incoming_begin();
              it != target->incoming_end(); it++ )
         {
-            int32_t my_x, my_y;
-            g_->get_xy(it->node_id_, my_x, my_y);
-            r_.grow(my_x, my_y);
+            uint32_t nei_part = filter_->get_partition(it->node_id_);
+            t_part_.insert(nei_part);
         }
     }
-
-    // update the filter with the new target location
-    {
-        int32_t tx, ty;
-        g_->get_xy(g_->get_inserted_target_id(), tx, ty);
-        nf_->set_target_xy(tx, ty);
-    }
-
-    return this->generate(g_->get_inserted_target_id());
+    return this->generate(t_id);
 }
 
 bool
-warthog::fch_bb_jpg_expansion_policy::filter(
-        uint32_t node_id, uint32_t edge_id)
+warthog::fch_af_jpg_expansion_policy::filter(
+        uint32_t node_id, uint32_t edge_index)
 {
-    warthog::geom::rectangle rect = 
-    nf_->get_label(node_id, edge_id);
-    return r_.intersects(rect) == 0;
-
-    //bool retval = 0;
-    //for(uint32_t i = 0; i < proxy_xy_.size(); i+=2)
-    //{
-    //    retval |= rect.contains(proxy_xy_.at(i), proxy_xy_.at(i+1));
-    //}
-    //return retval == 0;
+    uint8_t* label = filter_->get_label(node_id, edge_index);
+    bool retval = 0;
+    for(std::set<uint32_t>::iterator it = t_part_.begin();
+            it != t_part_.end(); it++)
+    {
+        uint32_t part_id = *it;
+        uint32_t index = part_id >> 3;
+        uint32_t bit_mask = 1 << (part_id & 7);
+        retval |= label[index] & bit_mask;
+    }
+    return retval == 0;
 }

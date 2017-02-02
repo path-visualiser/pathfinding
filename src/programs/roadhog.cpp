@@ -47,6 +47,7 @@
 
 #include "fch_jpg_expansion_policy.h"
 #include "fch_bb_jpg_expansion_policy.h"
+#include "fch_af_jpg_expansion_policy.h"
 
 #include "getopt.h"
 
@@ -77,7 +78,7 @@ help()
     << "\tch, chase, chaf, chaf-bb, ch-cpg\n"
     << "\tfch, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
-    << "\tfch-jpg, fch-bb-jpg\n"
+    << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at uuntime\n";
 }
@@ -1412,6 +1413,98 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
+run_fch_af_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    std::string arclabels_file = cfg.get_param_value("input");
+    std::string partition_file = cfg.get_param_value("input");
+    std::string gridmapfile = cfg.get_param_value("input");
+    if( orderfile == "" || arclabels_file == "" || 
+        partition_file == "" || gridmapfile == "" )
+    {
+        std::cerr << "err; insufficient input parameters for --alg "
+                  << alg_name << ". required, in order:\n"
+                  << " --input [gr file] [co file] "
+                  << " [contraction order file] [arclabels file] "
+                  << " [graph partition file] [gridmap file]\n";
+        return;
+    }
+    
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load contraction order file\n";
+        return;
+    }
+
+    // we insert two extra elements in the event that we
+    // need to insert the start or target. both have the lowest
+    // possible rank in the hierarchy (0 and 1)
+    // NB: along the way we need to increase all ranks by 2 
+    for(uint32_t i = 0; i < order.size(); i++) order.at(i)+=2;
+    order.push_back(0);
+    order.push_back(1);
+
+    // load up the node partition info
+    std::vector<uint32_t> part;
+    if(!warthog::helpers::load_integer_labels_dimacs(
+            partition_file.c_str(), part))
+    {
+        std::cerr << "err; could not load graph partition input file\n";
+        return;
+    }
+
+    // load up the grid
+    std::shared_ptr<warthog::gridmap> map(
+            new warthog::gridmap(gridmapfile.c_str()));
+            
+    // load up the graph 
+    std::shared_ptr<warthog::graph::planar_graph> pg(
+            new warthog::graph::planar_graph());
+    pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
+
+    // graph wrapper
+    warthog::graph::corner_point_graph cpg(map, pg);
+
+    // load up the arc-flags
+    warthog::af_filter filter(&part);
+    if(!filter.load_labels(arclabels_file.c_str(), pg.get()))
+    {
+        std::cerr << "err; could not load arcflags file\n";
+        return;
+    }
+
+    // search algo
+    warthog::euclidean_heuristic h(pg.get());
+    warthog::fch_af_jpg_expansion_policy fexp(&cpg, &order, &filter);
+    warthog::flexible_astar< warthog::euclidean_heuristic, 
+        warthog::fch_af_jpg_expansion_policy> alg(&h, &fexp);
+    alg.set_verbose(verbose);
+
+    std::cerr << "running experiments\n";
+    int i = 0;
+    std::cout << "id\talg\texp\tgen\ttouch\tmicros\tplen\tmap\n";
+    for(warthog::dimacs_parser::experiment_iterator it = parser.experiments_begin(); 
+            it != parser.experiments_end(); it++)
+    {
+        warthog::dimacs_parser::experiment exp = (*it);
+
+		double len = alg.get_length(
+                warthog::problem_instance(exp.source, exp.target));
+
+        std::cout << i++ <<"\t" << alg_name << "\t" 
+        << alg.get_nodes_expanded() << "\t" 
+        << alg.get_nodes_generated() << "\t"
+        << alg.get_nodes_touched() << "\t"
+        << alg.get_search_time()  << "\t"
+        << len << "\t" 
+        << gr << " " << parser.get_problemfile() << std::endl;
+    }
+}
+
+void
 run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
@@ -1678,6 +1771,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch-bb-jpg")
     {
         run_fch_bb_jpg(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "fch-af-jpg")
+    {
+        run_fch_af_jpg(cfg, parser, alg_name, gr, co);
     }
     else
     {

@@ -546,13 +546,12 @@ warthog::arclabels::ch_af_compute(warthog::graph::planar_graph* g_,
 {
     if(!g_ || !rank) { return 0; } 
 
-    uint32_t firstid = 0;
-    uint32_t lastid = g_->get_num_nodes()-1; 
-
     // allocate memory for each node
     t_arclabels_af* flags_ = new t_arclabels_af();
     flags_->resize(g_->get_num_nodes());
 
+    uint32_t firstid = 0;
+    uint32_t lastid = g_->get_num_nodes()-1; 
     for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
     {
         warthog::graph::node* n = g_->get_node(i);
@@ -653,5 +652,106 @@ warthog::arclabels::ch_af_jpg_compute(warthog::graph::corner_point_graph* g,
         std::vector<uint32_t>* part, std::vector<uint32_t>* rank,
         warthog::arclabels::af_params par)
 {
-    return 0;
+    if(!g || !rank) { return 0; } 
+
+    // allocate memory for each node
+    t_arclabels_af* flags_ = new t_arclabels_af();
+    flags_->resize(g->get_num_nodes());
+
+    uint32_t firstid = 0;
+    uint32_t lastid = g->get_num_nodes()-1; 
+    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
+    {
+        warthog::graph::node* n = g->get_node(i);
+        flags_->at(i).resize(n->out_degree());
+
+        for(uint32_t j = 0; j < n->out_degree(); j++)
+        {
+            // allocate memory for each label and initialise 
+            // each bit to zero
+            uint8_t* label = new uint8_t[par.bytes_per_label_];
+            flags_->at(i).at(j) = label;
+            for(uint32_t k = 0; k < par.bytes_per_label_; k++)
+            {
+                label[k] = 0;
+            }
+        }
+    }
+
+    std::cerr << "computing ch arcflag labels\n";
+    warthog::zero_heuristic heuristic;
+    warthog::fch_jpg_expansion_policy expander(g, rank);
+
+    warthog::flexible_astar<
+        warthog::zero_heuristic,
+        warthog::fch_jpg_expansion_policy> dijkstra(&heuristic, &expander);
+
+    // need to keep track of the first edge on the way to the current node
+    // (the solution is a bit hacky as we break the chain of backpointers 
+    // to achieve this; it doesn't matter, we don't care about the path)
+    std::function<void(warthog::search_node*)> relax_fn = 
+            [] (warthog::search_node* n) -> void
+            {
+                // the start node and its children don't need their 
+                // parent pointers updated. for all other nodes the
+                // grandparent becomes the parent
+                if(n->get_parent()->get_parent() != 0)
+                {
+                    if(n->get_parent()->get_parent()->get_parent() != 0)
+                    {
+                        n->set_parent(n->get_parent()->get_parent());
+                    }
+                }
+            };
+    dijkstra.apply_on_relax(relax_fn);
+
+    for(uint32_t i = firstid; i <= lastid; i++)
+    {
+        // run a dijkstra search from each node
+        std::cerr << "\rprocessing node " << i << "; continues until node " 
+            << (lastid) << "\r";
+        uint32_t source_id = i;
+        uint32_t ext_source_id = 
+            g->get_planar_graph()->to_external_id(source_id);
+        warthog::problem_instance pi(ext_source_id, warthog::INF);
+        dijkstra.get_length(pi);
+
+        // now we analyse the closed list to compute arc flags
+        warthog::graph::node* source = g->get_node(source_id);
+
+        // first, we need an easy way to convert between the ids of nodes
+        // adjacent to the source and their corresponding edge index
+        std::unordered_map<uint32_t, uint32_t> idmap;
+        uint32_t edge_idx = 0;
+        for(warthog::graph::edge_iter it = source->outgoing_begin(); 
+                it != source->outgoing_end(); it++)
+        {
+            idmap.insert(
+                    std::pair<uint32_t, uint32_t>((*it).node_id_, edge_idx));
+            edge_idx++;
+        }
+
+        // analyse the nodes on the closed list and label the edges of the 
+        // source node accordingly
+        std::function<void(warthog::search_node*)> fn_arcflags =
+                [&flags_, part, &source_id, &idmap](warthog::search_node* n) -> void
+                {
+                    // skip the source
+                    assert(n);
+                    if(n->get_id() == source_id) { return; } 
+                    assert(n->get_parent());
+
+                    // label the edges of the source
+                    // (TODO: make this stuff faster)
+                    uint32_t partid = part->at(n->get_id());
+                    uint32_t edge_index  = (*idmap.find(
+                            n->get_parent()->get_id() == source_id ? 
+                            n->get_id() : n->get_parent()->get_id())).second;
+                    flags_->at(source_id).at(edge_index)[partid >> 3]
+                        |= (1 << (partid & 7));
+                };
+        dijkstra.apply_to_closed(fn_arcflags);
+    }
+    std::cerr << "\nall done\n"<< std::endl;
+    return flags_;
 }
