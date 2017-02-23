@@ -224,17 +224,6 @@ class bidirectional_search : public warthog::search
                 if(fopen_->size() > 0) { ftop = fopen_->peek(); } 
                 if(bopen_->size() > 0) { btop = bopen_->peek(); } 
 
-                // The code below can terminate bi-dijkstra search 
-                // more quickly by computing the bound as the sum of g-values
-                // at the top of the open list in both directions. This works
-                // for UNDIRECTED GRAPHS ONLY
-                //uint32_t best_bound = dijkstra_ ? 
-                //     //no heuristic
-                //    (ftop->get_g() + btop->get_g()) : 
-                //     //with a heuristic
-                //    (std::min( 
-                //        ftop->get_f(), btop->get_f()));
-
                 // the code below computes the bound more simply and works
                 // on directed planar graphs with asymmetric costs
                 uint32_t best_bound = std::min( 
@@ -244,9 +233,9 @@ class bidirectional_search : public warthog::search
                 // NB: bidirectional dijkstra stops when the two search 
                 // frontiers expand the same node; bidirectional A* stops 
                 // when the best bound is larger than the best solution
-                if(best_bound > best_cost_ || 
-                        (dijkstra_ && v_ && w_ && 
-                         v_->get_expanded() && w_->get_expanded()))
+                if(best_bound > best_cost_)
+//                        || (dijkstra_ && v_ && w_ && 
+//                         v_->get_expanded() && w_->get_expanded()))
                 {
 #ifndef NDEBUG
                     if(verbose_)

@@ -75,7 +75,7 @@ help()
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tch, chase, chaf, chaf-bb, ch-cpg\n"
+    << "\tch, ch-astar, chase, chaf, chaf-bb, ch-cpg\n"
     << "\tfch, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
@@ -241,12 +241,10 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::ch::value_index_swap_dimacs(order);
 
     std::cerr << "preparing to search\n";
-    warthog::zero_heuristic h;
-    //warthog::euclidean_heuristic h(&g);
     warthog::ch_expansion_policy fexp(&g, &order);
     warthog::ch_expansion_policy bexp (&g, &order, true);
+    warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
-    //warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
     alg.set_verbose(verbose);
 
     std::cerr << "running experiments\n";
