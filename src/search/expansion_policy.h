@@ -16,6 +16,8 @@
 #include "search_node.h"
 #include "problem_instance.h"
 
+#include <vector>
+
 namespace warthog
 {
 

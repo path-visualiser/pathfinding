@@ -28,6 +28,7 @@
 #include <iostream>
 #include <memory>
 #include <stack>
+#include <vector>
 
 namespace warthog
 {

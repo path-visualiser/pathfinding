@@ -58,9 +58,9 @@ class heap
     typedef heap_node<T> heap_item;
 
 	public:
-		heap(unsigned int size, bool minqueue, Comparator cmp = Comparator())
+		heap(unsigned int size, bool minqueue)
             : maxsize_(size), minqueue_(minqueue), 
-            queuesize_(0), elts_(0), cmp_(cmp)
+            queuesize_(0), elts_(0)
         {
             resize(size);
         }
@@ -211,7 +211,7 @@ class heap
 		bool minqueue_;
 		unsigned int queuesize_;
 		heap_item** elts_;
-        Comparator& cmp_;
+        Comparator cmp_;
 
 		// reorders the subheap containing elts_[index]
 		void 

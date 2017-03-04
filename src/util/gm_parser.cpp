@@ -1,6 +1,6 @@
 #include "gm_parser.h"
 
-#include <tr1/unordered_map>
+#include <unordered_map>
 
 warthog::gm_parser::gm_parser(const char* filename)
 {
@@ -25,7 +25,7 @@ void
 warthog::gm_parser::parse_header(std::fstream& mapfs)
 {
 	// read header fields
-	std::tr1::unordered_map<std::string, std::string> contents;
+	std::unordered_map<std::string, std::string> contents;
 	for(int i=0; i < 3; i++)
 	{
 		std::string hfield, hvalue;

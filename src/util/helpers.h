@@ -21,7 +21,7 @@ namespace helpers
 // convert id into x/y coordinates on a grid of width 'mapwidth'
 inline void
 index_to_xy(unsigned int id, unsigned int mapwidth, 
-		unsigned int& x, unsigned int& y)
+		int32_t& x, int32_t& y)
 {	
 	y = id / mapwidth;
 	x = id % mapwidth;

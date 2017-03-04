@@ -67,7 +67,7 @@ class jps_expansion_policy : public expansion_policy
 		{
 			if(n1 == 0) { return warthog::jps::NONE; }
 
-			uint32_t x, y, x2, y2;
+			int32_t x, y, x2, y2;
 			warthog::helpers::index_to_xy(n1->get_id(), map_->width(), x, y);
 			warthog::helpers::index_to_xy(n2->get_id(), map_->width(), x2, y2);
 			warthog::jps::direction dir = warthog::jps::NONE;

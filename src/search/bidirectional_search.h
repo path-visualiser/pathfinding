@@ -22,7 +22,8 @@
 #include "constants.h"
 #include <cstdlib>
 #include <stack>
-#include <stdint.h>
+#include <cstdint>
+#include <typeinfo>
 
 namespace warthog
 {
@@ -163,8 +164,27 @@ class bidirectional_search : public warthog::search
         bool
         forward_next()
         {
-            forward_next_ = !forward_next_;
-            return forward_next_;
+            double fwd_min = warthog::INF;
+            double bwd_min = warthog::INF;
+
+            if(bopen_->size() > 0)
+            {
+                bwd_min = bopen_->peek()->get_f();
+            }
+
+            if(fopen_->size() > 0)
+            {
+                fwd_min = fopen_->peek()->get_f();
+            }
+
+            if(fwd_min < bwd_min)
+            {
+                return true;
+            }
+            return false;
+
+            //forward_next_ = !forward_next_;
+            //return forward_next_;
         }
 
         void 
@@ -244,6 +264,11 @@ class bidirectional_search : public warthog::search
                             best_cost_ << std::endl;
                     }
 #endif
+//                   bool dijk_finish = dijkstra_ && v_ && w_ && 
+//                         v_->get_expanded() && w_->get_expanded();
+//                   bool bound_finish = best_bound > best_cost_;
+//                   std::cerr << "dijk finish " << dijk_finish 
+//                       << " bound finish "<< bound_finish << std::endl;
                     break;
                 }
 

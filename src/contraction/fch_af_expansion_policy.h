@@ -64,7 +64,6 @@ class fch_af_expansion_policy : public expansion_policy
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
         warthog::af_filter* filter_;
-        uint32_t search_id_;
         bool apex_reached_;
         uint32_t apex_;
 

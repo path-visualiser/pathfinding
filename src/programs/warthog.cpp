@@ -33,7 +33,7 @@
 #include <functional>
 #include <iomanip>
 #include <sstream>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <memory>
 
 // check computed solutions are optimal
@@ -69,8 +69,8 @@ check_optimality(double len, warthog::experiment* exp)
 	uint32_t precision = 1;
 	double epsilon = (1 / (int)pow(10, precision)) / 2;
 
-	int delta = abs(len - exp->distance());
-	if( abs(delta - epsilon) > epsilon)
+	double delta = fabs(len - exp->distance());
+	if( fabs(delta - epsilon) > epsilon)
 	{
 		std::stringstream strpathlen;
 		strpathlen << std::fixed << std::setprecision(exp->precision());

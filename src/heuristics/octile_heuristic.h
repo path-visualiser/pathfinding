@@ -20,17 +20,15 @@ namespace warthog
 class octile_heuristic
 {
 	public:
-		octile_heuristic(unsigned int mapwidth, unsigned int mapheight) 
-	    	: mapwidth_(mapwidth), mapheight_(mapheight), hscale_(1.0) { }
+		octile_heuristic(unsigned int mapwidth, unsigned int mapheight)
+	    	: mapwidth_(mapwidth), hscale_(1.0) { }
 		~octile_heuristic() { }
 
 		inline double
-		h(unsigned int x, unsigned int y, 
-				unsigned int x2, unsigned int y2)
+		h(int32_t x, int32_t y, int32_t x2, int32_t y2)
 		{
-            // NB: precision loss when double is an integer
-			double dx = abs(x-x2);
-			double dy = abs(y-y2);
+			int32_t dx = abs(x-x2);
+			int32_t dy = abs(y-y2);
 			if(dx < dy)
 			{
 				return (dx * warthog::DBL_ROOT_TWO + (dy - dx)) * hscale_;
@@ -41,8 +39,8 @@ class octile_heuristic
 		inline double
 		h(unsigned int id, unsigned int id2)
 		{
-			unsigned int x, x2;
-			unsigned int y, y2;
+			int32_t x, x2;
+			int32_t y, y2;
 			warthog::helpers::index_to_xy(id, mapwidth_, x, y);
 			warthog::helpers::index_to_xy(id2,mapwidth_, x2, y2);
 			return this->h(x, y, x2, y2);
@@ -59,7 +57,6 @@ class octile_heuristic
 
 	private:
 		unsigned int mapwidth_;
-		unsigned int mapheight_;
         double hscale_;
 };
 

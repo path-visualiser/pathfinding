@@ -13,7 +13,8 @@ D_LIBS = -L/usr/local/lib -L./lib
 
 CC = g++
 CFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long \
-		 -Wno-deprecated -Wno-deprecated-declarations -Werror
+		 -Wno-deprecated -Wno-deprecated-declarations \
+		 -Wno-constant-logical-operand -Werror 
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0
 PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG
@@ -49,8 +50,8 @@ extras: extras__
 .PHONY: tags
 tags:
 	ctags -R .
-	find . | grep -E "\.((h(pp)*\$$)|(c(pp)+\$$))"	> cscope.in
-	cscope -b -i cscope.in
+	#find . | grep -E "\.((h(pp)*\$$)|(c(pp)+\$$))"	> cscope.in
+	#cscope -b -i cscope.in
 
 .PHONY: clean
 clean:
