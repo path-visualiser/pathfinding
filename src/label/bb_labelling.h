@@ -174,6 +174,7 @@ class bb_labelling
                                     (*it).second).is_valid());
                     };
                     dijkstra.apply_to_closed(bbox_fn);
+                    par->nprocessed_++;
                 }
                 return 0;
             };
@@ -195,6 +196,7 @@ class bb_labelling
                 pthread_create(&threads[i], NULL, 
                         thread_compute_fn, (void*) &task_data[i]);
             }
+            std::cerr << "forked " << NUM_THREADS << " threads \n";
 
             while(true)
             {
@@ -206,7 +208,7 @@ class bb_labelling
                     << "\rprogress: " << nprocessed 
                     << " / " << g->get_num_nodes();
                 if(nprocessed == g->get_num_nodes()) { break; }
-                else { sleep(5); }
+                else { sleep(2); }
             }
 
             for(uint32_t i = 0; i < NUM_THREADS; i++)
