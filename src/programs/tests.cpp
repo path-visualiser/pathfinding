@@ -15,7 +15,7 @@
 
 #include <iomanip>
 #include <sstream>
-#include <tr1/unordered_map>
+#include <unordered_map>
 #include <memory>
 
 void blockmap_access_test();
@@ -269,7 +269,7 @@ void hash_table_test()
 
 void unordered_map_test()
 {
-	std::tr1::unordered_map<unsigned int, unsigned int> mymap;
+	std::unordered_map<unsigned int, unsigned int> mymap;
 	mymap.rehash(1024);
 	for(int i=0; i < 10000000; i++)
 	{
