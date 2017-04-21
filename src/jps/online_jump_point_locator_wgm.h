@@ -110,7 +110,7 @@ class online_jump_point_locator_wgm
 
 		warthog::weighted_gridmap* map_;
 		warthog::weighted_gridmap* rmap_;
-		uint32_t jumplimit_;
+		//uint32_t jumplimit_;
 };
 
 }

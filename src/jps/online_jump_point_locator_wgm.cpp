@@ -7,7 +7,7 @@
 #include <climits>
 
 warthog::online_jump_point_locator_wgm::online_jump_point_locator_wgm(
-        warthog::weighted_gridmap* map) : map_(map), jumplimit_(UINT32_MAX)
+        warthog::weighted_gridmap* map) : map_(map)//, jumplimit_(UINT32_MAX)
 {
 	rmap_ = create_rmap();
 }
