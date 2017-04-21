@@ -1,20 +1,20 @@
-#include "arclabels.h"
-#include "af_filter.h"
 #include "afh_filter.h"
 #include "afhd_filter.h"
+#include "af_labelling.h"
+#include "bb_labelling.h"
 #include "bbaf_filter.h"
-#include "bb_filter.h"
 #include "cfg.h"
 #include "ch_expansion_policy.h"
 #include "corner_point_graph.h"
 #include "dimacs_parser.h"
 #include "dcl_filter.h"
 #include "down_distance_filter.h"
-#include "fixed_graph_contraction.h"
+#include "fch_expansion_policy.h"
+#include "fch_jpg_expansion_policy.h"
+#include "graph_expansion_policy.h"
 #include "graph.h"
 #include "gridmap.h"
 #include "helpers.h"
-#include "lazy_graph_contraction.h"
 #include "planar_graph.h"
 
 #include <iostream>
@@ -190,22 +190,37 @@ compute_chbb_labels()
         return;
     }
     
-    
-    // compute bounding boxes & save the result
+
+    // gogogo
+    std::cerr << "computing bounding box labelling... \n";
+    std::function<warthog::ch_expansion_policy*(void)> fn_new_expander = 
+        [&g, &order]() -> warthog::ch_expansion_policy*
+        {
+            return new warthog::ch_expansion_policy(
+                    &g, &order, false, warthog::ch::DOWN);
+        };
+    warthog::label::bb_labelling* labelling = 
+        warthog::label::bb_labelling::compute<warthog::ch_expansion_policy>(
+                &g, fn_new_expander);
+
+    // save the result
     std::string outfile(grfile);
     outfile.append(".ch-bb.arclabel");
-    std::cerr << "creating ch-bb arclabels; output to " << outfile << "\n";
+    std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
     if(!fs_out.good())
     {
         std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-
-    warthog::arclabels::ch_bb_compute(&g, &order, fs_out);
-
+    else
+    {
+        labelling->print(fs_out);
+    }
     fs_out.close();
-    std::cerr << "all done!\n";
+
+    delete labelling;
+    std::cerr << "done!\n";
 }
 
 void
@@ -249,20 +264,38 @@ compute_chbb_jpg_labels()
         return;
     }
     
-    // compute bounding boxes & save the result
+    std::cerr << "creating fch-jpg-bb labelling\n";
+    std::function<warthog::fch_jpg_expansion_policy*(void)> 
+        fn_new_expander = [&cpg, &order] () 
+            -> warthog::fch_jpg_expansion_policy*
+        {
+            return new warthog::fch_jpg_expansion_policy(&cpg, &order);
+        };
+
+    warthog::label::bb_labelling* labelling = 
+    warthog::label::bb_labelling::compute<warthog::fch_jpg_expansion_policy>(
+            pg.get(), fn_new_expander);
+
+    std::cerr << "labelling done\n";
+
+    // save the result
     std::string outfile(grfile);
-    outfile.append(".ch-bb-jpg.arclabel");
-    std::cerr << "creating ch-bb arclabels; output to " << outfile << "\n";
+    outfile.append(".fch-bb-jpg.arclabel");
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
+
+    std::cerr << "saving to" << outfile << "\n";
     if(!fs_out.good())
     {
         std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-
-    warthog::arclabels::ch_bb_jpg_compute(&cpg, &order, fs_out);
+    else
+    {
+        labelling->print(fs_out);
+    }
 
     fs_out.close();
+    delete labelling;
     std::cerr << "all done!\n";
 }
 
@@ -287,23 +320,36 @@ compute_bb_labels()
         return;
     }
 
-    // compute bounding boxes & save the result
+    // gogogo
+    std::cerr << "computing bounding box labelling... \n";
+    std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
+        [&g]() -> warthog::graph_expansion_policy*
+        {
+            return new warthog::graph_expansion_policy(&g);
+        };
+    warthog::label::bb_labelling* labelling = 
+        warthog::label::bb_labelling::compute
+            <warthog::graph_expansion_policy>
+                (&g, fn_new_expander);
+
+    // save the result
     std::string outfile(grfile);
     outfile.append(".bb.arclabel");
-    
-    std::cerr << "creating ch-bb arclabels; output to " << outfile << "\n";
+    std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
     if(!fs_out.good())
     {
         std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-
-    warthog::arclabels::bb_compute(&g, fs_out);
-
+    else
+    {
+        labelling->print(fs_out);
+    }
     fs_out.close();
-    std::cerr << "all done!\n";
-    
+
+    delete labelling;
+    std::cerr << "done!\n";
 }
 
 void
@@ -341,34 +387,36 @@ compute_chaf_labels()
         return;
     }
 
-    // compute labels
-    warthog::arclabels::af_params par = 
-        warthog::arclabels::get_af_params(&part);
+    // gogogo
+    std::cerr << "computing fch-af labelling... \n";
+    std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
+        [&g, &order]() -> warthog::fch_expansion_policy*
+        {
+            return new warthog::fch_expansion_policy(&g, &order);
+        };
+    warthog::label::af_labelling* labelling = 
+        warthog::label::af_labelling::compute
+            <warthog::fch_expansion_policy>
+                (&g, &part, fn_new_expander);
 
-    warthog::arclabels::t_arclabels_af* flags = 
-        warthog::arclabels::ch_af_compute(&g, &part, &order, par);
-    
     // save the result
-    std::string outfile = grfile;
-    outfile.append(".ch-af.arclabel");
-    std::cerr << "saving contracted graph to file " << outfile << std::endl;
-    std::fstream out(outfile.c_str(), 
-        std::ios_base::out | std::ios_base::trunc);
-    if(!out.good())
+    std::string outfile(grfile);
+    outfile.append(".fch-af.arclabel");
+    std::cerr << "\ndone; \nsaving to " << outfile << "\n";
+    std::fstream fs_out(outfile.c_str(), 
+                        std::ios_base::out | std::ios_base::trunc);
+    if(!fs_out.good())
     {
-        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-
-    warthog::arclabels::af_print(*flags, par, out);
-    out.close();
-
-    // cleanup
-    for(const std::vector<uint8_t*>& coll : *flags)
+    else
     {
-        for(uint8_t* i : coll) { delete [] i;}
+        labelling->print(fs_out);
     }
+    fs_out.close();
 
-    std::cerr << "all done!\n";
+    delete labelling;
+    std::cerr << "done!\n";
 }
 
 void
@@ -420,34 +468,38 @@ compute_chaf_jpg_labels()
         return;
     }
 
-    // compute labels
-    warthog::arclabels::af_params par = 
-        warthog::arclabels::get_af_params(&part);
+    // gogogo
+    std::cerr << "computing fch-af labelling... \n";
+    std::function<warthog::fch_jpg_expansion_policy*(void)> fn_new_expander = 
+        [&cpg, &order]() -> warthog::fch_jpg_expansion_policy*
+        {
+            return new warthog::fch_jpg_expansion_policy(&cpg, &order);
+        };
+    warthog::label::af_labelling* labelling = 
+        warthog::label::af_labelling::compute
+            <warthog::fch_jpg_expansion_policy>
+                (pg.get(), &part, fn_new_expander);
 
-    warthog::arclabels::t_arclabels_af* flags = 
-        warthog::arclabels::ch_af_jpg_compute(&cpg, &part, &order, par);
-    
     // save the result
     std::string outfile = grfile;
-    outfile.append(".ch-af-jpg.arclabel");
-    std::cerr << "saving contracted graph to file " << outfile << std::endl;
+    outfile.append(".fch-af-jpg.arclabel");
+    std::cerr << "saving arclabels file " << outfile << std::endl;
     std::fstream out(outfile.c_str(), 
-        std::ios_base::out | std::ios_base::trunc);
+            std::ios_base::out | std::ios_base::trunc);
     if(!out.good())
     {
-        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        std::cerr << "\nerror saving arclabels file " << grfile << std::endl;
     }
-
-    warthog::arclabels::af_print(*flags, par, out);
+    else
+    {
+        labelling->print(out);
+    }
     out.close();
 
     // cleanup
-    for(const std::vector<uint8_t*>& coll : *flags)
-    {
-        for(uint8_t* i : coll) { delete [] i;}
-    }
-
+    delete labelling;
     std::cerr << "all done!\n";
+    
 }
 
 void
@@ -482,32 +534,37 @@ compute_af_labels()
         std::cerr << "err; could not load partition file\n"; 
         return;
     }
-
-    // create the labeling
-    warthog::arclabels::af_params par = 
-        warthog::arclabels::get_af_params(&part);
-    warthog::arclabels::t_arclabels_af* flags =
-    warthog::arclabels::af_compute(&g, &part, par);
     
+    // gogogo
+    std::cerr << "computing af labelling... \n";
+    std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
+        [&g]() -> warthog::graph_expansion_policy*
+        {
+            std::cerr << "new graph_expansion_policy" << std::endl;
+            return new warthog::graph_expansion_policy(&g);
+        };
+    warthog::label::af_labelling* labelling = 
+        warthog::label::af_labelling::compute
+            <warthog::graph_expansion_policy>
+                (&g, &part, fn_new_expander);
+
     // save the result
     std::string outfile = grfile;
     outfile.append(".af.arclabel");
-    std::cerr << "saving contracted graph to file " << outfile << std::endl;
+    std::cerr << "saving arclabels file " << outfile << std::endl;
     std::fstream out(outfile.c_str(), 
             std::ios_base::out | std::ios_base::trunc);
     if(!out.good())
     {
-        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        std::cerr << "\nerror saving arclabels file " << grfile << std::endl;
     }
-    warthog::arclabels::af_print(*flags, par, out);
+    else
+    {
+        labelling->print(out);
+    }
     out.close();
 
-    // cleanup
-    for(const std::vector<uint8_t*>& coll : *flags)
-    {
-        for(uint8_t* i : coll) { delete [] i;}
-    }
-
+    delete labelling;
     std::cerr << "all done!\n";
 }
 

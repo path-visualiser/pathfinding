@@ -24,10 +24,13 @@ namespace graph
 class corner_point_graph;
 }
 
+namespace label
+{
+class bb_labelling;
+}
+
 class problem_instance;
 class search_node;
-
-class bb_filter;
 
 class fch_bb_jpg_expansion_policy : public expansion_policy
 {
@@ -35,7 +38,7 @@ class fch_bb_jpg_expansion_policy : public expansion_policy
         fch_bb_jpg_expansion_policy(
                 warthog::graph::corner_point_graph* graph,
                 std::vector<uint32_t>* rank,
-                warthog::bb_filter* nf);
+                warthog::label::bb_labelling* lab);
 
         ~fch_bb_jpg_expansion_policy();
 
@@ -64,7 +67,7 @@ class fch_bb_jpg_expansion_policy : public expansion_policy
         warthog::graph::corner_point_graph* g_;
 
         // geometric containers stuff
-        warthog::bb_filter* nf_;
+        warthog::label::bb_labelling* lab_;
         warthog::geom::rectangle r_;
         bool
         filter(uint32_t node_id, uint32_t edge_id);

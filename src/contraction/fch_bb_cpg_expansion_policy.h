@@ -22,10 +22,15 @@ namespace graph
 class corner_point_graph;
 }
 
+namespace label
+{
+class bb_labelling;
+}
+
+
 class problem_instance;
 class search_node;
 class euclidean_heuristic;
-class bb_filter;
 
 class fch_bb_cpg_expansion_policy : public expansion_policy
 {
@@ -33,7 +38,8 @@ class fch_bb_cpg_expansion_policy : public expansion_policy
         fch_bb_cpg_expansion_policy(
                 warthog::graph::corner_point_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::bb_filter* nf);
+                warthog::label::bb_labelling* lab);
+
 
         ~fch_bb_cpg_expansion_policy();
 
@@ -57,16 +63,12 @@ class fch_bb_cpg_expansion_policy : public expansion_policy
         generate_target_node(warthog::problem_instance* pi);
 
         virtual size_t
-        mem()
-        {
-            return expansion_policy::mem() +
-                sizeof(this);
-        }
+        mem() { return expansion_policy::mem() + sizeof(this); }
 
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::corner_point_graph* g_;
-        warthog::bb_filter* nf_;
+        warthog::label::bb_labelling* lab_;
         uint32_t apex_;
         bool apex_reached_;
         uint32_t search_id_at_last_insert_;

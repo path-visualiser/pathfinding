@@ -467,12 +467,15 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the arc-flags
-    warthog::af_filter filter(&part);
-    if(!filter.load_labels(arclabels_file.c_str(), &g))
+    std::shared_ptr<warthog::label::af_labelling> afl(
+        warthog::label::af_labelling::load(
+            arclabels_file.c_str(), &g, &part));
+    if(!afl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
+    warthog::af_filter filter(afl.get());
 
     std::cerr << "preparing to search\n";
     //warthog::zero_heuristic h;
@@ -480,7 +483,8 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::chaf_expansion_policy fexp(&g, &order, &filter);
     warthog::chaf_expansion_policy bexp (&g, &order, &filter, true);
     //warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
-    warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
+    warthog::bidirectional_search<warthog::euclidean_heuristic> 
+        alg(&fexp, &bexp, &h);
     alg.set_verbose(verbose);
 
     std::cerr << "running experiments\n";
@@ -795,13 +799,16 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the arc-flags
-    warthog::af_filter filter(&part);
-    if(!filter.load_labels(arclabels_file.c_str(), &g))
+    std::shared_ptr<warthog::label::af_labelling> afl
+        (warthog::label::af_labelling::load
+        (arclabels_file.c_str(), &g, &part));
+    if(!afl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
 
+    warthog::af_filter filter(afl.get());
     warthog::euclidean_heuristic h(&g);
     warthog::fch_af_expansion_policy fexp(&g, &order, &filter);
 
@@ -862,12 +869,14 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
     // load up the arc-flags
-    warthog::bb_filter filter;
-    if(!filter.load_labels(arclabels_file.c_str(), &g))
+    std::shared_ptr<warthog::label::bb_labelling> bbl
+        (warthog::label::bb_labelling::load(arclabels_file.c_str(), &g));
+    if(!bbl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
+    warthog::bb_filter filter(bbl.get());
 
     warthog::euclidean_heuristic h(&g);
     warthog::fch_bb_expansion_policy fexp(&g, &order, &filter);
@@ -1375,16 +1384,19 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::graph::corner_point_graph cpg(map, pg);
 
     // load up the arc-flags
-    warthog::af_filter filter(&part);
-    if(!filter.load_labels(arclabels_file.c_str(), pg.get()))
+    std::shared_ptr<warthog::label::af_labelling> afl(
+        warthog::label::af_labelling::load(
+            arclabels_file.c_str(), pg.get(), &part));
+    if(!afl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
+    warthog::af_filter filter(afl.get());
 
     // search algo
     warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_af_cpg_expansion_policy fexp(&cpg, &order, &filter);
+    warthog::fch_af_cpg_expansion_policy fexp(&cpg, &order, afl.get());
     warthog::flexible_astar< warthog::euclidean_heuristic, 
         warthog::fch_af_cpg_expansion_policy> alg(&h, &fexp);
     alg.set_verbose(verbose);
@@ -1467,8 +1479,10 @@ run_fch_af_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::graph::corner_point_graph cpg(map, pg);
 
     // load up the arc-flags
-    warthog::af_filter filter(&part);
-    if(!filter.load_labels(arclabels_file.c_str(), pg.get()))
+    std::shared_ptr<warthog::label::af_labelling> afl(
+            warthog::label::af_labelling::load(
+                arclabels_file.c_str(), pg.get(), &part));
+    if(!afl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
@@ -1476,7 +1490,7 @@ run_fch_af_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // search algo
     warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_af_jpg_expansion_policy fexp(&cpg, &order, &filter);
+    warthog::fch_af_jpg_expansion_policy fexp(&cpg, &order, afl.get());
     warthog::flexible_astar< warthog::euclidean_heuristic, 
         warthog::fch_af_jpg_expansion_policy> alg(&h, &fexp);
     alg.set_verbose(verbose);
@@ -1541,8 +1555,10 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::graph::corner_point_graph cpg(map, pg);
 
     // load up the arc-flags
-    warthog::bb_filter filter;
-    if(!filter.load_labels(arclabels_file.c_str(), pg.get()))
+    std::shared_ptr<warthog::label::bb_labelling> bbl(
+            warthog::label::bb_labelling::load(
+                arclabels_file.c_str(), pg.get()));
+    if(!bbl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
@@ -1550,7 +1566,7 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // create a search algo
     warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_bb_cpg_expansion_policy fexp(&cpg, &order, &filter);
+    warthog::fch_bb_cpg_expansion_policy fexp(&cpg, &order, bbl.get());
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_bb_cpg_expansion_policy>
     alg(&h, &fexp);
@@ -1615,8 +1631,10 @@ run_fch_bb_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::graph::corner_point_graph jpg(map, pg);
 
     // load up the arc-flags
-    warthog::bb_filter filter;
-    if(!filter.load_labels(arclabels_file.c_str(), pg.get()))
+    std::shared_ptr<warthog::label::bb_labelling> bbl
+        (warthog::label::bb_labelling::load(
+            arclabels_file.c_str(), pg.get()));
+    if(!bbl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
@@ -1624,7 +1642,7 @@ run_fch_bb_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // create a search algo
     warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_bb_jpg_expansion_policy fexp(&jpg, &order, &filter);
+    warthog::fch_bb_jpg_expansion_policy fexp(&jpg, &order, bbl.get());
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_bb_jpg_expansion_policy>
     alg(&h, &fexp);

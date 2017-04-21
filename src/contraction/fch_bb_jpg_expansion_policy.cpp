@@ -1,4 +1,4 @@
-#include "bb_filter.h"
+#include "bb_labelling.h"
 #include "contraction.h"
 #include "corner_point_graph.h"
 #include "fch_bb_jpg_expansion_policy.h"
@@ -8,11 +8,11 @@
 warthog::fch_bb_jpg_expansion_policy::fch_bb_jpg_expansion_policy(
         warthog::graph::corner_point_graph* g, 
         std::vector<uint32_t>* rank,
-        warthog::bb_filter* nf)
+        warthog::label::bb_labelling* lab)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
-    nf_ = nf;
+    lab_ = lab;
 
     warthog::jpg::compute_direction_labels(g);
     g_->build_edge_label_index();
@@ -196,11 +196,11 @@ warthog::fch_bb_jpg_expansion_policy::generate_target_node(
     }
 
     // update the filter with the new target location
-    {
-        int32_t tx, ty;
-        g_->get_xy(g_->get_inserted_target_id(), tx, ty);
-        nf_->set_target_xy(tx, ty);
-    }
+//    {
+//        int32_t tx, ty;
+//        g_->get_xy(g_->get_inserted_target_id(), tx, ty);
+//        nf_->set_target_xy(tx, ty);
+//    }
 
     return this->generate(g_->get_inserted_target_id());
 }
@@ -210,7 +210,7 @@ warthog::fch_bb_jpg_expansion_policy::filter(
         uint32_t node_id, uint32_t edge_id)
 {
     warthog::geom::rectangle rect = 
-    nf_->get_label(node_id, edge_id);
+    lab_->get_label(node_id, edge_id);
     return r_.intersects(rect) == 0;
 
     //bool retval = 0;

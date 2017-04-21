@@ -1,4 +1,4 @@
-#include "af_filter.h"
+#include "af_labelling.h"
 #include "contraction.h"
 #include "corner_point_graph.h"
 #include "fch_af_jpg_expansion_policy.h"
@@ -7,11 +7,11 @@
 
 warthog::fch_af_jpg_expansion_policy::fch_af_jpg_expansion_policy(
         warthog::graph::corner_point_graph* g, std::vector<uint32_t>* rank,
-        warthog::af_filter* filter)
+        warthog::label::af_labelling* afl)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
-    filter_ = filter;
+    afl_ = afl;
     apex_ = warthog::INF;
     apex_reached_ = false;
 
@@ -142,7 +142,7 @@ warthog::fch_af_jpg_expansion_policy::generate_target_node(
     uint32_t t_id = g_->get_inserted_target_id();
     if(t_id != g_->get_dummy_target_id())
     {
-        t_part_.insert(filter_->get_partition(t_id));
+        t_part_.insert(afl_->get_partitioning()->at(t_id));
     }
     else
     {
@@ -150,7 +150,7 @@ warthog::fch_af_jpg_expansion_policy::generate_target_node(
         for( warthog::graph::edge_iter it = target->incoming_begin();
              it != target->incoming_end(); it++ )
         {
-            uint32_t nei_part = filter_->get_partition(it->node_id_);
+            uint32_t nei_part = afl_->get_partitioning()->at(it->node_id_);
             t_part_.insert(nei_part);
         }
     }
@@ -161,7 +161,7 @@ bool
 warthog::fch_af_jpg_expansion_policy::filter(
         uint32_t node_id, uint32_t edge_index)
 {
-    uint8_t* label = filter_->get_label(node_id, edge_index);
+    uint8_t* label = afl_->get_label(node_id, edge_index);
     bool retval = 0;
     for(std::set<uint32_t>::iterator it = t_part_.begin();
             it != t_part_.end(); it++)

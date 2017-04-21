@@ -22,7 +22,11 @@ namespace graph
 class corner_point_graph;
 }
 
-class af_filter;
+namespace label
+{
+class af_labelling;
+}
+
 class problem_instance;
 class search_node;
 class fch_af_cpg_expansion_policy : public expansion_policy
@@ -31,7 +35,7 @@ class fch_af_cpg_expansion_policy : public expansion_policy
         fch_af_cpg_expansion_policy(
                 warthog::graph::corner_point_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::af_filter*);
+                warthog::label::af_labelling* afl);
 
         ~fch_af_cpg_expansion_policy();
 
@@ -64,8 +68,7 @@ class fch_af_cpg_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::corner_point_graph* g_;
-
-        warthog::af_filter* filter_;
+        warthog::label::af_labelling* afl_;
         std::set<uint32_t> t_part_;
 
         uint32_t search_id_;
