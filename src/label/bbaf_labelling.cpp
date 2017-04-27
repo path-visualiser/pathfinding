@@ -73,9 +73,9 @@ warthog::label::bbaf_labelling::print(std::ostream& out,
 
     // iterate over the labels for each outgoing arc of each node
     warthog::geom::rectangle dummy;
-    last_id = last_id >= g_->get_num_nodes() ? 
-        g_->get_num_nodes()-1 : last_id;
-    for(uint32_t i = first_id; i <= last_id; i++)
+    last_id = last_id > g_->get_num_nodes() ? 
+        g_->get_num_nodes() : last_id;
+    for(uint32_t i = first_id; i < last_id; i++)
     {
         std::vector<bbaf_label>& arclabs = labels_.at(i);
         for(uint32_t j = 0; j < arclabs.size(); j++)

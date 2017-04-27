@@ -47,7 +47,8 @@ warthog::label::af_labelling::~af_labelling()
 }
 
 void
-warthog::label::af_labelling::print(std::ostream& out)
+warthog::label::af_labelling::print(
+        std::ostream& out, uint32_t first_id, uint32_t last_id)
 {
     if(flags_->size() == 0) { return; }
 
@@ -61,7 +62,9 @@ warthog::label::af_labelling::print(std::ostream& out)
     if((bytes_per_label_ % word_sz) > 0) words_per_label++;
 
     // iterate over the flags for each outgoing arc of each node
-    for(uint32_t i = 0; i < flags_->size(); i++)
+    last_id = last_id > g_->get_num_nodes() ? 
+        g_->get_num_nodes() : last_id;
+    for(uint32_t i = first_id; i < last_id; i++)
     {
         std::vector<uint8_t*>& node_arcflags_ = flags_->at(i);
         for(uint32_t j = 0; j < node_arcflags_.size(); j++)

@@ -26,6 +26,7 @@
 #include "planar_graph.h"
 #include "search_node.h"
 #include "zero_heuristic.h"
+#include "helpers.h"
 
 #include <algorithm>
 #include <functional>
@@ -48,8 +49,11 @@ class af_labelling
         // print/serialise an arcflag labeling
         // 
         // @param out: (out) the target stream to write to
+        // @param first_id: the first node in the range to print
+        // @param last_id: the end of the range to print (not inclusive)
         void
-        print(std::ostream& out);
+        print(std::ostream& out, uint32_t first_id=0, 
+                uint32_t last_id=UINT32_MAX);
 
         inline uint8_t*
         get_label(uint32_t node_id, uint32_t edge_index)
@@ -75,7 +79,8 @@ class af_labelling
         load(const char* filename, warthog::graph::planar_graph* g,
                 std::vector<uint32_t>* partitioning);
 
-        // create a new arcflag edge labelling 
+        // create a new arcflag edge labelling for all nodes in the range
+        // [ @param first_id, @param last_id )
         //
         // @param g: the input graph
         // @param part: a disjoint partitioning of the nodes in @param g
@@ -84,29 +89,25 @@ class af_labelling
         template <typename t_expander>
         static warthog::label::af_labelling*
         compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part, 
-                std::function<t_expander*(void)>& fn_new_expander)
+                std::function<t_expander*(void)>& fn_new_expander,
+                uint32_t first_id=0, uint32_t last_id=UINT32_MAX)
         {
             if(g == 0 || part  == 0) { return 0; } 
             std::cerr << "computing arcflag labels\n";
-            
-            warthog::label::af_labelling* afl = 
-                new warthog::label::af_labelling(g, part);
 
-            // pthreads setup
-            struct afl_params
+            // stuff that's shared between all worker threads
+            struct af_shared_data
             {
-                uint32_t thread_id_;
-                uint32_t max_threads_;
-                uint32_t nprocessed_;
-                t_expander* expander_;
-                warthog::label::af_labelling* afl_;
+                std::function<t_expander*(void)> fn_new_expander_;
+                warthog::label::af_labelling* lab_;
             };
 
             // the actual precompute function
             void*(*thread_compute_fn)(void*) = [] (void* args_in) -> void*
             {
-                afl_params* par = (afl_params*) args_in;
-                std::cerr << "thread " << par->thread_id_ << std::endl;
+                warthog::helpers::thread_params* par = 
+                    (warthog::helpers::thread_params*) args_in;
+                af_shared_data* shared = (af_shared_data*) par->shared_;
             
                 // helper function to track the first edge on the path from 
                 // the source node to each node in the graph. we apply this 
@@ -130,12 +131,14 @@ class af_labelling
                         }
                     };
 
+                std::shared_ptr<t_expander> 
+                    expander(shared->fn_new_expander_());
                 warthog::zero_heuristic heuristic;
                 warthog::flexible_astar< warthog::zero_heuristic, t_expander >
-                    dijkstra(&heuristic, par->expander_);
+                    dijkstra(&heuristic, expander.get());
                 dijkstra.apply_on_relax(relax_fn);
 
-                for(uint32_t i = 0; i < par->afl_->g_->get_num_nodes(); i++)
+                for(uint32_t i = par->first_id_; i < par->last_id_; i++)
                 {
                     // source nodes are evenly divided among all threads;
                     // skip any source nodes not intended for current thread
@@ -145,13 +148,13 @@ class af_labelling
                     // process the source
                     uint32_t source_id = i;
                     warthog::graph::node* source = 
-                        par->afl_->g_->get_node(source_id);
+                        shared->lab_->g_->get_node(source_id);
 
                     // run a dijkstra search from the current source node:
                     // and then analyse the closed list to compute arc flags
                     // (there's better ways to do this but, bleh)
                     uint32_t ext_source_id = 
-                        par->afl_->g_->to_external_id(source_id);
+                        shared->lab_->g_->to_external_id(source_id);
                     warthog::problem_instance pi(ext_source_id, warthog::INF);
                     dijkstra.get_length(pi);
 
@@ -173,7 +176,7 @@ class af_labelling
                     // analyse the nodes on the closed list and label the 
                     // edges of the source node accordingly
                     std::function<void(warthog::search_node*)> fn_arcflags =
-                        [par, &source_id, &idmap](warthog::search_node* n)
+                        [&shared, &source_id, &idmap](warthog::search_node* n)
                         -> void
                         {
                             // skip the source
@@ -184,14 +187,14 @@ class af_labelling
                             // label the edges of the source
                             // (TODO: make this stuff faster)
                             uint32_t part_id = 
-                                par->afl_->part_->at(n->get_id());
+                                shared->lab_->part_->at(n->get_id());
                             uint32_t e_idx  = 
                                 (*idmap.find(
                                     n->get_parent()->get_id() == source_id ?  
                                     n->get_id() : 
                                     n->get_parent()->get_id())).second;
                             uint8_t* label = 
-                                par->afl_->flags_->at(source_id).at(e_idx);
+                                shared->lab_->flags_->at(source_id).at(e_idx);
                             label[part_id >> 3] |= (1 << (part_id & 7));
                         };
                     dijkstra.apply_to_closed(fn_arcflags);
@@ -200,42 +203,15 @@ class af_labelling
                 return 0;
             };
 
-            // OK, let's fork some threads
-            const uint32_t NUM_THREADS = 4;
-            pthread_t threads[NUM_THREADS];
-            afl_params task_data[NUM_THREADS];
-
-            for(uint32_t i = 0; i < NUM_THREADS; i++)
-            {
-                task_data[i].thread_id_ = i;
-                task_data[i].max_threads_ = NUM_THREADS;
-                task_data[i].afl_ = afl;
-                task_data[i].nprocessed_ = 0;
-                task_data[i].expander_ = fn_new_expander();
-
-                pthread_create(&threads[i], NULL, 
-                        thread_compute_fn, (void*) &task_data[i]);
-            }
-            std::cerr << "forked " << NUM_THREADS << " threads \n";
-
-            while(true)
-            {
-                uint32_t nprocessed = 0;
-                for(uint32_t i = 0; i < NUM_THREADS; i++)
-                { nprocessed += task_data[i].nprocessed_; }
-
-                std::cerr 
-                    << "\rprogress: " << nprocessed 
-                    << " / " << g->get_num_nodes();
-                if(nprocessed == g->get_num_nodes()) { break; }
-                else { sleep(2); }
-            }
-
-            for(uint32_t i = 0; i < NUM_THREADS; i++)
-            { delete task_data[i].expander_; }
-
+            warthog::label::af_labelling* lab = 
+                new warthog::label::af_labelling(g, part);
+            af_shared_data shared;
+            shared.lab_ = lab;
+            shared.fn_new_expander_ = fn_new_expander;
+            warthog::helpers::parallel_compute(thread_compute_fn, 
+                    &shared, first_id, last_id);
             std::cerr << "\nall done\n"<< std::endl;
-            return afl;
+            return lab;
         }
 
     private:

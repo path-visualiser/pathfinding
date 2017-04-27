@@ -67,6 +67,9 @@ class bbaf_labelling
             return labels_.at(node_id).at(edge_id);
         }
 
+        // @param out: (out) the target stream to write to
+        // @param first_id: the first node in the range to print
+        // @param last_id: the end of the range to print (not inclusive)
         void
         print(std::ostream& out, 
                 uint32_t firstid=0, 
@@ -76,6 +79,8 @@ class bbaf_labelling
         load_labels(const char* filename, warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* partitioning);
         
+        // compute labels for all nodes in the range 
+        // [ @param first_id, @param last_id )
         template <typename t_expander>
         static warthog::label::bbaf_labelling*
         compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part, 
@@ -133,7 +138,7 @@ class bbaf_labelling
                     g_->get_num_nodes() : par->last_id_;
 
                 // run a dijkstra search from each node
-                for(uint32_t i = first_id; i <= last_id; i++)
+                for(uint32_t i = first_id; i < last_id; i++)
                 {
                     // source nodes are evenly divided among all threads;
                     // skip any source nodes not intended for current thread

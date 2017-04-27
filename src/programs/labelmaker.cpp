@@ -387,6 +387,28 @@ compute_chaf_labels()
         return;
     }
 
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes()-1;
+    std::string outfile(grfile);
+    outfile.append(".fch-af.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     // gogogo
     std::cerr << "computing fch-af labelling... \n";
     std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
@@ -397,11 +419,9 @@ compute_chaf_labels()
     warthog::label::af_labelling* labelling = 
         warthog::label::af_labelling::compute
             <warthog::fch_expansion_policy>
-                (&g, &part, fn_new_expander);
+                (&g, &part, fn_new_expander, firstid, lastid);
 
     // save the result
-    std::string outfile(grfile);
-    outfile.append(".fch-af.arclabel");
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -411,7 +431,7 @@ compute_chaf_labels()
     }
     else
     {
-        labelling->print(fs_out);
+        labelling->print(fs_out, firstid, lastid);
     }
     fs_out.close();
 
