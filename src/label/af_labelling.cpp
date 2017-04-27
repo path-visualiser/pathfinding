@@ -1,4 +1,5 @@
 #include "af_labelling.h"
+#include <fstream>
 
 warthog::label::af_labelling::af_labelling(
         warthog::graph::planar_graph* g, 
@@ -50,9 +51,10 @@ warthog::label::af_labelling::print(std::ostream& out)
 {
     if(flags_->size() == 0) { return; }
 
+    out << "# arcflag labels for the graph\n";
+    out << "# " << g_->get_filename() << std::endl;
     out << "# labels are written out using 64-bit words\n";
-    out << "# with spaces in between\n";
-
+    out << "# with spaces separating words\n";
     // we split flags into 64bit words for printing
     const uint32_t word_sz = sizeof(uint64_t);
     uint32_t words_per_label =  bytes_per_label_ / word_sz;
@@ -94,7 +96,7 @@ warthog::label::af_labelling::load(
         const char* filename, warthog::graph::planar_graph* g,
         std::vector<uint32_t>* partitioning)
 {
-    std::cerr << "loading arcflags file\n";
+    std::cerr << "loading arcflags labelling file\n";
     std::ifstream ifs(filename, std::ios_base::in);
     if(!ifs.good())
     {

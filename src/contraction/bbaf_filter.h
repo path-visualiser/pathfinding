@@ -14,6 +14,7 @@
 #include <cstdint>
 #include <iostream>
 
+#include "bbaf_labelling.h"
 #include "geom.h"
 
 namespace warthog
@@ -29,24 +30,6 @@ class planar_graph;
 class problem_instance;
 class search_node;
 
-class bbaf_label
-{
-    public:
-        bbaf_label()
-        {
-            flags_ = 0;
-        }
-
-        bbaf_label(const bbaf_label& other)
-        {
-            flags_ = other.flags_;
-            bbox_ = other.bbox_;
-        }
-
-        uint8_t* flags_;
-        warthog::geom::rectangle bbox_;
-
-};
 
 class bbaf_filter
 {
@@ -54,84 +37,45 @@ class bbaf_filter
     public:
         // @param g: the search graph
         // @param part: a partitioning of the graph nodes
-        bbaf_filter(
-                warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* part);
+        bbaf_filter(warthog::label::bbaf_labelling* lab)
+        {
+            lab_ = lab;
+            t_byte_ = 0;
+            t_bitmask_ = 0;
+            tx_ = ty_ = 0;
+        }
 
-        ~bbaf_filter();
+        virtual ~bbaf_filter() { } 
 
         // return true if the ith edge of @param node_id
         // (as specified by @param edge_index) cannot possibly 
         // appear on any optimal path to the current target;
         // return false otherwise.
         inline bool 
-        filter(uint32_t node_id, uint32_t edge_idx, bool down)
+        filter(uint32_t node_id, uint32_t edge_idx)
         {
-            bbaf_label& label = labels_.at(node_id).at(edge_idx);
+            warthog::label::bbaf_label& label 
+                = lab_->get_label(node_id, edge_idx);
             bool retval = (label.flags_[t_byte_] & t_bitmask_);
-            if(down)
-            {
-                retval = retval && label.bbox_.contains(tx_, ty_);
-            }
-//            std::cerr << "bbaf filter; af " << (label.flags_[t_byte_] & t_bitmask_)
-//                << " bbox " << label.bbox_.contains(tx_, ty_) << "\n";
+            retval = retval && label.bbox_.contains(tx_, ty_);
             return !retval; 
         }
 
-        void
-        set_goal(uint32_t goalid);
-
-        void
-        compute();
-
-        void
-        compute(uint32_t firstid, uint32_t lastid);
-
-        void
-        compute_ch(uint32_t startid, uint32_t endid, 
-                    std::vector<uint32_t>* rank);
-
-        void
-        print(std::ostream& out);
-
-        bool
-        load_labels(const char* filename);
-
-        uint32_t
-        get_partition(uint32_t node_id)
+        inline void
+        set_goal(uint32_t goalid)
         {
-            return part_->at(node_id);
+            uint32_t t_part = lab_->get_partitioning()->at(goalid);
+            t_byte_ = t_part >> 3;
+            t_bitmask_ = 1 << (t_part & 7);
+            lab_->get_graph()->get_xy(goalid, tx_, ty_);
         }
-
-        bbaf_label
-        get_label(uint32_t node_id, uint32_t edge_id)
-        {
-            return labels_.at(node_id).at(edge_id);
-        }
-
-
-
 
     private:    
-        uint32_t nparts_;
-        warthog::graph::planar_graph* g_;
-        std::vector<uint32_t>* part_;
-        std::vector<std::vector<bbaf_label>> labels_;
-
-        // sometimes we want to compute bbaf for just 
-        // a subset of nodes; those in the range [firstid, lastid)
-        uint32_t firstid_;
-        uint32_t lastid_;
-
         // values to quickly extract the flag bit for the target at hand
-        uint32_t bytes_per_label_;
         uint32_t t_byte_;
         uint32_t t_bitmask_;
         int32_t tx_, ty_;
-        
-        void 
-        init(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* part);
+        warthog::label::bbaf_labelling* lab_;
 };
 
 }

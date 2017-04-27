@@ -1,16 +1,17 @@
-#include "bbaf_filter.h"
+#include "bbaf_labelling.h"
 #include "contraction.h"
 #include "fch_bbaf_cpg_expansion_policy.h"
 #include "corner_point_graph.h"
 #include "search_node.h"
 
 warthog::fch_bbaf_cpg_expansion_policy::fch_bbaf_cpg_expansion_policy(
-        warthog::graph::corner_point_graph* g, std::vector<uint32_t>* rank,
-        warthog::bbaf_filter* filter)
+        warthog::graph::corner_point_graph* g, 
+        std::vector<uint32_t>* rank,
+        warthog::label::bbaf_labelling* lab)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
-    filter_ = filter;
+    lab_ = lab;
 }
 
 warthog::fch_bbaf_cpg_expansion_policy::~fch_bbaf_cpg_expansion_policy()
@@ -22,11 +23,6 @@ warthog::fch_bbaf_cpg_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    if(instance->get_search_id() != search_id_)
-    {
-        filter_->set_goal(instance->get_target_id());
-        search_id_ = instance->get_search_id();
-    }
 
     warthog::search_node* pn = current->get_parent();
     uint32_t current_id = current->get_id();
@@ -127,7 +123,7 @@ warthog::fch_bbaf_cpg_expansion_policy::generate_target_node(
     uint32_t t_id = g_->get_inserted_target_id();
     if(t_id != g_->get_dummy_target_id())
     {
-       t_part_.insert(filter_->get_partition(t_id));
+       t_part_.insert(lab_->get_partitioning()->at(t_id));
        int32_t my_x, my_y;
        g_->get_xy(g_->get_inserted_target_id(), my_x, my_y);
        t_rect_.grow(my_x, my_y);
@@ -138,7 +134,7 @@ warthog::fch_bbaf_cpg_expansion_policy::generate_target_node(
         for( warthog::graph::edge_iter it = target->incoming_begin();
              it != target->incoming_end(); it++ )
         {
-            uint32_t nei_part = filter_->get_partition(it->node_id_);
+            uint32_t nei_part = lab_->get_partitioning()->at(it->node_id_);
             t_part_.insert(nei_part);
 
             int32_t my_x, my_y;
@@ -153,8 +149,7 @@ bool
 warthog::fch_bbaf_cpg_expansion_policy::filter(
         uint32_t node_id, uint32_t edge_index, bool down)
 {
-    warthog::bbaf_label label = 
-    filter_->get_label(node_id, edge_index);
+    warthog::label::bbaf_label& label = lab_->get_label(node_id, edge_index);
 
     // try to prune every edge using arcflags
     bool retval = 0;

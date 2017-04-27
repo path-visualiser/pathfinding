@@ -1,7 +1,7 @@
 #ifndef WARTHOG_LABEL_AF_LABELLING_H
 #define WARTHOG_LABEL_AF_LABELLING_H
 
-//  labelling/af_labelling.h
+//  label/af_labelling.h
 //
 // Partition the nodes of the graph into disjoint sets and store with 
 // every outgoing edge of every node a bitfield where the number of bits
@@ -29,6 +29,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <iostream>
 #include <pthread.h>
 #include <unistd.h>
 
@@ -138,7 +139,8 @@ class af_labelling
                 {
                     // source nodes are evenly divided among all threads;
                     // skip any source nodes not intended for current thread
-                    if((i % par->max_threads_) != par->thread_id_) { continue; }
+                    if((i % par->max_threads_) != par->thread_id_) 
+                    { continue; }
 
                     // process the source
                     uint32_t source_id = i;

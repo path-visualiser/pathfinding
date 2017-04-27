@@ -1,5 +1,8 @@
 #include "bb_labelling.h"
 
+#include <algorithm>
+#include <fstream>
+
 warthog::label::bb_labelling::bb_labelling(warthog::graph::planar_graph* g)
 {
     g_ = g;
@@ -23,7 +26,8 @@ void
 warthog::label::bb_labelling::print(std::ostream& out)
 {
     out << "# Before printing labels are sorted by tail index. \n"
-        << "# Ties are broken using the original input ordering \n"
+        << "# Ties are broken using the order edges appear in the file \n"
+        << "# " << g_->get_filename() << std::endl
         << "# (lower is better)\n";
 
     warthog::geom::rectangle dummy;

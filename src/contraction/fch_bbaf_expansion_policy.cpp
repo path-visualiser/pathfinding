@@ -1,4 +1,4 @@
-#include "bbaf_filter.h"
+#include "bbaf_labelling.h"
 #include "contraction.h"
 #include "fch_bbaf_expansion_policy.h"
 #include "planar_graph.h"
@@ -6,11 +6,15 @@
 
 warthog::fch_bbaf_expansion_policy::fch_bbaf_expansion_policy(
         warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
-        warthog::bbaf_filter* filter)
+        warthog::label::bbaf_labelling* lab)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
-    filter_ = filter;
+    lab_ = lab;
+
+    t_byte_ = 0;
+    t_bitmask_ = 0;
+    tx_ = ty_ = 0;
 }
 
 warthog::fch_bbaf_expansion_policy::~fch_bbaf_expansion_policy()
@@ -22,11 +26,6 @@ warthog::fch_bbaf_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
     reset();
-    if(instance->get_search_id() != search_id_)
-    {
-        filter_->set_goal(instance->get_target_id());
-        search_id_ = instance->get_search_id();
-    }
 
     warthog::search_node* pn = current->get_parent();
     uint32_t current_id = current->get_id();
@@ -48,7 +47,7 @@ warthog::fch_bbaf_expansion_policy::expand(
         bool dn_succ = (get_rank(e.node_id_) < current_rank);
         if(up_travel || dn_succ)
         {
-            if(!filter_->filter(current_id, it - begin, dn_succ))
+            if(!filter(current_id, it - begin, dn_succ))
             {
                 // prune down successors below the goal
                 if(dn_succ && rank_->at(e.node_id_) < 
@@ -82,5 +81,29 @@ warthog::fch_bbaf_expansion_policy::generate_target_node(
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->get_target_id());
     if(t_graph_id == warthog::INF) { return 0; }
+
+    search_id_ = pi->get_search_id();
+
+    // update the goal for ::filter
+    uint32_t t_part = lab_->get_partitioning()->at(t_graph_id);
+    t_byte_ = t_part >> 3;
+    t_bitmask_ = 1 << (t_part & 7);
+    g_->get_xy(t_graph_id, tx_, ty_);
+
     return generate(t_graph_id);
+}
+
+bool 
+warthog::fch_bbaf_expansion_policy::filter(
+        uint32_t node_id, uint32_t edge_idx, bool down)
+{
+    warthog::label::bbaf_label& label 
+        = lab_->get_label(node_id, edge_idx);
+    bool retval = (label.flags_[t_byte_] & t_bitmask_);
+
+    if(down)
+    {
+        retval = retval && label.bbox_.contains(tx_, ty_);
+    }
+    return !retval; 
 }

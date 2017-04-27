@@ -2,7 +2,7 @@
 #include "afhd_filter.h"
 #include "af_labelling.h"
 #include "bb_labelling.h"
-#include "bbaf_filter.h"
+#include "bbaf_labelling.h"
 #include "cfg.h"
 #include "ch_expansion_policy.h"
 #include "corner_point_graph.h"
@@ -604,7 +604,8 @@ compute_bbaf_labels()
     // compute labels
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes()-1;
-    grfile.append(".bbaf.arclabel");
+    std::string outfile(grfile);
+    outfile.append(".bbaf.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -617,26 +618,39 @@ compute_bbaf_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        grfile.append(".");
-        grfile.append(first);
-        grfile.append(".");
-        grfile.append(std::to_string(lastid));
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
     }
 
-    // compute down_distance
-    warthog::bbaf_filter filter(&g, &part);
-    filter.compute(firstid, lastid);
-    
-    // save the result
-    std::cerr << "saving contracted graph to file " << grfile << std::endl;
-    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-    if(!out.good())
+    // compute bbaf labels
+    std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
+    [&g]() -> warthog::graph_expansion_policy*
     {
-        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        return new warthog::graph_expansion_policy(&g);
+    };
+
+    std::shared_ptr<warthog::label::bbaf_labelling> 
+        labelling(
+            warthog::label::bbaf_labelling::compute
+                <warthog::graph_expansion_policy>
+                    (&g, &part, fn_new_expander, firstid, lastid));
+
+    // save the result
+    std::cerr << "\ndone; \nsaving to " << outfile << "\n";
+    std::fstream fs_out(outfile.c_str(), 
+                        std::ios_base::out | std::ios_base::trunc);
+    if(!fs_out.good())
+    {
+        std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-    filter.print(out);
-    out.close();
-    std::cerr << "all done!\n";
+    else
+    {
+        labelling->print(fs_out, firstid, lastid);
+    }
+    fs_out.close();
+    std::cerr << "done!\n";
 }
 
 void
@@ -685,7 +699,8 @@ compute_chbbaf_labels()
     // compute labels
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes()-1;
-    grfile.append(".ch-bbaf.arclabel");
+    std::string outfile(grfile);
+    outfile.append(".fch-bbaf.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -698,24 +713,38 @@ compute_chbbaf_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        grfile.append(".");
-        grfile.append(first);
-        grfile.append(".");
-        grfile.append(std::to_string(lastid));
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
     }
-    warthog::bbaf_filter filter(&g, &part);
-    filter.compute_ch(firstid, lastid, &order);
+
+    std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
+    [&g, &order]() -> warthog::fch_expansion_policy*
+    {
+        return new warthog::fch_expansion_policy(&g, &order);
+    };
+
+    std::shared_ptr<warthog::label::bbaf_labelling> 
+        labelling(
+            warthog::label::bbaf_labelling::compute
+                <warthog::fch_expansion_policy>
+                    (&g, &part, fn_new_expander, firstid, lastid));
     
     // save the result
-    std::cerr << "saving contracted graph to file " << grfile << std::endl;
-    std::fstream out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-    if(!out.good())
+    std::cerr << "\ndone; \nsaving to " << outfile << "\n";
+    std::fstream fs_out(outfile.c_str(), 
+                        std::ios_base::out | std::ios_base::trunc);
+    if(!fs_out.good())
     {
-        std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
+        std::cerr << "\nerror opening output file " << outfile << std::endl;
     }
-    filter.print(out);
-    out.close();
-    std::cerr << "all done!\n";
+    else
+    {
+        labelling->print(fs_out, firstid, lastid);
+    }
+    fs_out.close();
+    std::cerr << "done!\n";
 }
 
 void

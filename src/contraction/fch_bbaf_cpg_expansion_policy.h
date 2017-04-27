@@ -22,7 +22,11 @@ namespace graph
 class corner_point_graph;
 }
 
-class bbaf_filter;
+namespace label
+{
+class bbaf_labelling;
+}
+
 class problem_instance;
 class search_node;
 class fch_bbaf_cpg_expansion_policy : public expansion_policy
@@ -31,7 +35,7 @@ class fch_bbaf_cpg_expansion_policy : public expansion_policy
         fch_bbaf_cpg_expansion_policy(
                 warthog::graph::corner_point_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::bbaf_filter*);
+                warthog::label::bbaf_labelling* lab);
 
         ~fch_bbaf_cpg_expansion_policy();
 
@@ -61,7 +65,7 @@ class fch_bbaf_cpg_expansion_policy : public expansion_policy
 
         std::set<uint32_t> t_part_;
         warthog::geom::rectangle t_rect_;
-        warthog::bbaf_filter* filter_;
+        warthog::label::bbaf_labelling* lab_;
 
         inline uint32_t
         get_rank(uint32_t id)
@@ -69,6 +73,8 @@ class fch_bbaf_cpg_expansion_policy : public expansion_policy
             return rank_->at(id);
         }
 
+        // customised filtering function;
+        // specific for this expansion policy
         bool
         filter(uint32_t node_id, uint32_t edge_index, bool down);
 };

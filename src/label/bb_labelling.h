@@ -23,11 +23,7 @@
 #include "search_node.h"
 #include "zero_heuristic.h"
 
-#include <algorithm>
 #include <functional>
-#include <iostream>
-#include <ostream>
-#include <pthread.h>
 #include <unistd.h>
 
 namespace warthog
