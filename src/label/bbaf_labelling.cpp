@@ -111,7 +111,7 @@ warthog::label::bbaf_labelling::print(std::ostream& out,
 }
 
 warthog::label::bbaf_labelling*
-warthog::label::bbaf_labelling::load_labels(const char* filename, 
+warthog::label::bbaf_labelling::load(const char* filename, 
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* partitioning)
 {

@@ -74,7 +74,7 @@ class bbaf_labelling
                 uint32_t lastid=UINT32_MAX);
 
         static warthog::label::bbaf_labelling*
-        load_labels(const char* filename, warthog::graph::planar_graph* g, 
+        load(const char* filename, warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* partitioning);
         
         // compute labels for all nodes in the range 
