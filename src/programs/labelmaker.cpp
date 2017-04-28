@@ -189,6 +189,29 @@ compute_chbb_labels()
         std::cerr << "err; could not load node order input file\n";
         return;
     }
+
+    // compute labels
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes();
+    std::string outfile(grfile);
+    outfile.append(".chbb.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
     
 
     // gogogo
@@ -201,11 +224,9 @@ compute_chbb_labels()
         };
     warthog::label::bb_labelling* labelling = 
         warthog::label::bb_labelling::compute<warthog::ch_expansion_policy>(
-                &g, fn_new_expander);
+                &g, fn_new_expander, firstid, lastid);
 
     // save the result
-    std::string outfile(grfile);
-    outfile.append(".ch-bb.arclabel");
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -215,7 +236,7 @@ compute_chbb_labels()
     }
     else
     {
-        labelling->print(fs_out);
+        labelling->print(fs_out, firstid, lastid);
     }
     fs_out.close();
 
@@ -263,6 +284,28 @@ compute_chbb_jpg_labels()
         std::cerr << "err; could not load node order input file\n";
         return;
     }
+
+    uint32_t firstid = 0;
+    uint32_t lastid = pg->get_num_nodes();
+    std::string outfile(grfile);
+    outfile.append(".fch-bb-jpg.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
     
     std::cerr << "creating fch-jpg-bb labelling\n";
     std::function<warthog::fch_jpg_expansion_policy*(void)> 
@@ -274,13 +317,11 @@ compute_chbb_jpg_labels()
 
     warthog::label::bb_labelling* labelling = 
     warthog::label::bb_labelling::compute<warthog::fch_jpg_expansion_policy>(
-            pg.get(), fn_new_expander);
+            pg.get(), fn_new_expander, firstid, lastid);
 
     std::cerr << "labelling done\n";
 
     // save the result
-    std::string outfile(grfile);
-    outfile.append(".fch-bb-jpg.arclabel");
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
 
@@ -291,7 +332,7 @@ compute_chbb_jpg_labels()
     }
     else
     {
-        labelling->print(fs_out);
+        labelling->print(fs_out, firstid, lastid);
     }
 
     fs_out.close();
@@ -320,6 +361,29 @@ compute_bb_labels()
         return;
     }
 
+    // compute labels
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes();
+    std::string outfile(grfile);
+    outfile.append(".bb.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     // gogogo
     std::cerr << "computing bounding box labelling... \n";
     std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
@@ -330,11 +394,9 @@ compute_bb_labels()
     warthog::label::bb_labelling* labelling = 
         warthog::label::bb_labelling::compute
             <warthog::graph_expansion_policy>
-                (&g, fn_new_expander);
+                (&g, fn_new_expander, firstid, lastid);
 
     // save the result
-    std::string outfile(grfile);
-    outfile.append(".bb.arclabel");
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -344,7 +406,7 @@ compute_bb_labels()
     }
     else
     {
-        labelling->print(fs_out);
+        labelling->print(fs_out, firstid, lastid);
     }
     fs_out.close();
 
@@ -388,7 +450,7 @@ compute_chaf_labels()
     }
 
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes()-1;
+    uint32_t lastid = g.get_num_nodes();
     std::string outfile(grfile);
     outfile.append(".fch-af.arclabel");
     if(cfg.get_num_values("type") == 2)
@@ -488,6 +550,28 @@ compute_chaf_jpg_labels()
         return;
     }
 
+    uint32_t firstid = 0;
+    uint32_t lastid = pg->get_num_nodes();
+    std::string outfile(grfile);
+    outfile.append(".fch-af-jpg.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     // gogogo
     std::cerr << "computing fch-af labelling... \n";
     std::function<warthog::fch_jpg_expansion_policy*(void)> fn_new_expander = 
@@ -498,11 +582,9 @@ compute_chaf_jpg_labels()
     warthog::label::af_labelling* labelling = 
         warthog::label::af_labelling::compute
             <warthog::fch_jpg_expansion_policy>
-                (pg.get(), &part, fn_new_expander);
+                (pg.get(), &part, fn_new_expander, firstid, lastid);
 
     // save the result
-    std::string outfile = grfile;
-    outfile.append(".fch-af-jpg.arclabel");
     std::cerr << "saving arclabels file " << outfile << std::endl;
     std::fstream out(outfile.c_str(), 
             std::ios_base::out | std::ios_base::trunc);
@@ -512,7 +594,7 @@ compute_chaf_jpg_labels()
     }
     else
     {
-        labelling->print(out);
+        labelling->print(out, firstid, lastid);
     }
     out.close();
 
@@ -555,6 +637,27 @@ compute_af_labels()
         return;
     }
     
+    uint32_t firstid = 0;
+    uint32_t lastid = g.get_num_nodes();
+    std::string outfile(grfile);
+    outfile.append(".af.arclabel");
+    if(cfg.get_num_values("type") == 2)
+    {
+        std::string first = cfg.get_param_value("type");
+        std::string last = cfg.get_param_value("type");
+        if(strtol(first.c_str(), 0, 10) != 0)
+        {
+            firstid = strtol(first.c_str(), 0, 10);
+        }
+        if(strtol(last.c_str(), 0, 10) != 0)
+        {
+            lastid = strtol(last.c_str(), 0, 10);
+        }
+        outfile.append(".");
+        outfile.append(first);
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
     // gogogo
     std::cerr << "computing af labelling... \n";
     std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
@@ -566,11 +669,9 @@ compute_af_labels()
     warthog::label::af_labelling* labelling = 
         warthog::label::af_labelling::compute
             <warthog::graph_expansion_policy>
-                (&g, &part, fn_new_expander);
+                (&g, &part, fn_new_expander, firstid, lastid);
 
     // save the result
-    std::string outfile = grfile;
-    outfile.append(".af.arclabel");
     std::cerr << "saving arclabels file " << outfile << std::endl;
     std::fstream out(outfile.c_str(), 
             std::ios_base::out | std::ios_base::trunc);
@@ -580,7 +681,7 @@ compute_af_labels()
     }
     else
     {
-        labelling->print(out);
+        labelling->print(out, firstid, lastid);
     }
     out.close();
 
@@ -623,7 +724,7 @@ compute_bbaf_labels()
 
     // compute labels
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes()-1;
+    uint32_t lastid = g.get_num_nodes();
     std::string outfile(grfile);
     outfile.append(".bbaf.arclabel");
     if(cfg.get_num_values("type") == 2)
@@ -718,7 +819,7 @@ compute_chbbaf_labels()
 
     // compute labels
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes()-1;
+    uint32_t lastid = g.get_num_nodes();
     std::string outfile(grfile);
     outfile.append(".fch-bbaf.arclabel");
     if(cfg.get_num_values("type") == 2)

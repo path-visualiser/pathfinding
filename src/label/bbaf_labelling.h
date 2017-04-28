@@ -16,9 +16,7 @@
 #include "geom.h"
 #include "helpers.h"
 
-#include <algorithm>
 #include <functional>
-#include <unistd.h>
 
 namespace warthog
 {

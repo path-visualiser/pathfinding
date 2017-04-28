@@ -22,9 +22,9 @@
 #include "planar_graph.h"
 #include "search_node.h"
 #include "zero_heuristic.h"
+#include "helpers.h"
 
 #include <functional>
-#include <unistd.h>
 
 namespace warthog
 {
@@ -37,9 +37,13 @@ class bb_labelling
     public:
         virtual ~bb_labelling();
 
-        // print/serialise every label
+        // @param out: (out) the target stream to write to
+        // @param first_id: the first node in the range to print
+        // @param last_id: the end of the range to print (not inclusive)
         void
-        print(std::ostream& out);
+        print(std::ostream& out,
+                uint32_t firstid=0, 
+                uint32_t lastid=UINT32_MAX);
 
         inline warthog::geom::rectangle
         get_label(uint32_t node_id, uint32_t edge_id)
@@ -53,29 +57,24 @@ class bb_labelling
         template <typename t_expander>
         static warthog::label::bb_labelling*
         compute(warthog::graph::planar_graph* g, 
-                std::function<t_expander*(void)>& fn_new_expander)
+                std::function<t_expander*(void)>& fn_new_expander,
+                uint32_t first_id=0, uint32_t last_id=UINT32_MAX)
         {
             if(g == 0) { return 0; } 
             std::cerr << "computing bb labels\n";
 
-            warthog::label::bb_labelling* bbl = 
-                new warthog::label::bb_labelling(g);
-
-            // pthreads setup
-
-            struct bbl_params
+            struct bb_shared_data
             {
-                uint32_t thread_id_;
-                uint32_t max_threads_;
-                uint32_t nprocessed_;
-                t_expander* expander_;
-                warthog::label::bb_labelling* bbl_;
+                std::function<t_expander*(void)> fn_new_expander_;
+                warthog::label::bb_labelling* lab_;
             };
 
             // the actual precompute function
             void*(*thread_compute_fn)(void*) = [] (void* args_in) -> void*
             {
-                bbl_params* par = (bbl_params*) args_in;
+                warthog::helpers::thread_params* par = 
+                    (warthog::helpers::thread_params*) args_in;
+                bb_shared_data* shared = (bb_shared_data*)par->shared_;
 
                 // need to keep track of the first edge on the way to the 
                 // current node (the solution is a bit hacky as we break the 
@@ -97,12 +96,14 @@ class bb_labelling
                         }
                     };
 
+                std::shared_ptr<t_expander> 
+                    expander(shared->fn_new_expander_());
                 warthog::zero_heuristic heuristic;
                 warthog::flexible_astar<warthog::zero_heuristic, t_expander>
-                     dijkstra(&heuristic, par->expander_);
+                     dijkstra(&heuristic, expander.get());
                 dijkstra.apply_on_relax(relax_fn);
 
-                for(uint32_t i = 0; i < par->bbl_->g_->get_num_nodes(); i++)
+                for(uint32_t i = par->first_id_; i < par->last_id_; i++)
                 {
                     // source nodes are evenly divided among all threads;
                     // skip any source nodes not intended for current thread
@@ -111,9 +112,9 @@ class bb_labelling
                     // process the source
                     uint32_t source_id = i;
                     uint32_t ext_source_id = 
-                        par->bbl_->g_->to_external_id(source_id);
+                        shared->lab_->g_->to_external_id(source_id);
                     warthog::graph::node* source = 
-                        par->bbl_->g_->get_node(source_id);
+                        shared->lab_->g_->get_node(source_id);
 
                     warthog::problem_instance pi(ext_source_id, warthog::INF);
                     dijkstra.get_length(pi);
@@ -133,7 +134,7 @@ class bb_labelling
 
                     // compute the extent of each rectangle bounding box
                     std::function<void(warthog::search_node*)> bbox_fn = 
-                    [par, &source_id, &idmap](warthog::search_node* n) 
+                    [shared, &source_id, &idmap](warthog::search_node* n) 
                     -> void
                     {
                         // skip the source node
@@ -162,11 +163,11 @@ class bb_labelling
 
                         // grow the rectangle
                         int32_t x, y;
-                        par->bbl_->g_->get_xy(n->get_id(), x, y);
+                        shared->lab_->g_->get_xy(n->get_id(), x, y);
                         assert(x != warthog::INF && y != warthog::INF);
-                        par->bbl_->labels_->at(source_id).at(
+                        shared->lab_->labels_->at(source_id).at(
                                 (*it).second).grow(x, y);
-                        assert(par->bbl_->labels_->at(source_id).at(
+                        assert(shared->lab_->labels_->at(source_id).at(
                                     (*it).second).is_valid());
                     };
                     dijkstra.apply_to_closed(bbox_fn);
@@ -175,43 +176,12 @@ class bb_labelling
                 return 0;
             };
 
-            // OK, let's fork some threads
-            const uint32_t NUM_THREADS = 4;
-            pthread_t threads[NUM_THREADS];
-            bbl_params task_data[NUM_THREADS];
-
-            // define workloads
-            for(uint32_t i = 0; i < NUM_THREADS; i++)
-            {
-                task_data[i].thread_id_ = i;
-                task_data[i].max_threads_ = NUM_THREADS;
-                task_data[i].bbl_ = bbl;
-                task_data[i].nprocessed_ = 0;
-                task_data[i].expander_ = fn_new_expander();
-
-                pthread_create(&threads[i], NULL, 
-                        thread_compute_fn, (void*) &task_data[i]);
-            }
-            std::cerr << "forked " << NUM_THREADS << " threads \n";
-
-            while(true)
-            {
-                uint32_t nprocessed = 0;
-                for(uint32_t i = 0; i < NUM_THREADS; i++)
-                { nprocessed += task_data[i].nprocessed_; }
-
-                std::cerr 
-                    << "\rprogress: " << nprocessed 
-                    << " / " << g->get_num_nodes();
-                if(nprocessed == g->get_num_nodes()) { break; }
-                else { sleep(2); }
-            }
-
-            for(uint32_t i = 0; i < NUM_THREADS; i++)
-            { delete task_data[i].expander_; }
-
-            std::cerr << "\nall done\n"<< std::endl;
-            return bbl;
+            bb_shared_data shared;
+            shared.lab_ = new warthog::label::bb_labelling(g);
+            shared.fn_new_expander_ = fn_new_expander;
+            warthog::helpers::parallel_compute(
+                    thread_compute_fn, &shared, first_id, last_id);
+            return shared.lab_;
         }
 
     private:
