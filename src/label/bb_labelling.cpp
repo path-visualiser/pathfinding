@@ -61,7 +61,7 @@ warthog::label::bb_labelling::load(
         return 0;
     }
 
-    uint32_t lines = 0;
+    uint32_t lines = 1;
     // skip comment lines
     while(ifs.peek() == '#')
     {
@@ -82,6 +82,9 @@ warthog::label::bb_labelling::load(
             {
                 std::cerr << "unexpected error while reading" 
                     << filename << "; line=" << lines << "\n";
+                std::cerr 
+                    << "[debug info] node: " << i 
+                    << " out-edge-index: " << j << "\n";
                 delete bbl; 
                 return 0;
             }
@@ -91,6 +94,9 @@ warthog::label::bb_labelling::load(
             if(rect != dummy && !rect.is_valid())
             {
                 std::cerr << "err; invalid label on line " << lines <<"\n";
+                std::cerr 
+                    << "[debug info] node: " << i 
+                    << " out-edge-index: " << j << "\n";
                 delete bbl;
                 return 0;
             }

@@ -110,7 +110,7 @@ warthog::label::af_labelling::load(
     }
 
     // skip comment lines
-    uint32_t lines = 0;
+    uint32_t lines = 1;
     while(ifs.peek() == '#')
     {
         while(ifs.get() != '\n');
@@ -138,6 +138,9 @@ warthog::label::af_labelling::load(
                 {
                     std::cerr << "unexpected error while reading " 
                         << filename << "; line=" << lines << "\n";
+                    std::cerr 
+                        << "[debug info] node: " << i 
+                        << " out-edge-index: " << j << "\n";
                     delete afl;
                     return 0;
                 }

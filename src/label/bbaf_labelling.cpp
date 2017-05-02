@@ -154,6 +154,9 @@ warthog::label::bbaf_labelling::load(const char* filename,
                     std::cerr 
                         << "unexpected error reading bbaf label on line "
                         << lines << "; aborting\n";
+                    std::cerr 
+                        << "[debug info] node: " << i 
+                        << " out-edge-index: " << j << "\n";
                     delete lab;
                     return 0;
                 }
@@ -182,6 +185,9 @@ warthog::label::bbaf_labelling::load(const char* filename,
             {
                 std::cerr << "err; invalid label on line " << lines <<"\n";
                 delete lab;
+                std::cerr 
+                    << "[debug info] node: " << i 
+                    << " out-edge-index: " << j << "\n";
                 return 0;
             }
 
