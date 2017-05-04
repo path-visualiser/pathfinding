@@ -106,7 +106,7 @@ warthog::search_node*
 warthog::chafbb_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->get_start_id());
+    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
     if(s_graph_id == warthog::INF) { return 0; }
     return generate(s_graph_id);
 }
@@ -115,12 +115,12 @@ warthog::search_node*
 warthog::chafbb_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_)
+    if(pi->instance_id_ != search_id_)
     {
-        search_id_ = pi->get_search_id();
+        search_id_ = pi->instance_id_;
     }
 
-    uint32_t t_graph_id = g_->to_graph_id(pi->get_target_id());
+    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
 
     // update target info for ::filter

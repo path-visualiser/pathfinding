@@ -39,13 +39,7 @@ class gridmap_expansion_policy : public expansion_policy
         generate_target_node(warthog::problem_instance* pi);
 
 		virtual size_t
-		mem()
-		{
-            return 
-                expansion_policy::mem() + 
-                sizeof(*this) + 
-                map_->mem();
-		}
+		mem();
 	
 	private:
 		warthog::gridmap* map_;

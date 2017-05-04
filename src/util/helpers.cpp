@@ -1,4 +1,7 @@
 #include "helpers.h"
+#include "scenario_manager.h"
+#include "search.h"
+#include "solution.h"
 
 #include <cstdint>
 #include <fstream>
@@ -106,3 +109,4 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
     return 0;
     return 0;
 }
+

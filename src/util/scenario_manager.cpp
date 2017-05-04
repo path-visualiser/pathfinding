@@ -88,10 +88,10 @@ warthog::scenario_manager::generate_single_experiment(warthog::gridmap* map)
 	int id1 = map->to_padded_id(id1_);
 	int id2 = map->to_padded_id(id2_);
     warthog::problem_instance pi(map->to_padded_id(id1), map->to_padded_id(id2));
-	double dist = astar.get_length(pi);
-	double inf = warthog::INF;
+    warthog::solution sol;
+	astar.get_path(pi, sol);
 
-	if(dist == inf)
+	if(sol.sum_of_edge_costs_ == warthog::INF)
 	{
 	//	std::cout << " no path;" <<std::endl;
 		return 0;
@@ -103,7 +103,7 @@ warthog::scenario_manager::generate_single_experiment(warthog::gridmap* map)
 	map->to_unpadded_xy(id2, x2, y2);
 	newexp = new experiment(x1, y1, x2, y2, 
 			map->header_width(), map->header_height(), 
-			dist, std::string(map->filename()));
+			sol.sum_of_edge_costs_, std::string(map->filename()));
 	return newexp;
 }
 

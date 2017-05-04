@@ -99,7 +99,9 @@ warthog::down_distance_filter::compute(
     for(uint32_t i = start_id_; i <= last_id_; i++)
     {
         std::cerr << "\rprocessing node " << i << ". continues to " << last_id_;
-        dijkstra.get_length(warthog::problem_instance(i, warthog::INF));
+        warthog::solution sol;
+        warthog::problem_instance pi(i, warthog::INF);
+        dijkstra.get_path(pi, sol);
 
         // scan the closed list and get the max g-value
         double max = 0;

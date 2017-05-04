@@ -13,6 +13,7 @@
 
 namespace warthog
 {
+
 namespace helpers
 {
 

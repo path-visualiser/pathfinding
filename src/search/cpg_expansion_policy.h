@@ -56,7 +56,7 @@ class cpg_expansion_policy : public expansion_policy
 
     private:
         warthog::graph::corner_point_graph* g_;
-        uint32_t search_id_at_last_insert_;
+        uint32_t instance_id_at_last_insert_;
 };
 
 }

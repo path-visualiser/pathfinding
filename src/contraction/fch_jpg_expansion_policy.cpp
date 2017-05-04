@@ -45,7 +45,7 @@ warthog::fch_jpg_expansion_policy::expand(
     // no parent (i.e. we expand all successors in every direction)
     uint32_t succ_dirs;
     uint32_t current_id = current->get_id();
-    if(current_id == problem->get_start_id())
+    if(current_id == problem->start_id_)
     {
         succ_dirs = warthog::jps::direction::ALL;
     }
@@ -96,7 +96,7 @@ warthog::fch_jpg_expansion_policy::expand(
             // traveling down, we generate only "down" neighbours
 #ifndef NDEBUG
             warthog::jps::direction s_dir = get_dir(&e, FIRST);
-            assert((current_id == problem->get_start_id()) ||
+            assert((current_id == problem->start_id_) ||
                     (succ_dirs & s_dir));
 #endif
             
@@ -130,10 +130,10 @@ warthog::search_node*
 warthog::fch_jpg_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_at_last_insert_)
+    if(pi->instance_id_ != search_id_at_last_insert_)
     {
-        g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_at_last_insert_ = pi->get_search_id();
+        g_->insert(pi->start_id_, pi->target_id_);
+        search_id_at_last_insert_ = pi->instance_id_;
     }
     return this->generate(g_->get_inserted_start_id());
 }
@@ -142,10 +142,10 @@ warthog::search_node*
 warthog::fch_jpg_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_at_last_insert_)
+    if(pi->instance_id_ != search_id_at_last_insert_)
     {
-        g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_at_last_insert_ = pi->get_search_id();
+        g_->insert(pi->start_id_, pi->target_id_);
+        search_id_at_last_insert_ = pi->instance_id_;
     }
     return this->generate(g_->get_inserted_target_id());
 }
@@ -302,7 +302,7 @@ warthog::fch_jpg_expansion_policy::label_edge(warthog::graph::edge* e,
 //    uint32_t graph_id = current->get_id();
 //
 //    uint32_t succ_dirs;
-//    if(graph_id == problem->get_start_id())
+//    if(graph_id == problem->start_id_)
 //    {
 //        // special case for the start node: since there is no parent, 
 //        // expand all successors in every direction

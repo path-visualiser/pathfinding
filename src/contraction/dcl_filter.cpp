@@ -196,6 +196,6 @@ void
 warthog::dcl_filter::init(warthog::problem_instance* instance)
 {
     assert(instance);
-    g_->get_xy(instance->get_target_id(), tx, ty);
-    //target_lvl = rank_->at(instance->get_target_id());
+    g_->get_xy(instance->target_id_, tx, ty);
+    //target_lvl = rank_->at(instance->target_id_);
 }

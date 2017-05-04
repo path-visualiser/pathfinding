@@ -48,7 +48,7 @@ warthog::fch_dd_expansion_policy::expand(
         if(nf_ && (get_rank(e.node_id_) < current_rank))
         {
             double ddist = nf_->get_down_distance(e.node_id_);
-            double hval = heuristic_->h(e.node_id_, instance->get_target_id());
+            double hval = heuristic_->h(e.node_id_, instance->target_id_);
             if(ddist >= hval)
             {
                 warthog::search_node* tmp = this->generate(e.node_id_);
@@ -91,7 +91,7 @@ warthog::search_node*
 warthog::fch_dd_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->get_start_id());
+    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
     if(s_graph_id == warthog::INF) { return 0; }
     return generate(s_graph_id);
 }
@@ -100,7 +100,7 @@ warthog::search_node*
 warthog::fch_dd_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id(pi->get_target_id());
+    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
     return generate(t_graph_id);
 }

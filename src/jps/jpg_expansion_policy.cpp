@@ -6,7 +6,7 @@ warthog::jps::jpg_expansion_policy::jpg_expansion_policy(
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
-    search_id_ = warthog::INF;
+    instance_id_ = warthog::INF;
 }
 
 warthog::jps::jpg_expansion_policy::~jpg_expansion_policy()
@@ -27,7 +27,7 @@ warthog::jps::jpg_expansion_policy::expand(
     uint32_t graph_id = current->get_id();
 
     uint32_t succ_dirs;
-    if(graph_id == problem->get_start_id())
+    if(graph_id == problem->start_id_)
     {
         // special case for the start node: since there is no parent, 
         // expand all successors in every direction
@@ -98,10 +98,10 @@ warthog::search_node*
 warthog::jps::jpg_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_)
+    if(pi->instance_id_ != instance_id_)
     {
-        g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_ = pi->get_search_id();
+        g_->insert(pi->start_id_, pi->target_id_);
+        instance_id_ = pi->instance_id_;
     }
     return this->generate(g_->get_inserted_start_id());
 }
@@ -110,10 +110,10 @@ warthog::search_node*
 warthog::jps::jpg_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_)
+    if(pi->instance_id_ != instance_id_)
     {
-        g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_ = pi->get_search_id();
+        g_->insert(pi->start_id_, pi->target_id_);
+        instance_id_ = pi->instance_id_;
     }
     return this->generate(g_->get_inserted_target_id());
 }

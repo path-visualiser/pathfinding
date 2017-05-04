@@ -59,7 +59,7 @@ class jpg_expansion_policy : public expansion_policy
     private:
         // a graph of jump points
         warthog::graph::corner_point_graph* g_;
-        uint32_t search_id_;
+        uint32_t instance_id_;
 };
 
 }

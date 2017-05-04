@@ -10,6 +10,9 @@
 // @created: 2016-02-24
 //
 
+#include "problem_instance.h"
+#include "solution.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -20,58 +23,15 @@ class search
 {
     public:
 
-        search()
-        {
-            searchid_ = 0;
-            reset_metrics();
-        }
-
+        search() { }
         virtual ~search() { }
-
-		inline uint32_t 
-		get_nodes_expanded() { return nodes_expanded_; }
-
-		inline uint32_t
-		get_nodes_generated() { return nodes_generated_; }
-
-		inline uint32_t
-		get_nodes_touched() { return nodes_touched_; }
-
-		inline double
-		get_search_time() { return search_time_; }
-
-        inline uint32_t
-        get_heap_ops() { return heap_ops_; }
-
-		inline bool
-		get_verbose() { return verbose_; }
-
-        inline uint32_t
-        get_search_id () { return searchid_; }
-
-		inline void
-		set_verbose(bool verbose) { verbose_ = verbose; } 
-
-        inline void
-        reset_metrics()
-        {
-			nodes_expanded_ = nodes_generated_ = nodes_touched_ = 0;
-			search_time_ = 0;
-        }
         
+        virtual void
+        get_path(warthog::problem_instance&, warthog::solution&) = 0;
+
         virtual size_t
         mem() = 0;
-
-    protected:
-		uint32_t searchid_;
-		uint32_t nodes_expanded_;
-		uint32_t nodes_generated_;
-		uint32_t nodes_touched_;
-        uint32_t heap_ops_;
-		double search_time_;
-        bool verbose_;
 };
-
 
 }
 

@@ -64,14 +64,15 @@ class scenario_manager
 			return sizeof(*this) + 
 				sizeof(warthog::experiment) * experiments_.size();
 		}
+
+		inline std::string last_file_loaded() { return sfile_; }
+		inline void clear() { experiments_.clear(); }
 		
 		void generate_experiments(warthog::gridmap*, int num);
 		void load_scenario(const char* filelocation);
 		void write_scenario(std::ostream& out);
-		void clear() { experiments_.clear(); }
 		void sort(); // organise by increasing solution length
 
-		std::string last_file_loaded() { return sfile_; }
 
 	private:
 		experiment* generate_single_experiment(warthog::gridmap*);

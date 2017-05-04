@@ -363,7 +363,8 @@ warthog::afhd_filter::compute_down_flags(
             << " until node " << lastid_;
         uint32_t source_id = i;
         warthog::problem_instance pi(source_id, warthog::INF);
-        dijkstra.get_length(pi);
+        warthog::solution sol;
+        dijkstra.get_path(pi, sol);
         
         // create a rectangle label for every outgoing edge
         warthog::graph::node* source = g_->get_node(source_id);

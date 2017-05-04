@@ -60,7 +60,7 @@ warthog::fch_bb_expansion_policy::expand(
             if(apex_ != warthog::INF && !apex_reached_) { continue; }
             
             // prune down successors below the goal
-            if(rank_->at(e.node_id_) < rank_->at(instance->get_target_id())) 
+            if(rank_->at(e.node_id_) < rank_->at(instance->target_id_)) 
             { continue; }
 
             //std::cerr << " (D) ";
@@ -99,7 +99,7 @@ warthog::search_node*
 warthog::fch_bb_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->get_start_id());
+    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
     if(s_graph_id == warthog::INF) { return 0; }
     return generate(s_graph_id);
 }
@@ -108,7 +108,7 @@ warthog::search_node*
 warthog::fch_bb_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id(pi->get_target_id());
+    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
 
     // update the filter with the new target location

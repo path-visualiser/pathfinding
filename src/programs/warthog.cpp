@@ -58,23 +58,18 @@ help()
     << "\tcpg, jpg\n";
 }
 
-void
-check_optimality(double len, warthog::experiment* exp)
+bool
+check_optimality(warthog::solution& sol, warthog::experiment* exp)
 {
-	if(!checkopt)
-	{
-		return;
-	}
-
 	uint32_t precision = 1;
 	double epsilon = (1 / (int)pow(10, precision)) / 2;
 
-	double delta = fabs(len - exp->distance());
+	double delta = fabs(sol.sum_of_edge_costs_ - exp->distance());
 	if( fabs(delta - epsilon) > epsilon)
 	{
 		std::stringstream strpathlen;
 		strpathlen << std::fixed << std::setprecision(exp->precision());
-		strpathlen << len;
+		strpathlen << sol.sum_of_edge_costs_;
 
 		std::stringstream stroptlen;
 		stroptlen << std::fixed << std::setprecision(exp->precision());
@@ -90,7 +85,45 @@ check_optimality(double len, warthog::experiment* exp)
 		std::cerr<< "delta: "<< delta << std::endl;
 		exit(1);
 	}
+    return true;
 }
+
+void
+run_experiments(warthog::search* algo, std::string alg_name,
+        warthog::scenario_manager& scenmgr, bool verbose, bool checkopt,
+        std::ostream& out)
+{
+	std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tmicros\tpcost\tplen\tmap\n";
+	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+
+		int startid = exp->starty() * exp->mapwidth() + exp->startx();
+		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+        warthog::problem_instance pi(startid, goalid, verbose);
+        warthog::solution sol;
+
+        algo->get_path(pi, sol);
+
+		out
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_micro_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << sol.path_.size() << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
+
+        if(checkopt) { check_optimality(sol, exp); }
+	}
+}
+
 
 void
 run_jpsplus(warthog::scenario_manager& scenmgr, std::string alg_name)
@@ -102,32 +135,10 @@ run_jpsplus(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jpsplus_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -141,7 +152,6 @@ run_jps2plus(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps2plus_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
     std::function<void(warthog::search_node*)> relax_fn = 
             [&](warthog::search_node* n)
@@ -150,30 +160,6 @@ run_jps2plus(warthog::scenario_manager& scenmgr, std::string alg_name)
             };
     astar.apply_on_relax(relax_fn);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -187,7 +173,6 @@ run_jps2(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps2_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
     std::function<void(warthog::search_node*)> relax_fn = 
             [&](warthog::search_node* n)
@@ -195,31 +180,9 @@ run_jps2(warthog::scenario_manager& scenmgr, std::string alg_name)
                 expander.update_parent_direction(n);
             };
     astar.apply_on_relax(relax_fn);
-            
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
 
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -233,32 +196,9 @@ run_jps(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -272,33 +212,9 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -312,34 +228,9 @@ run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
 	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-				
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -358,32 +249,9 @@ run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::wgridmap_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -397,23 +265,9 @@ run_wgm_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
 	   	warthog::wgridmap_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		astar.get_length(warthog::problem_instance(startid, warthog::INF));
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< scenmgr.last_file_loaded() << std::endl;
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -427,23 +281,9 @@ run_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
 	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		astar.get_length(warthog::problem_instance(startid, warthog::INF));
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< scenmgr.last_file_loaded() << std::endl;
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -461,32 +301,9 @@ run_jps_wgm(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::jps_expansion_policy_wgm> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -504,37 +321,9 @@ run_jpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 		warthog::octile_heuristic,
 	   	warthog::jps::jpg_expansion_policy> 
             astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-    warthog::timer mytimer;
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
-		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-
-        mytimer.start();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-        mytimer.stop();
-
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-        len /= warthog::ONE;
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< mytimer.elapsed_time_micro() << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -552,37 +341,9 @@ run_cpg(warthog::scenario_manager& scenmgr, std::string alg_name)
 		warthog::octile_heuristic,
 	   	warthog::cpg_expansion_policy> 
             astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
 
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-    warthog::timer mytimer;
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
-		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-
-        mytimer.start();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-        mytimer.stop();
-
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-        len /= warthog::ONE;
-
-		std::cout << i<<"\t" << alg_name << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< mytimer.elapsed_time_micro() << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 

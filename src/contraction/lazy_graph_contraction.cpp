@@ -216,10 +216,11 @@ warthog::ch::lazy_graph_contraction::witness_search(
     uint32_t ext_to_id = g->to_external_id(to_id);
 
     warthog::problem_instance pi(ext_from_id, ext_to_id);
-    double witness_len = alg_->get_length(pi);
-    total_expansions_ += alg_->get_nodes_expanded();
+    warthog::solution sol;
+    alg_->get_path(pi, sol);
+    total_expansions_ += sol.nodes_expanded_;
     total_searches_++;
-    return witness_len;
+    return sol.sum_of_edge_costs_;
 }
 
 // calculate the net number of edges that result from contracting

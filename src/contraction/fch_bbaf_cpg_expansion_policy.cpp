@@ -80,10 +80,10 @@ warthog::search_node*
 warthog::fch_bbaf_cpg_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_)
+    if(pi->instance_id_ != search_id_)
     {
-        g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_ = pi->get_search_id();
+        g_->insert(pi->start_id_, pi->target_id_);
+        search_id_ = pi->instance_id_;
     }
     return this->generate(g_->get_inserted_start_id());
 }
@@ -112,10 +112,10 @@ warthog::search_node*
 warthog::fch_bbaf_cpg_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    if(pi->get_search_id() != search_id_)
+    if(pi->instance_id_ != search_id_)
     {
-        g_->insert(pi->get_start_id(), pi->get_target_id());
-        search_id_ = pi->get_search_id();
+        g_->insert(pi->start_id_, pi->target_id_);
+        search_id_ = pi->instance_id_;
     }
 
     t_rect_.clear();

@@ -31,7 +31,7 @@ warthog::jps_expansion_policy::expand(
 	// look for jump points in the direction of each natural 
 	// and forced neighbour
 	uint32_t succ_dirs = warthog::jps::compute_successors(dir_c, c_tiles);
-	uint32_t goal_id = problem->get_target_id();
+	uint32_t goal_id = problem->target_id_;
     //uint32_t search_id = problem->get_searchid();
 	for(uint32_t i = 0; i < 8; i++)
 	{
@@ -64,8 +64,8 @@ warthog::jps_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 { 
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->get_start_id() >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->get_start_id());
+    if(pi->start_id_ >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(pi->start_id_);
     return generate(padded_id);
 }
 
@@ -74,7 +74,7 @@ warthog::jps_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->get_target_id() >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->get_target_id());
+    if(pi->target_id_ >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(pi->target_id_);
     return generate(padded_id);
 }
