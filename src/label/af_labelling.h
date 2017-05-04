@@ -156,7 +156,8 @@ class af_labelling
                     uint32_t ext_source_id = 
                         shared->lab_->g_->to_external_id(source_id);
                     warthog::problem_instance pi(ext_source_id, warthog::INF);
-                    dijkstra.get_length(pi);
+                    warthog::solution sol;
+                    dijkstra.get_path(pi, sol);
 
                     // first, we need an easy way to convert between the ids 
                     // of nodes adjacent to the source and their corresponding 

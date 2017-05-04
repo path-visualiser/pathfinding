@@ -38,6 +38,15 @@ class solution
         inline void
         print(std::ostream& out)
         {
+            print_metrics(out);
+            out << std::endl;
+            print_path(out);
+            out << std::endl;
+        }
+
+        inline void
+        print_metrics(std::ostream& out)
+        {
             out 
                 << "sum_of_edge_costs=" << sum_of_edge_costs_ 
                 << "time_elapsed_micro=" << time_elapsed_micro_ 
@@ -45,11 +54,14 @@ class solution
                 << "nodes expanded=" << nodes_expanded_ 
                 << "inserted=" << nodes_inserted_ 
                 << "updated=" << nodes_updated_ 
-                << "touched= " << nodes_touched_ 
-                << std::endl
-                << "path=";
+                << "touched= " << nodes_touched_;
+        }
+
+        inline void
+        print_path(std::ostream& out)
+        {
+            out << "path=";
            for(auto &id : path_) { out << id << " "; }
-           out << std::endl;
         }
 
         // metrics

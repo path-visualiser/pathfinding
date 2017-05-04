@@ -10,6 +10,7 @@
 #include "octile_heuristic.h"
 #include "search_node.h"
 #include "scenario_manager.h"
+#include "solution.h"
 
 #include "getopt.h"
 
@@ -113,22 +114,17 @@ void online_jps_test()
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
+        warthog::solution sol;
+        warthog::problem_instance pi(startid, goalid);
+		astar.get_path(pi, sol);
+        double len = sol.sum_of_edge_costs_;
 
 		if(!check_opt)
 			continue;
 
 		std::cerr << "exp "<<i<<" ";
 		exp->print(std::cerr);
-		std::cerr << " (ne=" << astar.get_nodes_expanded() << 
-			" ng=" << astar.get_nodes_generated() << 
-			" nt=" << astar.get_nodes_touched() <<
-			" st=" << astar.get_search_time() <<")";
+        sol.print_metrics(std::cerr);
 		std::cerr << std::endl;
 
 		std::stringstream stroptlen;
@@ -179,22 +175,17 @@ void flexible_astar_test()
 
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-                warthog::problem_instance(startid, goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
+        warthog::problem_instance pi(startid, goalid);
+        warthog::solution sol;
+        astar.get_path(pi, sol);
+		double len = sol.sum_of_edge_costs_;
 
 		if(!check_opt)
 			continue;
 
 		std::cerr << "exp "<<i<<" ";
 		exp->print(std::cerr);
-		std::cerr << " (ne=" << astar.get_nodes_expanded() << 
-			" ng=" << astar.get_nodes_generated() << 
-			" nt=" << astar.get_nodes_touched() <<
-			" st=" << astar.get_search_time() <<")";
+        sol.print_metrics(std::cerr);
 		std::cerr << std::endl;
 
 		std::stringstream stroptlen;

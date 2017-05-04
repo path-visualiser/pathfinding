@@ -147,7 +147,8 @@ class bbaf_labelling
                     uint32_t source_id = i;
                     uint32_t ext_source_id = g_->to_external_id(source_id);
                     warthog::problem_instance pi(ext_source_id, warthog::INF);
-                    dijkstra.get_length(pi);
+                    warthog::solution sol;
+                    dijkstra.get_path(pi, sol);
 
                     // now we analyse the closed list to compute arc flags
                     // but first, we need an easy way to convert between the 

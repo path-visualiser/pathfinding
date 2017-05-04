@@ -23,6 +23,7 @@
 #include "search_node.h"
 #include "zero_heuristic.h"
 #include "helpers.h"
+#include "solution.h"
 
 #include <functional>
 
@@ -117,7 +118,8 @@ class bb_labelling
                         shared->lab_->g_->get_node(source_id);
 
                     warthog::problem_instance pi(ext_source_id, warthog::INF);
-                    dijkstra.get_length(pi);
+                    warthog::solution sol;
+                    dijkstra.get_path(pi, sol);
                     
                     // we need an easy way to convert between the ids of nodes
                     // adjacent to the source and the edge index to reach them
