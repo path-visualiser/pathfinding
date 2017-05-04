@@ -405,7 +405,7 @@ class flexible_astar : public warthog::search
 
 			mytimer.stop();
 
-			sol.sum_of_edge_costs_ = mytimer.elapsed_time_micro();
+			sol.time_elapsed_micro_ = mytimer.elapsed_time_micro();
             return target;
 		}
 
