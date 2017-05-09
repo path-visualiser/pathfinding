@@ -40,6 +40,18 @@ struct rectangle
         y2 = other.y2;
     }
 
+
+    rectangle&
+    operator=(const rectangle& other)
+    {
+        x1 = other.x1;
+        x2 = other.x2;
+        y1 = other.y1;
+        y2 = other.y2;
+        return *this;
+    }
+
+
     bool
     operator==(const rectangle& other)
     {

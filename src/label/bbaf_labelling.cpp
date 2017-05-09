@@ -134,7 +134,8 @@ warthog::label::bbaf_labelling::load(const char* filename,
     // skip comment lines
     while(ifs.peek() == '#')
     {
-        while(ifs.get() != '\n') { lines++; }
+        while(ifs.get() != '\n');
+        lines++;
     }
 
     // read labels for each outgoing arc
@@ -152,8 +153,8 @@ warthog::label::bbaf_labelling::load(const char* filename,
                 if(!ifs.good())
                 {
                     std::cerr 
-                        << "unexpected error reading bbaf label on line "
-                        << lines << "; aborting\n";
+                        << "error; invalid bbaf label on line "
+                        << lines << " (af part); aborting\n";
                     std::cerr 
                         << "[debug info] node: " << i 
                         << " out-edge-index: " << j << "\n";
@@ -170,31 +171,23 @@ warthog::label::bbaf_labelling::load(const char* filename,
                         == label);
             }
 
-            if(!ifs.good())
+            int32_t x1, y1, x2, y2;
+            ifs >> x1 >> y1 >> x2 >> y2;
+            warthog::geom::rectangle dummy; 
+            warthog::geom::rectangle rect(x1, y1, x2, y2); 
+            if(rect != dummy && !rect.is_valid())
             {
                 std::cerr 
-                    << "unexpected error reading bbaf label on line "
-                    << lines << "; aborting\n";
-                delete lab;
-                return 0;
-            }
-
-            uint32_t x1, y1, x2, y2;
-            ifs >> x1 >> y1 >> x2 >> y2;
-            if(x2 < x1 || y2 < y1)
-            {
-                std::cerr << "err; invalid label on line " << lines <<"\n";
+                    << "err; invalid label on line " << lines 
+                    << " (bb part); aborting\n";
                 delete lab;
                 std::cerr 
                     << "[debug info] node: " << i 
-                    << " out-edge-index: " << j << "\n";
+                    << " out-edge-index: " << j << "\n"
+                    << "x1 " << x1 << x2;
                 return 0;
             }
-
-            lab->labels_.at(i).at(j).bbox_.x1 = x1;
-            lab->labels_.at(i).at(j).bbox_.y1 = y1;
-            lab->labels_.at(i).at(j).bbox_.x2 = x2;
-            lab->labels_.at(i).at(j).bbox_.y2 = y2;
+            lab->labels_.at(i).at(j).bbox_ = rect;
             lines++;
        }
     }
