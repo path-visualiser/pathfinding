@@ -38,6 +38,7 @@ class planar_graph;
 namespace ch
 {
 
+// in the case of bidirectional search
 enum search_direction { UP = 1, DOWN = 2, ANY = 3 };
 
 // load a node order-of-contraction file. such files comprise a list of

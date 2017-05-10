@@ -64,6 +64,18 @@ class solution
            for(auto &id : path_) { out << id << " "; }
         }
 
+        void
+        reset()
+        {
+            sum_of_edge_costs_ = warthog::INF;
+            time_elapsed_micro_ = 0;
+            nodes_expanded_ = 0; 
+            nodes_inserted_ = 0; 
+            nodes_updated_ = 0;
+            nodes_touched_ = 0;
+            path_.clear();
+        }
+
         // metrics
         double sum_of_edge_costs_;
         double time_elapsed_micro_;

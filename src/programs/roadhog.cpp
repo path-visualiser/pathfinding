@@ -8,6 +8,7 @@
 //
 
 #include "af_filter.h"
+#include "apex_filter.h"
 #include "bbaf_filter.h"
 #include "bb_filter.h"
 #include "bidirectional_search.h"
@@ -77,7 +78,7 @@ help()
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tch, ch-astar, chase, chaf, chaf-bb, ch-cpg\n"
-    << "\tfch, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
+    << "\tfch, fchx, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
     << "\nRecognised values for --input:\n "
@@ -529,8 +530,110 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 
         warthog::fch_expansion_policy> alg(&h, &fexp);
+    
+    // extra metric; how many nodes do we expand above the apex?
+    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+    [&order] (warthog::search_node* n) -> uint32_t
+    {
+        while(true)
+        {
+            warthog::search_node* p = n->get_parent();
+            if(!p || order.at(p->get_id()) < order.at(n->get_id()))
+            { break; }
+            n = p;
+        }
+        return order.at(n->get_id());
+    };
 
     run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_fch_apex_experiment(warthog::util::cfg& cfg, 
+        warthog::dimacs_parser& parser, std::string alg_name, 
+        std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    if(orderfile == "")
+    {
+        std::cerr << "err; insufficient input parameters for --alg "
+                  << alg_name << ". required, in order:\n"
+                  << " --input [gr file] [co file] "
+                  << " [contraction order file] \n";
+        return;
+    }
+
+    // load up the graph 
+    warthog::graph::planar_graph g;
+    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
+
+    // load up the node order
+    std::vector<uint32_t> order;
+    warthog::ch::load_node_order(orderfile.c_str(), order);
+    warthog::ch::value_index_swap_dimacs(order);
+
+    std::cerr << "preparing to search\n";
+    warthog::fch_expansion_policy fexp(&g, &order); 
+    warthog::euclidean_heuristic h(&g);
+    warthog::apex_filter filter(&order);
+
+    // reference algo
+    warthog::flexible_astar<warthog::euclidean_heuristic, 
+        warthog::fch_expansion_policy>
+            fch(&h, &fexp);
+
+    // fchx
+    warthog::flexible_astar<warthog::euclidean_heuristic, 
+        warthog::fch_expansion_policy, warthog::apex_filter> 
+            fchx(&h, &fexp, &filter);
+
+    std::cerr << "running fch apex experiment\n";
+	std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tmicros\tpcost\tplen\tmap\n";
+    uint32_t exp_id = 0;
+    for(auto it = parser.experiments_begin(); 
+            it != parser.experiments_end(); 
+            it++)
+    {
+        warthog::dimacs_parser::experiment exp = (*it);
+		warthog::solution sol;
+        warthog::problem_instance pi(
+                exp.source, (exp.p2p ? exp.target : warthog::INF), verbose);
+        // run once
+        fch.get_path(pi, sol);
+
+        // identify the apex of the path
+        if(sol.path_.size() > 0)
+        {
+            filter.set_apex(sol.path_.at(0));
+            for(uint32_t i = 1; i < sol.path_.size(); i++)
+            {
+                if(order.at(filter.get_apex()) < order.at(sol.path_.at(i)))
+                {
+                    filter.set_apex(sol.path_.at(i));
+                }
+            }
+        }
+
+        // run the experiment again, using the apex to prune
+        sol.reset();
+        fchx.get_path(pi, sol);
+
+        std::cout
+            << exp_id++ <<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_micro_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << sol.path_.size() << "\t" 
+            << parser.get_problemfile() 
+            << std::endl;
+    }
+
 }
 
 void
@@ -1317,6 +1420,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch")
     {
         run_fch(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "fchx")
+    {
+        run_fch_apex_experiment(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-dd")
     {
