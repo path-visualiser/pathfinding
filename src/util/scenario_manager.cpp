@@ -3,7 +3,7 @@
 #include "problem_instance.h"
 
 #include <cstdlib>
-#include <string>
+#include <cstring>
 
 static uint32_t head_offset = 0;
 static uint32_t tail_offset = 0;
