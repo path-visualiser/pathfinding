@@ -42,6 +42,7 @@ contract_graph()
     warthog::graph::planar_graph g;
     std::vector<uint32_t> order;
 
+    // use an existing node order for contraction operations
     std::string order_type = cfg.get_param_value("order");
     if(order_type == "fixed")
     {
@@ -54,9 +55,18 @@ contract_graph()
             return;
         }
 
-        // use an existing node order
-        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
-        warthog::ch::load_node_order(orderfile.c_str(), order);
+        if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+        {
+            std::cerr 
+                << "err; could not load gr or co input files (one or both)\n";
+            return;
+        }
+
+        if(!warthog::ch::load_node_order(orderfile.c_str(), order))
+        {
+            std::cerr << "err; could not load node order input file\n";
+            return;
+        }
         warthog::ch::fixed_graph_contraction contractor(&g, &order);
         contractor.set_verbose(verbose);
         contractor.contract();
@@ -75,7 +85,12 @@ contract_graph()
     else if(order_type == "lazy")
     {
         // create a new contraction hierarchy with dynamic node ordering
-        g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+        if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+        {
+            std::cerr 
+                << "err; could not load gr or co input files (one or both)\n";
+            return;
+        }
         warthog::ch::lazy_graph_contraction contractor(&g);
         contractor.set_verbose(verbose);
         contractor.contract();

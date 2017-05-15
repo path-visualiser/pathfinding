@@ -168,6 +168,12 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
                     sanity.node_id_ == hid);
 #endif
         }
+        if(verbose_ && ((it - dimacs.edges_begin()) % 1000) == 0)
+        {
+            std::cerr 
+                << "\rconverted K edges " 
+                << (it - dimacs.edges_begin()) / 1000;
+        }
     }
 
     if(verbose_) { std::cout << "edges, converted" << std::endl; }

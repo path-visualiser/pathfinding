@@ -56,28 +56,79 @@ warthog::dimacs_parser::load_graph(const char* filename)
 		return false;
 	}
 
-	bool retval = false;
+	bool retval = true;
 	char* buf = new char[1024];
 	const char* delim = " \t";
-	uint32_t line = 0;
+	uint32_t line = 1;
 	while(fdimacs->good())
 	{
 		fdimacs->getline(buf, 1024);
 		if(buf[0] == 'p')
 		{
-			char* type = strtok(buf, delim); // p char
-			type = strtok(NULL, delim);
-			if(!strcmp(type, "sp"))
+			char* token = strtok(buf, delim); // p char
+			token = strtok(NULL, delim); // file type token
+			if(strcmp(token, "sp") == 0)
 			{
-				retval |= load_gr_file(*fdimacs);
+                char* end;
+                token = strtok(NULL, delim); 
+                uint32_t tmp_num_nodes = strtol(token, &end, 10);
+                
+                token = strtok(NULL, delim); 
+                uint32_t tmp_num_edges = strtol(token, &end, 10);
+                if(tmp_num_edges == 0L || tmp_num_nodes == 0L)
+                {
+                    std::cerr 
+                        << "error; invalid graph description on line " 
+                        << line << " of file " << filename << "\n";
+                    retval = false;
+                    break;
+                }
+                std::cerr << "loading gr; #edges: "<< tmp_num_edges << "\n";
+                edges_->resize(tmp_num_edges);
+				retval = load_gr_file(*fdimacs);
+                std::cerr << "gr loaded\n";
 			}
-			else if(!strcmp(type, "aux"))
+			else if(strcmp(token, "aux") == 0)
 			{
-				retval |= load_co_file(*fdimacs);
+                token = strtok(NULL, delim);  
+                if(strcmp(token, "sp") != 0)
+                {
+                    retval = false;
+                }
+                else
+                { 
+                    token = strtok(NULL, delim);  
+                    if(strcmp(token, "co") != 0)
+                    {
+                        retval = false;
+                    }
+                    else
+                    { 
+                        token = strtok(NULL, delim);  
+                        char* end;
+                        uint32_t tmp_num_nodes = strtol(token, &end, 10);
+                        if(tmp_num_nodes == 0L) { retval = false; } 
+                        nodes_->resize(tmp_num_nodes);
+                    }
+                }
+
+                if(retval == 0)
+                {
+                    std::cerr 
+                        << "error; invalid graph description on line " 
+                        << line <<" of file " << filename << "\n";
+                    break;
+                }
+
+                std::cerr 
+                    << "loading co; #nodes: " << nodes_->capacity() << "\n";
+				retval = load_co_file(*fdimacs);
+                std::cerr << "co loaded\n";
 			}
 			else
 			{
 				std::cerr << "error; unrecognised problem line in dimacs file\n";
+                retval = 0;
 				break;
 			}
 		}
@@ -96,8 +147,8 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
     uint32_t line = 1;
 	char* buf = new char[1024];
 	const char* delim = " \t";
-	bool early_abort = false;
-	while(fdimacs.good() && !early_abort)
+	bool all_good = true;
+	while(fdimacs.good() && all_good)
 	{
 		char next_char = fdimacs.peek();
 		switch(next_char)
@@ -113,6 +164,7 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 				{
 					std::cerr << "warning; badly formatted node descriptor on line "
                         <<line << std::endl;
+                    all_good = false;
 					break;
 				}
                 warthog::dimacs_parser::node n;
@@ -120,21 +172,24 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
                 n.x_ = atoi(x);
                 n.y_ = atoi(y);
                 nodes_->push_back(n);
-
 				break;
 			}
 			case 'p': // stop if we hit another problem line
-				early_abort = true;
+				all_good = false;
 				break;
 			default: // ignore non-node, non-problem lines
 				fdimacs.getline(buf, 1024);
 				break;
 		}
+        if((line % 10000) == 0)
+        {
+                std::cerr << "\r co file; K lines read: " << (line / 1000) << " ";
+        }
 		line++;
 	}
 
 	delete [] buf;
-	return !early_abort;
+	return all_good;
 }
 
 bool
@@ -145,8 +200,8 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
     uint32_t line = 1;
 	char* buf = new char[1024];
 	const char* delim = " \t";
-	bool early_abort = false;
-	while(fdimacs.good() && !early_abort)
+	bool all_good = true;
+	while(fdimacs.good() && all_good)
 	{
 		char next_char = fdimacs.peek();
 		switch(next_char)
@@ -162,6 +217,7 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 				{
 					std::cerr << "warning; badly formatted arc descriptor on line "
                         <<line << std::endl;
+                    all_good = false;
 					break;
 				}
                 warthog::dimacs_parser::edge e;
@@ -172,17 +228,21 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 				break;
 			}
 			case 'p': // another problem line. stop here
-				early_abort = true;
+				all_good = false;
 				break;
 			default: // ignore non-arc, non-problem lines
 				fdimacs.getline(buf, 1024);
 				break;
 		}
+        if((line % 10000) == 0)
+        {
+                std::cerr << "\r gr file; K lines read: " << (line / 1000) << " ";
+        }
 		line++;
 	}
 
 	delete [] buf;
-	return !early_abort;
+	return all_good;
 }
 
 void
