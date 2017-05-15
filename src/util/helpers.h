@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <cstdlib>
+#include <cstdint>
 
 namespace warthog
 {
