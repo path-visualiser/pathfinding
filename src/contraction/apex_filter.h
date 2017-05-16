@@ -25,6 +25,8 @@ class apex_filter
             apex_id_ = warthog::INF;
             apex_reached_ = false;
             order_ = order;
+            prune_after_apex_ = true;
+            prune_before_apex_ = true;
         }
 
         inline bool
@@ -48,12 +50,12 @@ class apex_filter
             if(apex_reached_)
             {
                 // never follow up edges after the apex is reached
-                if(n_rank > p_rank) { return true; }
+                if((n_rank > p_rank) && prune_after_apex_) { return true; }
                 return false;
             }
             
             // never follow down edges before the apex is reached
-            if(n_rank < p_rank) { return true; }
+            if((n_rank < p_rank) && prune_before_apex_) { return true; }
 
 
             // always follow up edges before the apex is reached
@@ -68,6 +70,9 @@ class apex_filter
 
         inline uint32_t
         get_apex() { return apex_id_; }
+        
+        bool prune_before_apex_;
+        bool prune_after_apex_;
     
     private:
         uint32_t last_search_id_;

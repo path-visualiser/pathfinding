@@ -25,13 +25,6 @@ loadCSV <- function(filenames, ...)
     retval
 }
 
-# extract the basename from a filename string
-basename <- function(x)
-{
-	tmp <- gsub("[a-z|A-Z|0-9|-|.]*[/]+", "", x)
-	tmp
-}
-
 # Average My Series; 
 # takes a series and a numeric factor; returns an average
 # for each level of the factor. occasionally useful.

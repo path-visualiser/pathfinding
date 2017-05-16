@@ -67,6 +67,8 @@ int verbose = 0;
 // display program help on startup
 int print_help = 0;
 
+uint32_t nruns = 4;
+
 void
 help()
 {
@@ -74,7 +76,8 @@ help()
     << "\t--alg [ algorithm name (required) ]\n"
     << "\t--input [ algorithm-specific input files (omit to show options) ] \n"
     << "\t--problem [ ss or p2p problem file (required) ]\n"
-	<< "\t--verbose (optional)\n"
+	<< "\t--verbose (print debug info; omitting this param means no)\n"
+	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tch, ch-astar, chase, chaf, chaf-bb, ch-cpg\n"
@@ -140,6 +143,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         warthog::dimacs_parser& parser, std::ostream& out)
 {
     std::cerr << "running experiments\n";
+    std::cerr << "(averaging over " << nruns << " runs per instance)\n";
 
 	std::cout 
         << "id\talg\texpanded\tinserted\tupdated\ttouched"
@@ -150,19 +154,30 @@ run_experiments( warthog::search* algo, std::string alg_name,
             it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
-		warthog::solution sol;
+        warthog::solution sol;
         warthog::problem_instance pi(
                 exp.source, (exp.p2p ? exp.target : warthog::INF), verbose);
-        algo->get_path(pi, sol);
+        uint32_t expanded=0, inserted=0, updated=0, touched=0;
+        double micros = 0;
+        for(uint32_t i = 0; i < nruns; i++)
+        {
+            algo->get_path(pi, sol);
+
+            expanded += sol.nodes_expanded_;
+            inserted += sol.nodes_inserted_;
+            touched += sol.nodes_touched_;
+            updated += sol.nodes_updated_;
+            micros += sol.time_elapsed_micro_;
+        }
 
         out
             << exp_id++ <<"\t" 
             << alg_name << "\t" 
-            << sol.nodes_expanded_ << "\t" 
-            << sol.nodes_inserted_ << "\t"
-            << sol.nodes_updated_ << "\t"
-            << sol.nodes_touched_ << "\t"
-            << sol.time_elapsed_micro_ << "\t"
+            << expanded / nruns << "\t" 
+            << inserted / nruns << "\t"
+            << updated / nruns << "\t"
+            << touched / nruns << "\t"
+            << micros / (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << sol.path_.size() << "\t" 
             << parser.get_problemfile() 
@@ -576,6 +591,22 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
     warthog::fch_expansion_policy fexp(&g, &order); 
     warthog::euclidean_heuristic h(&g);
     warthog::apex_filter filter(&order);
+
+    std::string apex_filter_type = cfg.get_param_value("alg");
+    if(apex_filter_type == "no_paa")
+    {
+        // don't prune up nodes after the apex is reached
+        // (weaker filter)
+        filter.prune_after_apex_ = false;
+        alg_name = alg_name + "_" + apex_filter_type;
+    }
+    if(apex_filter_type == "no_pba")
+    {
+        // don't prune down nodes before the apex is reached
+        // (weaker filter)
+        filter.prune_before_apex_ = false;
+        alg_name = alg_name + "_" + apex_filter_type;
+    }
 
     // reference algo
     warthog::flexible_astar<warthog::euclidean_heuristic, 
@@ -1352,6 +1383,13 @@ run_dimacs(warthog::util::cfg& cfg)
     std::string co = cfg.get_param_value("input");
     std::string problemfile = cfg.get_param_value("problem");
     std::string alg_name = cfg.get_param_value("alg");
+    std::string nruns = cfg.get_param_value("nruns");
+    if(nruns != "")
+    {
+       char* end;
+       nruns = strtol(nruns.c_str(), &end, 10);
+    }
+
 
     if((problemfile == ""))
     {
