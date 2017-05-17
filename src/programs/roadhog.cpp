@@ -626,9 +626,12 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
             fchx(&h, &fexp, &filter);
 
     std::cerr << "running fch apex experiment\n";
-	std::cout 
-        << "id\talg\texpanded\tinserted\tupdated\ttouched"
-        << "\tmicros\tpcost\tplen\tmap\n";
+    if(!suppress_header)
+    {
+        std::cout 
+            << "id\talg\texpanded\tinserted\tupdated\ttouched"
+            << "\tmicros\tpcost\tplen\tmap\n";
+    }
     uint32_t exp_id = 0;
     for(auto it = parser.experiments_begin(); 
             it != parser.experiments_end(); 
