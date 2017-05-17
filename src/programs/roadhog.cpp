@@ -67,6 +67,9 @@ int verbose = 0;
 // display program help on startup
 int print_help = 0;
 
+// suppress the header row when printing results? (default: no)
+int suppress_header = 0;
+
 uint32_t nruns = 4;
 
 void
@@ -145,9 +148,12 @@ run_experiments( warthog::search* algo, std::string alg_name,
     std::cerr << "running experiments\n";
     std::cerr << "(averaging over " << nruns << " runs per instance)\n";
 
-	std::cout 
-        << "id\talg\texpanded\tinserted\tupdated\ttouched"
-        << "\tmicros\tpcost\tplen\tmap\n";
+    if(!suppress_header)
+    {
+        std::cout 
+            << "id\talg\texpanded\tinserted\tupdated\ttouched"
+            << "\tmicros\tpcost\tplen\tmap\n";
+    }
     uint32_t exp_id = 0;
     for(auto it = parser.experiments_begin(); 
             it != parser.experiments_end(); 
@@ -161,6 +167,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         double micros = 0;
         for(uint32_t i = 0; i < nruns; i++)
         {
+            sol.reset();
             algo->get_path(pi, sol);
 
             expanded += sol.nodes_expanded_;
@@ -1384,6 +1391,7 @@ run_dimacs(warthog::util::cfg& cfg)
     std::string problemfile = cfg.get_param_value("problem");
     std::string alg_name = cfg.get_param_value("alg");
     std::string nruns = cfg.get_param_value("nruns");
+
     if(nruns != "")
     {
        char* end;
@@ -1528,6 +1536,7 @@ main(int argc, char** argv)
 		{"help", no_argument, &print_help, 1},
 		{"checkopt",  no_argument, &checkopt, 1},
 		{"verbose",  no_argument, &verbose, 1},
+		{"noheader",  no_argument, &suppress_header, 1},
 		{"input",  required_argument, 0, 1},
 		{"problem",  required_argument, 0, 1},
 	};
