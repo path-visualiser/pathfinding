@@ -1393,12 +1393,12 @@ run_dimacs(warthog::util::cfg& cfg)
     std::string co = cfg.get_param_value("input");
     std::string problemfile = cfg.get_param_value("problem");
     std::string alg_name = cfg.get_param_value("alg");
-    std::string nruns = cfg.get_param_value("nruns");
+    std::string par_nruns = cfg.get_param_value("nruns");
 
-    if(nruns != "")
+    if(par_nruns != "")
     {
        char* end;
-       nruns = strtol(nruns.c_str(), &end, 10);
+       nruns = strtol(par_nruns.c_str(), &end, 10);
     }
 
 
@@ -1536,6 +1536,7 @@ main(int argc, char** argv)
 	warthog::util::param valid_args[] = 
 	{
 		{"alg",  required_argument, 0, 1},
+		{"nruns",  required_argument, 0, 1},
 		{"help", no_argument, &print_help, 1},
 		{"checkopt",  no_argument, &checkopt, 1},
 		{"verbose",  no_argument, &verbose, 1},
