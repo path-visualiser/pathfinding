@@ -197,7 +197,12 @@ run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name, std::string gr, std::string co)
 {
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str());
+    if(!g.load_dimacs(gr.c_str(), co.c_str()))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
 
     warthog::graph_expansion_policy expander(&g);
 
@@ -214,11 +219,22 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name, std::string gr, std::string co)
 {
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
+
     warthog::graph_expansion_policy fexp(&g);
 
     warthog::graph::planar_graph backward_g;
-    backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true);
+    if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
     warthog::graph_expansion_policy bexp(&g);
 
     warthog::euclidean_heuristic h(&g);
@@ -233,11 +249,21 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name, std::string gr, std::string co)
 {
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str());
+    if(!g.load_dimacs(gr.c_str(), co.c_str()))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
     warthog::graph_expansion_policy fexp(&g);
 
     warthog::graph::planar_graph backward_g;
-    backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true);
+    if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
     warthog::graph_expansion_policy bexp(&backward_g);
 
     warthog::zero_heuristic h;
@@ -252,7 +278,14 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name, std::string gr, std::string co)
 {
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str());
+
+    if(!g.load_dimacs(gr.c_str(), co.c_str()))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
+
     warthog::graph_expansion_policy expander(&g);
 
     warthog::zero_heuristic h;
@@ -275,12 +308,20 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the graph 
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
 
     // load up the node order
     std::vector<uint32_t> order;
-    warthog::ch::load_node_order(orderfile.c_str(), order);
-    warthog::ch::value_index_swap_dimacs(order);
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order))
+    {
+        std::cerr << "err; could not load contraction order file\n";
+        return;
+    }
 
     std::cerr << "preparing to search\n";
     warthog::ch_expansion_policy fexp(&g, &order);
@@ -304,12 +345,20 @@ run_ch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the graph 
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
 
     // load up the node order
     std::vector<uint32_t> order;
-    warthog::ch::load_node_order(orderfile.c_str(), order);
-    warthog::ch::value_index_swap_dimacs(order);
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
 
     std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(&g);
@@ -373,16 +422,24 @@ void
 run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
-    std::string orderfile = cfg.get_param_value("order");
+    std::string orderfile = cfg.get_param_value("input");
 
     // load up the graph 
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files " 
+                  << "(one or both)\n";
+        return;
+    }
 
     // load up the node order
     std::vector<uint32_t> order;
-    warthog::ch::load_node_order(orderfile.c_str(), order);
-    warthog::ch::value_index_swap_dimacs(order);
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load contraction order file\n";
+        return;
+    }
 
     std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(&g);
@@ -539,12 +596,20 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the graph 
     warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
 
     // load up the node order
     std::vector<uint32_t> order;
-    warthog::ch::load_node_order(orderfile.c_str(), order);
-    warthog::ch::value_index_swap_dimacs(order);
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
 
     std::cerr << "preparing to search\n";
     warthog::fch_expansion_policy fexp(&g, &order); 
@@ -815,7 +880,8 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::graph::planar_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
-        std::cerr << "err; could not load gr or co input files (one or both)\n";
+        std::cerr 
+            << "err; could not load gr or co input files (one or both)\n";
         return;
     }
     // load up the arc-flags
