@@ -238,15 +238,17 @@ class chase_search : public warthog::search
 
                 // the way we calculate the lower-bound on solution cost 
                 // differs when we have a heuristic available vs not.
-                uint32_t best_bound_ = dijkstra_ ? 
-                    // no heuristic
-                    (ftop->get_g() + btop->get_g()) : 
-                    // with a heuristic
-                    (std::min( 
-                        ftop->get_f(), btop->get_f()));
+        //        uint32_t best_bound_ = dijkstra_ ? 
+        //            // no heuristic
+        //            (ftop->get_g() + btop->get_g()) : 
+        //            // with a heuristic
+        //            (std::min( 
+        //                ftop->get_f(), btop->get_f()));
+                uint32_t best_bound = std::min( 
+                    ftop->get_f(), btop->get_f());
 
                 // terminate if we cannot improve the best solution found so far
-                if(best_bound_ > best_cost_)
+                if(best_bound > best_cost_)
                 {
 #ifndef NDEBUG
                     if(pi_.verbose_)
