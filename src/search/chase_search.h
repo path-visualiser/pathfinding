@@ -80,33 +80,12 @@ class chase_search : public warthog::search
         {
             pi_ = pi;
             this->search(sol);
-
-            sol.sum_of_edge_costs_ = best_cost_;
-            if(best_cost_ != warthog::INF) { reconstruct_path(sol.path_); }
-            cleanup();
-
-#ifndef NDEBUG
-            if(pi_.verbose_)
-            {
-                warthog::search_node* apex = v_;
-                for(uint32_t i = 0; i < sol.path_.size(); i++)
-                {
-                    warthog::search_node* n = 
-                        fexpander_->get_ptr(
-                            sol.path_.at(i), pi_.instance_id_);
-                    int32_t x, y;
-                    fexpander_->get_xy(n->get_id(), x, y);
-                    if(&*n == &*apex)
-                    {
-                        std::cerr << "(apex)";
-                    }
-                    std::cerr 
-                        << "final path: (" << x << ", " << y << ")...";
-                    n->print(std::cerr);
-                    std::cerr << std::endl;
-                }
+            if(best_cost_ != warthog::INF) 
+            { 
+                sol.sum_of_edge_costs_ = best_cost_;
+                reconstruct_path(sol);
             }
-#endif
+            cleanup();
         }
             
         size_t
@@ -144,7 +123,7 @@ class chase_search : public warthog::search
         warthog::problem_instance pi_;
 
         void
-        reconstruct_path(std::vector<uint32_t>& path)
+        reconstruct_path(warthog::solution& sol)
         {
             if(v_ && (&*v_ == &*bexpander_->generate(v_->get_id())))
             {
@@ -156,17 +135,18 @@ class chase_search : public warthog::search
             warthog::search_node* current = w_;
             while(current)
             {  
-               path.push_back(current->get_id());
+               sol.path_.push_back(current->get_id());
                current = current->get_parent();
             }
 
             current = v_->get_parent();
             while(current)
             {
-               path.push_back(current->get_id());
+               sol.path_.push_back(current->get_id());
                current = current->get_parent();
             }
         }
+
 
         // modify this function to balance the search
         // by default the search expands one node in
@@ -185,6 +165,7 @@ class chase_search : public warthog::search
             mytimer.start();
 
             // init
+            best_cost_ = warthog::INF;
             v_ = w_ = 0;
             fwd_norelax.clear();
             bwd_norelax.clear();
