@@ -317,7 +317,7 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the node order
     std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order))
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
     {
         std::cerr << "err; could not load contraction order file\n";
         return;
