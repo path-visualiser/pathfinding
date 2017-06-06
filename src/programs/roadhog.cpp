@@ -70,7 +70,7 @@ int print_help = 0;
 // suppress the header row when printing results? (default: no)
 int suppress_header = 0;
 
-uint32_t nruns = 4;
+uint32_t nruns = 1;
 
 void
 help()
@@ -442,10 +442,10 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     std::cerr << "preparing to search\n";
-    warthog::euclidean_heuristic h(&g);
+    warthog::zero_heuristic h;
     warthog::ch_expansion_policy fexp(&g, &order);
     warthog::ch_expansion_policy bexp (&g, &order, true);
-    warthog::chase_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
+    warthog::chase_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
