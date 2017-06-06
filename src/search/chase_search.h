@@ -229,9 +229,14 @@ class chase_search : public warthog::search
                             expand(current, fopen_, fexpander_, bexpander_, 
                                     pi_.target_id_, fwd_norelax_, 
                                     fwd_core_lb, sol);
-                            fwd_search_mask  = (~!!fopen_->size()) + 1; // 2s
                         }
-                        search_direction = 2 & bwd_search_mask;
+                        // switch directions
+                        if(bopen_->size() > 0)  
+                        { search_direction = 2; }
+                        else if(fopen_->size() > 0) 
+                        { search_direction = 1; }
+                        else
+                        { search_direction = 0; } 
                         break;
                     }
                     case 2:
@@ -246,9 +251,14 @@ class chase_search : public warthog::search
                             expand(current, bopen_, bexpander_, fexpander_, 
                                     pi_.target_id_, bwd_norelax_, 
                                     bwd_core_lb, sol);
-                            bwd_search_mask  = (~!!bopen_->size()) + 1; // 2s
                         }
-                        search_direction = 1 & fwd_search_mask;
+                        // switch directions
+                        if(fopen_->size() > 0)  
+                        { search_direction = 1; }
+                        else if(bopen_->size() > 0) 
+                        { search_direction = 2; }
+                        else
+                        { search_direction = 0; } 
                         break; 
                     }
                 }
@@ -328,15 +338,19 @@ class chase_search : public warthog::search
                     {
                         // phase 2 complete
                         #ifndef NDEBUG
-                        if(best_cost_ != warthog::INF)
+                        if(pi_.verbose_)
                         {
-                            std::cerr 
-                                << "provably-best solution found; "
-                                << "cost=" << best_cost_ << std::endl;
-                        }
-                        else
-                        {
-                            std::cerr << "no solution exists" << std::endl;
+                            if(best_cost_ != warthog::INF)
+                            {
+                                std::cerr 
+                                    << "provably-best solution found; "
+                                    << "cost=" << best_cost_ << std::endl;
+                            }
+                            else
+                            {
+                                std::cerr 
+                                    << "no solution exists" << std::endl;
+                            }
                         }
                         #endif
                         break; 
