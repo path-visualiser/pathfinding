@@ -216,6 +216,7 @@ class search_node
             }
             out << " g: "<<g_ <<" f: "<<this->get_f() 
             << " expanded: " << get_expanded() << " " 
+            << " searchid: " << searchid_ 
             << " pdir: "<< get_pdir() << " ";
 		}
 
