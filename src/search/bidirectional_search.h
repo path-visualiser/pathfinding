@@ -79,6 +79,17 @@ class bidirectional_search : public warthog::search
                 reconstruct_path(sol);
             }
             cleanup();
+
+            #ifndef NDEBUG
+            if(pi_.verbose_)
+            {
+                std::cerr << "path: \n";
+                for(uint32_t i = 0; i < sol.path_.size(); i++)
+                {
+                    std::cerr << sol.path_.at(i) << std::endl;
+                }
+            }
+            #endif
         }
 
         size_t
@@ -119,19 +130,21 @@ class bidirectional_search : public warthog::search
                 w_ = tmp;
             }
 
-            warthog::search_node* current = w_;
+            warthog::search_node* current = v_;
+            while(current)
+            {
+               sol.path_.push_back(current->get_id());
+               current = current->get_parent();
+            }
+            std::reverse(sol.path_.begin(), sol.path_.end());
+
+            current = w_->get_parent();
             while(current)
             {  
                sol.path_.push_back(current->get_id());
                current = current->get_parent();
             }
 
-            current = v_->get_parent();
-            while(current)
-            {
-               sol.path_.push_back(current->get_id());
-               current = current->get_parent();
-            }
         }
 
         // modify this function to balance the search
@@ -174,6 +187,14 @@ class bidirectional_search : public warthog::search
             v_ = w_ = 0;
             forward_next_ = false;
 
+            // generate the start and target nodes. also, we update the 
+            // problem instance with internal ids (makes debugging easier)
+            warthog::search_node *start, *target;
+            start = fexpander_->generate_start_node(&pi_);
+            target = bexpander_->generate_target_node(&pi_);
+            pi_.start_id_ = start->get_id();
+            pi_.target_id_ = target->get_id();
+
             #ifndef NDEBUG
             if(pi_.verbose_)
             {
@@ -183,14 +204,6 @@ class bidirectional_search : public warthog::search
             }
             #endif
 
-
-            // generate the start and target nodes. also, we update the 
-            // problem instance with internal ids (makes debugging easier)
-            warthog::search_node *start, *target;
-            start = fexpander_->generate_start_node(&pi_);
-            target = bexpander_->generate_target_node(&pi_);
-            pi_.start_id_ = start->get_id();
-            pi_.target_id_ = target->get_id();
 
             // compute an initial priority for both the start and target
             start->init(pi_.instance_id_, 0, 0, 
@@ -308,16 +321,6 @@ class bidirectional_search : public warthog::search
                 uint32_t tmp_targetid, 
                 warthog::solution& sol)
         {
-            // target test
-            if(current->get_id() == tmp_targetid) 
-            {
-                best_cost_ = current->get_g();
-                v_ = current;
-                w_ = 0;
-                return;
-            }
-
-            // target not found yet; expand as normal
             current->set_expanded(true);
             expander->expand(current, &pi_);
             sol.nodes_expanded_++;

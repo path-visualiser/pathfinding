@@ -86,6 +86,17 @@ class chase_search : public warthog::search
                 reconstruct_path(sol);
             }
             cleanup();
+
+            #ifndef NDEBUG
+            if(pi_.verbose_)
+            {
+                std::cerr << "path: \n";
+                for(uint32_t i = 0; i < sol.path_.size(); i++)
+                {
+                    std::cerr << sol.path_.at(i) << std::endl;
+                }
+            }
+            #endif
         }
             
         size_t
@@ -110,8 +121,8 @@ class chase_search : public warthog::search
         // CHASE-specific stuff
         uint32_t phase_;
         uint32_t max_phase1_rank_;
-        std::vector<warthog::search_node*> fwd_norelax;
-        std::vector<warthog::search_node*> bwd_norelax;
+        std::vector<warthog::search_node*> fwd_norelax_;
+        std::vector<warthog::search_node*> bwd_norelax_;
 
         // v is the section of the path in the forward
         // direction and w is the section of the path
@@ -132,30 +143,21 @@ class chase_search : public warthog::search
                 w_ = tmp;
             }
 
-            warthog::search_node* current = w_;
+            warthog::search_node* current = v_;
+            while(current)
+            {
+               sol.path_.push_back(current->get_id());
+               current = current->get_parent();
+            }
+            std::reverse(sol.path_.begin(), sol.path_.end());
+
+            current = w_->get_parent();
             while(current)
             {  
                sol.path_.push_back(current->get_id());
                current = current->get_parent();
             }
 
-            current = v_->get_parent();
-            while(current)
-            {
-               sol.path_.push_back(current->get_id());
-               current = current->get_parent();
-            }
-        }
-
-
-        // modify this function to balance the search
-        // by default the search expands one node in
-        // each direction then switches to the other direction
-        bool
-        forward_next()
-        {
-            forward_next_ = !forward_next_;
-            return forward_next_;
         }
 
         void 
@@ -167,10 +169,16 @@ class chase_search : public warthog::search
             // init
             best_cost_ = warthog::INF;
             v_ = w_ = 0;
-            fwd_norelax.clear();
-            bwd_norelax.clear();
             forward_next_ = true;
+            fwd_norelax_.clear();
+            bwd_norelax_.clear();
 
+            warthog::search_node *start, *target;
+            start = fexpander_->generate_start_node(&pi_);
+            target = bexpander_->generate_target_node(&pi_);
+            pi_.start_id_ = start->get_id();
+            pi_.target_id_ = target->get_id();
+            
             #ifndef NDEBUG
             if(pi_.verbose_)
             {
@@ -180,139 +188,165 @@ class chase_search : public warthog::search
             }
             #endif
 
-            warthog::search_node *start, *goal;
-            start = fexpander_->generate_start_node(&pi_);
-            goal = bexpander_->generate_target_node(&pi_);
-
+            // initialise the start and target
             start->init(pi_.instance_id_, 0, 0, 
                     heuristic_->h(pi_.start_id_, pi_.target_id_));
-            fopen_->push(start);
-
-            goal->init(pi_.instance_id_, 0, 0, 
+            target->init(pi_.instance_id_, 0, 0, 
                     heuristic_->h(pi_.start_id_, pi_.target_id_));
-            bopen_->push(goal);
 
-            // interleave search; we terminate when the best lower bound
-            // is larger than the cost of the best solution so far (or when
-            // we exhaust both open lists)
-            //
-            // NB: in a standard formulation we can terminate when either
-            // open list is exhausted. however in a more general context
-            // bi-directional search might choose to ignore an edge so it
-            // can be explored in the opposite direction. thus one open list
-            // can be exhausted and it still makes sense to continue the
-            // search. such an algorithm might be more efficient
-            // (e.g. CH with arc flags) 
-            warthog::search_node *ftop = 0, *btop = 0;
+            // these variables help interleave the search, decide when to
+            // switch phases and when to terminate
             phase_ = 1;
             bool cannot_improve = false;
+            double fwd_core_lb = DBL_MAX;
+            double bwd_core_lb = DBL_MAX;
+            uint32_t fwd_search_mask = UINT32_MAX;
+            uint32_t bwd_search_mask = UINT32_MAX;
+            uint32_t search_direction = 1;
+
+            // search begin
+            fopen_->push(start);
+            bopen_->push(target);
             while(true)
             {
-                if(cannot_improve || !(fopen_->size() || bopen_->size()))
+                // expand something
+                switch(search_direction)
+                {
+                    case 0:
+                    {
+                        cannot_improve = true;
+                        break;
+                    }
+                    case 1:
+                    {
+                        warthog::search_node* current = fopen_->pop();
+                        if(current->get_f() >= best_cost_) // terminate early
+                        {
+                            fwd_search_mask = 0; // fwd search finished
+                        }
+                        else
+                        {
+                            expand(current, fopen_, fexpander_, bexpander_, 
+                                    pi_.target_id_, fwd_norelax_, 
+                                    fwd_core_lb, sol);
+                            fwd_search_mask  = (~!!fopen_->size()) + 1; // 2s
+                        }
+                        search_direction = 2 & bwd_search_mask;
+                        break;
+                    }
+                    case 2:
+                    {
+                        warthog::search_node* current = bopen_->pop();
+                        if(current->get_f() >= best_cost_) // terminate early
+                        {
+                            bwd_search_mask = 0; // bwd search finished
+                        }
+                        else
+                        {
+                            expand(current, bopen_, bexpander_, fexpander_, 
+                                    pi_.target_id_, bwd_norelax_, 
+                                    bwd_core_lb, sol);
+                            bwd_search_mask  = (~!!bopen_->size()) + 1; // 2s
+                        }
+                        search_direction = 1 & fwd_search_mask;
+                        break; 
+                    }
+                }
+                if(pi_.verbose_)
+                {
+                    std::cerr 
+                        << "best_cost " << best_cost_ 
+                        << " fwd_ub: " << fwd_core_lb 
+                        << " bwd_ub: " << bwd_core_lb
+                        << std::endl;
+                }
+
+
+                if(cannot_improve)
                 {
                     if(phase_ == 1)
                     {
-                        for(uint32_t i = 0; i < fwd_norelax.size(); i++)
+                        uint32_t fwd_lower_bound = 
+                            std::min(fwd_core_lb, fopen_->size() > 0 ?  
+                                        fopen_->peek()->get_f() : DBL_MAX);
+
+                        uint32_t bwd_lower_bound = 
+                            std::min(bwd_core_lb, bopen_->size() > 0 ?  
+                                        bopen_->peek()->get_f() : DBL_MAX);
+
+                        uint32_t best_bound = 
+                            std::min(fwd_lower_bound, bwd_lower_bound);
+                        
+                        // early terminate; optimal path does not involve
+                        // any nodes from the core 
+                        if(best_bound >= best_cost_)
                         {
-                            fopen_->push(fwd_norelax.at(i));
+                            #ifndef NDEBUG
+                            if(pi_.verbose_)
+                            {
+                                std::cerr 
+                                    << "provably-best solution found; "
+                                    << "cost=" << best_cost_ << std::endl;
+                            }
+                            #endif
+                            break; 
                         }
-                        for(uint32_t i = 0; i < bwd_norelax.size(); i++)
+
+                        // early terminate if we can't reach the core
+                        // in both directions
+                        if(fwd_core_lb == DBL_MAX || bwd_core_lb == DBL_MAX)
+                        { break; }
+                        
+
+                        // both directions can reach the core; time for phase2
+                        fopen_->clear();
+                        bopen_->clear();
+                        for(uint32_t i = 0; i < fwd_norelax_.size(); i++)
                         {
-                            bopen_->push(bwd_norelax.at(i));
+                            fopen_->push(fwd_norelax_.at(i));
                         }
-                        phase_++;
+                        for(uint32_t i = 0; i < bwd_norelax_.size(); i++)
+                        {
+                            bopen_->push(bwd_norelax_.at(i));
+                        }
+                         
+                        // reset variables that control the search
+                        phase_ = 2;
                         cannot_improve = false;
-#ifndef NDEBUG
-                    if(pi_.verbose_)
-                    {
-                        std::cerr << "=== PHASE2 ===" << std::endl;
-                    }
-#endif
+                        fwd_search_mask = bwd_search_mask = UINT32_MAX;
+                        fwd_core_lb = bwd_core_lb = DBL_MAX;
+                        search_direction = 1;
 
-                    }
-                    else { break; }  // no solution
-                }
-
-                if(fopen_->size() > 0) { ftop = fopen_->peek(); } 
-                if(bopen_->size() > 0) { btop = bopen_->peek(); } 
-
-                // the way we calculate the lower-bound on solution cost 
-                // differs when we have a heuristic available vs not.
-        //        uint32_t best_bound_ = dijkstra_ ? 
-        //            // no heuristic
-        //            (ftop->get_g() + btop->get_g()) : 
-        //            // with a heuristic
-        //            (std::min( 
-        //                ftop->get_f(), btop->get_f()));
-                uint32_t best_bound = std::min( 
-                    ftop->get_f(), btop->get_f());
-
-                // terminate if we cannot improve the best solution found so far
-                if(best_bound > best_cost_)
-                {
-#ifndef NDEBUG
-                    if(pi_.verbose_)
-                    {
-                        std::cerr << "provably-best solution found; cost=" << 
-                            best_cost_ << std::endl;
-                    }
-#endif
-                    break;
-                }
-
-                // ok, we still have hope. let's keep expanding. 
-                if(forward_next())
-                {
-                    if(ftop->get_f() < best_cost_ && fopen_->size()) 
-                    {
-                        warthog::search_node* current = fopen_->pop();
-                        expand(current, fopen_, fexpander_, bexpander_, 
-                                pi_.target_id_, fwd_norelax, sol);
-                    }
-                    else if(btop->get_f() < best_cost_ && bopen_->size())
-                    {
-                        // we can't improve the best solution in the forward
-                        // direction so we ignore the interleave policy and 
-                        // expand a node in the backward direction instead
-                        warthog::search_node* current = bopen_->pop();
-                        expand(current, bopen_, bexpander_, fexpander_, 
-                                pi_.start_id_, bwd_norelax, sol);
+                        #ifndef NDEBUG
+                        if(pi_.verbose_)
+                        {
+                            std::cerr << "=== PHASE2 ===" << std::endl;
+                        }
+                        #endif
                     }
                     else 
                     {
-                        cannot_improve = true;
-                        // search is finished in both directions
-                    }
-                }
-                else 
-                {
-                    if(btop->get_f() < best_cost_ && bopen_->size())
-                    {
-                        warthog::search_node* current = bopen_->pop();
-                        expand(current, bopen_, bexpander_, fexpander_, 
-                                pi_.start_id_, bwd_norelax, sol);
-                    }
-                    else if(ftop->get_f() < best_cost_ && fopen_->size())
-                    {
-                        // we can't improve the best solution in the backward
-                        // direction so we ignore the interleave policy and 
-                        // expand a node in the forward direction instead
-                        warthog::search_node* current = fopen_->pop();
-                        expand(current, fopen_, fexpander_, bexpander_, 
-                                pi_.target_id_, fwd_norelax, sol);
-                    }
-                    else
-                    {
-                        // search is finished in both directions
-                        cannot_improve = true;
-                    }
+                        // phase 2 complete
+                        #ifndef NDEBUG
+                        if(best_cost_ != warthog::INF)
+                        {
+                            std::cerr 
+                                << "provably-best solution found; "
+                                << "cost=" << best_cost_ << std::endl;
+                        }
+                        else
+                        {
+                            std::cerr << "no solution exists" << std::endl;
+                        }
+                        #endif
+                        break; 
+                    } 
                 }
             }
 
-            assert(best_cost_ != warthog::INF || (v_ == 0 && w_ == 0));
-
 			mytimer.stop();
 			sol.time_elapsed_micro_= mytimer.elapsed_time_micro();
+            assert(best_cost_ != warthog::INF || (v_ == 0 && w_ == 0));
         }
 
         void
@@ -320,20 +354,12 @@ class chase_search : public warthog::search
                 warthog::pqueue* open,
                 warthog::ch_expansion_policy* expander,
                 warthog::ch_expansion_policy* reverse_expander, 
-                uint32_t tmp_goalid,
+                uint32_t tmp_targetid,
                 std::vector<warthog::search_node*>& norelax, 
+                double&  norelax_distance_min,
                 warthog::solution& sol)
         {
-            // goal test
-            if(current->get_id() == tmp_goalid) 
-            {
-                best_cost_ = current->get_g();
-                v_ = current;
-                w_ = 0;
-                return;
-            }
-
-            // goal not found yet; expand as normal
+            // target not found yet; expand as normal
             current->set_expanded(true);
             expander->expand(current, &pi_);
             sol.nodes_expanded_++;
@@ -346,7 +372,7 @@ class chase_search : public warthog::search
                 std::cerr 
                     << sol.nodes_expanded_ 
                     << ". expanding " 
-                    << (pi_.target_id_ == tmp_goalid ? "(f)" : "(b)")
+                    << (&*open == &*fopen_ ? "(f)" : "(b)")
                     << " ("<<x<<", "<<y<<")...";
                 current->print(std::cerr);
                 std::cerr << std::endl;
@@ -427,6 +453,11 @@ class chase_search : public warthog::search
                         if(gval < n->get_g())
                         {
                             n->relax(gval, current);
+                            if(gval < norelax_distance_min)
+                            {
+                                norelax_distance_min = gval; 
+                            }
+
                             #ifndef NDEBUG
                             if(pi_.verbose_)
                             {
@@ -445,10 +476,9 @@ class chase_search : public warthog::search
                     {
                         // add a new node to the fringe
                         sol.nodes_inserted_++;
-                        n->init(current->get_search_id(), 
-                                current, 
-                                gval,
-                                gval + heuristic_->h(n->get_id(), tmp_goalid));
+                        n->init(current->get_search_id(), current, gval,
+                                gval + 
+                                heuristic_->h(n->get_id(), tmp_targetid));
 
                         if( phase_ == 2 || 
                             expander->get_rank(n->get_id()) < max_phase1_rank_)
@@ -458,6 +488,11 @@ class chase_search : public warthog::search
                         else
                         {
                             norelax.push_back(n);
+                            if(gval < norelax_distance_min)
+                            {
+                                norelax_distance_min = gval; 
+                            }
+
                             #ifndef NDEBUG
                             if(pi_.verbose_)
                             {
