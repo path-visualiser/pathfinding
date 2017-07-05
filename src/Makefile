@@ -19,7 +19,8 @@ DEV_CFLAGS = -g -ggdb -O0
 PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
-  CC = clang++
+  #CC = clang++
+  CC = g++
   CFLAGS += -DOS_MAC
 else
   CC = g++

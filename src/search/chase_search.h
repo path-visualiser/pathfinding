@@ -200,8 +200,8 @@ class chase_search : public warthog::search
             bool cannot_improve = false;
             double fwd_core_lb = DBL_MAX;
             double bwd_core_lb = DBL_MAX;
-            uint32_t fwd_search_mask = UINT32_MAX;
-            uint32_t bwd_search_mask = UINT32_MAX;
+            //uint32_t fwd_search_mask = UINT32_MAX;
+            //uint32_t bwd_search_mask = UINT32_MAX;
             uint32_t search_direction = 1;
 
             // search begin
@@ -222,7 +222,7 @@ class chase_search : public warthog::search
                         warthog::search_node* current = fopen_->pop();
                         if(current->get_f() >= best_cost_) // terminate early
                         {
-                            fwd_search_mask = 0; // fwd search finished
+                            //fwd_search_mask = 0; // fwd search finished
                         }
                         else
                         {
@@ -244,7 +244,7 @@ class chase_search : public warthog::search
                         warthog::search_node* current = bopen_->pop();
                         if(current->get_f() >= best_cost_) // terminate early
                         {
-                            bwd_search_mask = 0; // bwd search finished
+                            //bwd_search_mask = 0; // bwd search finished
                         }
                         else
                         {
@@ -323,7 +323,7 @@ class chase_search : public warthog::search
                         // reset variables that control the search
                         phase_ = 2;
                         cannot_improve = false;
-                        fwd_search_mask = bwd_search_mask = UINT32_MAX;
+                        //fwd_search_mask = bwd_search_mask = UINT32_MAX;
                         fwd_core_lb = bwd_core_lb = DBL_MAX;
                         search_direction = 1;
 
@@ -471,19 +471,6 @@ class chase_search : public warthog::search
                             {
                                 norelax_distance_min = gval; 
                             }
-
-                            #ifndef NDEBUG
-                            if(pi_.verbose_)
-                            {
-                                int32_t x, y;
-                                expander->get_xy(n->get_id(), x, y);
-                                std::cerr << " phase1 norelax update "
-                                    << "(edgecost="<< cost_to_n<<") "
-                                    << "("<<x<<", "<<y<<")...";
-                                n->print(std::cerr);
-                                std::cerr << std::endl;
-                            }
-                            #endif
                         }
                     }
                     else
@@ -506,22 +493,25 @@ class chase_search : public warthog::search
                             {
                                 norelax_distance_min = gval; 
                             }
-
-                            #ifndef NDEBUG
-                            if(pi_.verbose_)
-                            {
-                                std::cerr << " phase1 norelax;";
-                            }
-                            #endif
                         }
                     }
 
                     #ifndef NDEBUG
                     if(pi_.verbose_)
                     {
+                        if( phase_ == 1 &&
+                            expander->get_rank(n->get_id()) < max_phase1_rank_)
+                        {
+                            std::cerr << "phase2-list ";
+                        }
+                        else
+                        {
+                            std::cerr << "generating ";
+                        }
+
                         int32_t x, y;
                         expander->get_xy(n->get_id(), x, y);
-                        std::cerr << " generating "
+                        std::cerr 
                             << "(edgecost=" << cost_to_n<<") " 
                             << "("<<x<<", "<<y<<")...";
                         n->print(std::cerr);
@@ -538,7 +528,7 @@ class chase_search : public warthog::search
                 {
                     if((current->get_g() + cost_to_n + reverse_n->get_g()) < best_cost_)
                     {
-                        v_ = current;
+                        v_ = n;
                         w_ = reverse_n;
                         best_cost_ = current->get_g() + cost_to_n + reverse_n->get_g();
 
