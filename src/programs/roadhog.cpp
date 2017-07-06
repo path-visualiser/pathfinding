@@ -418,34 +418,99 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
+//void
+//run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+//        std::string alg_name, std::string gr, std::string co)
+//{
+//    std::string orderfile = cfg.get_param_value("input");
+//
+//    // load up the graph 
+//    warthog::graph::planar_graph g;
+//    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+//    {
+//        std::cerr << "err; could not load gr or co input files " 
+//                  << "(one or both)\n";
+//        return;
+//    }
+//
+//    // load up the node order
+//    std::vector<uint32_t> order;
+//    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+//    {
+//        std::cerr << "err; could not load contraction order file\n";
+//        return;
+//    }
+//
+//    std::cerr << "preparing to search\n";
+//    warthog::zero_heuristic h;
+//    warthog::ch_expansion_policy fexp(&g, &order);
+//    warthog::ch_expansion_policy bexp (&g, &order, true);
+//    warthog::chase_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+//
+//    run_experiments(&alg, alg_name, parser, std::cout);
+//}
+
 void
 run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
     std::string orderfile = cfg.get_param_value("input");
-
-    // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    std::string arclabels_file = cfg.get_param_value("input");
+    std::string partition_file = cfg.get_param_value("input");
+    if(orderfile == "" || arclabels_file == "" || partition_file == "")
     {
-        std::cerr << "err; could not load gr or co input files " 
-                  << "(one or both)\n";
+        std::cerr << "err; insufficient input parameters for --alg "
+                  << alg_name << ". required, in order:\n"
+                  << " --input [gr file] [co file] "
+                  << " [contraction order file] [arclabels file] "
+                  << " [graph partition file]\n";
         return;
     }
 
     // load up the node order
     std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    bool sort_by_id = true;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
     {
-        std::cerr << "err; could not load contraction order file\n";
+        std::cerr << "err; could not load node order input file\n";
         return;
     }
 
+    // load up the node partition info
+    std::vector<uint32_t> part;
+    if(!warthog::helpers::load_integer_labels_dimacs(
+            partition_file.c_str(), part))
+    {
+        std::cerr << "err; could not load graph partition input file\n";
+        return;
+    }
+
+    // load up the graph 
+    warthog::graph::planar_graph g;
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
+
+    // load up the arc-flags
+    std::shared_ptr<warthog::label::af_labelling> afl(
+        warthog::label::af_labelling::load(
+            arclabels_file.c_str(), &g, &part));
+    if(!afl.get())
+    {
+        std::cerr << "err; could not load arcflags file\n";
+        return;
+    }
+    warthog::af_filter filter(afl.get());
+
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
-    warthog::ch_expansion_policy fexp(&g, &order);
-    warthog::ch_expansion_policy bexp (&g, &order, true);
-    warthog::chase_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+    warthog::chaf_expansion_policy fexp(&g, &order, &filter);
+    warthog::chaf_expansion_policy bexp (&g, &order, &filter, true);
+    warthog::chase_search<
+        warthog::chaf_expansion_policy, warthog::zero_heuristic> 
+        alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -505,13 +570,15 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::af_filter filter(afl.get());
 
     std::cerr << "preparing to search\n";
-    //warthog::zero_heuristic h;
-    warthog::euclidean_heuristic h(&g);
     warthog::chaf_expansion_policy fexp(&g, &order, &filter);
     warthog::chaf_expansion_policy bexp (&g, &order, &filter, true);
-    //warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
-    warthog::bidirectional_search<warthog::euclidean_heuristic> 
+    warthog::zero_heuristic h;
+    warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
+
+    //warthog::euclidean_heuristic h(&g);
+    //warthog::bidirectional_search<warthog::euclidean_heuristic> 
+    //   alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1512,13 +1579,13 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_ch(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "ch-astar")
-    {
-        run_ch_astar(cfg, parser, alg_name, gr, co);
-    }
     else if(alg_name == "chase")
     {
         run_chase(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "ch-astar")
+    {
+        run_ch_astar(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "chaf")
     {

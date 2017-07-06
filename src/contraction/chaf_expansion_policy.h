@@ -61,6 +61,15 @@ class chaf_expansion_policy : public  expansion_policy
         virtual size_t
         mem();
 
+        inline uint32_t
+        get_num_nodes() { return g_->get_num_nodes(); }
+
+        inline uint32_t
+        get_rank(uint32_t id)
+        {
+            return rank_->at(id);
+        }
+
     private:
         bool backward_;
         warthog::graph::planar_graph* g_;
@@ -68,12 +77,6 @@ class chaf_expansion_policy : public  expansion_policy
         warthog::ch::search_direction sd_;
         warthog::af_filter* filter_;
         uint32_t search_id_;
-
-        inline uint32_t
-        get_rank(uint32_t id)
-        {
-            return rank_->at(id);
-        }
 
 };
 
