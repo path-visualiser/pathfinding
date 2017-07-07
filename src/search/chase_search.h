@@ -19,7 +19,7 @@
 //
 
 #include "constants.h"
-#include "ch_expansion_policy.h"
+//#include "expansion_policy.h"
 #include "planar_graph.h"
 #include "pqueue.h"
 #include "search.h"
@@ -47,14 +47,11 @@ class search_node;
 typedef double (* heuristicFn)
 (uint32_t nodeid, uint32_t targetid);
 
-template<class H>
+template<class E, class H>
 class chase_search : public warthog::search
 {
     public:
-        chase_search(
-                warthog::ch_expansion_policy* fexp,
-                warthog::ch_expansion_policy* bexp,
-                H* heuristic) 
+        chase_search(E* fexp, E* bexp, H* heuristic) 
             : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
             fopen_ = new pqueue(512, true);
@@ -112,8 +109,8 @@ class chase_search : public warthog::search
     private:
         warthog::pqueue* fopen_;
         warthog::pqueue* bopen_;
-        warthog::ch_expansion_policy* fexpander_;
-        warthog::ch_expansion_policy* bexpander_;
+        E* fexpander_;
+        E* bexpander_;
         H* heuristic_;
         bool dijkstra_;
         bool forward_next_;
@@ -366,8 +363,8 @@ class chase_search : public warthog::search
         void
         expand( warthog::search_node* current,
                 warthog::pqueue* open,
-                warthog::ch_expansion_policy* expander,
-                warthog::ch_expansion_policy* reverse_expander, 
+                E* expander,
+                E* reverse_expander, 
                 uint32_t tmp_targetid,
                 std::vector<warthog::search_node*>& norelax, 
                 double&  norelax_distance_min,
@@ -500,7 +497,7 @@ class chase_search : public warthog::search
                     if(pi_.verbose_)
                     {
                         if( phase_ == 1 &&
-                            expander->get_rank(n->get_id()) < max_phase1_rank_)
+                            expander->get_rank(n->get_id()) >= max_phase1_rank_)
                         {
                             std::cerr << "phase2-list ";
                         }
