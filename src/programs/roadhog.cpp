@@ -16,6 +16,7 @@
 #include "ch_expansion_policy.h"
 #include "chaf_expansion_policy.h"
 #include "chafbb_expansion_policy.h"
+#include "chbb_expansion_policy.h"
 #include "chase_search.h"
 #include "constants.h"
 #include "contraction.h"
@@ -83,7 +84,7 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tch, ch-astar, chase, chaf, chaf-bb, ch-cpg\n"
+    << "\tch, ch-astar, chase, chaf, chbb, chaf-bb, ch-cpg\n"
     << "\tfch, fchx, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
@@ -511,6 +512,62 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::chase_search<
         warthog::chaf_expansion_policy, warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_chbb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    std::string arclabels_file = cfg.get_param_value("input");
+    if(orderfile == "" || arclabels_file == "")
+    {
+        std::cerr << "err; insufficient input parameters for --alg "
+                  << alg_name << ". required, in order:\n"
+                  << " --input [gr file] [co file] "
+                  << " [contraction order file] [arclabels file]\n";
+        return;
+    }
+
+    // load up the node order
+    std::vector<uint32_t> order;
+    bool sort_by_id = true;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+
+    // load up the graph 
+    warthog::graph::planar_graph g;
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
+
+    // load up the arc labels
+    std::shared_ptr<warthog::label::bb_labelling> bbl
+        (warthog::label::bb_labelling::load(arclabels_file.c_str(), &g));
+    if(!bbl.get())
+    {
+        std::cerr << "err; could not load arcflags file\n";
+        return;
+    }
+    warthog::bb_filter filter(bbl.get());
+
+    std::cerr << "preparing to search\n";
+    warthog::chbb_expansion_policy fexp(&g, &order, &filter);
+    warthog::chbb_expansion_policy bexp (&g, &order, &filter, true);
+    warthog::zero_heuristic h;
+    warthog::bidirectional_search<warthog::zero_heuristic> 
+        alg(&fexp, &bexp, &h);
+
+    //warthog::euclidean_heuristic h(&g);
+    //warthog::bidirectional_search<warthog::euclidean_heuristic> 
+    //   alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -951,7 +1008,7 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             << "err; could not load gr or co input files (one or both)\n";
         return;
     }
-    // load up the arc-flags
+    // load up the arc labels
     std::shared_ptr<warthog::label::bb_labelling> bbl
         (warthog::label::bb_labelling::load(arclabels_file.c_str(), &g));
     if(!bbl.get())
@@ -1586,6 +1643,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "ch-astar")
     {
         run_ch_astar(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "chbb")
+    {
+        run_chbb(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "chaf")
     {

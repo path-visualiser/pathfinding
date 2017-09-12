@@ -1,12 +1,12 @@
-#ifndef WARTHOG_CHAFBB_EXPANSION_POLICY_H
-#define WARTHOG_CHAFBB_EXPANSION_POLICY_H
+#ifndef WARTHOG_CHBB_EXPANSION_POLICY_H
+#define WARTHOG_CHBB_EXPANSION_POLICY_H
 
-// contraction/chafbb_expansion_policy.h
+// contraction/chbb_expansion_policy.h
 //
-// Contraction hierarchies + arc flags + bounding boxes
+// contraction hierarchies + bounding boxes
 //
 // @author: dharabor
-// @created: 2016-05-10
+// @created: 2016-09-11
 //
 
 #include "contraction.h"
@@ -17,15 +17,11 @@
 
 namespace warthog{
 
-namespace label
-{
-class bbaf_labelling;
-}
-
+class bb_filter;
 class problem_instance;
 class search_node;
 
-class chafbb_expansion_policy : public  expansion_policy
+class chbb_expansion_policy : public  expansion_policy
 {
     public:
         // NB: @param rank: the contraction ordering used to create
@@ -41,14 +37,14 @@ class chafbb_expansion_policy : public  expansion_policy
         // in the up graph all successors have a rank larger than the
         // current node (this is the default). in the down graph, all 
         // successors have a rank smaller than the current node 
-        chafbb_expansion_policy(warthog::graph::planar_graph* g, 
+        chbb_expansion_policy(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* rank, 
-                warthog::label::bbaf_labelling* labelling,
+                warthog::bb_filter* filter,
                 bool backward=false,
                 warthog::ch::search_direction sd = warthog::ch::UP);
 
         virtual 
-        ~chafbb_expansion_policy() { }
+        ~chbb_expansion_policy() { }
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
@@ -65,12 +61,8 @@ class chafbb_expansion_policy : public  expansion_policy
         virtual size_t
         mem();
 
-    private:
-        bool backward_;
-        warthog::graph::planar_graph* g_;
-        std::vector<uint32_t>* rank_;
-        warthog::ch::search_direction sd_;
-        warthog::label::bbaf_labelling* lab_;
+        inline uint32_t
+        get_num_nodes() { return g_->get_num_nodes(); }
 
         inline uint32_t
         get_rank(uint32_t id)
@@ -78,13 +70,13 @@ class chafbb_expansion_policy : public  expansion_policy
             return rank_->at(id);
         }
 
-        bool
-        filter(uint32_t node_id, uint32_t edge_idx, bool down);
-
-        uint32_t t_byte_;
-        uint32_t t_bitmask_;
-        int32_t tx_, ty_;
-
+    private:
+        bool backward_;
+        warthog::graph::planar_graph* g_;
+        std::vector<uint32_t>* rank_;
+        warthog::ch::search_direction sd_;
+        warthog::bb_filter* filter_;
+        uint32_t search_id_;
 
 };
 

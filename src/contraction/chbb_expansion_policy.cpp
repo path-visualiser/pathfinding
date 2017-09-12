@@ -1,13 +1,13 @@
-#include "af_filter.h"
-#include "chaf_expansion_policy.h"
+#include "bb_filter.h"
+#include "chbb_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
 #include "search_node.h"
 
-warthog::chaf_expansion_policy::chaf_expansion_policy(
+warthog::chbb_expansion_policy::chbb_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank, 
-        warthog::af_filter* filter,
+        warthog::bb_filter* filter,
         bool backward,
         warthog::ch::search_direction sd)
     : expansion_policy(g->get_num_nodes())
@@ -22,7 +22,7 @@ warthog::chaf_expansion_policy::chaf_expansion_policy(
 }
 
 void
-warthog::chaf_expansion_policy::expand(warthog::search_node* current,
+warthog::chbb_expansion_policy::expand(warthog::search_node* current,
         warthog::problem_instance* problem)
 {
     reset();
@@ -92,7 +92,7 @@ warthog::chaf_expansion_policy::expand(warthog::search_node* current,
 }
 
 size_t
-warthog::chaf_expansion_policy::mem()
+warthog::chbb_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + 
@@ -100,14 +100,14 @@ warthog::chaf_expansion_policy::mem()
 }
 
 void
-warthog::chaf_expansion_policy::get_xy(
+warthog::chbb_expansion_policy::get_xy(
         uint32_t node_id, int32_t& x, int32_t& y)
 {
     g_->get_xy(node_id, x, y);
 }
 
 warthog::search_node* 
-warthog::chaf_expansion_policy::generate_start_node(
+warthog::chbb_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
     uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
@@ -116,14 +116,17 @@ warthog::chaf_expansion_policy::generate_start_node(
 }
 
 warthog::search_node*
-warthog::chaf_expansion_policy::generate_target_node(
+warthog::chbb_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
+
     // update the filter with the new target location
     {
-        filter_->set_target(pi->target_id_);
+        int32_t tx, ty;
+        g_->get_xy(t_graph_id, tx, ty);
+        filter_->set_target_xy(tx, ty);
     }
     return generate(t_graph_id);
 }

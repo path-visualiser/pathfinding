@@ -76,8 +76,6 @@ class chaf_expansion_policy : public  expansion_policy
         std::vector<uint32_t>* rank_;
         warthog::ch::search_direction sd_;
         warthog::af_filter* filter_;
-        uint32_t search_id_;
-
 };
 
 }

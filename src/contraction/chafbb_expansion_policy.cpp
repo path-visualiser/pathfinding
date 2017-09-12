@@ -115,11 +115,6 @@ warthog::search_node*
 warthog::chafbb_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    if(pi->instance_id_ != search_id_)
-    {
-        search_id_ = pi->instance_id_;
-    }
-
     uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
 
