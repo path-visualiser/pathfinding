@@ -62,7 +62,7 @@ class bbaf_filter
         }
 
         inline void
-        set_goal(uint32_t goalid)
+        set_target(uint32_t goalid)
         {
             uint32_t t_part = lab_->get_partitioning()->at(goalid);
             t_byte_ = t_part >> 3;

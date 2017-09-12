@@ -495,15 +495,15 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the arc-flags
-    std::shared_ptr<warthog::label::af_labelling> afl(
+    std::shared_ptr<warthog::label::af_labelling> lab(
         warthog::label::af_labelling::load(
             arclabels_file.c_str(), &g, &part));
-    if(!afl.get())
+    if(!lab.get())
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::af_filter filter(afl.get());
+    warthog::af_filter filter(lab.get());
 
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
@@ -691,12 +691,13 @@ run_chaf_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
+    warthog::bbaf_filter filter(lab.get());
 
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
     //warthog::euclidean_heuristic h(&g);
-    warthog::chafbb_expansion_policy fexp(&g, &order, lab.get());
-    warthog::chafbb_expansion_policy bexp (&g, &order, lab.get(), true);
+    warthog::chafbb_expansion_policy fexp(&g, &order, &filter);
+    warthog::chafbb_expansion_policy bexp (&g, &order, &filter, true);
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
     //warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);

@@ -77,6 +77,6 @@ warthog::fch_af_expansion_policy::generate_target_node(
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
-    filter_->set_target(pi->target_id_);
+    filter_->set_target(t_graph_id);
     return generate(t_graph_id);
 }

@@ -123,7 +123,7 @@ warthog::chaf_expansion_policy::generate_target_node(
     if(t_graph_id == warthog::INF) { return 0; }
     // update the filter with the new target location
     {
-        filter_->set_target(pi->target_id_);
+        filter_->set_target(t_graph_id);
     }
     return generate(t_graph_id);
 }

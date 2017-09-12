@@ -100,10 +100,6 @@ warthog::fch_bbaf_expansion_policy::filter(
     warthog::label::bbaf_label& label 
         = lab_->get_label(node_id, edge_idx);
     bool retval = (label.flags_[t_byte_] & t_bitmask_);
-
-    if(down)
-    {
-        retval = retval && label.bbox_.contains(tx_, ty_);
-    }
+    retval = retval && label.bbox_.contains(tx_, ty_);
     return !retval; 
 }

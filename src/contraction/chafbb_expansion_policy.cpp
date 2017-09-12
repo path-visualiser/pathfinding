@@ -1,4 +1,4 @@
-#include "bbaf_labelling.h"
+#include "bbaf_filter.h"
 #include "chafbb_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
@@ -7,20 +7,16 @@
 warthog::chafbb_expansion_policy::chafbb_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank, 
-        warthog::label::bbaf_labelling* lab,
+        warthog::bbaf_filter* filter,
         bool backward,
         warthog::ch::search_direction sd)
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
     rank_ = rank;
-    lab_ = lab;
+    filter_ = filter;
     backward_ = backward;
     sd_ = sd;
-
-    t_byte_ = 0;
-    t_bitmask_ = 0;
-    tx_ = ty_ = 0;
 
     assert(g->get_num_nodes() == rank->size());
 }
@@ -73,7 +69,7 @@ warthog::chafbb_expansion_policy::expand(warthog::search_node* current,
                 assert(edge_index > -1 && edge_index < m->out_degree());
             }
 
-            if(!filter(from_id, edge_index, backward_))
+            if(!filter_->filter(from_id, edge_index))
             {
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
                 continue;
@@ -117,30 +113,9 @@ warthog::chafbb_expansion_policy::generate_target_node(
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
-
-    // update target info for ::filter
-    uint32_t t_part = lab_->get_partitioning()->at(t_graph_id);
-    t_byte_ = t_part >> 3;
-    t_bitmask_ = 1 << (t_part & 7);
-    lab_->get_graph()->get_xy(t_graph_id, tx_, ty_);
-
-    return generate(t_graph_id);
-}
-
-
-// customised filter function; similar to but slightly faster than 
-// using an explicit bbaf_filter object
-bool 
-warthog::chafbb_expansion_policy::filter(
-        uint32_t node_id, uint32_t edge_idx, bool down)
-{
-    warthog::label::bbaf_label& label 
-        = lab_->get_label(node_id, edge_idx);
-    bool retval = (label.flags_[t_byte_] & t_bitmask_);
-
-    if(down)
+    // update the filter with the new target location
     {
-        retval = retval && label.bbox_.contains(tx_, ty_);
+        filter_->set_target(t_graph_id);
     }
-    return !retval; 
+    return generate(t_graph_id);
 }
