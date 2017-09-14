@@ -83,7 +83,32 @@ class ch_expansion_policy : public  expansion_policy
         std::vector<uint32_t>* rank_;
         warthog::ch::search_direction sd_;
 
+        // we use function pointers to optimise away a 
+        // branching instruction when fetching successors
+        //warthog::graph::edge_iter fn_begin_iter_(warthog::graph::node* n);
+        //warthog::graph::edge_iter fn_end_iter_(warthog::graph::node* n);
 
+        typedef warthog::graph::edge_iter
+                (warthog::ch_expansion_policy::*chep_get_iter_fn) 
+                (warthog::graph::node* n);
+        chep_get_iter_fn fn_begin_iter_;
+        chep_get_iter_fn fn_end_iter_;
+
+        inline warthog::graph::edge_iter
+        get_fwd_begin_iter(warthog::graph::node* n) 
+        { return n->outgoing_begin(); }
+
+        inline warthog::graph::edge_iter
+        get_fwd_end_iter(warthog::graph::node* n) 
+        { return n->outgoing_end(); }
+
+        inline warthog::graph::edge_iter
+        get_bwd_begin_iter(warthog::graph::node* n) 
+        { return n->incoming_begin(); }
+
+        inline warthog::graph::edge_iter
+        get_bwd_end_iter(warthog::graph::node* n) 
+        { return n->incoming_end(); }
 };
 
 }

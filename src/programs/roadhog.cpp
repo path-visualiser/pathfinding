@@ -307,6 +307,15 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load contraction order file\n";
+        return;
+    }
+
+
     // load up the graph 
     warthog::graph::planar_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
@@ -315,14 +324,7 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << "(one or both)\n";
         return;
     }
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
+    warthog::ch::optimise_graph_for_bch(&g, &order);
 
     std::cerr << "preparing to search\n";
     warthog::ch_expansion_policy fexp(&g, &order);
@@ -344,20 +346,20 @@ run_ch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+
     // load up the graph 
     warthog::graph::planar_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
             << "err; could not load gr or co input files (one or both)\n";
-        return;
-    }
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load node order input file\n";
         return;
     }
 

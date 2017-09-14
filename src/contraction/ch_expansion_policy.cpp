@@ -13,7 +13,17 @@ warthog::ch_expansion_policy::ch_expansion_policy(
     g_ = g;
     rank_ = rank;
     backward_ = backward;
-    sd_ = sd;
+
+    if(backward_)
+    {
+        fn_begin_iter_ = &warthog::ch_expansion_policy::get_fwd_begin_iter;
+        fn_end_iter_ = &warthog::ch_expansion_policy::get_fwd_end_iter;
+    }
+    else
+    {
+        fn_begin_iter_ = &warthog::ch_expansion_policy::get_bwd_begin_iter;
+        fn_end_iter_ = &warthog::ch_expansion_policy::get_bwd_end_iter;
+    }
 }
 
 void
@@ -23,36 +33,21 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
     reset();
 
     uint32_t current_id = current->get_id();
-    uint32_t current_rank = get_rank(current_id);
     warthog::graph::node* n = g_->get_node(current_id);
    
     warthog::graph::edge_iter begin, end;
-    if(backward_)
-    {
-        begin = n->incoming_begin();
-        end = n->incoming_end();
-    }
-    else
-    {
-        begin = n->outgoing_begin();
-        end = n->outgoing_end();
-    }
+    begin = (this->*fn_begin_iter_)(n);
+    end = (this->*fn_end_iter_)(n);
 
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;
+        if(e.node_id_ >= g_->get_num_nodes())
+        {
+            std::cerr << "master...\n";
+        }
         assert(e.node_id_ < g_->get_num_nodes());
-
-        if((sd_ & warthog::ch::UP) && get_rank(e.node_id_) > current_rank)
-        {
-            this->add_neighbour(this->generate(e.node_id_), e.wt_);
-            continue;
-        }
-
-        if((sd_ & warthog::ch::DOWN) && get_rank(e.node_id_) < current_rank)
-        {
-             this->add_neighbour(this->generate(e.node_id_), e.wt_);
-        }
+        this->add_neighbour(this->generate(e.node_id_), e.wt_);
     }
 }
 

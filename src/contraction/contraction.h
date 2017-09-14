@@ -54,6 +54,19 @@ bool
 load_node_order(const char* filename, 
         std::vector<uint32_t>& order, bool lex_order=false);
 
+// The main algorithm for searching a contraction hierarhcy is bi-directional
+// Dijkstra search (BCH). This algorithm traverses the hierarchy as follows:
+// In the forward direction, it follows only up edges
+// In the backward direction, it follows only incoming down edges
+// In this function we prune away all other edges in order to speed up
+// search (there's no longer a need to filter on the fly other types of edges)
+//
+// @param g: the graph to be optimised
+// @param rank: the contraction order for the nodes of @param g
+void
+optimise_graph_for_bch(warthog::graph::planar_graph* g,
+        std::vector<uint32_t>* rank);
+
 void
 write_node_order(const char* filename, std::vector<uint32_t>& order);
 
