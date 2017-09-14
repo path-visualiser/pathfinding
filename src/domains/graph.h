@@ -204,19 +204,22 @@ class node
         inline edge_iter
         incoming_begin()
         {
-            return incoming_;
+            //return incoming_;
+            return (in_deg_ == 0 ? 0 : &incoming_[0]);
         }
 
         inline edge_iter
         incoming_end()
         {
-            return &incoming_[in_deg_];
+            //return &incoming_[in_deg_];
+            return (in_deg_ == 0 ? 0 : &incoming_[in_deg_]);
         }
 
         inline edge_iter
         outgoing_begin()
         {
-            return outgoing_;
+            return (out_deg_ == 0 ? 0 : &outgoing_[0]);
+            //return outgoing_;
         }
 
         inline edge_iter
@@ -330,8 +333,9 @@ class node
             return newcap;
         }
 
-        // delete an edge and shift the remaining edges
-        // to plug the hole
+        // remove an edge and shift the remaining edges
+        // to plug the hole 
+        // NB: doesn't free any memory!!
         inline void
         del_edge(warthog::graph::edge_iter elt, ECAP_T& deg, edge*& elts)
         {
@@ -346,6 +350,8 @@ class node
             }
         }
 
+        // add an edge to one of the collections (in or out) of a node
+        // NB: copy semantics
         inline warthog::graph::edge_iter
         add_edge(warthog::graph::edge& e, 
                 ECAP_T& max_elts, ECAP_T& deg, edge*& elts)
