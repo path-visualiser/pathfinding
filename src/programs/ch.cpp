@@ -20,6 +20,7 @@ help()
         "a given (currently, DIMACS-format only) input graph\n";
 	std::cerr << "valid parameters:\n"
 	<< "\t--order [ fixed | lazy ]\n"
+    << "\t--partial [1-100] (optional; percentage of nodes to contract)"
     << "\t--input [gr file] [co file] (IN THIS ORDER!!)\n"
 	<< "\t--verbose (optional)\n";
 }
@@ -41,6 +42,13 @@ contract_graph()
     // contract a graph and create a hierarchy
     warthog::graph::planar_graph g;
     std::vector<uint32_t> order;
+
+    std::string partial = cfg.get_param_value("partial");
+    uint32_t pct_nodes_to_contract = 100;
+    if(partial != "")
+    {
+        pct_nodes_to_contract = atoi(partial.c_str());
+    }
 
     // use an existing node order for contraction operations
     std::string order_type = cfg.get_param_value("order");
@@ -69,10 +77,18 @@ contract_graph()
         }
         warthog::ch::fixed_graph_contraction contractor(&g, &order);
         contractor.set_verbose(verbose);
+        contractor.set_partial_contraction_percentage(pct_nodes_to_contract);
         contractor.contract();
 
         // save the result
-        grfile.append(".ch");
+        if(pct_nodes_to_contract < 100)
+        {
+            grfile.append(".pch");
+        }
+        else
+        {
+            grfile.append(".ch");
+        }
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
         std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
         if(!ch_out.good())
@@ -92,17 +108,20 @@ contract_graph()
             return;
         }
         warthog::ch::lazy_graph_contraction contractor(&g);
+        contractor.set_partial_contraction_percentage(pct_nodes_to_contract);
         contractor.set_verbose(verbose);
         contractor.contract();
 
-        // save the order of contraction
-        contractor.get_order(order);
-        std::string orderfile = grfile + ".ooc";
-        std::cerr << "saving order to file " << orderfile << std::endl;
-        warthog::ch::write_node_order(orderfile.c_str(), order);
 
         // save the result
-        grfile.append(".ch");
+        if(pct_nodes_to_contract < 100)
+        {
+            grfile.append(".pch");
+        }
+        else
+        {
+            grfile.append(".ch");
+        }
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
         std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
         if(!ch_out.good())
@@ -111,6 +130,13 @@ contract_graph()
         }
         g.print_dimacs_gr(ch_out, 0, g.get_num_nodes());
         ch_out.close();
+
+        // save the order of contraction
+        contractor.get_order(order);
+        std::string orderfile = grfile + ".ooc";
+        std::cerr << "saving order to file " << orderfile << std::endl;
+        warthog::ch::write_node_order(orderfile.c_str(), order);
+
     }
     else
     {
@@ -129,7 +155,8 @@ int main(int argc, char** argv)
 	{
 		{"verbose", no_argument, &verbose, 1},
 		{"input",  required_argument, 0, 2},
-		{"order",  required_argument, 0, 1}
+		{"order",  required_argument, 0, 3},
+		{"partial",  required_argument, 0, 4}
 	};
 	cfg.parse_args(argc, argv, "-hvd:o:", valid_args);
 

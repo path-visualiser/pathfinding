@@ -10,6 +10,7 @@
 // @created: 2016-06-15
 //
 
+#include <algorithm> // max
 #include <cstring> // size_t
 #include <cstdint>
 
@@ -52,6 +53,12 @@ class graph_contraction
         bool 
         get_verbose() { return verbose_; } 
 
+        void
+        set_partial_contraction_percentage(uint32_t pct)
+        {
+           c_pct_ =  std::min<uint32_t>(pct, 100);
+        }
+
         virtual size_t
         mem();
 
@@ -79,6 +86,7 @@ class graph_contraction
     private:
         bool verbose_;
         bool done_;
+        uint32_t c_pct_;
 //        warthog::apriori_filter* filter_;
         warthog::graph::planar_graph* g_;
 };

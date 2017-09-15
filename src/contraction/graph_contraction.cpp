@@ -9,6 +9,7 @@ warthog::ch::graph_contraction::graph_contraction(
     //filter_ = new warthog::apriori_filter(g_->get_num_nodes());
     done_ = false;
     verbose_ = false;
+    c_pct_ = 100;
 }
 
 warthog::ch::graph_contraction::~graph_contraction()
@@ -22,10 +23,12 @@ warthog::ch::graph_contraction::contract()
     if(done_) { return; }
     done_ = true;
 
-    if(verbose_)
+    if(c_pct_ < 100)
     {
-        std::cerr << "contracting graph " << g_->get_filename() << std::endl;
+        std::cerr << "partially "
+                  << "("<<c_pct_<<"% of nodes) ";
     }
+    std::cerr << "contracting graph " << g_->get_filename() << std::endl;
     uint32_t edges_before = g_->get_num_edges();
 
     preliminaries();
@@ -35,7 +38,16 @@ warthog::ch::graph_contraction::contract()
 //    warthog::apriori_filter* filter = get_filter();
     for(uint32_t cid = next(); cid != warthog::INF; cid = next())
     {
-        std::cerr << "\rcontracting " << ++num_contractions << " /  " << total_nodes;
+        
+        uint32_t pct = (num_contractions / (double)g_->get_num_nodes()) * 100;
+        if(pct >= c_pct_)
+        { 
+            std::cerr << "\npartial contraction finished " 
+                      << "(processed "<< pct << "% of all nodes)";
+            break; 
+        }
+
+        std::cerr << "\r " << pct << "%; " << ++num_contractions << " /  " << total_nodes;
         if(verbose_)
         {
             std::cerr << "; current: " << cid;
