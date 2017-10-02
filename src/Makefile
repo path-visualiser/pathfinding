@@ -11,9 +11,9 @@ D_WARTHOG_INCLUDES = -I./domains -I./util -I./search -I./experimental \
 D_INCLUDES = -I/usr/include -I/opt/local/include $(D_WARTHOG_INCLUDES)
 D_LIBS = -L/usr/local/lib -L./lib
 
-CFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long \
-		 -Wno-deprecated -Wno-deprecated-declarations \
-		 -Wno-constant-logical-operand -Werror 
+CFLAGS = -std=c++11 -pedantic -pthread -Wall -Wno-strict-aliasing \
+			-Wno-long-long -Wno-deprecated -Wno-deprecated-declarations \
+			-Wno-constant-logical-operand -Werror 
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0
 PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG
