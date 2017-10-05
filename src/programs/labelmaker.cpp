@@ -4,7 +4,7 @@
 #include "bb_labelling.h"
 #include "bbaf_labelling.h"
 #include "cfg.h"
-#include "ch_expansion_policy.h"
+#include "contraction.h"
 #include "corner_point_graph.h"
 #include "dimacs_parser.h"
 #include "dcl_filter.h"
@@ -35,8 +35,8 @@ help()
 	std::cerr << "valid parameters:\n"
     //<< "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	//<< "\t--order [order-of-contraction file]\n"
-    << "\t--type [ downdist | dcl | af | bb | bbaf | chaf | chbb | chbbaf "
-    << "| chbb-jpg | afh | afhd ]\n"
+    << "\t--type [ downdist | dcl | af | bb | bbaf | fch-af | fch-bb "
+    << "| fch-bbaf | fch-bb-jpg | afh | afhd ] \n"
     << "\t--input [ algorithm-specific input files (omit to show options) ]\n" 
 	<< "\t--verbose (optional)\n";
 }
@@ -158,7 +158,7 @@ compute_dcl_labels()
 }
 
 void
-compute_chbb_labels()
+compute_fch_bb_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
@@ -182,19 +182,27 @@ compute_chbb_labels()
         return;
     }
 
-    // load up the node ordering
+    // load up the node ordering (with ids listed in order of contraction)
     std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, false))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
     }
 
-    // compute labels
+    if(order.size() != g.get_num_nodes())
+    {
+        std::cerr 
+            << "warn; partial contraction order. computing labels only"
+            << "for contracted nodes\n";
+    }
+
+    // define the preprocessing workload 
+    warthog::util::workload_manager workload(g.get_num_nodes());
+
+    // users can limit the preprocessing to a specified id range
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".chbb.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -207,26 +215,40 @@ compute_chbb_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
+    }
+
+    // we only target nodes in the range which also appear in the order
+    for(uint32_t i = 0; i < order.size(); i++)
+    {
+        if(order.at(i) < firstid || order.at(i) >= lastid) { continue; }
+        workload.set_flag(order.at(i), true);
+    }
+
+    // node order becomes a lex order for the purposes of search
+    warthog::ch::value_index_swap_dimacs(order);
+
+    // gogogo
+    std::cerr << "computing fch-bb labelling... \n";
+    std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
+        [&g, &order]() -> warthog::fch_expansion_policy*
+        {
+            return new warthog::fch_expansion_policy(&g, &order);
+        };
+    warthog::label::bb_labelling* labelling = 
+        warthog::label::bb_labelling::compute<warthog::fch_expansion_policy>(
+                &g, fn_new_expander, &workload);
+
+    // save the result
+    std::string outfile(grfile);
+    outfile.append(".fch-bb.arclabel");
+    if(firstid != 0 || lastid != g.get_num_nodes())
+    {
         outfile.append(".");
-        outfile.append(first);
+        outfile.append(std::to_string(firstid));
         outfile.append(".");
         outfile.append(std::to_string(lastid));
     }
-    
 
-    // gogogo
-    std::cerr << "computing bounding box labelling... \n";
-    std::function<warthog::ch_expansion_policy*(void)> fn_new_expander = 
-        [&g, &order]() -> warthog::ch_expansion_policy*
-        {
-            return new warthog::ch_expansion_policy(
-                    &g, &order, false, warthog::ch::DOWN);
-        };
-    warthog::label::bb_labelling* labelling = 
-        warthog::label::bb_labelling::compute<warthog::ch_expansion_policy>(
-                &g, fn_new_expander, firstid, lastid);
-
-    // save the result
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -245,7 +267,7 @@ compute_chbb_labels()
 }
 
 void
-compute_chbb_jpg_labels()
+compute_fch_bb_jpg_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
@@ -279,16 +301,25 @@ compute_chbb_jpg_labels()
 
     // load up the node ordering
     std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, false))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
     }
 
+    if(order.size() != cpg.get_num_nodes())
+    {
+        std::cerr 
+            << "warn; partial contraction order. computing labels only"
+            << "for contracted nodes\n";
+    }
+
+    // define the preprocessing workload 
+    warthog::util::workload_manager workload(cpg.get_num_nodes());
+
+    // users can limit the preprocessing to a specified id range
     uint32_t firstid = 0;
-    uint32_t lastid = pg->get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".fch-bb-jpg.arclabel");
+    uint32_t lastid = cpg.get_num_nodes();
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -301,12 +332,19 @@ compute_chbb_jpg_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        outfile.append(".");
-        outfile.append(first);
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
     }
+
+    // we only target nodes in the range which also appear in the order
+    for(uint32_t i = 0; i < order.size(); i++)
+    {
+        if(order.at(i) < firstid || order.at(i) >= lastid) { continue; }
+        workload.set_flag(order.at(i), true);
+    }
+
+    // node order becomes a lex order for the purposes of search
+    warthog::ch::value_index_swap_dimacs(order);
     
+    // gogogo
     std::cerr << "creating fch-jpg-bb labelling\n";
     std::function<warthog::fch_jpg_expansion_policy*(void)> 
         fn_new_expander = [&cpg, &order] () 
@@ -317,11 +355,21 @@ compute_chbb_jpg_labels()
 
     warthog::label::bb_labelling* labelling = 
     warthog::label::bb_labelling::compute<warthog::fch_jpg_expansion_policy>(
-            pg.get(), fn_new_expander, firstid, lastid);
+            pg.get(), fn_new_expander, &workload);
 
     std::cerr << "labelling done\n";
 
     // save the result
+    std::string outfile(grfile);
+    outfile.append(".fch-bb-jpg.arclabel");
+    if(firstid != 0 || lastid != cpg.get_num_nodes())
+    {
+        outfile.append(".");
+        outfile.append(std::to_string(firstid));
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
 
@@ -361,11 +409,11 @@ compute_bb_labels()
         return;
     }
 
-    // compute labels
+    // define the preprocessing workload size
+    warthog::util::workload_manager workload(g.get_num_nodes());
+
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".bb.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -378,10 +426,12 @@ compute_bb_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        outfile.append(".");
-        outfile.append(first);
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
+    }
+        
+    // we only target nodes in the specified id range
+    for(uint32_t i = firstid; i < lastid; i++)
+    {
+        workload.set_flag(i, true);
     }
 
     // gogogo
@@ -394,9 +444,19 @@ compute_bb_labels()
     warthog::label::bb_labelling* labelling = 
         warthog::label::bb_labelling::compute
             <warthog::graph_expansion_policy>
-                (&g, fn_new_expander, firstid, lastid);
+                (&g, fn_new_expander, &workload);
 
     // save the result
+    std::string outfile(grfile);
+    outfile.append(".bb.arclabel");
+    if(firstid != 0 || lastid != g.get_num_nodes())
+    {
+        outfile.append(".");
+        outfile.append(std::to_string(firstid));
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -415,7 +475,7 @@ compute_bb_labels()
 }
 
 void
-compute_chaf_labels()
+compute_fch_af_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
@@ -443,16 +503,24 @@ compute_chaf_labels()
 
     // load up the node ordering
     std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, false))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
     }
 
+    if(order.size() != g.get_num_nodes())
+    {
+        std::cerr 
+            << "warn; partial contraction order. computing labels only"
+            << "for contracted nodes\n";
+    }
+
+    // define the preprocessing workload size
+    warthog::util::workload_manager workload(g.get_num_nodes());
+
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".fch-af.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -465,11 +533,17 @@ compute_chaf_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        outfile.append(".");
-        outfile.append(first);
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
     }
+
+    // we only target nodes in the range which also appear in the order
+    for(uint32_t i = 0; i < order.size(); i++)
+    {
+        if(order.at(i) < firstid || order.at(i) >= lastid) { continue; }
+        workload.set_flag(order.at(i), true);
+    }
+
+    // node order becomes a lex order for the purposes of search
+    warthog::ch::value_index_swap_dimacs(order);
 
     // gogogo
     std::cerr << "computing fch-af labelling... \n";
@@ -481,9 +555,19 @@ compute_chaf_labels()
     warthog::label::af_labelling* labelling = 
         warthog::label::af_labelling::compute
             <warthog::fch_expansion_policy>
-                (&g, &part, fn_new_expander, firstid, lastid);
+                (&g, &part, fn_new_expander, &workload);
 
     // save the result
+    std::string outfile(grfile);
+    outfile.append(".fch-af.arclabel");
+    if(firstid != 0 || lastid != g.get_num_nodes())
+    {
+        outfile.append(".");
+        outfile.append(std::to_string(firstid));
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -502,7 +586,7 @@ compute_chaf_labels()
 }
 
 void
-compute_chaf_jpg_labels()
+compute_fch_af_jpg_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
@@ -544,16 +628,25 @@ compute_chaf_jpg_labels()
 
     // load up the node ordering
     std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, false))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
     }
 
+    if(order.size() != cpg.get_num_nodes())
+    {
+        std::cerr 
+            << "warn; partial contraction order. computing labels only"
+            << "for contracted nodes\n";
+    }
+
+    // define the preprocessing workload 
+    warthog::util::workload_manager workload(cpg.get_num_nodes());
+
+    // users can limit the preprocessing to a specified id range
     uint32_t firstid = 0;
     uint32_t lastid = pg->get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".fch-af-jpg.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -566,11 +659,17 @@ compute_chaf_jpg_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        outfile.append(".");
-        outfile.append(first);
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
     }
+
+    // we only target nodes in the range which also appear in the order
+    for(uint32_t i = 0; i < order.size(); i++)
+    {
+        if(order.at(i) < firstid || order.at(i) >= lastid) { continue; }
+        workload.set_flag(order.at(i), true);
+    }
+
+    // node order becomes a lex order for the purposes of search
+    warthog::ch::value_index_swap_dimacs(order);
 
     // gogogo
     std::cerr << "computing fch-af labelling... \n";
@@ -582,9 +681,19 @@ compute_chaf_jpg_labels()
     warthog::label::af_labelling* labelling = 
         warthog::label::af_labelling::compute
             <warthog::fch_jpg_expansion_policy>
-                (pg.get(), &part, fn_new_expander, firstid, lastid);
+                (pg.get(), &part, fn_new_expander, &workload);
 
     // save the result
+    std::string outfile(grfile);
+    outfile.append(".fch-af-jpg.arclabel");
+    if(firstid != 0 || lastid != cpg.get_num_nodes())
+    {
+        outfile.append(".");
+        outfile.append(std::to_string(firstid));
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     std::cerr << "saving arclabels file " << outfile << std::endl;
     std::fstream out(outfile.c_str(), 
             std::ios_base::out | std::ios_base::trunc);
@@ -637,10 +746,11 @@ compute_af_labels()
         return;
     }
     
+    // define the preprocessing workload size
+    warthog::util::workload_manager workload(g.get_num_nodes());
+
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".af.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -653,11 +763,14 @@ compute_af_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        outfile.append(".");
-        outfile.append(first);
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
     }
+
+    // we only target nodes in the specified id range
+    for(uint32_t i = firstid; i < lastid; i++)
+    {
+        workload.set_flag(i, true);
+    }
+
     // gogogo
     std::cerr << "computing af labelling... \n";
     std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
@@ -669,9 +782,19 @@ compute_af_labels()
     warthog::label::af_labelling* labelling = 
         warthog::label::af_labelling::compute
             <warthog::graph_expansion_policy>
-                (&g, &part, fn_new_expander, firstid, lastid);
+                (&g, &part, fn_new_expander, &workload);
 
     // save the result
+    std::string outfile(grfile);
+    outfile.append(".af.arclabel");
+    if(firstid != 0 || lastid != g.get_num_nodes())
+    {
+        outfile.append(".");
+        outfile.append(std::to_string(firstid));
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     std::cerr << "saving arclabels file " << outfile << std::endl;
     std::fstream out(outfile.c_str(), 
             std::ios_base::out | std::ios_base::trunc);
@@ -722,11 +845,11 @@ compute_bbaf_labels()
         return;
     }
 
-    // compute labels
+    // define the preprocessing workload 
+    warthog::util::workload_manager workload(g.get_num_nodes());
+
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".bbaf.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -739,10 +862,12 @@ compute_bbaf_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        outfile.append(".");
-        outfile.append(first);
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
+    }
+
+    // we only target nodes in the specified id range
+    for(uint32_t i = firstid; i < lastid; i++)
+    {
+        workload.set_flag(i, true);
     }
 
     // compute bbaf labels
@@ -756,9 +881,19 @@ compute_bbaf_labels()
         labelling(
             warthog::label::bbaf_labelling::compute
                 <warthog::graph_expansion_policy>
-                    (&g, &part, fn_new_expander, firstid, lastid));
+                    (&g, &part, fn_new_expander, &workload));
 
     // save the result
+    std::string outfile(grfile);
+    outfile.append(".bbaf.arclabel");
+    if(firstid != 0 || lastid != g.get_num_nodes())
+    {
+        outfile.append(".");
+        outfile.append(std::to_string(firstid));
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -775,7 +910,7 @@ compute_bbaf_labels()
 }
 
 void
-compute_chbbaf_labels()
+compute_fch_bbaf_labels()
 {
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
@@ -811,17 +946,24 @@ compute_chbbaf_labels()
 
     // load up the node ordering
     std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, false))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
     }
 
-    // compute labels
+    if(order.size() != g.get_num_nodes())
+    {
+        std::cerr 
+            << "warn; partial contraction order. computing labels only"
+            << "for contracted nodes\n";
+    }
+
+    // define the preprocessing workload size
+    warthog::util::workload_manager workload(g.get_num_nodes());
+
     uint32_t firstid = 0;
     uint32_t lastid = g.get_num_nodes();
-    std::string outfile(grfile);
-    outfile.append(".fch-bbaf.arclabel");
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
@@ -834,12 +976,19 @@ compute_chbbaf_labels()
         {
             lastid = strtol(last.c_str(), 0, 10);
         }
-        outfile.append(".");
-        outfile.append(first);
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
     }
 
+    // we only target nodes in the range which also appear in the order
+    for(uint32_t i = 0; i < order.size(); i++)
+    {
+        if(order.at(i) < firstid || order.at(i) >= lastid) { continue; }
+        workload.set_flag(order.at(i), true);
+    }
+
+    // node order becomes a lex order for the purposes of search
+    warthog::ch::value_index_swap_dimacs(order);
+
+    // gogogo
     std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
     [&g, &order]() -> warthog::fch_expansion_policy*
     {
@@ -850,9 +999,19 @@ compute_chbbaf_labels()
         labelling(
             warthog::label::bbaf_labelling::compute
                 <warthog::fch_expansion_policy>
-                    (&g, &part, fn_new_expander, firstid, lastid));
+                    (&g, &part, fn_new_expander, &workload));
     
     // save the result
+    std::string outfile(grfile);
+    outfile.append(".fch-bbaf.arclabel");
+    if(firstid != 0 || lastid != g.get_num_nodes())
+    {
+        outfile.append(".");
+        outfile.append(std::to_string(firstid));
+        outfile.append(".");
+        outfile.append(std::to_string(lastid));
+    }
+
     std::cerr << "\ndone; \nsaving to " << outfile << "\n";
     std::fstream fs_out(outfile.c_str(), 
                         std::ios_base::out | std::ios_base::trunc);
@@ -1009,17 +1168,19 @@ int main(int argc, char** argv)
     if(argc == 1 || print_help)
     {
 		help();
-        exit(0);
+        return EINVAL;
     }
 
+    // parse the type of labelling and the source nodes to be processed
+    // source nodes are in the range: [first_id, last_id)
     std::string arclabel = cfg.get_param_value("type");
     if(arclabel.compare("downdist") == 0)
     {
         compute_down_distance();
     }
-    else if(arclabel.compare("chbb") == 0)
+    else if(arclabel.compare("fch-bb") == 0)
     {
-        compute_chbb_labels();
+        compute_fch_bb_labels();
     }
     else if(arclabel.compare("bb") == 0)
     {
@@ -1029,9 +1190,9 @@ int main(int argc, char** argv)
     {
         compute_dcl_labels();
     }
-    else if(arclabel.compare("chaf") == 0)
+    else if(arclabel.compare("fch-af") == 0)
     {
-        compute_chaf_labels();
+        compute_fch_af_labels();
     }
     else if(arclabel.compare("af") == 0)
     {
@@ -1049,17 +1210,17 @@ int main(int argc, char** argv)
     {
         compute_bbaf_labels();
     }
-    else if(arclabel.compare("chbbaf") == 0)
+    else if(arclabel.compare("fch-bbaf") == 0)
     {
-        compute_chbbaf_labels();
+        compute_fch_bbaf_labels();
     }
-    else if(arclabel.compare("chbb-jpg") == 0)
+    else if(arclabel.compare("fch-bb-jpg") == 0)
     {
-        compute_chbb_jpg_labels();
+        compute_fch_bb_jpg_labels();
     }
-    else if(arclabel.compare("chaf-jpg") == 0)
+    else if(arclabel.compare("fch-af-jpg") == 0)
     {
-        compute_chaf_jpg_labels();
+        compute_fch_af_jpg_labels();
     }
     else
     {

@@ -65,14 +65,11 @@ struct thread_params
 // @param shared_data: 
 //         a pointer to data which will be shared among all worker 
 //         threads
-// @param first_id: start of the workload (typically a graph node id)
-// @param last_id: end of the workload (typically a graph node id)
-//
+// @param task_total: the total number of tasks in the workload
 // @return: 0 (the function always succeeds)
 void*
 parallel_compute(void*(*fn_worker)(void*), void* shared_data, 
-        uint32_t first_id=0, uint32_t last_id=UINT32_MAX);
-
+                 uint32_t task_total);
 }
 }
 

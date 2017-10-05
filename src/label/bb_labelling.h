@@ -18,12 +18,13 @@
 //
 
 #include "flexible_astar.h"
+#include "helpers.h"
 #include "geom.h"
 #include "planar_graph.h"
 #include "search_node.h"
-#include "zero_heuristic.h"
-#include "helpers.h"
 #include "solution.h"
+#include "workload_manager.h"
+#include "zero_heuristic.h"
 
 #include <functional>
 
@@ -59,7 +60,7 @@ class bb_labelling
         static warthog::label::bb_labelling*
         compute(warthog::graph::planar_graph* g, 
                 std::function<t_expander*(void)>& fn_new_expander,
-                uint32_t first_id=0, uint32_t last_id=UINT32_MAX)
+                warthog::util::workload_manager* workload)
         {
             if(g == 0) { return 0; } 
             std::cerr << "computing bb labels\n";
@@ -68,6 +69,7 @@ class bb_labelling
             {
                 std::function<t_expander*(void)> fn_new_expander_;
                 warthog::label::bb_labelling* lab_;
+                warthog::util::workload_manager* workload_;
             };
 
             // the actual precompute function
@@ -104,8 +106,12 @@ class bb_labelling
                      dijkstra(&heuristic, expander.get());
                 dijkstra.apply_on_relax(relax_fn);
 
-                for(uint32_t i = par->first_id_; i < par->last_id_; i++)
+                for(uint32_t i = 0; 
+                        i < shared->workload_->num_flags_set(); i++)
                 {
+                    // skip nodes not in the workload
+                    if(!shared->workload_->get_flag(i)) { continue; }
+
                     // source nodes are evenly divided among all threads;
                     // skip any source nodes not intended for current thread
                     if((i % par->max_threads_) != par->thread_id_) { continue; }
@@ -181,8 +187,9 @@ class bb_labelling
             bb_shared_data shared;
             shared.lab_ = new warthog::label::bb_labelling(g);
             shared.fn_new_expander_ = fn_new_expander;
+            shared.workload_ = workload;
             warthog::helpers::parallel_compute(
-                    thread_compute_fn, &shared, first_id, last_id);
+                    thread_compute_fn, &shared, workload->num_flags_set());
             return shared.lab_;
         }
 

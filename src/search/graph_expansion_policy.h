@@ -17,8 +17,6 @@
 namespace warthog
 {
 
-class node_filter;
-
 namespace graph
 {
 
@@ -26,7 +24,6 @@ class planar_graph;
 
 }
 
-class node_filter;
 class problem_instance;
 class search_node;
 
@@ -42,12 +39,6 @@ class graph_expansion_policy : public expansion_policy
         virtual void
         get_xy(uint32_t node_id, int32_t& x, int32_t& y);
 
-        inline void 
-        set_filter(warthog::node_filter* filter) { nf_ = filter; }
-
-        inline warthog::node_filter* 
-        get_filter() { return nf_; }
-
         virtual warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi);
 
@@ -59,7 +50,6 @@ class graph_expansion_policy : public expansion_policy
 
 	private:
         warthog::graph::planar_graph* g_;
-        warthog::node_filter* nf_;
 };
 
 }

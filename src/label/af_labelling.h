@@ -23,10 +23,11 @@
 //
 
 #include "flexible_astar.h"
+#include "helpers.h"
 #include "planar_graph.h"
 #include "search_node.h"
+#include "workload_manager.h"
 #include "zero_heuristic.h"
-#include "helpers.h"
 
 #include <algorithm>
 #include <functional>
@@ -90,7 +91,7 @@ class af_labelling
         static warthog::label::af_labelling*
         compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part, 
                 std::function<t_expander*(void)>& fn_new_expander,
-                uint32_t first_id=0, uint32_t last_id=UINT32_MAX)
+                warthog::util::workload_manager* workload)
         {
             if(g == 0 || part  == 0) { return 0; } 
             std::cerr << "computing arcflag labels\n";
@@ -100,6 +101,7 @@ class af_labelling
             {
                 std::function<t_expander*(void)> fn_new_expander_;
                 warthog::label::af_labelling* lab_;
+                warthog::util::workload_manager* workload_;
             };
 
             // the actual precompute function
@@ -138,8 +140,13 @@ class af_labelling
                     dijkstra(&heuristic, expander.get());
                 dijkstra.apply_on_relax(relax_fn);
 
-                for(uint32_t i = par->first_id_; i < par->last_id_; i++)
+                for(uint32_t i = 0; 
+                        i < shared->workload_->num_flags_set(); i++)
                 {
+                    // skip any nodes not part of the precomputation workload
+                    if(!shared->workload_->get_flag(i))
+                    { continue; }
+
                     // source nodes are evenly divided among all threads;
                     // skip any source nodes not intended for current thread
                     if((i % par->max_threads_) != par->thread_id_) 
@@ -209,8 +216,9 @@ class af_labelling
             af_shared_data shared;
             shared.lab_ = lab;
             shared.fn_new_expander_ = fn_new_expander;
+            shared.workload_ = workload;
             warthog::helpers::parallel_compute(thread_compute_fn, 
-                    &shared, first_id, last_id);
+                    &shared, workload->num_flags_set());
             std::cerr << "\nall done\n"<< std::endl;
             return lab;
         }

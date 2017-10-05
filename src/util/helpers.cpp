@@ -51,10 +51,10 @@ warthog::helpers::load_integer_labels_dimacs(
 
 void*
 warthog::helpers::parallel_compute(void*(*fn_worker)(void*), 
-        void* shared_data, uint32_t first_id, uint32_t last_id)
+        void* shared_data, uint32_t task_total)
 {
     std::cerr << "parallel compute; begin\n";
-    std::cerr << "first " << first_id << " last " << last_id  << std::endl;
+    std::cerr << "tasks to process: " << task_total << "\n";
 
     // OK, let's fork some threads
     const uint32_t NUM_THREADS = 4;
@@ -76,8 +76,6 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
         task_data[i].thread_id_ = i;
         task_data[i].max_threads_ = NUM_THREADS;
         task_data[i].nprocessed_ = 0;
-        task_data[i].first_id_ = first_id;
-        task_data[i].last_id_ = last_id;
         task_data[i].shared_ = shared_data;
         task_data[i].fn_worker_ = fn_worker;
 
@@ -98,9 +96,7 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
             nfinished += task_data[i].thread_finished_;
         }
 
-        std::cerr << "\rprogress: " << nprocessed << " / ";
-        if(last_id == UINT32_MAX) { std::cerr << "?"; }
-        else { std::cerr << last_id; }
+        std::cerr << "\rprogress: " << nprocessed << " / " << task_total;
 
         if(nfinished == NUM_THREADS) { break; }
         else { sleep(5); }
