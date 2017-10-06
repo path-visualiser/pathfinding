@@ -197,8 +197,6 @@ class chase_search : public warthog::search
             bool cannot_improve = false;
             double fwd_core_lb = DBL_MAX;
             double bwd_core_lb = DBL_MAX;
-            //uint32_t fwd_search_mask = UINT32_MAX;
-            //uint32_t bwd_search_mask = UINT32_MAX;
             uint32_t search_direction = 1;
 
             // search begin
@@ -209,53 +207,44 @@ class chase_search : public warthog::search
                 // expand something
                 switch(search_direction)
                 {
-                    case 0:
-                    {
-                        cannot_improve = true;
-                        break;
-                    }
                     case 1:
                     {
+                        // expand in the forward direction
                         warthog::search_node* current = fopen_->pop();
-                        if(current->get_f() >= best_cost_) // terminate early
-                        {
-                            //fwd_search_mask = 0; // fwd search finished
-                        }
-                        else
-                        {
-                            expand(current, fopen_, fexpander_, bexpander_, 
-                                    pi_.target_id_, fwd_norelax_, 
-                                    fwd_core_lb, sol);
-                        }
+                        expand(current, fopen_, fexpander_, bexpander_, 
+                                pi_.target_id_, fwd_norelax_, 
+                                fwd_core_lb, sol);
+
                         // switch directions
-                        if(bopen_->size() > 0)  
+                        if( bopen_->size() > 0 && 
+                           bopen_->peek()->get_f() < best_cost_ )
                         { search_direction = 2; }
-                        else if(fopen_->size() > 0) 
-                        { search_direction = 1; }
                         else
-                        { search_direction = 0; } 
+                        {
+                            cannot_improve = 
+                               fopen_->size() == 0 ||
+                               fopen_->peek()->get_f() > best_cost_;
+                        }
                         break;
                     }
                     case 2:
                     {
+                        // expand in the backwards direction
                         warthog::search_node* current = bopen_->pop();
-                        if(current->get_f() >= best_cost_) // terminate early
-                        {
-                            //bwd_search_mask = 0; // bwd search finished
-                        }
-                        else
-                        {
-                            expand(current, bopen_, bexpander_, fexpander_, 
-                                    pi_.target_id_, bwd_norelax_, 
-                                    bwd_core_lb, sol);
-                        }
+                        expand(current, bopen_, bexpander_, fexpander_, 
+                                pi_.target_id_, bwd_norelax_, 
+                                bwd_core_lb, sol);
+
                         // switch directions
-                        if(fopen_->size() > 0)  
+                        if( fopen_->size() > 0 && 
+                            fopen_->peek()->get_f() < best_cost_)
                         { search_direction = 1; }
-                        else if(bopen_->size() > 0) 
-                        { search_direction = 2; }
-                        else
-                        { search_direction = 0; } 
+                        else 
+                        {
+                            cannot_improve = 
+                                bopen_->size() == 0 ||
+                                bopen_->peek()->get_f() > best_cost_;
+                        }
                         break; 
                     }
                 }
@@ -320,7 +309,6 @@ class chase_search : public warthog::search
                         // reset variables that control the search
                         phase_ = 2;
                         cannot_improve = false;
-                        //fwd_search_mask = bwd_search_mask = UINT32_MAX;
                         fwd_core_lb = bwd_core_lb = DBL_MAX;
                         search_direction = 1;
 
