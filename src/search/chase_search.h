@@ -51,7 +51,8 @@ template<class E, class H>
 class chase_search : public warthog::search
 {
     public:
-        chase_search(E* fexp, E* bexp, H* heuristic) 
+        chase_search(E* fexp, E* bexp, H* heuristic,
+                std::vector<uint32_t>* rank)
             : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
             fopen_ = new pqueue(512, true);
@@ -63,6 +64,7 @@ class chase_search : public warthog::search
                 dijkstra_ = true;
             }
             
+            rank_ = rank;
             max_phase1_rank_ = fexpander_->get_num_nodes()*0.95;
         }
 
@@ -120,6 +122,7 @@ class chase_search : public warthog::search
         uint32_t max_phase1_rank_;
         std::vector<warthog::search_node*> fwd_norelax_;
         std::vector<warthog::search_node*> bwd_norelax_;
+        std::vector<uint32_t>* rank_;
 
         // v is the section of the path in the forward
         // direction and w is the section of the path
@@ -467,7 +470,7 @@ class chase_search : public warthog::search
                                 heuristic_->h(n->get_id(), tmp_targetid));
 
                         if( phase_ == 2 || 
-                            expander->get_rank(n->get_id()) < max_phase1_rank_)
+                            rank_->at(n->get_id()) < max_phase1_rank_ )
                         {
                             open->push(n);
                         }
@@ -485,7 +488,7 @@ class chase_search : public warthog::search
                     if(pi_.verbose_)
                     {
                         if( phase_ == 1 &&
-                            expander->get_rank(n->get_id()) >= max_phase1_rank_)
+                            rank_->at(n->get_id()) >= max_phase1_rank_ )
                         {
                             std::cerr << "phase2-list ";
                         }

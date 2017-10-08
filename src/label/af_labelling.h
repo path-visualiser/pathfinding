@@ -59,8 +59,11 @@ class af_labelling
         inline uint8_t*
         get_label(uint32_t node_id, uint32_t edge_index)
         { 
-            assert(node_id < flags_->size() && 
-                   edge_index < flags_->at(node_id).size());
+            uint32_t node_degree = flags_->at(node_id).size();
+            node_degree = node_degree;
+
+            assert(node_id < flags_->size());
+            assert(edge_index < flags_->at(node_id).size());
             return flags_->at(node_id).at(edge_index);
         }
 
@@ -79,6 +82,34 @@ class af_labelling
         static warthog::label::af_labelling*
         load(const char* filename, warthog::graph::planar_graph* g,
                 std::vector<uint32_t>* partitioning);
+
+        // load up an arcflag labelling for use with BCH
+        // (bi-directional contraction hierarchies)
+        //
+        // there are two filters created in this case: one for the 
+        // forward search and one for the backward search
+        //
+        // the forward labels contain all labels for outgoing up arcs and
+        // every label is stored with the tail node of the correspinding arc
+        //
+        // the backward labels contain all labels for outgoing down arcs
+        // and every label is stored with the head node of the corresponding
+        // arc.
+        // 
+        // @param filename: the file to load from
+        // @param g: the graph associated with the labelling
+        // @param partitioning: a disjoint partition of the nodes in @param g
+        // @param lex_order: a lexical order of the nodes
+        // @param out_afl_fwd: (output param) the fwd labels
+        // @param out_afl_bwd: (output param) the bwd labels
+        // @return: true if the function succeeds, false if it fails
+        static bool
+        load_bch_labels(
+                const char* filename, warthog::graph::planar_graph* g,
+                std::vector<uint32_t>* partitioning,
+                std::vector<uint32_t>* lex_order, 
+                warthog::label::af_labelling*& out_afl_fwd,
+                warthog::label::af_labelling*& out_afl_bwd);
 
         // create a new arcflag edge labelling for all nodes in the range
         // [ @param first_id, @param last_id )

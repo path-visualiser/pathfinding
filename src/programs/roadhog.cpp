@@ -496,24 +496,32 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::af_labelling> lab(
-        warthog::label::af_labelling::load(
-            arclabels_file.c_str(), &g, &part));
-    if(!lab.get())
+    // load up the arc-flags; we divide the labels into two sets, one for the 
+    // up graph and one for the down graph
+    warthog::label::af_labelling *fwd_lab=0, *bwd_lab=0;
+    bool result = warthog::label::af_labelling::load_bch_labels(
+            arclabels_file.c_str(), &g, &part, &order, fwd_lab, bwd_lab);
+    if(!result)
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::af_filter filter(lab.get());
+    std::shared_ptr<warthog::label::af_labelling> fwd_afl(fwd_lab);
+    std::shared_ptr<warthog::label::af_labelling> bwd_afl(bwd_lab);
+    
+    warthog::af_filter fwd_filter(fwd_afl.get());
+    warthog::af_filter bwd_filter(bwd_afl.get());
+
+    // make the graph suitable for BCH
+    warthog::ch::optimise_graph_for_bch(&g, &order);
 
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
-    warthog::chaf_expansion_policy fexp(&g, &order, &filter);
-    warthog::chaf_expansion_policy bexp (&g, &order, &filter, true);
+    warthog::chaf_expansion_policy fexp(&g, &fwd_filter);
+    warthog::chaf_expansion_policy bexp (&g, &bwd_filter, true);
     warthog::chase_search<
         warthog::chaf_expansion_policy, warthog::zero_heuristic> 
-        alg(&fexp, &bexp, &h);
+        alg(&fexp, &bexp, &h, &order);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -617,20 +625,28 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::af_labelling> afl(
-        warthog::label::af_labelling::load(
-            arclabels_file.c_str(), &g, &part));
-    if(!afl.get())
+    // load up the arc-flags; we divide the labels into two sets, one for the 
+    // up graph and one for the down graph
+    warthog::label::af_labelling *fwd_lab=0, *bwd_lab=0;
+    bool result = warthog::label::af_labelling::load_bch_labels(
+            arclabels_file.c_str(), &g, &part, &order, fwd_lab, bwd_lab);
+    if(!result)
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::af_filter filter(afl.get());
+    std::shared_ptr<warthog::label::af_labelling> fwd_afl(fwd_lab);
+    std::shared_ptr<warthog::label::af_labelling> bwd_afl(bwd_lab);
+    
+    warthog::af_filter fwd_filter(fwd_afl.get());
+    warthog::af_filter bwd_filter(bwd_afl.get());
+
+    // make the graph suitable for BCH
+    warthog::ch::optimise_graph_for_bch(&g, &order);
 
     std::cerr << "preparing to search\n";
-    warthog::chaf_expansion_policy fexp(&g, &order, &filter);
-    warthog::chaf_expansion_policy bexp (&g, &order, &filter, true);
+    warthog::chaf_expansion_policy fexp(&g, &fwd_filter);
+    warthog::chaf_expansion_policy bexp (&g, &bwd_filter, true);
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
