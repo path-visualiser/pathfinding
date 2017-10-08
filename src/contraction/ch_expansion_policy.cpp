@@ -42,10 +42,6 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;
-        if(e.node_id_ >= g_->get_num_nodes())
-        {
-            std::cerr << "master...\n";
-        }
         assert(e.node_id_ < g_->get_num_nodes());
         this->add_neighbour(this->generate(e.node_id_), e.wt_);
     }
