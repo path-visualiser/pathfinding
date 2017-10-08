@@ -543,8 +543,8 @@ run_chbb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the node order
     std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
+    bool lex_order = true;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, lex_order))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
@@ -558,19 +558,28 @@ run_chbb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the arc labels
-    std::shared_ptr<warthog::label::bb_labelling> bbl
-        (warthog::label::bb_labelling::load(arclabels_file.c_str(), &g));
-    if(!bbl.get())
+    // load up the arc-flags; we divide the labels into two sets, one for the 
+    // up graph and one for the down graph
+    warthog::label::bb_labelling *fwd_lab_ptr=0, *bwd_lab_ptr=0;
+    bool result = warthog::label::bb_labelling::load_bch_labels(
+            arclabels_file.c_str(), &g, &order, fwd_lab_ptr, bwd_lab_ptr);
+    if(!result)
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::bb_filter filter(bbl.get());
+    std::shared_ptr<warthog::label::bb_labelling> fwd_lab(fwd_lab_ptr);
+    std::shared_ptr<warthog::label::bb_labelling> bwd_lab(bwd_lab_ptr);
+    
+    warthog::bb_filter fwd_filter(fwd_lab.get());
+    warthog::bb_filter bwd_filter(bwd_lab.get());
+
+    // make the graph suitable for BCH
+    warthog::ch::optimise_graph_for_bch(&g, &order);
 
     std::cerr << "preparing to search\n";
-    warthog::chbb_expansion_policy fexp(&g, &order, &filter);
-    warthog::chbb_expansion_policy bexp (&g, &order, &filter, true);
+    warthog::chbb_expansion_policy fexp(&g, &fwd_filter);
+    warthog::chbb_expansion_policy bexp (&g, &bwd_filter, true);
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
@@ -601,8 +610,8 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the node order
     std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
+    bool lex_order = true;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, lex_order))
     {
         std::cerr << "err; could not load node order input file\n";
         return;

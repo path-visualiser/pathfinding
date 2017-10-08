@@ -55,6 +55,13 @@ class bb_labelling
 
         static warthog::label::bb_labelling*
         load(const char* filename, warthog::graph::planar_graph* g);
+
+        static bool
+        load_bch_labels( const char* filename, 
+                        warthog::graph::planar_graph* g,
+                        std::vector<uint32_t>* lex_order, 
+                        warthog::label::bb_labelling*& out_lab_fwd,
+                        warthog::label::bb_labelling*& out_lab_bwd );
         
         template <typename t_expander>
         static warthog::label::bb_labelling*
