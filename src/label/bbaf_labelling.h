@@ -35,7 +35,7 @@ class bbaf_label
 
         bbaf_label(const bbaf_label& other)
         {
-            flags_ = other.flags_;
+            flags_ = &*other.flags_;
             bbox_ = other.bbox_;
         }
 
@@ -77,6 +77,33 @@ class bbaf_labelling
         static warthog::label::bbaf_labelling*
         load(const char* filename, warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* partitioning);
+
+        // load up a BBAF labelling for use with BCH
+        // (bi-directional contraction hierarchies)
+        //
+        // there are two filters created in this case: one for the 
+        // forward search and one for the backward search.
+        // the forward labels contain all labels for outgoing up arcs and
+        // every label is stored with the tail node of the correspinding arc
+        // the backward labels contain all labels for outgoing down arcs
+        // and every label is stored with the head node of the corresponding
+        // arc.
+        // 
+        // @param filename: the file to load from
+        // @param g: the graph associated with the labelling
+        // @param partitioning: a disjoint partition of the nodes in @param g
+        // @param lex_order: a lexical order of the nodes
+        // @param out_lab_fwd: (output param) the fwd labels
+        // @param out_lab_bwd: (output param) the bwd labels
+        // @return: true if the function succeeds, false if it fails
+        static bool
+        load_bch_labels(
+                const char* filename, warthog::graph::planar_graph* g,
+                std::vector<uint32_t>* partitioning,
+                std::vector<uint32_t>* lex_order, 
+                warthog::label::bbaf_labelling*& out_lab_fwd,
+                warthog::label::bbaf_labelling*& out_lab_bwd);
+
         
         // compute labels for all nodes in the range 
         // [ @param first_id, @param last_id )

@@ -13,27 +13,8 @@ warthog::label::bbaf_labelling::bbaf_labelling(
     uint32_t max_id = *(std::max_element(part_->begin(), part_->end()));
     bytes_per_af_label_ = (max_id / 8) + !!(max_id % 8);
     
-    // allocate memory for each label
+    // allocate memory for every node
     labels_.resize(g_->get_num_nodes());
-    for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
-    {
-        warthog::graph::node* n = g_->get_node(i);
-        for(uint32_t j = 0; j < n->out_degree(); j++)
-        {
-            // create one label per outgoing edge
-            bbaf_label label;
-
-            // initialise arcflag bits to zero
-            label.flags_ = new uint8_t[bytes_per_af_label_];
-            for(uint32_t k = 0; k < bytes_per_af_label_; k++)
-            {
-                label.flags_[k] = 0;
-            }
-
-            // add the label to the collection
-            labels_.at(i).push_back(label);
-        }
-    }
 }
 
 warthog::label::bbaf_labelling::~bbaf_labelling()
@@ -148,7 +129,11 @@ warthog::label::bbaf_labelling::load(const char* filename,
         warthog::graph::node* n = lab->g_->get_node(i);
         for(uint32_t j = 0; j < n->out_degree(); j++)
         {
-            for(uint32_t word = 0; word < words_per_label; word++)
+            // create one label per outgoing edge
+            bbaf_label label;
+            label.flags_= new uint8_t[words_per_label*word_sz];
+
+            for(uint32_t word_idx = 0; word_idx< words_per_label; word_idx++)
             {
                 if(!ifs.good())
                 {
@@ -162,13 +147,9 @@ warthog::label::bbaf_labelling::load(const char* filename,
                     return 0;
                 }
 
-                uint64_t label;
-                ifs >> label;
-                *((uint64_t*)
-                    &lab->labels_.at(i).at(j).flags_[word*word_sz]) = label;
-                assert(*((uint64_t*)
-                            &lab->labels_.at(i).at(j).flags_[word*word_sz]) 
-                        == label);
+                uint64_t word = 0;
+                ifs >> word;
+                ((uint64_t*)(label.flags_))[word_idx] = word;
             }
 
             int32_t x1, y1, x2, y2;
@@ -187,9 +168,134 @@ warthog::label::bbaf_labelling::load(const char* filename,
                     << "x1 " << x1 << x2;
                 return 0;
             }
-            lab->labels_.at(i).at(j).bbox_ = rect;
+            label.bbox_ = rect;
+            lab->labels_.at(i).push_back(label);
+            assert(lab->labels_.at(i).back().bbox_ == rect);
+
             lines++;
        }
     }
     return lab;
+}
+
+bool
+warthog::label::bbaf_labelling::load_bch_labels(
+        const char* filename, warthog::graph::planar_graph* g,
+        std::vector<uint32_t>* partitioning,
+        std::vector<uint32_t>* lex_order, 
+        warthog::label::bbaf_labelling*& out_lab_fwd,
+        warthog::label::bbaf_labelling*& out_lab_bwd)
+{
+    std::cerr << "loading arcflags labelling file\n";
+    std::ifstream ifs(filename, std::ios_base::in);
+    if(!ifs.good())
+    {
+        std::cerr << "\nerror trying to load arcflags file " 
+            << filename << std::endl;
+        ifs.close();
+        return false;
+    }
+
+    // skip comment lines
+    uint32_t lines = 1;
+    while(ifs.peek() == '#')
+    {
+        while(ifs.get() != '\n');
+        lines++;
+    }
+
+    out_lab_fwd = new warthog::label::bbaf_labelling(g, partitioning);
+    out_lab_bwd = new warthog::label::bbaf_labelling(g, partitioning);
+
+    // allocate enough memory to label the outgoing edge of every node 
+    // and then read the labels from file
+    // NB: label range is : [firstid, lastid)
+    const uint32_t word_sz = sizeof(uint64_t);
+    uint32_t words_per_label = 
+        ceil(out_lab_fwd->bytes_per_af_label_ / (double)word_sz);
+    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
+    {
+        warthog::graph::node* n = g->get_node(i);
+        for(uint32_t j = 0; j < n->out_degree(); j++)
+        {
+
+            // create one label per outgoing edge
+            bbaf_label label;
+            label.flags_= new uint8_t[words_per_label*word_sz];
+
+            // read the arcflags part of the label
+            for(uint32_t word_idx = 0; word_idx < words_per_label; word_idx++)
+            {
+                if(ifs.eof() || !ifs.good())
+                {
+                    std::cerr << "unexpected error while reading " 
+                        << filename << "; line=" << lines << "\n";
+                    std::cerr 
+                        << "[debug info] node: " << i 
+                        << " out-edge-index: " << j << "\n";
+                    delete out_lab_fwd;
+                    delete out_lab_bwd;
+                    return false;
+                }
+                uint64_t word = 0;
+                ifs >> word;
+                ((uint64_t*)(label.flags_))[word_idx] = word;
+            }
+
+            // read the bbox part of the label
+            int32_t x1, y1, x2, y2;
+            ifs >> x1 >> y1 >> x2 >> y2;
+            warthog::geom::rectangle dummy; 
+            warthog::geom::rectangle rect(x1, y1, x2, y2); 
+            if(rect != dummy && !rect.is_valid())
+            {
+                std::cerr 
+                    << "err; invalid label on line " << lines 
+                    << " (bb part); aborting\n";
+                std::cerr 
+                    << "[debug info] node: " << i 
+                    << " out-edge-index: " << j << "\n"
+                    << "x1 " << x1 << x2;
+                delete out_lab_fwd;
+                delete out_lab_bwd;
+                return false;
+            }
+            label.bbox_ = rect;
+
+            // assign the label to the appropriate collection
+            // (with the set of up-edge labels or with the set of 
+            // reversed down-edge labels)
+            warthog::graph::edge* e = n->outgoing_begin() + j;
+            if(lex_order->at(e->node_id_) < lex_order->at(i)) 
+            { 
+                // reverse down-edge label (used by bwd bch search)
+                out_lab_bwd->labels_.at(e->node_id_).push_back(label);
+
+                assert( rect == 
+                        out_lab_bwd->labels_.at(e->node_id_).back().bbox_);
+                for(uint32_t word_idx = 0; word_idx < words_per_label; word_idx++)
+                {
+                    assert( ((uint64_t*)(out_lab_bwd->labels_.at(e->node_id_)
+                                    .back().flags_))[word_idx] == 
+                            ((uint64_t*)(label.flags_))[word_idx]);
+                }
+            }
+            else
+            {
+                // up-edge label (used by fwd bch search)
+                out_lab_fwd->labels_.at(i).push_back(label);
+
+                assert(out_lab_fwd->labels_.at(i).back().bbox_ == rect);
+                for(uint32_t word_idx = 0; word_idx < words_per_label; word_idx++)
+                {
+                    assert( ((uint64_t*)(out_lab_fwd->labels_.at(i)
+                                    .back().flags_))[word_idx] == 
+                            ((uint64_t*)(label.flags_))[word_idx]);
+                }
+            }
+
+            lines++;
+        }
+    }
+    return true;
 }

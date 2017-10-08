@@ -686,8 +686,8 @@ run_chaf_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the node order
     std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
+    bool lex_order = true;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, lex_order))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
@@ -709,25 +709,34 @@ run_chaf_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
     }
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::bbaf_labelling> lab(
-            warthog::label::bbaf_labelling::load(
-                    arclabels_file.c_str(), &g, &part));
-    if(!lab.get())
+
+    // load up the arc-flags; we divide the labels into two sets, one for the 
+    // up graph and one for the down graph
+    warthog::label::bbaf_labelling *fwd_lab_ptr=0, *bwd_lab_ptr=0;
+    bool result = warthog::label::bbaf_labelling::load_bch_labels(
+            arclabels_file.c_str(), &g, &part, &order, 
+            fwd_lab_ptr, bwd_lab_ptr);
+    if(!result)
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::bbaf_filter filter(lab.get());
+    std::shared_ptr<warthog::label::bbaf_labelling> fwd_lab(fwd_lab_ptr);
+    std::shared_ptr<warthog::label::bbaf_labelling> bwd_lab(bwd_lab_ptr);
+    
+    warthog::bbaf_filter fwd_filter(fwd_lab.get());
+    warthog::bbaf_filter bwd_filter(bwd_lab.get());
+
+    // make the graph suitable for BCH
+    warthog::ch::optimise_graph_for_bch(&g, &order);
+
 
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
-    //warthog::euclidean_heuristic h(&g);
-    warthog::chafbb_expansion_policy fexp(&g, &order, &filter);
-    warthog::chafbb_expansion_policy bexp (&g, &order, &filter, true);
+    warthog::chafbb_expansion_policy fexp(&g, &fwd_filter);
+    warthog::chafbb_expansion_policy bexp (&g, &bwd_filter, true);
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
-    //warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
