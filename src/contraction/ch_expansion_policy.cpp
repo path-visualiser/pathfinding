@@ -16,13 +16,13 @@ warthog::ch_expansion_policy::ch_expansion_policy(
 
     if(backward_)
     {
-        fn_begin_iter_ = &warthog::ch_expansion_policy::get_fwd_begin_iter;
-        fn_end_iter_ = &warthog::ch_expansion_policy::get_fwd_end_iter;
+        fn_begin_iter_ = &warthog::ch_expansion_policy::get_bwd_begin_iter;
+        fn_end_iter_ = &warthog::ch_expansion_policy::get_bwd_end_iter;
     }
     else
     {
-        fn_begin_iter_ = &warthog::ch_expansion_policy::get_bwd_begin_iter;
-        fn_end_iter_ = &warthog::ch_expansion_policy::get_bwd_end_iter;
+        fn_begin_iter_ = &warthog::ch_expansion_policy::get_fwd_begin_iter;
+        fn_end_iter_ = &warthog::ch_expansion_policy::get_fwd_end_iter;
     }
 }
 
