@@ -44,6 +44,10 @@ class apriori_filter
         void
         reset_filter();
 
+        // not used by this filter
+        inline void
+        set_target(uint32_t) { }
+
         inline size_t
         mem()
         {

@@ -67,6 +67,13 @@ class graph_expansion_policy : public expansion_policy
         virtual warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi)
         {
+            // update the filter with the new target location
+            uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
+            if(t_graph_id != warthog::INF) 
+            { 
+               filter_->set_target(t_graph_id);
+            }
+
             uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
             if(s_graph_id == warthog::INF) { return 0; }
             return generate(s_graph_id);
@@ -77,6 +84,10 @@ class graph_expansion_policy : public expansion_policy
         {
             uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
             if(t_graph_id == warthog::INF) { return 0; }
+
+            // update the filter with the new target location
+            filter_->set_target(t_graph_id);
+
             return generate(t_graph_id);
         }
 
