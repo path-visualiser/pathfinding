@@ -44,8 +44,7 @@ class ch_expansion_policy : public  expansion_policy
         // successors have a rank smaller than the current node 
         ch_expansion_policy(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* rank, 
-                bool backward=false,
-                warthog::ch::search_direction sd = warthog::ch::UP);
+                bool backward=false);
 
         virtual 
         ~ch_expansion_policy() { }
@@ -81,13 +80,9 @@ class ch_expansion_policy : public  expansion_policy
         bool backward_;
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* rank_;
-        warthog::ch::search_direction sd_;
 
         // we use function pointers to optimise away a 
         // branching instruction when fetching successors
-        //warthog::graph::edge_iter fn_begin_iter_(warthog::graph::node* n);
-        //warthog::graph::edge_iter fn_end_iter_(warthog::graph::node* n);
-
         typedef warthog::graph::edge_iter
                 (warthog::ch_expansion_policy::*chep_get_iter_fn) 
                 (warthog::graph::node* n);

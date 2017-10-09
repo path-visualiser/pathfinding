@@ -6,8 +6,7 @@
 warthog::ch_expansion_policy::ch_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank, 
-        bool backward,
-        warthog::ch::search_direction sd)
+        bool backward)
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;

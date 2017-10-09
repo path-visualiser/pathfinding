@@ -21,16 +21,12 @@
 #include "constants.h"
 #include "contraction.h"
 #include "corner_point_graph.h"
-#include "dcl_filter.h"
 #include "dimacs_parser.h"
-#include "down_distance_filter.h"
 #include "dummy_filter.h"
 #include "euclidean_heuristic.h"
 #include "fch_af_expansion_policy.h"
 #include "fch_bb_expansion_policy.h"
 #include "fch_bbaf_expansion_policy.h"
-#include "fch_dcl_expansion_policy.h"
-#include "fch_dd_expansion_policy.h"
 #include "fch_expansion_policy.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
@@ -85,7 +81,7 @@ help()
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tch, ch-astar, chase, chaf, chbb, chaf-bb, ch-cpg\n"
-    << "\tfch, fchx, fch-dd, fch-af, fch-bb, fch-bbaf, fch-dcl\n"
+    << "\tfch, fchx, fch-af, fch-bb, fch-bbaf\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
     << "\nRecognised values for --input:\n "
@@ -904,52 +900,6 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
 }
 
 void
-run_fch_dd(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    if(orderfile == "" || arclabels_file == "")
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] [arclabels file]\n";
-        return;
-    }
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
-    {
-        std::cerr << "err; could not load node order input file\n";
-        return;
-    }
-
-    // load up the graph 
-    warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // load up the arc-flags
-    warthog::down_distance_filter filter(&g);
-    if(!filter.load_labels(arclabels_file.c_str()))
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-
-    warthog::euclidean_heuristic h(&g);
-    warthog::fch_dd_expansion_policy fexp(&g, &order, &filter, &h);
-
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_dd_expansion_policy>
-    alg(&h, &fexp);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
 run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
@@ -1201,52 +1151,6 @@ run_fch_bbaf_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::fch_bbaf_cpg_expansion_policy fexp(&cpg, &order, lab.get());
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_bbaf_cpg_expansion_policy>
-    alg(&h, &fexp);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_dcl(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    if(orderfile == "" || arclabels_file == "")
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] [arclabels file]\n";
-        return;
-    }
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
-    {
-        std::cerr << "err; could not load node order input file\n";
-        return;
-    }
-
-    // load up the graph 
-    warthog::graph::planar_graph g;
-    g.load_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // load up the arc-flags
-    warthog::dcl_filter filter(&g);
-    if(!filter.load_labels(arclabels_file.c_str()))
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-
-    warthog::euclidean_heuristic h(&g);
-    warthog::fch_dcl_expansion_policy fexp(&g, &order, &filter);
-
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_dcl_expansion_policy>
     alg(&h, &fexp);
 
     run_experiments(&alg, alg_name, parser, std::cout);
@@ -1705,10 +1609,6 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_fch_apex_experiment(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "fch-dd")
-    {
-        run_fch_dd(cfg, parser, alg_name, gr, co);
-    }
     else if(alg_name == "fch-af")
     {
         run_fch_af(cfg, parser, alg_name, gr, co);
@@ -1720,10 +1620,6 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch-bbaf")
     {
         run_fch_bbaf(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-dcl")
-    {
-        run_fch_dcl(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-cpg")
     {
