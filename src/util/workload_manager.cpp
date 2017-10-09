@@ -55,7 +55,7 @@ warthog::util::workload_manager::num_flags_set()
     uint32_t count = 0;
     for(uint32_t i = 0; i < filter_sz_*sizeof(warthog::dbword); i++)
     {
-        count += get_flag(i);
+        count += __builtin_popcount(filter_[i]);
     }
     return count;
 }
