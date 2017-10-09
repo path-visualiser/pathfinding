@@ -147,6 +147,10 @@ class bb_labelling
                         edge_idx++;
                     }
 
+                    // allocate memory for each label of the source
+                    shared->lab_->labels_->at(source_id).resize(
+                            source->out_degree());
+
                     // compute the extent of each rectangle bounding box
                     std::function<void(warthog::search_node*)> bbox_fn = 
                     [shared, &source_id, &idmap](warthog::search_node* n) 

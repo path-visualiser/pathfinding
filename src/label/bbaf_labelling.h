@@ -194,6 +194,16 @@ class bbaf_labelling
                         edge_idx++;
                     }
 
+                    // allocate memory for the labels of the source
+                    for(uint32_t i = 0; i < source->out_degree(); i++)
+                    {
+                        bbaf_label label;
+                        label.flags_= 
+                            new uint8_t[shared->lab_->bytes_per_af_label_];
+                        shared->lab_->labels_.at(source_id).push_back(label);
+                    }
+
+
                     // now analyse the nodes on the closed list and label the 
                     // edges of the source node accordingly
                     std::function<void(warthog::search_node*)> fn_arcflags =
