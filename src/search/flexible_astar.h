@@ -17,7 +17,6 @@
 //
 
 #include "cpool.h"
-#include "dummy_filter.h"
 #include "pqueue.h"
 #include "problem_instance.h"
 #include "search.h"
@@ -35,15 +34,13 @@ namespace warthog
 
 // H is a heuristic function
 // E is an expansion policy
-// F is a node filtering (== pruning) policy
 template< class H, 
-          class E, 
-          class F = warthog::dummy_filter>
+          class E >
 class flexible_astar : public warthog::search
 {
 	public:
-		flexible_astar(H* heuristic, E* expander, F* filter = 0) :
-            heuristic_(heuristic), expander_(expander), filter_(filter)
+		flexible_astar(H* heuristic, E* expander) :
+            heuristic_(heuristic), expander_(expander)
 		{
 			open_ = new warthog::pqueue(1024, true);
             cost_cutoff_ = warthog::INF;
@@ -181,7 +178,6 @@ class flexible_astar : public warthog::search
 	private:
 		H* heuristic_;
 		E* expander_;
-        F* filter_;
 		warthog::pqueue* open_;
         warthog::problem_instance pi_;
 
@@ -356,22 +352,6 @@ class flexible_astar : public warthog::search
                         expander_->get_xy(n->get_id(), nx, ny);
                         n->init(pi_.instance_id_, current, 
                             gval, gval + heuristic_->h(nx, ny, gx, gy));
-                        
-                        // but only if the node is not provably redundant
-                        if(filter_ && filter_->filter(n))
-                        {
-                            #ifndef NDEBUG
-                            if(pi_.verbose_)
-                            {
-                                std::cerr 
-                                    << "  filtered-out (edgecost=" 
-                                    << cost_to_n<<") ("<<nx<<", "<<ny<<")...";
-                                n->print(std::cerr);
-                                std::cerr << std::endl;
-                            }
-                            #endif
-                            continue;
-                        }
 
                         open_->push(n);
                         sol.nodes_inserted_++;

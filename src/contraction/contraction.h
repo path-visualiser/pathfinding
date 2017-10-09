@@ -23,8 +23,11 @@ namespace warthog
 
 class dummy_filter;
 class euclidean_heuristic;
+
+template<typename FILTER>
 class graph_expansion_policy;
-template<typename H, typename E, typename F>
+
+template<typename H, typename E>
 class flexible_astar;
 
 namespace graph

@@ -28,6 +28,7 @@
 #include "fch_bb_expansion_policy.h"
 #include "fch_bbaf_expansion_policy.h"
 #include "fch_expansion_policy.h"
+#include "fch_x_expansion_policy.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
@@ -201,12 +202,15 @@ run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    warthog::graph_expansion_policy expander(&g);
+    warthog::dummy_filter filter;
+    warthog::graph_expansion_policy<warthog::dummy_filter>
+        expander(&g, &filter);
 
     warthog::euclidean_heuristic h(&g);
     warthog::flexible_astar<
         warthog::euclidean_heuristic, 
-        warthog::graph_expansion_policy> alg(&h, &expander);
+        warthog::graph_expansion_policy<warthog::dummy_filter>> 
+            alg(&h, &expander);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -223,7 +227,8 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    warthog::graph_expansion_policy fexp(&g);
+    warthog::dummy_filter filter;
+    warthog::graph_expansion_policy<warthog::dummy_filter> fexp(&g, &filter);
 
     warthog::graph::planar_graph backward_g;
     if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
@@ -232,7 +237,7 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << "(one or both)\n";
         return;
     }
-    warthog::graph_expansion_policy bexp(&g);
+    warthog::graph_expansion_policy<warthog::dummy_filter> bexp(&g, &filter);
 
     warthog::euclidean_heuristic h(&g);
     warthog::bidirectional_search<warthog::euclidean_heuristic>
@@ -252,7 +257,9 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << "(one or both)\n";
         return;
     }
-    warthog::graph_expansion_policy fexp(&g);
+    warthog::dummy_filter filter;
+    warthog::graph_expansion_policy<warthog::dummy_filter>
+        fexp(&g, &filter);
 
     warthog::graph::planar_graph backward_g;
     if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
@@ -261,7 +268,8 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << "(one or both)\n";
         return;
     }
-    warthog::graph_expansion_policy bexp(&backward_g);
+    warthog::graph_expansion_policy<warthog::dummy_filter>
+        bexp(&backward_g, &filter);
 
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic>
@@ -283,11 +291,14 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    warthog::graph_expansion_policy expander(&g);
+    warthog::dummy_filter filter;
+    warthog::graph_expansion_policy<warthog::dummy_filter> 
+        expander(&g, &filter);
 
     warthog::zero_heuristic h;
     warthog::flexible_astar<warthog::zero_heuristic, 
-        warthog::graph_expansion_policy> alg(&h, &expander);
+        warthog::graph_expansion_policy<warthog::dummy_filter>> 
+            alg(&h, &expander);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -817,9 +828,9 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
     warthog::ch::value_index_swap_dimacs(order);
 
     std::cerr << "preparing to search\n";
-    warthog::fch_expansion_policy fexp(&g, &order); 
     warthog::euclidean_heuristic h(&g);
-    warthog::apex_filter filter(&order);
+    warthog::apex_filter filter(&order, &g);
+    warthog::fch_x_expansion_policy fexp(&g, &order, &filter);
 
     std::string apex_filter_type = cfg.get_param_value("alg");
     if(apex_filter_type == "no_paa")
@@ -838,14 +849,13 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
     }
 
     // reference algo
+    warthog::fch_expansion_policy fch_exp(&g, &order);
     warthog::flexible_astar<warthog::euclidean_heuristic, 
-        warthog::fch_expansion_policy>
-            fch(&h, &fexp);
+        warthog::fch_expansion_policy> fch(&h, &fch_exp);
 
     // fchx
     warthog::flexible_astar<warthog::euclidean_heuristic, 
-        warthog::fch_expansion_policy, warthog::apex_filter> 
-            fchx(&h, &fexp, &filter);
+        warthog::fch_x_expansion_policy> fchx(&h, &fexp);
 
     std::cerr << "running fch apex experiment\n";
     if(!suppress_header)

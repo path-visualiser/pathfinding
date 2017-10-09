@@ -8,12 +8,11 @@
 // achieve the goal by keeping track of a single bit for each node in a 
 // discrete graph. During search the filter can be queried about the 
 // bit-state of each node and those nodes whose bit is set can be ignored 
-// (not generatedor expanded).
+// (not generated or expanded).
 // 
 // @author: dharabor
 // @created: 2016-07-19
 
-#include "node_filter.h"
 #include "constants.h"
 #include <cstdint>
 #include <cstring>
@@ -27,10 +26,10 @@ class apriori_filter
         apriori_filter(uint32_t num_nodes);
         virtual ~apriori_filter();
 
-        // returns true if the node with identifier @param node_id 
-        // is being filtered; otherwise false
+        // returns true if the successor node specified by @param edge_idx
+        // is being filtered. if the successor is not filtered, returns false
         bool
-        filter(warthog::search_node* n);
+        filter(uint32_t node_id, uint32_t edge_idx);
 
         void
         set_flag_true(uint32_t node_id);

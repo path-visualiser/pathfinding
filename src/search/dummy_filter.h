@@ -9,21 +9,22 @@
 // @created: 2016-07-19
 //
 
-#include "node_filter.h"
 #include <cstdint>
 
 namespace warthog
 {
 
-class search_node;
 class dummy_filter 
 {
     public:
         dummy_filter() { } 
         ~dummy_filter() { } 
 
-        bool
-        filter(warthog::search_node*) { return false; }
+        inline bool 
+        filter(uint32_t node_id, uint32_t edge_idx) { return false; }
+
+        inline void
+        set_target(uint32_t target_id)  { } 
 };
 
 }

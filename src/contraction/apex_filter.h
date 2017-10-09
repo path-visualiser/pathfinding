@@ -10,18 +10,25 @@
 // @created: 2017-05-10
 //
 
+#include "constants.h"
+#include "planar_graph.h"
+
 #include <vector>
+#include <cstdint>
 
 namespace warthog
 {
+
 // allows passing apex-related data to certain expanders that support it
 class apex_filter
 {
     public:
 
-        apex_filter(std::vector<uint32_t>* order)
+        apex_filter(
+                std::vector<uint32_t>* order, 
+                warthog::graph::planar_graph* g)
         {
-            last_search_id_ = warthog::INF;
+            g_ = g;
             apex_id_ = warthog::INF;
             apex_reached_ = false;
             order_ = order;
@@ -30,32 +37,26 @@ class apex_filter
         }
 
         inline bool
-        filter(warthog::search_node* n)
+        filter(uint32_t node_id, uint32_t edge_idx)
         {
-            assert(n->get_parent());
-
-            if(n->get_search_id() != last_search_id_)
-            {
-                // TODO: put in search algo and avoid one branch?
-                apex_reached_ = false;
-                last_search_id_ = n->get_search_id();
-            }
-            
             // have we reached the apex yet?
-            if(n->get_parent()->get_id() == apex_id_) 
+            if(node_id == apex_id_)
             { apex_reached_ = true; }
 
-            uint32_t n_rank = order_->at(n->get_id());
-            uint32_t p_rank = order_->at(n->get_parent()->get_id());
+            warthog::graph::node* n = g_->get_node(node_id);
+            warthog::graph::edge* e = n->outgoing_begin() + edge_idx;
+
+            uint32_t n_rank = order_->at(node_id);
+            uint32_t s_rank = order_->at(e->node_id_);
             if(apex_reached_)
             {
                 // never follow up edges after the apex is reached
-                if((n_rank > p_rank) && prune_after_apex_) { return true; }
+                if((s_rank > n_rank) && prune_after_apex_) { return true; }
                 return false;
             }
             
             // never follow down edges before the apex is reached
-            if((n_rank < p_rank) && prune_before_apex_) { return true; }
+            if((s_rank < n_rank) && prune_before_apex_) { return true; }
 
 
             // always follow up edges before the apex is reached
@@ -66,6 +67,7 @@ class apex_filter
         set_apex(uint32_t node_id)
         {
             apex_id_ = node_id;
+            apex_reached_ = false;
         }
 
         inline uint32_t
@@ -75,10 +77,10 @@ class apex_filter
         bool prune_after_apex_;
     
     private:
-        uint32_t last_search_id_;
         uint32_t apex_id_;
         bool apex_reached_;
         std::vector<uint32_t>* order_;
+        warthog::graph::planar_graph* g_;
 };
 }
 

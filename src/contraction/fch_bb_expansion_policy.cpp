@@ -4,7 +4,6 @@
 #include "fch_bb_expansion_policy.h"
 #include "planar_graph.h"
 #include "search_node.h"
-#include "node_filter.h"
 
 warthog::fch_bb_expansion_policy::fch_bb_expansion_policy(
         warthog::graph::planar_graph* g, 

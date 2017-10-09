@@ -19,15 +19,15 @@ warthog::ch::lazy_graph_contraction::lazy_graph_contraction(
     : graph_contraction(g)
 
 {
-    expander_ = new warthog::graph_expansion_policy(g);
-    //expander_->set_filter(get_filter());
-
     heuristic_ = new warthog::euclidean_heuristic(g);
-    filter_ = new apriori_filter(get_graph()->get_num_nodes());
+    filter_ = new warthog::apriori_filter(get_graph()->get_num_nodes());
+    expander_ = new 
+        warthog::graph_expansion_policy<warthog::apriori_filter>(g, filter_);
+
     alg_ = new flexible_astar<
         warthog::euclidean_heuristic,
-         warthog::graph_expansion_policy,
-         warthog::apriori_filter>(heuristic_, expander_, filter_);
+         warthog::graph_expansion_policy<warthog::apriori_filter>>
+             (heuristic_, expander_);
 
     uint32_t sz_g = get_graph()->get_num_nodes();
     heap_ = new warthog::heap<ch_pair>(sz_g, true);

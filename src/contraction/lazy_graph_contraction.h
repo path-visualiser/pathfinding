@@ -46,6 +46,8 @@ namespace warthog
 
 class apriori_filter;
 class euclidean_heuristic;
+
+template<class FILTER>
 class graph_expansion_policy;
 
 namespace graph
@@ -127,24 +129,16 @@ class lazy_graph_contraction : public graph_contraction
         // witness search stuff
         uint32_t ws_max_expansions_; 
         warthog::euclidean_heuristic* heuristic_;
-        warthog::graph_expansion_policy* expander_;
+        warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
         warthog::apriori_filter* filter_;
         warthog::flexible_astar<
             warthog::euclidean_heuristic,
-            warthog::graph_expansion_policy, 
-            warthog::apriori_filter>* alg_;
+            warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
 
         // metrics
         uint32_t total_expansions_;
         uint32_t total_searches_;
         uint32_t total_lazy_updates_;
-        //struct cache_entry
-        //{
-        //    uint32_t from;
-        //    uint32_t to;
-        //    double dist;
-        //};
-        //std::vector<cache_entry> dist_cache_;
         
         
         int32_t 

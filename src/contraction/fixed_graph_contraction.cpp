@@ -39,17 +39,15 @@ warthog::ch::fixed_graph_contraction::init()
 {
     order_index_ = 0;
 
-    expander_ = new warthog::graph_expansion_policy(get_graph());
-    //warthog::apriori_filter* af = get_filter();
-    //expander_->set_filter(af);
+    filter_ = new warthog::apriori_filter(get_graph()->get_num_nodes());
+    expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
+        (get_graph(), filter_);
 
     heuristic_ = new warthog::euclidean_heuristic(get_graph());
-    filter_ = new warthog::apriori_filter(get_graph()->get_num_nodes());
     alg_ = new flexible_astar<
                     warthog::euclidean_heuristic,
-                    warthog::graph_expansion_policy,
-                    warthog::apriori_filter>
-                        (heuristic_, expander_, filter_);
+                    warthog::graph_expansion_policy<warthog::apriori_filter>>
+                        (heuristic_, expander_);
 }
 
 void

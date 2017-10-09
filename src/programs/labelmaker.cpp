@@ -5,6 +5,7 @@
 #include "contraction.h"
 #include "corner_point_graph.h"
 #include "dimacs_parser.h"
+#include "dummy_filter.h"
 #include "fch_expansion_policy.h"
 #include "fch_jpg_expansion_policy.h"
 #include "graph_expansion_policy.h"
@@ -312,16 +313,22 @@ compute_bb_labels()
         workload.set_flag(i, true);
     }
 
+    warthog::dummy_filter filter;
+
     // gogogo
     std::cerr << "computing bounding box labelling... \n";
-    std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
-        [&g]() -> warthog::graph_expansion_policy*
+    std::function<
+        warthog::graph_expansion_policy<warthog::dummy_filter>* (void) >
+        fn_new_expander = 
+        [&g, &filter]() -> 
+        warthog::graph_expansion_policy<warthog::dummy_filter>*
         {
-            return new warthog::graph_expansion_policy(&g);
+            return new warthog::graph_expansion_policy<warthog::dummy_filter>
+                (&g, &filter);
         };
     warthog::label::bb_labelling* labelling = 
         warthog::label::bb_labelling::compute
-            <warthog::graph_expansion_policy>
+            <warthog::graph_expansion_policy<warthog::dummy_filter>>
                 (&g, fn_new_expander, &workload);
 
     // save the result
@@ -649,17 +656,21 @@ compute_af_labels()
         workload.set_flag(i, true);
     }
 
+    warthog::dummy_filter filter;
+
     // gogogo
     std::cerr << "computing af labelling... \n";
-    std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
-        [&g]() -> warthog::graph_expansion_policy*
+    std::function<warthog::graph_expansion_policy<warthog::dummy_filter>*
+        (void)> fn_new_expander = 
+        [&g, &filter]() -> 
+        warthog::graph_expansion_policy<warthog::dummy_filter>*
         {
-            std::cerr << "new graph_expansion_policy" << std::endl;
-            return new warthog::graph_expansion_policy(&g);
+            return new warthog::graph_expansion_policy<warthog::dummy_filter>
+                (&g, &filter);
         };
     warthog::label::af_labelling* labelling = 
         warthog::label::af_labelling::compute
-            <warthog::graph_expansion_policy>
+            <warthog::graph_expansion_policy<warthog::dummy_filter>>
                 (&g, &part, fn_new_expander, &workload);
 
     // save the result
@@ -749,16 +760,22 @@ compute_bbaf_labels()
     }
 
     // compute bbaf labels
-    std::function<warthog::graph_expansion_policy*(void)> fn_new_expander = 
-    [&g]() -> warthog::graph_expansion_policy*
-    {
-        return new warthog::graph_expansion_policy(&g);
-    };
+    
+    warthog::dummy_filter filter;
+    std::function< 
+        warthog::graph_expansion_policy<warthog::dummy_filter>* 
+        (void)> fn_new_expander = 
+        [&g, &filter]() -> 
+        warthog::graph_expansion_policy<warthog::dummy_filter>*
+        {
+            return new warthog::graph_expansion_policy<warthog::dummy_filter>
+                (&g, &filter);
+        };
 
     std::shared_ptr<warthog::label::bbaf_labelling> 
         labelling(
             warthog::label::bbaf_labelling::compute
-                <warthog::graph_expansion_policy>
+                <warthog::graph_expansion_policy<warthog::dummy_filter>>
                     (&g, &part, fn_new_expander, &workload));
 
     // save the result

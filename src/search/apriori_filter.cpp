@@ -39,9 +39,9 @@ warthog::apriori_filter::reset_filter()
 }
 
 bool
-warthog::apriori_filter::filter(warthog::search_node* n)
+warthog::apriori_filter::filter(uint32_t node_id, uint32_t edge_idx)
 {
-    return get_flag(n->get_id());
+    return get_flag(node_id);
 }
 
 bool

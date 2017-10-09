@@ -20,7 +20,7 @@ help()
         "a given (currently, DIMACS-format only) input graph\n";
 	std::cerr << "valid parameters:\n"
 	<< "\t--order [ fixed | lazy ]\n"
-    << "\t--partial [1-100] (optional; percentage of nodes to contract)"
+    << "\t--partial [1-100] (optional; percentage of nodes to contract)\n"
     << "\t--input [gr file] [co file] (IN THIS ORDER!!)\n"
 	<< "\t--verbose (optional)\n";
 }
