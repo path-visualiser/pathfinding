@@ -22,7 +22,6 @@
 #include "contraction.h"
 #include "corner_point_graph.h"
 #include "dimacs_parser.h"
-#include "dummy_filter.h"
 #include "euclidean_heuristic.h"
 #include "fch_af_expansion_policy.h"
 #include "fch_bb_expansion_policy.h"
@@ -202,15 +201,12 @@ run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    warthog::dummy_filter filter;
-    warthog::graph_expansion_policy<warthog::dummy_filter>
-        expander(&g, &filter);
+    warthog::simple_graph_expansion_policy expander(&g);
 
     warthog::euclidean_heuristic h(&g);
     warthog::flexible_astar<
         warthog::euclidean_heuristic, 
-        warthog::graph_expansion_policy<warthog::dummy_filter>> 
-            alg(&h, &expander);
+        warthog::simple_graph_expansion_policy> alg(&h, &expander);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -227,8 +223,7 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    warthog::dummy_filter filter;
-    warthog::graph_expansion_policy<warthog::dummy_filter> fexp(&g, &filter);
+    warthog::simple_graph_expansion_policy fexp(&g);
 
     warthog::graph::planar_graph backward_g;
     if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
@@ -237,7 +232,7 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << "(one or both)\n";
         return;
     }
-    warthog::graph_expansion_policy<warthog::dummy_filter> bexp(&g, &filter);
+    warthog::simple_graph_expansion_policy bexp(&g);
 
     warthog::euclidean_heuristic h(&g);
     warthog::bidirectional_search<warthog::euclidean_heuristic>
@@ -257,9 +252,7 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << "(one or both)\n";
         return;
     }
-    warthog::dummy_filter filter;
-    warthog::graph_expansion_policy<warthog::dummy_filter>
-        fexp(&g, &filter);
+    warthog::simple_graph_expansion_policy fexp(&g);
 
     warthog::graph::planar_graph backward_g;
     if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
@@ -268,8 +261,7 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << "(one or both)\n";
         return;
     }
-    warthog::graph_expansion_policy<warthog::dummy_filter>
-        bexp(&backward_g, &filter);
+    warthog::simple_graph_expansion_policy bexp(&backward_g);
 
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic>
@@ -291,14 +283,11 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    warthog::dummy_filter filter;
-    warthog::graph_expansion_policy<warthog::dummy_filter> 
-        expander(&g, &filter);
+    warthog::simple_graph_expansion_policy expander(&g);
 
     warthog::zero_heuristic h;
     warthog::flexible_astar<warthog::zero_heuristic, 
-        warthog::graph_expansion_policy<warthog::dummy_filter>> 
-            alg(&h, &expander);
+        warthog::simple_graph_expansion_policy> alg(&h, &expander);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }

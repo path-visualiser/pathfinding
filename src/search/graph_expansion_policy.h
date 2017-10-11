@@ -28,11 +28,20 @@ class graph_expansion_policy : public expansion_policy
 {
     public:
         graph_expansion_policy(
-                warthog::graph::planar_graph* g, FILTER* filter)
+                warthog::graph::planar_graph* g, FILTER* filter = 0)
             : expansion_policy(g->get_num_nodes()), g_(g), filter_(filter)
         {
             assert(g);
-            assert(filter);
+            if(filter == 0)
+            {
+                fn_generate_successor = &warthog::graph_expansion_policy
+                                        <FILTER>::fn_generate_no_filter;
+            }
+            else
+            {
+                fn_generate_successor = &warthog::graph_expansion_policy
+                                        <FILTER>::fn_generate_with_filter;
+            }
         }
 
         virtual ~graph_expansion_policy() { }
@@ -51,10 +60,7 @@ class graph_expansion_policy : public expansion_policy
             {
                 warthog::graph::edge& e = *it;
                 assert(e.node_id_ < g_->get_num_nodes());
-                if(!filter_->filter(e.node_id_, it - begin))
-                {
-                    this->add_neighbour(this->generate(e.node_id_), e.wt_);
-                }
+                (this->*fn_generate_successor)(e.node_id_, it - begin, e);
             }
         }
 
@@ -103,7 +109,37 @@ class graph_expansion_policy : public expansion_policy
 	private:
         warthog::graph::planar_graph* g_;
         FILTER* filter_;
+
+        typedef void(warthog::graph_expansion_policy<FILTER>::*generate_fn)
+            (uint32_t current_id, uint32_t edge_idx, warthog::graph::edge& e);
+
+        generate_fn fn_generate_successor;
+
+        inline void 
+        fn_generate_with_filter(
+                uint32_t current_id, 
+                uint32_t edge_idx, 
+                warthog::graph::edge& e)
+        {
+            if(!filter_->filter(current_id, edge_idx))
+            {
+                this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            }
+        }
+
+        inline void
+        fn_generate_no_filter(
+                uint32_t current_id, 
+                uint32_t edge_idx, 
+                warthog::graph::edge& e)
+        {
+            this->add_neighbour(this->generate(e.node_id_), e.wt_);
+        }
+
 };
+
+typedef 
+warthog::graph_expansion_policy<> simple_graph_expansion_policy;
 
 }
 
