@@ -3,23 +3,31 @@
 
 // search/chase_search.h
 //
-// An algorithm resembling CHASE. For theoretical details see:
+// An implementation of the CHASE algorithm. This method is a two-stage
+// bi-directional search with contraction hierarchies. The CH graph
+// is divided into a "core" set of nodes, defined as the top x% of the
+// hierarchy. 
+//
+// In the first stage of the search, CHASE employs vanilla BCH in the 
+// non-core part of the graph. Any successors which reside in the core 
+// have their g-values relaxed but their expansion is deferred unless
+// it can be proven the optimal path must involve some nodes from the core.
+//
+// In the second phase the method applies BCH plus arcflags in order to
+// speed up search inside the core.
+//
+// For more theoretical details see:
 //
 // [Bauer, Delling, Sanders, Schieferdecker, Schultes and Wagner, 
 // Combining Hierarchical and Goal-directed Speed-up Techniques 
 // for Dijkstra's Algorithm, Journal of Experimental Algorithms,
 // vol 15, 2010]
 //
-// NB: NOT FULLY IMPLEMENTED!! Only stalls nodes higher than 
-// some cutoff and resumes the search from these nodes if no
-// optimal path has been found.
-//
 // @author: dharabor
 // @created: 2016-09-10
 //
 
 #include "constants.h"
-//#include "expansion_policy.h"
 #include "planar_graph.h"
 #include "pqueue.h"
 #include "search.h"
@@ -40,19 +48,23 @@ namespace graph
     class planar_graph;
 }
 
-class expansion_policy;
 class pqueue;
 class search_node;
 
 typedef double (* heuristicFn)
 (uint32_t nodeid, uint32_t targetid);
 
-template<class E, class H>
+//template<class E, class H>
+template<class H>
 class chase_search : public warthog::search
 {
     public:
-        chase_search(E* fexp, E* bexp, H* heuristic,
-                std::vector<uint32_t>* rank)
+        chase_search(
+                warthog::chase_expansion_policy* fexp, 
+                warthog::chase_expansion_policy* bexp, 
+                H* heuristic,
+                std::vector<uint32_t>* rank, 
+                double core_pct)
             : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
             fopen_ = new pqueue(512, true);
@@ -65,7 +77,7 @@ class chase_search : public warthog::search
             }
             
             rank_ = rank;
-            max_phase1_rank_ = fexpander_->get_num_nodes()*0.95;
+            max_phase1_rank_ = fexpander_->get_num_nodes()*(1-core_pct);
         }
 
         ~chase_search()
@@ -111,8 +123,8 @@ class chase_search : public warthog::search
     private:
         warthog::pqueue* fopen_;
         warthog::pqueue* bopen_;
-        E* fexpander_;
-        E* bexpander_;
+        warthog::chase_expansion_policy* fexpander_;
+        warthog::chase_expansion_policy* bexpander_;
         H* heuristic_;
         bool dijkstra_;
         bool forward_next_;
@@ -311,6 +323,8 @@ class chase_search : public warthog::search
                          
                         // reset variables that control the search
                         phase_ = 2;
+                        fexpander_->begin_phase2();
+                        bexpander_->begin_phase2();
                         cannot_improve = false;
                         fwd_core_lb = bwd_core_lb = DBL_MAX;
                         search_direction = 1;
@@ -354,8 +368,8 @@ class chase_search : public warthog::search
         void
         expand( warthog::search_node* current,
                 warthog::pqueue* open,
-                E* expander,
-                E* reverse_expander, 
+                warthog::chase_expansion_policy* expander,
+                warthog::chase_expansion_policy* reverse_expander, 
                 uint32_t tmp_targetid,
                 std::vector<warthog::search_node*>& norelax, 
                 double&  norelax_distance_min,

@@ -17,6 +17,7 @@
 #include "chaf_expansion_policy.h"
 #include "chafbb_expansion_policy.h"
 #include "chbb_expansion_policy.h"
+#include "chase_expansion_policy.h"
 #include "chase_search.h"
 #include "constants.h"
 #include "contraction.h"
@@ -417,38 +418,6 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
-//void
-//run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-//        std::string alg_name, std::string gr, std::string co)
-//{
-//    std::string orderfile = cfg.get_param_value("input");
-//
-//    // load up the graph 
-//    warthog::graph::planar_graph g;
-//    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
-//    {
-//        std::cerr << "err; could not load gr or co input files " 
-//                  << "(one or both)\n";
-//        return;
-//    }
-//
-//    // load up the node order
-//    std::vector<uint32_t> order;
-//    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-//    {
-//        std::cerr << "err; could not load contraction order file\n";
-//        return;
-//    }
-//
-//    std::cerr << "preparing to search\n";
-//    warthog::zero_heuristic h;
-//    warthog::ch_expansion_policy fexp(&g, &order);
-//    warthog::ch_expansion_policy bexp (&g, &order, true);
-//    warthog::chase_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
-//
-//    run_experiments(&alg, alg_name, parser, std::cout);
-//}
-
 void
 run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
@@ -465,6 +434,17 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                   << " [graph partition file]\n";
         return;
     }
+
+    // read core percentage parameter
+    double core_pct_value = 0.9;
+    std::string core_pct = cfg.get_param_value("alg");
+    if(core_pct != "")
+    {
+        alg_name.append(core_pct);
+        int32_t tmp = atoi(core_pct.c_str());
+        core_pct_value = (double)tmp / 100.0;
+    }
+
 
     // load up the node order
     std::vector<uint32_t> order;
@@ -513,11 +493,10 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
-    warthog::chaf_expansion_policy fexp(&g, &fwd_filter);
-    warthog::chaf_expansion_policy bexp (&g, &bwd_filter, true);
-    warthog::chase_search<
-        warthog::chaf_expansion_policy, warthog::zero_heuristic> 
-        alg(&fexp, &bexp, &h, &order);
+    warthog::chase_expansion_policy fexp(&g, &fwd_filter);
+    warthog::chase_expansion_policy bexp (&g, &bwd_filter, true);
+    warthog::chase_search<warthog::zero_heuristic> 
+        alg(&fexp, &bexp, &h, &order, core_pct_value);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
