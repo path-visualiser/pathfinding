@@ -4,7 +4,9 @@ In this repository you will find implementations of various algorithms I have st
 
 If you would like more information about my work, or are looking for copies of published papers, please visit my [ANU homepage](http://users.rsise.anu.edu.au/~dharabor).
 
-The code hosted here is written in C++. Much of it is built from the ground up. Some is built on top of Nathan Sturtevant's open-source pathfinding library [Hierarchical Open Graph](http://hog2.googlecode.com). All of it is made available under the terms of the GNU GPL Version 2. 
+* Implementations of Jump Point Search and JPS+.
+* An implementation of the Anya search algorithm (NB: an implementation of the related Polyanya algorithm is available Michael Cui's repository, [here](https://bitbucket.org/mlcui1/polyanya))
+* Other algorithms (often search algorithms) that I have found useful or interesting.
 
 My development platform is OSX 10.8.4 with most of the code here being written in C++. When compiling I recommend that platform together with GCC 4.8.1. In the past I have successfully compiled and executed the same code on Linux (most recently Ubuntu 13.10). 
 
