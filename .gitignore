@@ -41,3 +41,5 @@ src/results
 src/scenarios
 src/tags
 src/testdata
+src/*log
+src/*results*

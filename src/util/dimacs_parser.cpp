@@ -2,6 +2,7 @@
 #include "dimacs_parser.h"
 
 #include <cassert>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <iostream>
@@ -354,7 +355,8 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
 }
 
 void
-warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
+warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out,
+                double core_pct_value, std::vector<uint32_t>* lex_order)
 {
     std::unordered_map<uint32_t, std::set<uint32_t>> adj;
     std::set<uint32_t> nodes;
@@ -367,8 +369,33 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
         warthog::dimacs_parser::edge e = edges_->at(i);
         uint32_t id1 = e.head_id_;
         uint32_t id2 = e.tail_id_;
-        nodes.insert(id1);
-        nodes.insert(id2);
+        bool include_id1 = true, include_id2 = true;
+
+        // filtering stuff for when the DIMACS graph is a CH and we want to 
+        // convert just a subset of the graph (== a core graph)
+        if(lex_order)
+        {
+            // core is the top-k% of nodes; 
+            int32_t min_core_level = lex_order->size() * (1-core_pct_value);
+
+            // metis ids need to be contiguous and start from 1
+            if(lex_order->at(id1) >= min_core_level)
+            { 
+                id1 = abs((int)id1 - min_core_level); 
+                assert(id1 < lex_order->size());
+            }
+            else { include_id1 = false; }
+
+            if(lex_order->at(id2) >= min_core_level)
+            { 
+                id2 = abs((int)id2 - min_core_level); 
+                assert(id2 < lex_order->size());
+            }
+            else { include_id2 = false; }
+        }
+
+        if(include_id1) { nodes.insert(id1); }
+        if(include_id2) { nodes.insert(id2); }
 
         if(adj.find(id1) == adj.end())
         {
@@ -382,18 +409,22 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out)
             std::pair<uint32_t, std::set<uint32_t>> elt(id2, neis);
             adj.insert(elt);
         }
-        std::set<uint32_t>& neis1 = adj.find(id1)->second;
-        std::set<uint32_t>& neis2 = adj.find(id2)->second;
-        if(neis1.find(id2) == neis1.end() && neis2.find(id1) == neis2.end())
+        
+        if(include_id1 && include_id2)
         {
-            num_undirected_edges++;
-        }
+            std::set<uint32_t>& neis1 = adj.find(id1)->second;
+            std::set<uint32_t>& neis2 = adj.find(id2)->second;
+            if(neis1.find(id2) == neis1.end() && neis2.find(id1) == neis2.end())
+            {
+                num_undirected_edges++;
+            }
 
-        auto iter1 = adj.find(id1);
-        auto iter2 = adj.find(id2);
-        assert(iter1 != adj.end() && iter2 != adj.end());
-        iter1->second.insert(id2);
-        iter2->second.insert(id1);
+            auto iter1 = adj.find(id1);
+            auto iter2 = adj.find(id2);
+            assert(iter1 != adj.end() && iter2 != adj.end());
+            iter1->second.insert(id2);
+            iter2->second.insert(id1);
+        }
     }
     std::cerr << "conversion done; " << nodes.size() << " nodes and " << num_undirected_edges << " edges; printing\n";
 

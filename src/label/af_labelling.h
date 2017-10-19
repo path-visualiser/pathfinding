@@ -59,9 +59,6 @@ class af_labelling
         inline uint8_t*
         get_label(uint32_t node_id, uint32_t edge_index)
         { 
-            uint32_t node_degree = flags_->at(node_id).size();
-            node_degree = node_degree;
-
             assert(node_id < flags_->size());
             assert(edge_index < flags_->at(node_id).size());
             return flags_->at(node_id).at(edge_index);

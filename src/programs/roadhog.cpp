@@ -437,14 +437,13 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // read core percentage parameter
     double core_pct_value = 0.9;
-    std::string core_pct = cfg.get_param_value("alg");
-    if(core_pct != "")
+    std::string str_core_pct = cfg.get_param_value("alg");
+    if(str_core_pct != "")
     {
-        alg_name.append(core_pct);
-        int32_t tmp = atoi(core_pct.c_str());
+        alg_name.append(str_core_pct);
+        int32_t tmp = atoi(str_core_pct.c_str());
         core_pct_value = (double)tmp / 100.0;
     }
-
 
     // load up the node order
     std::vector<uint32_t> order;

@@ -133,7 +133,8 @@ class dimacs_parser
         // convert to the graph format used by the METIS 
         // graph partitioning library
         void 
-        print_undirected_unweighted_metis(std::ostream&);
+        print_undirected_unweighted_metis(std::ostream&, 
+                double core_pct_value=1, std::vector<uint32_t>* lex_order=0);
 
         inline std::string 
         get_problemfile() { return problemfile_; }
