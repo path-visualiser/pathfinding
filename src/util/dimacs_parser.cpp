@@ -362,6 +362,7 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out,
     std::set<uint32_t> nodes;
 
     uint32_t num_undirected_edges = 0;
+    uint32_t id_offset = 1; // order ids begin from 0; dimacs ids from 1
 
     // enumerate all the nodes
     for(uint32_t i = 0; i < edges_->size(); i++)
@@ -379,14 +380,14 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out,
             int32_t min_core_level = lex_order->size() * (1-core_pct_value);
 
             // metis ids need to be contiguous and start from 1
-            if(lex_order->at(id1) >= min_core_level)
+            if(lex_order->at(id1 - id_offset) >= min_core_level)
             { 
                 id1 = abs((int)id1 - min_core_level); 
                 assert(id1 < lex_order->size());
             }
             else { include_id1 = false; }
 
-            if(lex_order->at(id2) >= min_core_level)
+            if(lex_order->at(id2 - id_offset) >= min_core_level)
             { 
                 id2 = abs((int)id2 - min_core_level); 
                 assert(id2 < lex_order->size());

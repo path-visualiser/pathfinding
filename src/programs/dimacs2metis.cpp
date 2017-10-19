@@ -71,8 +71,8 @@ main(int argc, char** argv)
 
         // load up the node order
         std::vector<uint32_t> order;
-        bool lex_order = true;
-        if(!warthog::ch::load_node_order(str_lex_order.c_str(), order, lex_order))
+        bool lex=true;
+        if(!warthog::ch::load_node_order(str_lex_order.c_str(), order, lex))
         {
             std::cerr << "err; could not load node order input file\n";
             return EINVAL;
