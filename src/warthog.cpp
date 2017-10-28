@@ -58,8 +58,8 @@ check_optimality(double len, warthog::experiment* exp)
 	uint32_t precision = 1;
 	int epsilon = (warthog::ONE / (int)pow(10, precision)) / 2;
 
-	warthog::cost_t int_len = len * warthog::ONE;
-	warthog::cost_t int_opt = exp->distance() * warthog::ONE;
+	int32_t int_len = len * warthog::ONE;
+	int32_t int_opt = exp->distance() * warthog::ONE;
 
 	for(int i = 10; i <= pow(10, precision); i = i*10)
 	{
@@ -70,7 +70,7 @@ check_optimality(double len, warthog::experiment* exp)
 		}
 	}
 
-	int delta = abs(int_len - int_opt);
+	int32_t delta = abs(int_len - int_opt);
 	if( abs(delta - epsilon) > epsilon)
 	{
 		std::stringstream strpathlen;

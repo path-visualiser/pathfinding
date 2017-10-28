@@ -25,8 +25,7 @@ class octile_heuristic
 		~octile_heuristic() { }
 
 		inline warthog::cost_t
-		h(unsigned int x, unsigned int y, 
-				unsigned int x2, unsigned int y2)
+		h(int32_t x, int32_t y, int32_t x2, int32_t y2)
 		{
             // NB: precision loss when warthog::cost_t is an integer
 			double dx = abs(x-x2);
