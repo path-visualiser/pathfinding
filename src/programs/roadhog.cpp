@@ -13,7 +13,7 @@
 #include "bb_filter.h"
 #include "bidirectional_search.h"
 #include "cfg.h"
-#include "ch_expansion_policy.h"
+#include "bch_expansion_policy.h"
 #include "chaf_expansion_policy.h"
 #include "chafbb_expansion_policy.h"
 #include "chbb_expansion_policy.h"
@@ -324,8 +324,8 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::ch::optimise_graph_for_bch(&g, &order);
 
     std::cerr << "preparing to search\n";
-    warthog::ch_expansion_policy fexp(&g, &order);
-    warthog::ch_expansion_policy bexp (&g, &order, true);
+    warthog::bch_expansion_policy fexp(&g, &order);
+    warthog::bch_expansion_policy bexp (&g, &order, true);
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
 
@@ -362,8 +362,8 @@ run_ch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(&g);
-    warthog::ch_expansion_policy fexp(&g, &order);
-    warthog::ch_expansion_policy bexp (&g, &order, true);
+    warthog::bch_expansion_policy fexp(&g, &order);
+    warthog::bch_expansion_policy bexp (&g, &order, true);
     warthog::bidirectional_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);

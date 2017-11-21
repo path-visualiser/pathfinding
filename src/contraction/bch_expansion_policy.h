@@ -1,7 +1,7 @@
-#ifndef WARTHOG_CH_EXPANSION_POLICY_H
-#define WARTHOG_CH_EXPANSION_POLICY_H
+#ifndef WARTHOG_BCH_EXPANSION_POLICY_H
+#define WARTHOG_BCH_EXPANSION_POLICY_H
 
-// contraction/ch_expansion_policy.h
+// contraction/bch_expansion_policy.h
 //
 // An expansion policy for contraction hierarchies. 
 //
@@ -26,7 +26,7 @@ namespace warthog{
 class problem_instance;
 class search_node;
 
-class ch_expansion_policy : public  expansion_policy
+class bch_expansion_policy : public  expansion_policy
 {
     public:
         // NB: @param rank: the contraction ordering used to create
@@ -42,12 +42,12 @@ class ch_expansion_policy : public  expansion_policy
         // in the up graph all successors have a rank larger than the
         // current node (this is the default). in the down graph, all 
         // successors have a rank smaller than the current node 
-        ch_expansion_policy(warthog::graph::planar_graph* g, 
+        bch_expansion_policy(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* rank, 
                 bool backward=false);
 
         virtual 
-        ~ch_expansion_policy() { }
+        ~bch_expansion_policy() { }
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
@@ -84,7 +84,7 @@ class ch_expansion_policy : public  expansion_policy
         // we use function pointers to optimise away a 
         // branching instruction when fetching successors
         typedef warthog::graph::edge_iter
-                (warthog::ch_expansion_policy::*chep_get_iter_fn) 
+                (warthog::bch_expansion_policy::*chep_get_iter_fn) 
                 (warthog::graph::node* n);
         chep_get_iter_fn fn_begin_iter_;
         chep_get_iter_fn fn_end_iter_;

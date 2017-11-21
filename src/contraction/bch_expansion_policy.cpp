@@ -1,9 +1,9 @@
-#include "ch_expansion_policy.h"
+#include "bch_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
 #include "search_node.h"
 
-warthog::ch_expansion_policy::ch_expansion_policy(
+warthog::bch_expansion_policy::bch_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank, 
         bool backward)
@@ -15,18 +15,18 @@ warthog::ch_expansion_policy::ch_expansion_policy(
 
     if(backward_)
     {
-        fn_begin_iter_ = &warthog::ch_expansion_policy::get_bwd_begin_iter;
-        fn_end_iter_ = &warthog::ch_expansion_policy::get_bwd_end_iter;
+        fn_begin_iter_ = &warthog::bch_expansion_policy::get_bwd_begin_iter;
+        fn_end_iter_ = &warthog::bch_expansion_policy::get_bwd_end_iter;
     }
     else
     {
-        fn_begin_iter_ = &warthog::ch_expansion_policy::get_fwd_begin_iter;
-        fn_end_iter_ = &warthog::ch_expansion_policy::get_fwd_end_iter;
+        fn_begin_iter_ = &warthog::bch_expansion_policy::get_fwd_begin_iter;
+        fn_end_iter_ = &warthog::bch_expansion_policy::get_fwd_end_iter;
     }
 }
 
 void
-warthog::ch_expansion_policy::expand(warthog::search_node* current,
+warthog::bch_expansion_policy::expand(warthog::search_node* current,
         warthog::problem_instance* problem)
 {
     reset();
@@ -47,7 +47,7 @@ warthog::ch_expansion_policy::expand(warthog::search_node* current,
 }
 
 size_t
-warthog::ch_expansion_policy::mem()
+warthog::bch_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + 
@@ -55,7 +55,7 @@ warthog::ch_expansion_policy::mem()
 }
 
 warthog::search_node* 
-warthog::ch_expansion_policy::generate_start_node(
+warthog::bch_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
     uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
@@ -64,7 +64,7 @@ warthog::ch_expansion_policy::generate_start_node(
 }
 
 warthog::search_node*
-warthog::ch_expansion_policy::generate_target_node(
+warthog::bch_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);

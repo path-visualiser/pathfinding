@@ -1,5 +1,5 @@
 #include "cfg.h"
-#include "ch_expansion_policy.h"
+#include "bch_expansion_policy.h"
 #include "dimacs_parser.h"
 #include "fixed_graph_contraction.h"
 #include "graph.h"
