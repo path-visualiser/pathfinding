@@ -109,6 +109,10 @@ warthog::ch::lazy_graph_contraction::next()
         return warthog::INF;
     }
 
+    uint64_t num_expansions = total_expansions_;
+    uint64_t num_searches = total_searches_;
+    uint64_t num_lazy = total_lazy_updates_;
+
     // pop the best contraction candidate off the heap
     heap_node<ch_pair>* best;
     uint32_t best_id;
@@ -132,9 +136,6 @@ warthog::ch::lazy_graph_contraction::next()
     }
     
     warthog::graph::node* bn = get_graph()->get_node(best_id);
-    uint32_t num_searches = total_searches_;
-
-    uint32_t num_expansions = total_expansions_;
     std::set<uint32_t> updateset;
 
     // figure out which un-contracted nodes are adjacent to the best node
@@ -170,7 +171,7 @@ warthog::ch::lazy_graph_contraction::next()
         terms_[neighbour_id].depth_ = 
             std::max(nb_not.depth_, terms_[best_id].depth_ + 1);
 
-        // increase the contracted neighbours count
+        // increase the contracted neighbours count (== "deleted" neighbours)
         nb_not.nc_++;
 
         // recompute priority and update heap 
@@ -183,9 +184,11 @@ warthog::ch::lazy_graph_contraction::next()
     }
     num_expansions = total_expansions_ - num_expansions;
 
-    std::cerr << "; neis: " << updateset.size() << 
-        "; num_searches: " << (total_searches_-num_searches) << 
-        "; tot_exps: " << num_expansions << 
+    std::cerr << 
+        "; neis: " << updateset.size() << 
+        "; num_witness: " << (total_searches_-num_searches) << 
+        "; num_lazy: " << (total_lazy_updates_-num_lazy) << 
+        "; num_exps: " << num_expansions << 
         "; edv " << terms_[best_id].ed_ <<
         "; nc " << terms_[best_id].nc_ << 
         "; depth " << terms_[best_id].depth_ <<

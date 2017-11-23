@@ -118,11 +118,13 @@ class lazy_graph_contraction : public graph_contraction
             {
                 depth_ = 0; 
                 nc_ = 0;
+                hop_count_ = 0;
             }
 
             int32_t ed_; // edge difference 
             uint32_t depth_; // max search space depth
-            uint32_t nc_; // neis contracted
+            uint32_t nc_; // neis contracted (aka "deleted neighbours")
+            uint32_t hop_count_;  // num edges being bypassed
         };
         node_order_terms* terms_;
 
@@ -136,9 +138,9 @@ class lazy_graph_contraction : public graph_contraction
             warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
 
         // metrics
-        uint32_t total_expansions_;
-        uint32_t total_searches_;
-        uint32_t total_lazy_updates_;
+        uint64_t total_expansions_;
+        uint64_t total_searches_;
+        uint64_t total_lazy_updates_;
         
         
         int32_t 

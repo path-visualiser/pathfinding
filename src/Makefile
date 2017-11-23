@@ -49,6 +49,10 @@ profile: main
 extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
 extras: extras__
 
+.PHONY: release
+release: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
+release: fast extras__
+
 .PHONY: x
 x: extras
 
