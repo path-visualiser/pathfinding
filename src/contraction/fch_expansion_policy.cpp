@@ -8,10 +8,37 @@ warthog::fch_expansion_policy::fch_expansion_policy(
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
+    down_heads_ = new uint8_t[g->get_num_nodes()];
+
+    // sort edges ("up" before "down") and remember for each node 
+    // how many "up" edges there are
+    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
+    {
+        warthog::graph::node* n = g->get_node(i);
+        warthog::graph::edge_iter up = n->outgoing_begin();
+        warthog::graph::edge_iter down = n->outgoing_end()-1;
+        assert(n->out_degree() <= UINT8_MAX);
+        while(up < down)
+        {
+            if(rank->at((*down).node_id_) < rank->at(i))
+            { down--; continue; }
+            if(rank->at((*up).node_id_) > rank->at(i))
+            { up++; continue; }
+
+            // swap list heads
+            warthog::graph::edge tmp = (*down);
+            (*down) = (*up);
+            (*up) = tmp;
+            up++;
+            down--;
+        }
+        down_heads_[i] = up - n->outgoing_begin();
+    }
 }
 
 warthog::fch_expansion_policy::~fch_expansion_policy()
 {
+    delete [] down_heads_;
 }
 
 void
@@ -23,24 +50,20 @@ warthog::fch_expansion_policy::expand(
     warthog::search_node* pn = current->get_parent();
     uint32_t current_id = current->get_id();
     uint32_t current_rank = get_rank(current_id);
-
     warthog::graph::node* n = g_->get_node(current_id);
-    warthog::graph::edge_iter begin, end;
-    begin = n->outgoing_begin();
-    end = n->outgoing_end();
 
     // traveling up the hierarchy we generate all neighbours;
     // traveling down, we generate only "down" neighbours
+    warthog::graph::edge_iter begin = n->outgoing_begin();
+    warthog::graph::edge_iter end = n->outgoing_end();
     bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
+    if(!up_travel) { begin += down_heads_[current_id]; }
+
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
-        
-        if(up_travel || (get_rank(e.node_id_) < current_rank))
-        {
-            this->add_neighbour(this->generate(e.node_id_), e.wt_);
-        }
+        this->add_neighbour(this->generate(e.node_id_), e.wt_);
     }
 }
 

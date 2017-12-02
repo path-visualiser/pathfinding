@@ -66,6 +66,7 @@ class fch_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
+        uint8_t* down_heads_;
 
         inline uint32_t
         get_rank(uint32_t id)
