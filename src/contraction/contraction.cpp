@@ -1,5 +1,11 @@
 #include "contraction.h"
+#include "fch_expansion_policy.h"
+#include "flexible_astar.h"
 #include "planar_graph.h"
+#include "problem_instance.h"
+#include "search_node.h"
+#include "solution.h"
+#include "zero_heuristic.h"
 #include <algorithm>
 #include <stack>
 #include <vector>
@@ -287,3 +293,53 @@ warthog::ch::optimise_graph_for_bch(warthog::graph::planar_graph* g,
     }
 }
 
+void
+warthog::ch::fch_sort_successors(
+        warthog::graph::planar_graph* g, 
+        std::vector<uint32_t>* rank, 
+        uint8_t* down_heads)
+{
+    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
+    {
+        warthog::graph::node* n = g->get_node(i);
+        warthog::graph::edge_iter up = n->outgoing_begin();
+        warthog::graph::edge_iter down = n->outgoing_end()-1;
+        assert(n->out_degree() <= UINT8_MAX);
+        while(up < down)
+        {
+            if(rank->at((*down).node_id_) < rank->at(i))
+            { down--; continue; }
+            if(rank->at((*up).node_id_) > rank->at(i))
+            { up++; continue; }
+
+            // swap list heads
+            warthog::graph::edge tmp = (*down);
+            (*down) = (*up);
+            (*up) = tmp;
+            up++;
+            down--;
+        }
+        // down successors begin from the location of the up pointer
+        // NB: the final swap might involve two up successors in which case
+        // we need to increment the pointer one more time
+        if(rank->at((*up).node_id_) > rank->at(i)) { up++; }
+        down_heads[i] = up - n->outgoing_begin();
+
+#ifndef NDEBUG
+        // sanity
+        assert(down_heads[i] >= 0 && down_heads[i] <= n->out_degree());
+        for(warthog::graph::edge_iter it = n->outgoing_begin();
+                it != n->outgoing_end(); it++)
+        {
+            if(it < (n->outgoing_begin() + down_heads[i]))
+            {
+                assert(rank->at(it->node_id_) > rank->at(i));
+            }
+            else
+            {
+                assert(rank->at(it->node_id_) < rank->at(i));
+            }
+        }
+#endif
+    }
+}

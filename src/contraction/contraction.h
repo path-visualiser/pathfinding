@@ -125,6 +125,16 @@ unpack(uint32_t from_id,
         warthog::graph::planar_graph* g,
         std::set<uint32_t>& intermediate);
 
+// sorts the list of successors such that all up successors appear first
+// then all down successors. also stores the offset for the first down succ.
+// this sorting improves FCH performance (no need to always check rank)
+// NB: assumes max out degree (i.e. all up + down successors) is 256
+void
+fch_sort_successors(
+        warthog::graph::planar_graph* g, 
+        std::vector<uint32_t>* rank, 
+        uint8_t* down_heads);
+
 }
 
 }

@@ -8,19 +8,19 @@ WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 D_WARTHOG_INCLUDES = -I./domains -I./util -I./search -I./experimental \
 					 -I./heuristics -I./jps -I./contraction -I./label
 
-D_INCLUDES = -I/usr/include -I/opt/local/include $(D_WARTHOG_INCLUDES)
+D_INCLUDES = -I/usr/include -I/usr/local/include $(D_WARTHOG_INCLUDES)
 D_LIBS = -L/usr/local/lib -L./lib
 
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Wno-strict-aliasing \
 			-Wno-long-long -Wno-deprecated -Wno-deprecated-declarations \
-			-Wno-constant-logical-operand -Werror 
+			-Wno-constant-logical-operand #-Werror 
 FAST_CFLAGS = -O3 -DNDEBUG
-DEV_CFLAGS = -g -ggdb -O0
+DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
 PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
-  CC = clang++
-  #CC = g++
+  #CC = clang++
+  CC = g++-7
   CFLAGS += -DOS_MAC
 else
   CC = g++

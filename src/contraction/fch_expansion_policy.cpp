@@ -9,31 +9,8 @@ warthog::fch_expansion_policy::fch_expansion_policy(
 {
     rank_ = rank;
     down_heads_ = new uint8_t[g->get_num_nodes()];
+    warthog::ch::fch_sort_successors(g, rank, down_heads_);
 
-    // sort edges ("up" before "down") and remember for each node 
-    // how many "up" edges there are
-    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
-    {
-        warthog::graph::node* n = g->get_node(i);
-        warthog::graph::edge_iter up = n->outgoing_begin();
-        warthog::graph::edge_iter down = n->outgoing_end()-1;
-        assert(n->out_degree() <= UINT8_MAX);
-        while(up < down)
-        {
-            if(rank->at((*down).node_id_) < rank->at(i))
-            { down--; continue; }
-            if(rank->at((*up).node_id_) > rank->at(i))
-            { up++; continue; }
-
-            // swap list heads
-            warthog::graph::edge tmp = (*down);
-            (*down) = (*up);
-            (*up) = tmp;
-            up++;
-            down--;
-        }
-        down_heads_[i] = up - n->outgoing_begin();
-    }
 }
 
 warthog::fch_expansion_policy::~fch_expansion_policy()
@@ -51,6 +28,7 @@ warthog::fch_expansion_policy::expand(
     uint32_t current_id = current->get_id();
     uint32_t current_rank = get_rank(current_id);
     warthog::graph::node* n = g_->get_node(current_id);
+
 
     // traveling up the hierarchy we generate all neighbours;
     // traveling down, we generate only "down" neighbours

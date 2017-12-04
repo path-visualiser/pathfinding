@@ -27,6 +27,7 @@
 #include "fch_af_expansion_policy.h"
 #include "fch_bb_expansion_policy.h"
 #include "fch_bbaf_expansion_policy.h"
+#include "fch_down_dfs_expansion_policy.h"
 #include "fch_expansion_policy.h"
 #include "fch_x_expansion_policy.h"
 #include "fixed_graph_contraction.h"
@@ -81,8 +82,8 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tch, ch-astar, chase, chaf, chbb, chaf-bb, ch-cpg\n"
-    << "\tfch, fchx, fch-af, fch-bb, fch-bbaf\n"
+    << "\tbch, bch-astar, chase, chaf, chbb, chaf-bb, ch-cpg\n"
+    << "\tfch, fchx, fch-af, fch-bb, fch-bbaf, fch-down-dfs\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
     << "\nRecognised values for --input:\n "
@@ -294,7 +295,7 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_bch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
     std::string orderfile = cfg.get_param_value("input");
@@ -333,7 +334,7 @@ run_ch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_ch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_bch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
     std::string orderfile = cfg.get_param_value("input");
@@ -752,6 +753,61 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 
         warthog::fch_expansion_policy> alg(&h, &fexp);
+    
+    // extra metric; how many nodes do we expand above the apex?
+    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+    [&order] (warthog::search_node* n) -> uint32_t
+    {
+        while(true)
+        {
+            warthog::search_node* p = n->get_parent();
+            if(!p || order.at(p->get_id()) < order.at(n->get_id()))
+            { break; }
+            n = p;
+        }
+        return order.at(n->get_id());
+    };
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_fch_down_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    if(orderfile == "")
+    {
+        std::cerr << "err; insufficient input parameters for --alg "
+                  << alg_name << ". required, in order:\n"
+                  << " --input [gr file] [co file] "
+                  << " [contraction order file] \n";
+        return;
+    }
+
+    // load up the graph 
+    warthog::graph::planar_graph g;
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
+
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+
+    std::cerr << "preparing to search\n";
+    warthog::fch_down_dfs_expansion_policy fexp(&g, &order); 
+    warthog::euclidean_heuristic h(&g);
+
+    warthog::flexible_astar< warthog::euclidean_heuristic, 
+        warthog::fch_down_dfs_expansion_policy> alg(&h, &fexp);
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
@@ -1550,17 +1606,17 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_bi_astar(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "ch")
+    else if(alg_name == "bch")
     {
-        run_ch(cfg, parser, alg_name, gr, co);
+        run_bch(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "chase")
     {
         run_chase(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "ch-astar")
+    else if(alg_name == "bch-astar")
     {
-        run_ch_astar(cfg, parser, alg_name, gr, co);
+        run_bch_astar(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "chbb")
     {
@@ -1597,6 +1653,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch-bbaf")
     {
         run_fch_bbaf(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "fch-down-dfs")
+    {
+        run_fch_down_dfs(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-cpg")
     {
