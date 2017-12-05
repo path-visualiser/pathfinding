@@ -380,14 +380,14 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out,
             int32_t min_core_level = lex_order->size() * (1-core_pct_value);
 
             // metis ids need to be contiguous and start from 1
-            if(lex_order->at(id1 - id_offset) >= min_core_level)
+            if((int32_t)lex_order->at(id1 - id_offset) >= min_core_level)
             { 
                 id1 = abs((int)id1 - min_core_level); 
                 assert(id1 < lex_order->size());
             }
             else { include_id1 = false; }
 
-            if(lex_order->at(id2 - id_offset) >= min_core_level)
+            if((int32_t)lex_order->at(id2 - id_offset) >= min_core_level)
             { 
                 id2 = abs((int)id2 - min_core_level); 
                 assert(id2 < lex_order->size());
