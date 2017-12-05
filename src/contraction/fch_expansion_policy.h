@@ -22,6 +22,7 @@
 // @created: 2016-07-18
 //
 
+#include "contraction.h"
 #include "expansion_policy.h"
 #include <vector>
 
@@ -40,7 +41,8 @@ class fch_expansion_policy : public expansion_policy
     public:
         fch_expansion_policy(
                 warthog::graph::planar_graph* graph,
-                std::vector<uint32_t>* rank);
+                std::vector<uint32_t>* rank,  
+                warthog::ch::search_direction = warthog::ch::ANY);
 
         ~fch_expansion_policy();
 
@@ -67,6 +69,8 @@ class fch_expansion_policy : public expansion_policy
         std::vector<uint32_t>* rank_;
         warthog::graph::planar_graph* g_;
         uint8_t* down_heads_;
+
+        warthog::ch::search_direction dir_;
 
         inline uint32_t
         get_rank(uint32_t id)

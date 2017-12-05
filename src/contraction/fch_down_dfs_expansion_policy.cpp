@@ -108,46 +108,6 @@ warthog::fch_down_dfs_expansion_policy::generate_target_node(
 void
 warthog::fch_down_dfs_expansion_policy::compute_down_dijkstra_postorder()
 {
-    // allocate data for first move pre-computation
-    const int FM_BYTES = 32;
-    struct fm_label
-    {
-        fm_label() 
-        { for(uint32_t i = 0; i < FM_BYTES; i++) { lab_[i] = 0; } }
-
-        fm_label& 
-        operator=(fm_label& other)
-        { 
-            for(uint32_t i = 0; i < FM_BYTES; i++) { lab_[i] = other.lab_[i];}
-            return *this;
-        }
-
-        void
-        add(uint32_t move_id)
-        {
-            uint32_t fm_byte = move_id / 8;
-            uint32_t fm_bit = move_id % 8;
-            lab_[fm_byte] |= (1 << fm_bit);
-        }
-
-        void
-        cup(fm_label& other)
-        { for(uint32_t i = 0; i < FM_BYTES; i++) { lab_[i] |= other.lab_[i];}}
-
-        bool
-        intersect(fm_label& other)
-        {
-            uint8_t retval = 0;
-            for(uint32_t i = 0; i < FM_BYTES; i++) 
-            { 
-                retval |= (lab_[i] & other.lab_[i]);
-            }
-            return retval;
-        }
-
-        uint8_t lab_[FM_BYTES];
-    };
-
     // identify the apex and allocate memory for (node and down-edge) labels
     node_labels_->clear();
     node_labels_->resize(g_->get_num_nodes(), INT32_MAX);
@@ -168,64 +128,15 @@ warthog::fch_down_dfs_expansion_policy::compute_down_dijkstra_postorder()
         assert(edge_labels_->at(cur_id).size() == num_down);
     }
 
-    // alocate memory for the first moves
-    std::vector<fm_label> first_move(g_->get_num_nodes());
-
-    // callback function used to record the optimal first move 
-    std::function<void(warthog::search_node*, warthog::search_node*,
-            double, uint32_t)> on_generate_fn = 
-    [&internal_source_id, &first_move]
-    (warthog::search_node* succ, warthog::search_node* from,
-                double edge_cost, uint32_t edge_id) -> void
-    {
-        uint32_t s_id = succ->get_id();
-        uint32_t f_id = from->get_id();
-
-        if(from->get_id() == internal_source_id) // start node successors 
-        { first_move.at(s_id).add(edge_id); }
-        else // all other nodes
-        {
-            double alt_g = from->get_g() + edge_cost;
-            double g_val = succ->get_search_id() == from->get_search_id() 
-                                ? succ->get_g() : warthog::INF; 
-            //  update first move
-            if(alt_g < g_val) 
-            { first_move.at(s_id) = first_move.at(f_id); }
-
-            // add alternative first-move
-            if(alt_g == g_val)
-            { first_move.at(s_id).cup(first_move.at(f_id)); }
-        }
-    };
-   
-    // dijkstra search from the apex node
-    warthog::zero_heuristic h;
-    warthog::fch_expansion_policy exp(g_, rank_);
-    warthog::flexible_astar 
-        <warthog::zero_heuristic, warthog::fch_expansion_policy>
-            dijk(&h, &exp);
-    dijk.apply_on_generate(on_generate_fn);
-    uint32_t ext_source_id = g_->to_external_id(internal_source_id);
-    warthog::problem_instance problem(ext_source_id, warthog::INF);
-    //problem.verbose_ = true;
-    warthog::solution sol;
-    dijk.get_path(problem, sol);
-
     // traverse the graph and compute node and edge labels using DFS postorder
-    fch_interval wtf;
     std::vector<fch_interval> node_range(g_->get_num_nodes());
     uint32_t next_label = 0;
     std::function<fch_interval(uint32_t)> label_fn = 
-        [&wtf, this, &node_range, &internal_source_id, &first_move, 
-        &next_label, &label_fn] (uint32_t current_id) 
-        -> fch_interval
+        [this, &node_range, &internal_source_id, &next_label, &label_fn] 
+        (uint32_t current_id) -> fch_interval
         {
-            fch_interval foo;
-            assert(wtf.left == foo.left && wtf.right == foo.right);
-
-            fch_interval dfs_range;
             warthog::graph::node* source = this->g_->get_node(current_id);
-            fm_label move = first_move.at(current_id);
+            fch_interval dfs_range;
 
             warthog::graph::edge_iter begin = 
                 source->outgoing_begin() + down_heads_[current_id];
@@ -238,21 +149,17 @@ warthog::fch_down_dfs_expansion_policy::compute_down_dijkstra_postorder()
                 assert(edge_idx < edge_labels_->at(current_id).size());
                 
                 // DFS
-                if(first_move.at(it->node_id_).intersect(move))
+                fch_interval subtree_range = node_range.at((*it).node_id_);
+                if(subtree_range.left == INT32_MAX)
                 {
-                    fch_interval subtree_range = node_range.at((*it).node_id_);
-                    if(subtree_range.left == INT32_MAX)
-                    {
-                        subtree_range = label_fn(it->node_id_);
-                        node_range.at(it->node_id_) = subtree_range;
-                    }
-
-                    edge_labels_->at(current_id).at(edge_idx) = 
-                        subtree_range;
-                    dfs_range.merge(subtree_range);
-
-                    assert(dfs_range.contains(node_labels_->at(it->node_id_)));
+                    subtree_range = label_fn(it->node_id_);
+                    node_range.at(it->node_id_) = subtree_range;
                 }
+
+                edge_labels_->at(current_id).at(edge_idx) = subtree_range;
+                dfs_range.merge(subtree_range);
+
+                assert(dfs_range.contains(node_labels_->at(it->node_id_)));
             }
             if(this->node_labels_->at(current_id) == INT32_MAX)
             {
@@ -262,10 +169,6 @@ warthog::fch_down_dfs_expansion_policy::compute_down_dijkstra_postorder()
             return dfs_range;
         };
 
-    for(uint32_t i = 0; i < FM_BYTES; i++)
-    {
-        first_move.at(internal_source_id).lab_[i] = 255; 
-    }
     label_fn(internal_source_id);
 }
 

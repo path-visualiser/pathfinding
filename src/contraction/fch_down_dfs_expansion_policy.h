@@ -110,7 +110,8 @@ class fch_down_dfs_expansion_policy : public expansion_policy
         filter(uint32_t node_idx, uint32_t edge_idx)
         {
             assert(edge_idx < edge_labels_->at(node_idx).size());
-            return !edge_labels_->at(node_idx).at(edge_idx).contains(t_label);
+            fch_interval& ei = edge_labels_->at(node_idx).at(edge_idx);
+            return !ei.contains(t_label) || ei.left == INT32_MAX;
         }
 
         inline uint32_t

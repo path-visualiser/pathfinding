@@ -13,14 +13,13 @@ D_LIBS = -L/usr/local/lib -L./lib
 
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Wno-strict-aliasing \
 			-Wno-long-long -Wno-deprecated -Wno-deprecated-declarations \
-			-Wno-constant-logical-operand #-Werror 
+			-Wno-constant-logical-operand -Werror 
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
 PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
-  #CC = clang++
-  CC = g++-7
+  CC = g++
   CFLAGS += -DOS_MAC
 else
   CC = g++

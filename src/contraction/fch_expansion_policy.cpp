@@ -4,13 +4,15 @@
 #include "search_node.h"
 
 warthog::fch_expansion_policy::fch_expansion_policy(
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank)
+        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
+        warthog::ch::search_direction d)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
     down_heads_ = new uint8_t[g->get_num_nodes()];
     warthog::ch::fch_sort_successors(g, rank, down_heads_);
 
+    dir_ = d;
 }
 
 warthog::fch_expansion_policy::~fch_expansion_policy()
@@ -34,7 +36,7 @@ warthog::fch_expansion_policy::expand(
     // traveling down, we generate only "down" neighbours
     warthog::graph::edge_iter begin = n->outgoing_begin();
     warthog::graph::edge_iter end = n->outgoing_end();
-    bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
+    bool up_travel = dir_ & (!pn || (current_rank > get_rank(pn->get_id())));
     if(!up_travel) { begin += down_heads_[current_id]; }
 
     for(warthog::graph::edge_iter it = begin; it != end; it++)
