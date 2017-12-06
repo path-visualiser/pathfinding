@@ -105,8 +105,7 @@ class bbaf_labelling
                 warthog::label::bbaf_labelling*& out_lab_bwd);
 
         
-        // compute labels for all nodes in the range 
-        // [ @param first_id, @param last_id )
+        // compute labels for all nodes specified by the given workload
         template <typename t_expander>
         static warthog::label::bbaf_labelling*
         compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part, 
@@ -252,6 +251,19 @@ class bbaf_labelling
             warthog::helpers::parallel_compute(thread_compute_fn, &shared, 
                     workload->num_flags_set());
             return lab;
+        }
+
+        inline size_t
+        mem()
+        {
+            size_t retval = sizeof(this);
+            for(uint32_t i = 0; i < labels_.size(); i++)
+            {
+                retval += 
+                    sizeof(bbaf_label) *
+                    (labels_.at(i).size() + bytes_per_af_label_);
+            }
+            return retval;
         }
 
     private:
