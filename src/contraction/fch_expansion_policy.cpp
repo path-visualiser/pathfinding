@@ -21,6 +21,8 @@ warthog::fch_expansion_policy::fch_expansion_policy(
     {
         warthog::graph::node* n = g->get_node(i);
         uint32_t i_rank = rank->at(i);
+
+        down_heads_[i] = n->out_degree(); // begin assuming none
         for(warthog::graph::edge_iter it = n->outgoing_begin();
                 it != n->outgoing_end(); it++)
         {
