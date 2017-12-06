@@ -12,6 +12,7 @@
 // @created: 2017-12-02
 //
 
+#include "down_labelling.h"
 #include "planar_graph.h"
 #include "expansion_policy.h"
 #include <vector>
@@ -24,14 +25,15 @@ namespace graph
 class planar_graph;
 }
 
-class problem_instance;
-class search_node;
+class down_labelling;
 class fch_down_dfs_expansion_policy : public expansion_policy
 {
     public:
         fch_down_dfs_expansion_policy(
                 warthog::graph::planar_graph* graph,
-                std::vector<uint32_t>* rank);
+                std::vector<uint32_t>* rank, 
+                warthog::label::down_labelling* lab,
+                bool sort_successors=true);
 
         ~fch_down_dfs_expansion_policy();
 
@@ -51,13 +53,7 @@ class fch_down_dfs_expansion_policy : public expansion_policy
         mem()
         {
             size_t retval = sizeof(this);
-            for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
-            {
-                retval += 
-                    sizeof(fch_interval)*
-                    edge_labels_->at(i).size();
-            }
-            retval += sizeof(int32_t) * node_labels_->size();
+            retval += g_->get_num_nodes() * sizeof(uint8_t);
             retval += expansion_policy::mem();
             return retval;
         }
@@ -67,51 +63,83 @@ class fch_down_dfs_expansion_policy : public expansion_policy
         warthog::graph::planar_graph* g_;
         uint8_t* down_heads_;
 
-        struct fch_interval
-        {
-            fch_interval() { left = INT32_MAX; right = INT32_MIN; } 
-
-            fch_interval&
-            operator=(const fch_interval& other)
-            {
-                left = other.left; right = other.right; 
-                return *this;
-            }
-
-            void
-            grow(int32_t val)
-            {
-                left = val < left  ? val : left;
-                right = val > right ? val : right;
-            }
-
-            void
-            merge(fch_interval& other)
-            {
-                left = left < other.left ? left : other.left;
-                right = right > other.right ? right : other.right;
-            }
-
-            bool
-            contains(int32_t val)
-            {
-                return (right - val) + left >= left;
-            }
-
-            int32_t left, right;
-        };
-
-        std::vector< std::vector< fch_interval >>* edge_labels_;
-        std::vector<int32_t>* node_labels_;
-
+        warthog::label::down_labelling* lab_;
         uint32_t s_label, t_label;
+        int32_t tx_, ty_;
+        int32_t t_byte_, t_bitmask_;
 
         inline bool
-        filter(uint32_t node_idx, uint32_t edge_idx)
+        filter_all(uint32_t node_idx, uint32_t edge_idx)
         {
-            assert(edge_idx < edge_labels_->at(node_idx).size());
-            fch_interval& ei = edge_labels_->at(node_idx).at(edge_idx);
-            return !ei.contains(t_label) || ei.left == INT32_MAX;
+            warthog::label::down_label label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_)
+                && label.bbaf_.bbox_.contains(tx_, ty_)
+                && label.ids_.contains(t_label);
+            return !retval; 
+        }
+
+        typedef bool
+                (warthog::fch_down_dfs_expansion_policy::*filter_fn)
+                (uint32_t node_idx, uint32_t edge_idx);
+
+        filter_fn filter;
+
+        inline bool
+        filter_id_range_only(uint32_t node_idx, uint32_t edge_idx)
+        {
+            warthog::label::down_label label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = label.ids_.contains(t_label);
+            return !retval; 
+        }
+
+        inline bool
+        filter_bb_only(uint32_t node_idx, uint32_t edge_idx)
+        {
+            warthog::label::down_label label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = label.bbaf_.bbox_.contains(tx_, ty_);
+            return !retval; 
+        }
+
+        inline bool
+        filter_af_only(uint32_t node_idx, uint32_t edge_idx)
+        {
+            warthog::label::down_label label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_);
+            return !retval; 
+        }
+
+        inline bool
+        filter_bb_and_af(uint32_t node_idx, uint32_t edge_idx)
+        {
+            warthog::label::down_label label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_)
+                && label.bbaf_.bbox_.contains(tx_, ty_);
+            return !retval; 
+        }
+
+        inline bool
+        filter_id_range_and_bb(uint32_t node_idx, uint32_t edge_idx)
+        {
+            warthog::label::down_label label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = label.bbaf_.bbox_.contains(tx_, ty_)
+                && label.ids_.contains(t_label);
+            return !retval; 
+        }
+
+        inline bool
+        filter_id_range_and_af(uint32_t node_idx, uint32_t edge_idx)
+        {
+            warthog::label::down_label label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_)
+                && label.ids_.contains(t_label);
+            return !retval; 
         }
 
         inline uint32_t
@@ -119,10 +147,6 @@ class fch_down_dfs_expansion_policy : public expansion_policy
         {
             return rank_->at(id);
         }
-
-        // TODO: stick this in a labelling class
-        void 
-        compute_down_dijkstra_postorder();
 };
 }
 

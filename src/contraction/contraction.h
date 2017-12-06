@@ -132,8 +132,7 @@ unpack(uint32_t from_id,
 void
 fch_sort_successors(
         warthog::graph::planar_graph* g, 
-        std::vector<uint32_t>* rank, 
-        uint8_t* down_heads);
+        std::vector<uint32_t>* rank);
 
 }
 

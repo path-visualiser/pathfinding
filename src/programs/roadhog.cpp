@@ -776,12 +776,14 @@ run_fch_down_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name, std::string gr, std::string co)
 {
     std::string orderfile = cfg.get_param_value("input");
-    if(orderfile == "")
+    std::string partition_file = cfg.get_param_value("input");
+    if(orderfile == "" || partition_file == "")
     {
         std::cerr << "err; insufficient input parameters for --alg "
                   << alg_name << ". required, in order:\n"
                   << " --input [gr file] [co file] "
-                  << " [contraction order file] \n";
+                  << " [contraction order file] "
+                  << " [graph partition file]\n";
         return;
     }
 
@@ -802,10 +804,29 @@ run_fch_down_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    std::cerr << "preparing to search\n";
-    warthog::fch_down_dfs_expansion_policy fexp(&g, &order); 
-    warthog::euclidean_heuristic h(&g);
+    // load up the node partition info
+    std::vector<uint32_t> part;
+    if(!warthog::helpers::load_integer_labels_dimacs(
+            partition_file.c_str(), part))
+    {
+        std::cerr << "err; could not load graph partition input file\n";
+        return;
+    }
 
+    std::cerr << "preparing to search\n";
+
+    // sort the graph edges
+    warthog::ch::fch_sort_successors(&g, &order);
+
+    // load up the labelling
+    warthog::util::workload_manager workload(g.get_num_nodes());
+    workload.set_all_flags(true);
+    warthog::label::down_labelling* lab = 
+        warthog::label::down_labelling::compute(
+                &g, &part, &order, &workload, false);
+
+    warthog::fch_down_dfs_expansion_policy fexp(&g, &order, lab, false);
+    warthog::euclidean_heuristic h(&g);
     warthog::flexible_astar< warthog::euclidean_heuristic, 
         warthog::fch_down_dfs_expansion_policy> alg(&h, &fexp);
     
@@ -824,6 +845,8 @@ run_fch_down_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     };
 
     run_experiments(&alg, alg_name, parser, std::cout);
+
+    delete lab;
 }
 
 void

@@ -296,8 +296,7 @@ warthog::ch::optimise_graph_for_bch(warthog::graph::planar_graph* g,
 void
 warthog::ch::fch_sort_successors(
         warthog::graph::planar_graph* g, 
-        std::vector<uint32_t>* rank, 
-        uint8_t* down_heads)
+        std::vector<uint32_t>* rank)
 {
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {
@@ -323,22 +322,17 @@ warthog::ch::fch_sort_successors(
         // NB: the final swap might involve two up successors in which case
         // we need to increment the pointer one more time
         if(rank->at((*up).node_id_) > rank->at(i)) { up++; }
-        down_heads[i] = up - n->outgoing_begin();
 
 #ifndef NDEBUG
         // sanity
-        assert(down_heads[i] >= 0 && down_heads[i] <= n->out_degree());
-        for(warthog::graph::edge_iter it = n->outgoing_begin();
-                it != n->outgoing_end(); it++)
+        warthog::graph::edge_iter it = n->outgoing_begin();
+        for( ; it != n->outgoing_end(); it++)
         {
-            if(it < (n->outgoing_begin() + down_heads[i]))
-            {
-                assert(rank->at(it->node_id_) > rank->at(i));
-            }
-            else
-            {
-                assert(rank->at(it->node_id_) < rank->at(i));
-            }
+            if(rank->at(it->node_id_) < rank->at(i)) { break; }
+        }
+        for( ; it != n->outgoing_end(); it++)
+        {
+            assert(rank->at(it->node_id_) < rank->at(i));
         }
 #endif
     }

@@ -42,7 +42,8 @@ class fch_expansion_policy : public expansion_policy
         fch_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank,  
-                warthog::ch::search_direction = warthog::ch::ANY);
+                warthog::ch::search_direction = warthog::ch::ANY,
+                bool sort_successors = true);
 
         ~fch_expansion_policy();
 
@@ -57,6 +58,10 @@ class fch_expansion_policy : public expansion_policy
 
         virtual warthog::search_node*
         generate_target_node(warthog::problem_instance* pi);
+
+        inline void
+        set_search_direction(warthog::ch::search_direction d)
+        { dir_ = d; } 
 
         virtual inline size_t
         mem()

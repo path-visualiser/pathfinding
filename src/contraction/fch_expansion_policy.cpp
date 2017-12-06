@@ -4,13 +4,33 @@
 #include "search_node.h"
 
 warthog::fch_expansion_policy::fch_expansion_policy(
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
-        warthog::ch::search_direction d)
+        warthog::graph::planar_graph* g, 
+        std::vector<uint32_t>* rank,
+        warthog::ch::search_direction d,
+        bool sort_successors)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
+
+    // sort edges s.t. all up successors appear before any down successor
+    if(sort_successors) { warthog::ch::fch_sort_successors(g, rank); }
+
+    // store the location of the first down successor 
     down_heads_ = new uint8_t[g->get_num_nodes()];
-    warthog::ch::fch_sort_successors(g, rank, down_heads_);
+    for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
+    {
+        warthog::graph::node* n = g->get_node(i);
+        uint32_t i_rank = rank->at(i);
+        for(warthog::graph::edge_iter it = n->outgoing_begin();
+                it != n->outgoing_end(); it++)
+        {
+            if(rank_->at(it->node_id_) < i_rank)
+            {
+                down_heads_[i] = it - n->outgoing_begin();
+                break;
+            }
+        }
+    }
 
     dir_ = d;
 }
