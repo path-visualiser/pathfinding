@@ -13,8 +13,7 @@ warthog::fch_down_dfs_expansion_policy::fch_down_dfs_expansion_policy(
     rank_ = rank;
     lab_ = lab;
     t_label = s_label = INT32_MAX;
-    //filter = &warthog::fch_down_dfs_expansion_policy::filter_all;
-    filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_only;
+    filter = &warthog::fch_down_dfs_expansion_policy::filter_all;
 
     // sort edges s.t. all up successors appear before any down successor
     if(sort_successors) { warthog::ch::fch_sort_successors(g, rank); }
@@ -114,11 +113,11 @@ warthog::fch_down_dfs_expansion_policy::generate_target_node(
 
     t_label = lab_->get_dfs_index(t_graph_id);
     
-    //uint32_t t_part = lab_->get_partitioning()->at(t_graph_id);
-    //t_byte_ = t_part >> 3;
-    //t_bitmask_ = 1 << (t_part & 7);
+    uint32_t t_part = lab_->get_partitioning()->at(t_graph_id);
+    t_byte_ = t_part >> 3;
+    t_bitmask_ = 1 << (t_part & 7);
 
-    //get_xy(t_graph_id, tx_, ty_);
+    get_xy(t_graph_id, tx_, ty_);
 
     return generate(t_graph_id);
 }

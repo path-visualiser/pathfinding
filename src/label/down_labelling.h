@@ -109,11 +109,9 @@ class down_labelling
         get_label(uint32_t node_id, uint32_t edge_idx)
         {
             assert(edge_idx < lab_idr_->at(node_id).size());
-            //down_label ret(
-            //        lab_bbaf_->get_label(node_id, edge_idx), 
-            //        lab_idr_->at(node_id).at(edge_idx));
-            bbaf_label dummy;
-            down_label ret( dummy, lab_idr_->at(node_id).at(edge_idx));
+            down_label ret(
+                    lab_bbaf_->get_label(node_id, edge_idx), 
+                    lab_idr_->at(node_id).at(edge_idx));
             return ret;
         }
 
@@ -153,11 +151,11 @@ class down_labelling
             std::cerr << "computing id-range labels\n";
             lab->compute_id_range_labels(g, rank);
 
-        //    std::cerr << "computing bbaf labels\n";
-        //    lab->lab_bbaf_ = 
-        //        warthog::label::bbaf_labelling::compute
-        //        <warthog::fch_expansion_policy>
-        //        (g, part, get_expander_fn, workload);
+            std::cerr << "computing bbaf labels\n";
+            lab->lab_bbaf_ = 
+                warthog::label::bbaf_labelling::compute
+                <warthog::fch_expansion_policy>
+                (g, part, get_expander_fn, workload);
             
             return lab;
         }
