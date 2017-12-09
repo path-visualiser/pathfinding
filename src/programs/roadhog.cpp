@@ -821,8 +821,8 @@ run_fch_down_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // load up the labelling
     warthog::util::workload_manager workload(g.get_num_nodes());
     workload.set_all_flags(true);
-    warthog::label::down_labelling* lab = 
-        warthog::label::down_labelling::compute(
+    warthog::label::down_dfs_labelling* lab = 
+        warthog::label::down_dfs_labelling::compute(
                 &g, &part, &order, &workload, false);
 
     warthog::fch_down_dfs_expansion_policy fexp(&g, &order, lab, false);

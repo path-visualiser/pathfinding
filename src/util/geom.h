@@ -85,7 +85,7 @@ struct rectangle
     }
 
     void
-    grow(warthog::geom::rectangle& r)
+    grow(const warthog::geom::rectangle& r)
     {
         if(r.x1 < x1) { x1 = r.x1; }
         if(r.y1 < y1) { y1 = r.y1; }

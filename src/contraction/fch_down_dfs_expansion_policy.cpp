@@ -6,7 +6,7 @@
 warthog::fch_down_dfs_expansion_policy::fch_down_dfs_expansion_policy(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank,
-        warthog::label::down_labelling* lab,
+        warthog::label::down_dfs_labelling* lab,
         bool sort_successors)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
@@ -14,6 +14,12 @@ warthog::fch_down_dfs_expansion_policy::fch_down_dfs_expansion_policy(
     lab_ = lab;
     t_label = s_label = INT32_MAX;
     filter = &warthog::fch_down_dfs_expansion_policy::filter_all;
+    //filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_and_bb;
+    //filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_and_af;
+    //filter = &warthog::fch_down_dfs_expansion_policy::filter_bb_and_af;
+    //filter = &warthog::fch_down_dfs_expansion_policy::filter_bb_only;
+    //filter = &warthog::fch_down_dfs_expansion_policy::filter_af_only;
+    filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_only;
 
     // sort edges s.t. all up successors appear before any down successor
     if(sort_successors) { warthog::ch::fch_sort_successors(g, rank); }
@@ -63,6 +69,10 @@ warthog::fch_down_dfs_expansion_policy::expand(
     bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
     if(up_travel) 
     { 
+//        if(current_rank < t_rank)
+//        {
+//            end = begin + down_heads_[current_id];
+//        }
         for(warthog::graph::edge_iter it = begin; it != end; it++)
         {
             warthog::graph::edge& e = *it;
@@ -108,14 +118,15 @@ warthog::search_node*
 warthog::fch_down_dfs_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
+    t_graph_id = g_->to_graph_id(pi->target_id_);
     if(t_graph_id == warthog::INF) { return 0; }
 
+    t_rank = get_rank(t_graph_id);
     t_label = lab_->get_dfs_index(t_graph_id);
     
     uint32_t t_part = lab_->get_partitioning()->at(t_graph_id);
-    t_byte_ = t_part >> 3;
-    t_bitmask_ = 1 << (t_part & 7);
+    t_byte_ = t_part >> 3; // div8
+    t_bitmask_ = 1 << (t_part & 7); // mod8
 
     get_xy(t_graph_id, tx_, ty_);
 

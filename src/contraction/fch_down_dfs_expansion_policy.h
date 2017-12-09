@@ -12,7 +12,7 @@
 // @created: 2017-12-02
 //
 
-#include "down_labelling.h"
+#include "down_dfs_labelling.h"
 #include "planar_graph.h"
 #include "expansion_policy.h"
 #include <vector>
@@ -25,14 +25,14 @@ namespace graph
 class planar_graph;
 }
 
-class down_labelling;
+class down_dfs_labelling;
 class fch_down_dfs_expansion_policy : public expansion_policy
 {
     public:
         fch_down_dfs_expansion_policy(
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::label::down_labelling* lab,
+                warthog::label::down_dfs_labelling* lab,
                 bool sort_successors=true);
 
         ~fch_down_dfs_expansion_policy();
@@ -63,21 +63,12 @@ class fch_down_dfs_expansion_policy : public expansion_policy
         warthog::graph::planar_graph* g_;
         uint8_t* down_heads_;
 
-        warthog::label::down_labelling* lab_;
+        warthog::label::down_dfs_labelling* lab_;
         uint32_t s_label, t_label;
         int32_t tx_, ty_;
         int32_t t_byte_, t_bitmask_;
-
-        inline bool
-        filter_all(uint32_t node_idx, uint32_t edge_idx)
-        {
-            warthog::label::down_label label = 
-                lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_)
-                && label.bbaf_.bbox_.contains(tx_, ty_)
-                && label.ids_.contains(t_label);
-            return !retval; 
-        }
+        int32_t t_graph_id;
+        uint32_t t_rank;
 
         typedef bool
                 (warthog::fch_down_dfs_expansion_policy::*filter_fn)
@@ -86,48 +77,61 @@ class fch_down_dfs_expansion_policy : public expansion_policy
         filter_fn filter;
 
         inline bool
+        filter_all(uint32_t node_idx, uint32_t edge_idx)
+        {
+            warthog::label::down_dfs_label& label = 
+                lab_->get_label(node_idx, edge_idx);
+            bool retval = (label.flags_[t_byte_] & t_bitmask_)
+                && label.bbox_.contains(tx_, ty_)
+                && label.ids_.contains(t_label)
+                && label.rank_.contains(t_rank);
+            return !retval; 
+        }
+
+        inline bool
         filter_id_range_only(uint32_t node_idx, uint32_t edge_idx)
         {
-            warthog::label::down_label label = 
+            warthog::label::down_dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
-            bool retval = label.ids_.contains(t_label);
+            bool retval = //label.ids_.contains(t_label) && 
+                label.rank_.contains(t_rank);
             return !retval; 
         }
 
         inline bool
         filter_bb_only(uint32_t node_idx, uint32_t edge_idx)
         {
-            warthog::label::down_label label = 
+            warthog::label::down_dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
-            bool retval = label.bbaf_.bbox_.contains(tx_, ty_);
+            bool retval = label.bbox_.contains(tx_, ty_);
             return !retval; 
         }
 
         inline bool
         filter_af_only(uint32_t node_idx, uint32_t edge_idx)
         {
-            warthog::label::down_label label = 
+            warthog::label::down_dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_);
+            bool retval = (label.flags_[t_byte_] & t_bitmask_);
             return !retval; 
         }
 
         inline bool
         filter_bb_and_af(uint32_t node_idx, uint32_t edge_idx)
         {
-            warthog::label::down_label label = 
+            warthog::label::down_dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_)
-                && label.bbaf_.bbox_.contains(tx_, ty_);
+            bool retval = (label.flags_[t_byte_] & t_bitmask_)
+                && label.bbox_.contains(tx_, ty_);
             return !retval; 
         }
 
         inline bool
         filter_id_range_and_bb(uint32_t node_idx, uint32_t edge_idx)
         {
-            warthog::label::down_label label = 
+            warthog::label::down_dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
-            bool retval = label.bbaf_.bbox_.contains(tx_, ty_)
+            bool retval = label.bbox_.contains(tx_, ty_)
                 && label.ids_.contains(t_label);
             return !retval; 
         }
@@ -135,9 +139,9 @@ class fch_down_dfs_expansion_policy : public expansion_policy
         inline bool
         filter_id_range_and_af(uint32_t node_idx, uint32_t edge_idx)
         {
-            warthog::label::down_label label = 
+            warthog::label::down_dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.bbaf_.flags_[t_byte_] & t_bitmask_)
+            bool retval = (label.flags_[t_byte_] & t_bitmask_)
                 && label.ids_.contains(t_label);
             return !retval; 
         }

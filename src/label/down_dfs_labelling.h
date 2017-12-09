@@ -1,7 +1,7 @@
-#ifndef WARTHOG_DOWN_LABELLING_H
-#define WARTHOG_DOWN_LABELLING_H
+#ifndef WARTHOG_DOWN_DFS_LABELLING_H
+#define WARTHOG_DOWN_DFS_LABELLING_H
 
-// label/down_labelling.h
+// label/down_dfs_labelling.h
 //
 // Collects a variety of different labels that we can compute for 
 // the down-closure of a node. Intended for use with forward-driven 
@@ -61,7 +61,7 @@ struct id_range_label
     }
 
     void
-    merge(id_range_label& other)
+    grow(const id_range_label& other)
     {
         left = left < other.left ? left : other.left;
         right = right > other.right ? right : other.right;
@@ -76,55 +76,77 @@ struct id_range_label
     int32_t left, right;
 };
 
-struct down_label
+struct down_dfs_label
 {
-    down_label(bbaf_label& bbaf, id_range_label& id) 
-        : bbaf_(bbaf), ids_(id) { }
+    down_dfs_label(size_t arcflag_bytes)
+    {
+        for(uint32_t i = 0; i < arcflag_bytes; i++) { flags_.push_back(0); }
+    }
 
-    bbaf_label& bbaf_;
-    id_range_label& ids_;
+    down_dfs_label&
+    operator=(const down_dfs_label& other)
+    {
+        rank_ = other.rank_;
+        ids_ = other.ids_;
+        bbox_ = other.bbox_;
+        for(uint32_t i = 0; i < other.flags_.size(); i++)
+        { flags_[i] = other.flags_.at(i); }
+        return *this;
+    }
+
+    void
+    merge(const down_dfs_label& other)
+    {
+        rank_.grow(other.rank_);
+        ids_.grow(other.ids_);
+        bbox_.grow(other.bbox_);
+        for(uint32_t i = 0; i < flags_.size(); i++)
+        { flags_[i] |= other.flags_[i]; }
+    }
+
+    id_range_label rank_;
+    id_range_label ids_;
+    std::vector<uint8_t> flags_;
+    warthog::geom::rectangle bbox_;
 };
 
 
-class down_labelling 
+class down_dfs_labelling 
 {
 
     public:
 
-        ~down_labelling();
+        ~down_dfs_labelling();
 
         inline std::vector<uint32_t>*
         get_partitioning()
         {
-            return lab_bbaf_->get_partitioning();
+            return part_;
         }
 
         inline warthog::graph::planar_graph*
         get_graph() 
         { 
-            return lab_bbaf_->get_graph();
+            return g_;
         }
 
-        down_label
+        down_dfs_label&
         get_label(uint32_t node_id, uint32_t edge_idx)
         {
-            assert(edge_idx < lab_idr_->at(node_id).size());
-            down_label ret(
-                    lab_bbaf_->get_label(node_id, edge_idx), 
-                    lab_idr_->at(node_id).at(edge_idx));
-            return ret;
+            assert(edge_idx < lab_->at(node_id).size());
+            return lab_->at(node_id).at(edge_idx);
         }
 
         void
         print(std::ostream& out) { /* IMPLEMENT ME */ }
 
-        static warthog::label::down_labelling*
+        static warthog::label::down_dfs_labelling*
         load(const char* filename, warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* partitioning) 
         { return 0; /* IMPLEMENT ME */ }
 
         // compute labels for all nodes specified by the given workload
-        static warthog::label::down_labelling*
+        static warthog::label::down_dfs_labelling*
         compute(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* part, 
                 std::vector<uint32_t>* rank,
@@ -145,18 +167,12 @@ class down_labelling
                         warthog::ch::DOWN, false);
             };
 
-            warthog::label::down_labelling* lab = 
-                new warthog::label::down_labelling();
+            warthog::label::down_dfs_labelling* lab = 
+                new warthog::label::down_dfs_labelling(g, part);
 
-            std::cerr << "computing id-range labels\n";
+            std::cerr << "computing labels\n";
             lab->compute_id_range_labels(g, rank);
 
-            std::cerr << "computing bbaf labels\n";
-            lab->lab_bbaf_ = 
-                warthog::label::bbaf_labelling::compute
-                <warthog::fch_expansion_policy>
-                (g, part, get_expander_fn, workload);
-            
             return lab;
         }
 
@@ -167,27 +183,33 @@ class down_labelling
         mem()
         {
             size_t retval = sizeof(this);
-            for(uint32_t i = 0; i < lab_idr_->size(); i++)
+            for(uint32_t i = 0; i < lab_->size(); i++)
             {
-                retval += sizeof(id_range_label)* lab_idr_->at(i).size();
+                retval += (sizeof(down_dfs_label) + bytes_per_af_label_) 
+                    * lab_->at(i).size();
             }
             retval += sizeof(int32_t) * dfs_order_->size();
-            retval += lab_bbaf_->mem();
             return retval;
         }
 
 
     private:
         // only via ::compute or ::load please
-        down_labelling();
+        down_dfs_labelling(
+            warthog::graph::planar_graph* g, 
+            std::vector<uint32_t>* partitioning);
 
         void 
         compute_id_range_labels(
                 warthog::graph::planar_graph*, std::vector<uint32_t>*);
 
+        warthog::graph::planar_graph* g_;
+        std::vector<uint32_t>* part_;
+        size_t bytes_per_af_label_;
+
         std::vector<int32_t>* dfs_order_;
-        warthog::label::bbaf_labelling* lab_bbaf_;
-        std::vector< std::vector< id_range_label >>* lab_idr_;
+        std::vector< std::vector< down_dfs_label >>* lab_;
+
 };
 
 }
