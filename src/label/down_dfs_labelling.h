@@ -67,7 +67,7 @@ struct id_range_label
         right = right > other.right ? right : other.right;
     }
 
-    bool
+    inline bool
     contains(int32_t val)
     {
         return (right - val) + left >= left;

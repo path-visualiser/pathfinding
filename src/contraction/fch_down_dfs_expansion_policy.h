@@ -133,8 +133,7 @@ class fch_down_dfs_expansion_policy : public expansion_policy
             warthog::label::down_dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
             bool retval = label.bbox_.contains(tx_, ty_)
-                && label.ids_.contains(t_label)
-                && label.rank_.contains(t_rank);
+                && label.ids_.contains(t_label);
             return !retval; 
         }
 

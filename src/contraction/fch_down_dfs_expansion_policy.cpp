@@ -63,15 +63,11 @@ warthog::fch_down_dfs_expansion_policy::expand(
     warthog::graph::edge_iter begin, end, succ;
     begin = n->outgoing_begin();
     end = n->outgoing_end();
-    succ = begin;
-
-    // traveling up the hierarchy we generate all neighbours;
-    // traveling down, we generate only "down" neighbours
-    bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
-    if(!up_travel) 
-    { 
-        succ += down_heads_[current_id];
-    }
+    succ = begin + 
+        // traveling up the hierarchy we generate all neighbours;
+        // traveling down, we generate only "down" neighbours
+        (pn && (current_rank < get_rank(pn->get_id()))) *
+        down_heads_[current_id];
 
     for( ; succ != end; succ++)
     {
