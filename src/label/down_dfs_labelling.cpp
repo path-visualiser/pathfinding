@@ -150,8 +150,7 @@ warthog::label::down_dfs_labelling::compute_id_range_labels(
                 // up-closure part of the label
                 down_dfs_label& e_lab = lab_->at(source_id).at(it - begin);
                 e_lab.merge(node_labels.at(apex_id));
-                assert(e_lab.contains(rank->at(apex_id)));
-                //e.lab.rank_.grow(rank->at(apex_id));
+                assert(e_lab.ids_.contains(apex_id));
             }
         };
 
