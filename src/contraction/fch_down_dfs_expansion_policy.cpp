@@ -13,13 +13,13 @@ warthog::fch_down_dfs_expansion_policy::fch_down_dfs_expansion_policy(
     rank_ = rank;
     lab_ = lab;
     t_label = s_label = INT32_MAX;
-    filter = &warthog::fch_down_dfs_expansion_policy::filter_all;
-    //filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_and_bb;
+    //filter = &warthog::fch_down_dfs_expansion_policy::filter_all;
+    filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_and_bb;
     //filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_and_af;
     //filter = &warthog::fch_down_dfs_expansion_policy::filter_bb_and_af;
     //filter = &warthog::fch_down_dfs_expansion_policy::filter_bb_only;
     //filter = &warthog::fch_down_dfs_expansion_policy::filter_af_only;
-    filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_only;
+    //filter = &warthog::fch_down_dfs_expansion_policy::filter_id_range_only;
 
     // sort edges s.t. all up successors appear before any down successor
     if(sort_successors) { warthog::ch::fch_sort_successors(g, rank); }
@@ -60,37 +60,26 @@ warthog::fch_down_dfs_expansion_policy::expand(
     uint32_t current_rank = get_rank(current_id);
 
     warthog::graph::node* n = g_->get_node(current_id);
-    warthog::graph::edge_iter begin, end;
+    warthog::graph::edge_iter begin, end, succ;
     begin = n->outgoing_begin();
     end = n->outgoing_end();
+    succ = begin;
 
     // traveling up the hierarchy we generate all neighbours;
     // traveling down, we generate only "down" neighbours
     bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
-    if(up_travel) 
+    if(!up_travel) 
     { 
-//        if(current_rank < t_rank)
-//        {
-//            end = begin + down_heads_[current_id];
-//        }
-        for(warthog::graph::edge_iter it = begin; it != end; it++)
-        {
-            warthog::graph::edge& e = *it;
-            assert(e.node_id_ < g_->get_num_nodes());
-            this->add_neighbour(this->generate(e.node_id_), e.wt_);
-        }
+        succ += down_heads_[current_id];
     }
-    else 
+
+    for( ; succ != end; succ++)
     {
-        begin += down_heads_[current_id];
-        for(warthog::graph::edge_iter it = begin; it != end; it++)
+        warthog::graph::edge& e = *succ;
+        assert(e.node_id_ < g_->get_num_nodes());
+        if(!(this->*filter)(current_id, (succ - begin)))
         {
-            warthog::graph::edge& e = *it;
-            assert(e.node_id_ < g_->get_num_nodes());
-            if(!(this->*filter)(current_id, (it - begin)))
-            {
-                this->add_neighbour(this->generate(e.node_id_), e.wt_);
-            }
+            this->add_neighbour(this->generate(e.node_id_), e.wt_);
         }
     }
 }

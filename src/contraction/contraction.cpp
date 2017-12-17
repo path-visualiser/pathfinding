@@ -301,39 +301,136 @@ warthog::ch::fch_sort_successors(
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {
         warthog::graph::node* n = g->get_node(i);
-        warthog::graph::edge_iter up = n->outgoing_begin();
-        warthog::graph::edge_iter down = n->outgoing_end()-1;
-        assert(n->out_degree() <= UINT8_MAX);
-        while(up < down)
-        {
-            if(rank->at((*down).node_id_) < rank->at(i))
-            { down--; continue; }
-            if(rank->at((*up).node_id_) > rank->at(i))
-            { up++; continue; }
-
-            // swap list heads
-            warthog::graph::edge tmp = (*down);
-            (*down) = (*up);
-            (*up) = tmp;
-            up++;
-            down--;
-        }
-        // down successors begin from the location of the up pointer
-        // NB: the final swap might involve two up successors in which case
-        // we need to increment the pointer one more time
-        if(rank->at((*up).node_id_) > rank->at(i)) { up++; }
-
-#ifndef NDEBUG
-        // sanity
-        warthog::graph::edge_iter it = n->outgoing_begin();
-        for( ; it != n->outgoing_end(); it++)
-        {
-            if(rank->at(it->node_id_) < rank->at(i)) { break; }
-        }
-        for( ; it != n->outgoing_end(); it++)
-        {
-            assert(rank->at(it->node_id_) < rank->at(i));
-        }
-#endif
+        std::sort(n->outgoing_begin(), n->outgoing_end(), 
+                [rank] 
+                (warthog::graph::edge& first,
+                 warthog::graph::edge& second) -> bool
+                {
+                    uint32_t f_rank = rank->at(first.node_id_);
+                    uint32_t s_rank = rank->at(second.node_id_);
+                    return f_rank > s_rank;
+                } );
     }
+}
+
+// pruning rule: up-then-down < up
+// related rules that don't work:
+// down-up < down: fails because the two down frontiers may not ever meet
+// up-down < down: seldom works; up usually goes far away and down is local
+void
+warthog::ch::sod_pruning(
+        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank)
+{   
+    //std::vector<double> cost(g->get_num_nodes(), DBL_MAX);
+    //std::vector<double> from(g->get_num_nodes(), g->get_num_nodes());
+
+    //uint32_t source = 0;
+    //std::function<void(uint32_t, uint32_t, double, uint32_t)> dfs_fn =
+    //    [g, rank, &cost, &from, &dfs_fn, source] 
+    //    (uint32_t current, uint32_t up_hops, double sum, uint32_t min_lvl) 
+    //        -> void
+    //    {
+    //        warthog::graph::node* n = g->get_node(current);
+    //        warthog::graph::edge_iter it = n->outgoing_begin();
+    //        uint32_t n_rank = rank->at(current);
+    //        for( ; it != n->outgoing_end(); it++)
+    //        {
+    //            double dfs_cost = sum + it->wt_;
+    //            if(from.at(it->node_id_) != source)
+    //            { 
+    //                from.at(it->node_id_) = source;
+    //                cost.at(it->node_id_) = dfs_cost;
+    //            }
+    //            else if((dfs_cost + 0.0000001) < cost.at(it->node_id_))
+    //            { 
+    //                cost.at(it->node_id_) = dfs_cost; 
+    //            }
+    //            else continue;
+
+    //            uint32_t nei_rank = rank->at(it->node_id_);
+    //            if(nei_rank > n_rank)
+    //            {
+    //                if(up_hops) 
+    //                { 
+    //                    dfs_fn(it->node_id_, up_hops-1, dfs_cost, min_lvl);
+    //                }
+    //            }
+    //            else
+    //            {
+    //                if(nei_rank >= min_lvl)
+    //                {
+    //                    dfs_fn(it->node_id_, 0, dfs_cost, min_lvl);
+    //                }
+    //            }
+    //        }
+    //    };
+    //    
+    //uint32_t up_hops = 2;
+    uint32_t stall_rm = 0;
+    for(uint32_t source = 0; source < g->get_num_nodes(); source++)
+    {
+            warthog::graph::node* s = g->get_node(source);
+            warthog::graph::edge_iter it1 = s->outgoing_begin();
+            warthog::graph::edge_iter it2 = it1+1;
+            std::set<warthog::graph::edge_iter> stalled;
+            for( ; it1 != s->outgoing_end(); it1++)
+            {
+                if(rank->at(it1->node_id_) < rank->at(source)) {continue;}
+
+                for( ; it2 != s->outgoing_end(); it2++)
+                {
+                    if(rank->at(it2->node_id_) < rank->at(source)) {continue;}
+                    warthog::graph::edge_iter high, low;
+                    if(rank->at(it1->node_id_) < rank->at(it2->node_id_))
+                    {
+                        high = it2;
+                        low = it1;
+                    }
+                    else
+                    {
+                        high = it1;
+                        low = it2;
+                    }
+
+                    warthog::graph::node* high_node = 
+                        g->get_node(high->node_id_);
+                    warthog::graph::edge_iter stall_it = 
+                        high_node->find_edge(low->node_id_);
+                    if(stall_it != high_node->outgoing_end() &&
+                        (high->wt_ + stall_it->wt_) < low->wt_)
+                    {
+                        s->del_outgoing(low);
+                        it1--;
+                        it2--;
+                        stall_rm++;
+                    }
+                }
+            }
+    }
+    std::cerr << "stall_rm total " << stall_rm << std::endl;
+
+    //uint32_t up_hops = 2;
+    //for(source = 0; source < g->get_num_nodes(); source++)
+    //{
+    //        warthog::graph::node* n = g->get_node(source);
+    //        warthog::graph::edge_iter it = n->outgoing_begin();
+    //        uint32_t min_lvl = UINT32_MAX;
+    //        for( ; it != n->outgoing_end(); it++)
+    //        {
+    //            if(rank->at(it->node_id_) < min_lvl) 
+    //            { 
+    //                min_lvl = rank->at(it->node_id_);
+    //            }
+    //            cost.at(it->node_id_) = DBL_MAX;
+    //        }
+
+    //        dfs_fn(source, 1, 0, min_lvl);
+    //        for( it = n->outgoing_begin(); it != n->outgoing_end(); it++)
+    //        {
+    //            if((cost.at(it->node_id_) + 0.0000001)< it->wt_)
+    //            { 
+    //                crap++;
+    //            }
+    //        }
+    //}
 }

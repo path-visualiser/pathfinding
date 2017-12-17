@@ -1,6 +1,13 @@
 #include "down_dfs_labelling.h"
 #include "planar_graph.h"
 
+#include "search_node.h"
+#include "zero_heuristic.h"
+#include "flexible_astar.h"
+#include "problem_instance.h"
+#include "solution.h"
+#include "graph_expansion_policy.h"
+
 #include <algorithm>
 
 warthog::label::down_dfs_labelling::down_dfs_labelling(
@@ -49,16 +56,12 @@ warthog::label::down_dfs_labelling::compute_id_range_labels(
         down_dfs_label dummy(bytes_per_af_label_);
         for(uint32_t n_id = 0; n_id < g->get_num_nodes(); n_id++)
         {
-            uint32_t num_down = 0;
             warthog::graph::node* n = g_->get_node(n_id);
-            for(warthog::graph::edge_iter it = n->outgoing_begin();
-                    it != n->outgoing_end(); 
-                    it++)
-            { if(rank->at(it->node_id_) < rank->at(n_id)) { num_down++; } }
-            lab_->at(n_id).resize(num_down, dummy);
+            lab_->at(n_id).resize(n->out_degree(), dummy);
         }
     }
 
+    // down labels
     uint32_t dfs_id = 0;
     std::function<void(uint32_t)> label_fn = 
         [this, g, rank, &node_labels, &apex_id, &dfs_id, &label_fn] 
@@ -67,7 +70,7 @@ warthog::label::down_dfs_labelling::compute_id_range_labels(
             down_dfs_label& s_lab = node_labels.at(source_id);
             warthog::graph::node* source = g->get_node(source_id);
             warthog::graph::edge_iter begin = source->outgoing_begin();
-            uint32_t down_idx = 0;
+
             for( warthog::graph::edge_iter it = begin; 
                     it != source->outgoing_end();
                     it++)
@@ -81,7 +84,7 @@ warthog::label::down_dfs_labelling::compute_id_range_labels(
                 { label_fn(it->node_id_); }
 
                 // label the edge
-                lab_->at(source_id).at(down_idx++) = 
+                lab_->at(source_id).at(it - begin) = 
                     node_labels.at(it->node_id_);
 
                 // update the range down-reachable from source_id
@@ -105,6 +108,54 @@ warthog::label::down_dfs_labelling::compute_id_range_labels(
             s_lab.flags_[s_part >> 3] |= (1 << (s_part & 7)); // div8, mod8
             assert(s_lab.flags_[s_part >> 3] & (1 << (s_part & 7)));
         };
-
     label_fn(apex_id);
+
+    // compute up-closure apex for every node
+    std::vector< int32_t > up_apex(g->get_num_nodes(), INT32_MAX);
+    std::function<void(uint32_t)> up_label_fn = 
+        [this, g, rank, &node_labels, &up_apex, &up_label_fn] 
+        (uint32_t source_id) -> void
+        {
+            warthog::graph::node* source = g->get_node(source_id);
+            warthog::graph::edge_iter begin = source->outgoing_begin();
+            warthog::graph::edge_iter end = source->outgoing_end();
+
+            // compute a label for the up-closure 
+            uint32_t apex_id = source_id;
+            for( warthog::graph::edge_iter it = begin; it != end; it++)
+            {
+                // skip down edges
+                if(rank->at(it->node_id_) < rank->at(source_id)) 
+                { continue; }
+
+                // DFS
+                if(up_apex.at(it->node_id_) == INT32_MAX)
+                { up_label_fn(it->node_id_); }
+
+                // update the up-closure label
+                uint32_t succ_apex_id = up_apex.at(it->node_id_);
+                if(rank->at(succ_apex_id) > rank->at(apex_id))
+                { apex_id = succ_apex_id; }
+            }
+            up_apex.at(source_id) = apex_id;
+
+            // compute labels for each edge (a, b) where a < b in the CH.
+            // to compute the label we take the apex node in the up-closure 
+            // from node a and compute its down-closure. 
+            for( warthog::graph::edge_iter it = begin; it != end; it++)
+            {
+                // down edges of n are already labeled, so we can skip them
+                if(rank->at(it->node_id_) < rank->at(source_id)) { continue; }
+                
+                // up-closure part of the label
+                down_dfs_label& e_lab = lab_->at(source_id).at(it - begin);
+                e_lab.merge(node_labels.at(apex_id));
+            }
+        };
+
+    for(uint32_t n_id = 0; n_id < g->get_num_nodes(); n_id++)
+    { 
+        up_label_fn(n_id); 
+    }
 }
+

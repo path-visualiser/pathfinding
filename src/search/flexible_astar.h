@@ -231,6 +231,7 @@ class flexible_astar : public warthog::search
             if(pi_.start_id_ == warthog::INF) { return 0; }
             start = expander_->generate_start_node(&pi_);
             pi_.start_id_ = start->get_id();
+            on_generate_fn_(start, 0, 0, UINT32_MAX);
 
 			warthog::search_node* target = 0;
             if(pi_.target_id_ != warthog::INF)

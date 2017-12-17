@@ -59,16 +59,29 @@ class fch_expansion_policy : public expansion_policy
         virtual warthog::search_node*
         generate_target_node(warthog::problem_instance* pi);
 
-        inline void
-        set_search_direction(warthog::ch::search_direction d)
-        { dir_ = d; } 
-
         virtual inline size_t
         mem()
         {
             return expansion_policy::mem() +
                 sizeof(this);
         }
+
+        ////////////////////// FCH specific stuff ////////////////////
+        inline void
+        set_search_direction(warthog::ch::search_direction d)
+        { dir_ = d; } 
+
+        // return the index of the first down node from among the list 
+        // of outgoing edges of node @param n_id
+        uint32_t
+        get_first_down_index(uint32_t n_id) { return down_heads_[n_id] ; }
+
+        warthog::graph::planar_graph*
+        get_graph() { return g_; } 
+
+        std::vector<uint32_t>*
+        get_rank_labels() { return rank_; }
+
 
     private:
         std::vector<uint32_t>* rank_;
