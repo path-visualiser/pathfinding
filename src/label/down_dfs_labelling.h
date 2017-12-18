@@ -172,7 +172,7 @@ class down_dfs_labelling
 
             std::cerr << "computing labels\n";
             lab->compute_labels(rank);
-            lab->improve_labels(rank);
+            //lab->improve_labels(rank);
 
             return lab;
         }
