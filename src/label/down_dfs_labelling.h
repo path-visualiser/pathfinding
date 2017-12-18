@@ -171,7 +171,8 @@ class down_dfs_labelling
                 new warthog::label::down_dfs_labelling(g, part);
 
             std::cerr << "computing labels\n";
-            lab->compute_id_range_labels(g, rank);
+            lab->compute_labels(rank);
+            lab->improve_labels(rank);
 
             return lab;
         }
@@ -199,9 +200,16 @@ class down_dfs_labelling
             warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* partitioning);
 
+        // DFS-based preprocessing computes labels for every edge 
+        // @param contraction order of every node in the graph
         void 
-        compute_id_range_labels(
-                warthog::graph::planar_graph*, std::vector<uint32_t>*);
+        compute_labels(std::vector<uint32_t>*);
+
+        // Dijkstra-based preprocessing improves the labels for 
+        // selected sets of nodes
+        // @param contraction order of every node in the graph
+        void 
+        improve_labels(std::vector<uint32_t>*);
 
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* part_;
