@@ -43,7 +43,7 @@ class fch_expansion_policy : public expansion_policy
                 warthog::graph::planar_graph* graph,
                 std::vector<uint32_t>* rank,  
                 warthog::ch::search_direction = warthog::ch::ANY,
-                bool sort_successors = true);
+                bool sort_successors = false);
 
         ~fch_expansion_policy();
 

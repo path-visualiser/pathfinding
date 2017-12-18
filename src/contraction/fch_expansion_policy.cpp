@@ -13,7 +13,11 @@ warthog::fch_expansion_policy::fch_expansion_policy(
     rank_ = rank;
 
     // sort edges s.t. all up successors appear before any down successor
-    if(sort_successors) { warthog::ch::fch_sort_successors(g, rank); }
+    if(sort_successors) 
+    {
+        // TODO: only if sanity check fails
+        warthog::ch::fch_sort_successors(g, rank); 
+    }
 
     // store the location of the first down successor 
     down_heads_ = new uint8_t[g->get_num_nodes()];
