@@ -64,6 +64,7 @@ warthog::fch_down_dfs_expansion_policy::expand(
     begin = n->outgoing_begin();
     end = n->outgoing_end();
     succ = begin + 
+        // adjust the successors pointer by an appropriate offset.
         // traveling up the hierarchy we generate all neighbours;
         // traveling down, we generate only "down" neighbours
         (pn && (current_rank < get_rank(pn->get_id()))) *
