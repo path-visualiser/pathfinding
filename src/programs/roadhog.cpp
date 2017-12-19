@@ -27,7 +27,7 @@
 #include "fch_af_expansion_policy.h"
 #include "fch_bb_expansion_policy.h"
 #include "fch_bbaf_expansion_policy.h"
-#include "fch_down_dfs_expansion_policy.h"
+#include "fch_dfs_expansion_policy.h"
 #include "fch_expansion_policy.h"
 #include "fch_x_expansion_policy.h"
 #include "fixed_graph_contraction.h"
@@ -772,7 +772,7 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_fch_down_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
     std::string orderfile = cfg.get_param_value("input");
@@ -818,15 +818,28 @@ run_fch_down_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // sort the graph edges
     warthog::ch::fch_sort_successors(&g, &order);
 
-    // load up the labelling
-    warthog::label::down_dfs_labelling* lab = 
-        warthog::label::down_dfs_labelling::compute(
-                &g, &part, &order, false);
+    // define the workload
+    warthog::util::workload_manager workload(g.get_num_nodes());
+    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        // nodes with degree >= 100
+        //warthog::graph::node* n = g.get_node(i);
+        //if(n->out_degree() >= 100)
+        // top k% highest nodes
+        if(order.at(i) >= (uint32_t)(order.size()*0.90))
+        //if(true) // all nodes
+        { workload.set_flag(i, true); }
+    }
 
-    warthog::fch_down_dfs_expansion_policy fexp(&g, &order, lab, false);
+    // compute the labelling
+    warthog::label::dfs_labelling* lab = 
+        warthog::label::dfs_labelling::compute(
+                &g, &part, &order, &workload);
+
+    warthog::fch_dfs_expansion_policy fexp(&g, &order, lab, false);
     warthog::euclidean_heuristic h(&g);
     warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_down_dfs_expansion_policy> alg(&h, &fexp);
+        warthog::fch_dfs_expansion_policy> alg(&h, &fexp);
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
@@ -1675,9 +1688,9 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_fch_bbaf(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "fch-down-dfs")
+    else if(alg_name == "fch-dfs")
     {
-        run_fch_down_dfs(cfg, parser, alg_name, gr, co);
+        run_fch_dfs(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-cpg")
     {

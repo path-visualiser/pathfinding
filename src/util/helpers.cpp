@@ -55,6 +55,7 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
 {
     std::cerr << "parallel compute; begin\n";
     std::cerr << "tasks to process: " << task_total << "\n";
+    if(task_total == 0) { return 0; }
 
     // OK, let's fork some threads
     const uint32_t NUM_THREADS = 4;
@@ -102,7 +103,6 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
         else { sleep(5); }
     }
     std::cerr << "\nparallel compute; end\n"<< std::endl;
-    return 0;
     return 0;
 }
 

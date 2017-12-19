@@ -1,7 +1,7 @@
-#ifndef WARTHOG_DOWN_DFS_LABELLING_H
-#define WARTHOG_DOWN_DFS_LABELLING_H
+#ifndef WARTHOG_DFS_LABELLING_H
+#define WARTHOG_DFS_LABELLING_H
 
-// label/down_dfs_labelling.h
+// label/dfs_labelling.h
 //
 // Collects a variety of different labels that we can compute for 
 // the down-closure of a node. Intended for use with forward-driven 
@@ -76,15 +76,15 @@ struct id_range_label
     int32_t left, right;
 };
 
-struct down_dfs_label
+struct dfs_label
 {
-    down_dfs_label(size_t arcflag_bytes)
+    dfs_label(size_t arcflag_bytes)
     {
         for(uint32_t i = 0; i < arcflag_bytes; i++) { flags_.push_back(0); }
     }
 
-    down_dfs_label&
-    operator=(const down_dfs_label& other)
+    dfs_label&
+    operator=(const dfs_label& other)
     {
         rank_ = other.rank_;
         ids_ = other.ids_;
@@ -95,7 +95,7 @@ struct down_dfs_label
     }
 
     void
-    merge(const down_dfs_label& other)
+    merge(const dfs_label& other)
     {
         rank_.grow(other.rank_);
         ids_.grow(other.ids_);
@@ -111,12 +111,12 @@ struct down_dfs_label
 };
 
 
-class down_dfs_labelling 
+class dfs_labelling 
 {
 
     public:
 
-        ~down_dfs_labelling();
+        ~dfs_labelling();
 
         inline std::vector<uint32_t>*
         get_partitioning()
@@ -130,7 +130,7 @@ class down_dfs_labelling
             return g_;
         }
 
-        down_dfs_label&
+        dfs_label&
         get_label(uint32_t node_id, uint32_t edge_idx)
         {
             assert(edge_idx < lab_->at(node_id).size());
@@ -140,56 +140,19 @@ class down_dfs_labelling
         void
         print(std::ostream& out) { /* IMPLEMENT ME */ }
 
-        static warthog::label::down_dfs_labelling*
+        static warthog::label::dfs_labelling*
         load(const char* filename, warthog::graph::planar_graph* g, 
-            std::vector<uint32_t>* partitioning) 
+            std::vector<uint32_t>* partitioning)
         { return 0; /* IMPLEMENT ME */ }
 
         // compute labels for all nodes specified by the given workload
-        static warthog::label::down_dfs_labelling*
+        static warthog::label::dfs_labelling*
         compute(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* part, 
                 std::vector<uint32_t>* rank,
-                bool sort_successors = true)
+                warthog::util::workload_manager* workload)
         {
             if(g == 0 || part  == 0) { return 0; } 
-
-            // sort the edges of the graph s.t. all up successors of a node
-            // appear before any down successor
-            if(sort_successors)
-            { warthog::ch::fch_sort_successors(g, rank); }
-
-            warthog::label::down_dfs_labelling* lab = 
-                new warthog::label::down_dfs_labelling(g, part);
-
-            std::cerr << "computing dfs labels\n";
-            lab->compute_labels(rank); // single threaded
-
-            std::cerr << "computing dijkstra labels\n";
-
-            // select some nodes and reset their labels
-            warthog::util::workload_manager workload(g->get_num_nodes());
-            for(uint32_t i = 0; i < g->get_num_nodes(); i++)
-            {
-                warthog::graph::node* n = g->get_node(i);
-
-                // nodes with degree >= 100
-                //if(n->out_degree() >= 100)
-                // top 1% highest nodes
-                if(rank->at(i) >= (uint32_t)(rank->size()*0.99))
-                { 
-                    workload.set_flag(i, true);
-
-                    // throw away the dfs labels
-                    warthog::graph::edge_iter begin = n->outgoing_begin();
-                    warthog::graph::edge_iter end = n->outgoing_end();
-                    for(warthog::graph::edge_iter it = begin; it != end; it++)
-                    {
-                        lab->lab_->at(i).at(it - begin) = 
-                            down_dfs_label(lab->bytes_per_af_label_);
-                    }
-                }
-            }
 
             std::function<fch_expansion_policy*(void)> expander_fn = 
             [g, rank] (void) -> fch_expansion_policy*
@@ -198,7 +161,7 @@ class down_dfs_labelling
             struct shared_data
             {
                 std::function<fch_expansion_policy*(void)> fn_new_expander_;
-                warthog::label::down_dfs_labelling* lab_;
+                warthog::label::dfs_labelling* lab_;
                 warthog::util::workload_manager* workload_;
                 std::vector<uint32_t>* rank_;
             };
@@ -213,8 +176,7 @@ class down_dfs_labelling
                     (warthog::helpers::thread_params*) args_in;
                 shared_data* shared = (shared_data*) par->shared_;
 
-                warthog::label::down_dfs_labelling* lab = shared->lab_;
-                std::vector<uint32_t>* rank = shared->rank_;
+                warthog::label::dfs_labelling* lab = shared->lab_;
                 warthog::util::workload_manager* workload = shared->workload_;
 
                 // variable used to track the node currently being processed
@@ -260,7 +222,7 @@ class down_dfs_labelling
 
 
                 std::function<void(warthog::search_node*)> on_expand_fn =
-                [&source_id, &first_move, rank, lab]
+                [&source_id, &first_move, lab]
                 (warthog::search_node* current) -> void
                 {
                     if(current->get_id() == source_id) { return; }
@@ -270,10 +232,10 @@ class down_dfs_labelling
 
                     uint32_t edge_idx = first_move.at(node_id);
                     assert(edge_idx < lab->lab_->at(source_id).size());
-                    down_dfs_label& s_lab = 
+                    dfs_label& s_lab = 
                         lab->lab_->at(source_id).at(edge_idx);
 
-                    s_lab.rank_.grow(rank->at(node_id));
+                    s_lab.rank_.grow(lab->rank_->at(node_id));
                     s_lab.ids_.grow(lab->dfs_order_->at(node_id));
 
                     int32_t x, y;
@@ -315,21 +277,28 @@ class down_dfs_labelling
                     dijk.get_path(problem, sol);
                     par->nprocessed_++;
                 }
-
                 return 0;
             };
+
+            warthog::label::dfs_labelling* lab = 
+                new warthog::label::dfs_labelling(g, rank, part);
 
             shared_data shared;
             shared.fn_new_expander_ = expander_fn;
             shared.lab_ = lab;
-            shared.workload_ = &workload;
+            shared.workload_ = workload;
             shared.lab_ = lab;
-            shared.rank_ = rank;
 
+            std::cerr << "computing dijkstra labels\n";
             warthog::helpers::parallel_compute(
                     thread_compute_fn, &shared, 
-                    workload.num_flags_set());
+                    workload->num_flags_set());
+
+            std::cerr << "computing dfs labels\n";
+            workload->set_all_flags_complement();
+            lab->compute_dfs_labels(workload); // single threaded
             std::cerr << "\nall done\n"<< std::endl;
+
             return lab;
         }
 
@@ -342,7 +311,7 @@ class down_dfs_labelling
             size_t retval = sizeof(this);
             for(uint32_t i = 0; i < lab_->size(); i++)
             {
-                retval += (sizeof(down_dfs_label) + bytes_per_af_label_) 
+                retval += (sizeof(dfs_label) + bytes_per_af_label_) 
                     * lab_->at(i).size();
             }
             retval += sizeof(int32_t) * dfs_order_->size();
@@ -352,22 +321,30 @@ class down_dfs_labelling
 
     private:
         // only via ::compute or ::load please
-        down_dfs_labelling(
+        dfs_labelling(
             warthog::graph::planar_graph* g, 
+            std::vector<uint32_t>* rank,
             std::vector<uint32_t>* partitioning);
 
         // DFS-based preprocessing computes labels for every edge 
         // @param contraction order of every node in the graph
         void 
-        compute_labels(std::vector<uint32_t>*);
+        compute_dfs_labels(warthog::util::workload_manager* workload);
+
+        // Computes a DFS post-order id for every node in the hierarchy
+        // (top-down traversal)
+        // @param id of the highest node in the contraction hierarchy
+        void
+        compute_dfs_ids(uint32_t apex_id);
 
         warthog::graph::planar_graph* g_;
+        std::vector<uint32_t>* rank_;
         std::vector<uint32_t>* part_;
         size_t bytes_per_af_label_;
+        uint32_t apex_id_; 
 
         std::vector<int32_t>* dfs_order_;
-        std::vector< std::vector< down_dfs_label >>* lab_;
-
+        std::vector< std::vector< dfs_label >>* lab_;
 };
 
 }
