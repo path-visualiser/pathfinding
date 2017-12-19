@@ -775,6 +775,7 @@ void
 run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
+    std::string alg_params = cfg.get_param_value("alg");
     std::string orderfile = cfg.get_param_value("input");
     std::string partition_file = cfg.get_param_value("input");
     if(orderfile == "" || partition_file == "")
@@ -819,15 +820,24 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::ch::fch_sort_successors(&g, &order);
 
     // define the workload
+    double cutoff = 1;
+    if(alg_params != "")
+    {
+        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
+        {
+            std::cerr << "dijkstra percentage must be in range 0-100\n";
+            return;
+        }
+        cutoff = pct_dijkstra > 0 ? (1 - ((double)pct_dijkstra)/100) : 0;
+        alg_name += "-dijk-";
+        alg_name += std::to_string(pct_dijkstra);
+    }
+
     warthog::util::workload_manager workload(g.get_num_nodes());
     for(uint32_t i = 0; i < g.get_num_nodes(); i++)
     {
-        // nodes with degree >= 100
-        //warthog::graph::node* n = g.get_node(i);
-        //if(n->out_degree() >= 100)
-        // top k% highest nodes
-        if(order.at(i) >= (uint32_t)(order.size()*0.90))
-        //if(true) // all nodes
+        if(order.at(i) >= (uint32_t)(order.size()*cutoff))
         { workload.set_flag(i, true); }
     }
 
