@@ -1,6 +1,7 @@
 #include "af_labelling.h"
 #include "bb_labelling.h"
 #include "bbaf_labelling.h"
+#include "dfs_labelling.h"
 #include "cfg.h"
 #include "contraction.h"
 #include "corner_point_graph.h"
@@ -31,7 +32,7 @@ help()
     //<< "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	//<< "\t--order [order-of-contraction file]\n"
     << "\t--type [ af | bb | bbaf | fch-af | fch-bb "
-    << "| fch-bbaf | fch-bb-jpg ] \n"
+    << "| fch-bbaf | fch-bb-jpg | fch-dfs ] \n"
     << "\t--input [ algorithm-specific input files (omit to show options) ]\n" 
 	<< "\t--verbose (optional)\n";
 }
@@ -922,6 +923,90 @@ compute_fch_bbaf_labels()
     std::cerr << "done!\n";
 }
 
+void
+compute_fch_dfs_labels(std::string alg_name)
+{
+    std::string alg_params = cfg.get_param_value("alg");
+    std::string grfile = cfg.get_param_value("input");
+    std::string cofile = cfg.get_param_value("input");
+    std::string orderfile = cfg.get_param_value("input");
+    std::string partfile = cfg.get_param_value("input");
+
+    if( grfile == "" || cofile == "" || partfile == "" || orderfile == "")
+    {
+        std::cerr << "err; insufficient input parameters."
+                  << " required, in order:\n"
+                  << " --input [gr file] [co file]"
+                  << " [node ordering file]"
+                  << " [graph partition file]\n";
+        return;
+    }
+    std::cerr << "computing labels" << std::endl;
+
+    // load up the graph
+    warthog::graph::planar_graph g;
+    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
+
+    // load up the node ordering
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+
+    if(order.size() != g.get_num_nodes())
+    {
+        std::cerr 
+            << "err; partial contraction ordering not supported\n";
+    }
+
+    // sort the edges of each node according to the order (descending)
+    warthog::ch::fch_sort_successors(&g, &order);
+
+    // load up the partition info
+    std::vector<uint32_t> part;
+    if(!warthog::helpers::load_integer_labels_dimacs(partfile.c_str(), part))
+    {
+        std::cerr << "err; could not load partition file\n"; 
+        return;
+    }
+
+    // define the preprocessing workload size
+    double cutoff = 1;
+    if(alg_params != "")
+    {
+        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
+        {
+            std::cerr << "dijkstra percentage must be in range 0-100\n";
+            return;
+        }
+        cutoff = pct_dijkstra > 0 ? (1 - ((double)pct_dijkstra)/100) : 0;
+        alg_name += "-dijk-";
+        alg_name += std::to_string(pct_dijkstra);
+    }
+    warthog::util::workload_manager workload(g.get_num_nodes());
+    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        if(order.at(i) >= (uint32_t)(order.size()*cutoff))
+        { workload.set_flag(i, true); }
+    }
+
+    // gogogogo
+    std::shared_ptr<warthog::label::dfs_labelling> lab(
+            warthog::label::dfs_labelling::compute(&g, &part, &order, 
+                &workload));
+
+    std::string arclab_file =  grfile + "." + alg_name + "." + "label";
+    warthog::label::dfs_labelling::save(arclab_file.c_str(), *lab);
+    std::cerr << "done.\n";
+}
+
 int main(int argc, char** argv)
 {
 
@@ -976,6 +1061,10 @@ int main(int argc, char** argv)
     else if(arclabel.compare("fch-af-jpg") == 0)
     {
         compute_fch_af_jpg_labels();
+    }
+    else if(arclabel.compare("fch-dfs") == 0)
+    {
+        compute_fch_dfs_labels(arclabel);
     }
     else
     {

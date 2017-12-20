@@ -24,6 +24,7 @@
 #include "fch_expansion_policy.h"
 #include "geom.h"
 #include "solution.h"
+#include "timer.h"
 
 #include <fstream>
 #include <vector>
@@ -227,7 +228,7 @@ class dfs_labelling
         static void
         save(const char* filename, warthog::label::dfs_labelling& lab)
         {
-            std::cerr << "saving dfs_labelling to file \n";
+            std::cerr << "writing labels to file " << filename << "\n";
             std::ofstream out(filename, 
                     std::ios_base::out|std::ios_base::binary);
 
@@ -248,6 +249,9 @@ class dfs_labelling
                 std::vector<uint32_t>* rank,
                 warthog::util::workload_manager* workload)
         {
+            warthog::timer t;
+            t.start();
+
             if(g == 0 || part  == 0) { return 0; } 
 
             std::function<fch_expansion_policy*(void)> expander_fn = 
@@ -390,10 +394,14 @@ class dfs_labelling
                     thread_compute_fn, &shared, 
                     workload->num_flags_set());
 
-            std::cerr << "computing dfs labels\n";
+            std::cerr << "computing dfs labels...\n";
             workload->set_all_flags_complement();
             lab->compute_dfs_labels(workload); // single threaded
-            std::cerr << "\nall done\n"<< std::endl;
+            t.stop();
+
+            std::cerr 
+                << "total preproc time (seconds): "
+                << t.elapsed_time_micro() / 1000000 << "\n";
 
             return lab;
         }
