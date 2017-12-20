@@ -10,6 +10,101 @@
 
 #include <algorithm>
 
+std::istream&
+warthog::label::operator>>(std::istream& in, 
+        warthog::label::id_range_label& label)
+{
+    in.read((char*)(&label.left), sizeof(label.left));
+    in.read((char*)(&label.right), sizeof(label.right));
+    return in;
+}
+
+std::ostream& 
+warthog::label::operator<<(std::ostream& out, 
+        warthog::label::id_range_label& label)
+{
+    out.write((char*)(&label.left), sizeof(label.left));
+    out.write((char*)(&label.right), sizeof(label.right));
+    return out;
+}
+
+std::istream&
+warthog::label::operator>>(std::istream& in, warthog::label::dfs_label& label)
+{
+    in >> label.rank_ >> label.ids_ >> label.bbox_;
+    for(uint32_t i = 0; i < label.flags_.size(); i++)
+    {   
+        in.read( (char*)(&label.flags_.at(i)), 
+                  sizeof(warthog::label::dfs_label::T_FLAG) );
+    }
+    return in;
+}
+
+std::ostream&
+warthog::label::operator<<(std::ostream& out, 
+        warthog::label::dfs_label& label)
+{
+    out << label.rank_ << label.ids_ << label.bbox_;
+    for(uint32_t i = 0; i < label.flags_.size(); i++)
+    { 
+        out.write( (char*)(&label.flags_.at(i)), 
+                    sizeof(warthog::label::dfs_label::T_FLAG) );
+    }
+    return out;
+}
+
+std::istream&
+warthog::label::operator>>(std::istream& in, 
+        warthog::label::dfs_labelling& lab)
+{
+    for(uint32_t n_id = 0; n_id < lab.g_->get_num_nodes(); n_id++)
+    {
+        warthog::graph::node* n = lab.g_->get_node(n_id);
+        warthog::graph::edge_iter begin = n->outgoing_begin();
+        warthog::graph::edge_iter end = n->outgoing_end();
+        for(warthog::graph::edge_iter it = begin; it != end; it++)
+        {
+            in >> lab.lab_->at(n_id).at(it - begin);
+            assert(in.good());
+
+            if(!in.good())
+            {
+                std::cerr << "unexpected error while reading labels\n";
+                std::cerr 
+                    << "[debug info] node: " << n_id
+                    << " out-edge-index: " << (it - begin) << "\n";
+                return in;
+            }
+        }
+    }
+    return in;
+}
+
+std::ostream&
+warthog::label::operator<<(std::ostream& out,
+        warthog::label::dfs_labelling& lab)
+{
+    for(uint32_t n_id = 0; n_id < lab.g_->get_num_nodes(); n_id++)
+    {
+        warthog::graph::node* n = lab.g_->get_node(n_id);
+        warthog::graph::edge_iter begin = n->outgoing_begin();
+        warthog::graph::edge_iter end = n->outgoing_end();
+        for(warthog::graph::edge_iter it = begin; it != end; it++)
+        {
+            out << lab.lab_->at(n_id).at(it - begin);
+            if(!out.good())
+            {
+                std::cerr << "unexpected error while writing labels\n";
+                std::cerr 
+                    << "[debug info] node: " << n_id
+                    << " out-edge-index: " << (it-begin) << "\n";
+                return out;
+            }
+        }
+    }
+    return out;
+}
+
 warthog::label::dfs_labelling::dfs_labelling(
         warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank,

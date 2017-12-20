@@ -841,10 +841,21 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         { workload.set_flag(i, true); }
     }
 
-    // compute the labelling
-    warthog::label::dfs_labelling* lab = 
-        warthog::label::dfs_labelling::compute(
+    // load up the labelling
+    std::string arclab_file =  gr + "." + alg_name + "." + "label";
+
+    warthog::label::dfs_labelling* lab = warthog::label::dfs_labelling::load(
+            arclab_file.c_str(), &g, &order, &part);
+
+    if(lab == 0)
+    {
+        lab = warthog::label::dfs_labelling::compute(
                 &g, &part, &order, &workload);
+        std::cerr << "precompute finished. saving result to " 
+            << arclab_file << "...";
+        warthog::label::dfs_labelling::save(arclab_file.c_str(), *lab);
+        std::cerr << "done.\n";
+    }
 
     warthog::fch_dfs_expansion_policy fexp(&g, &order, lab, false);
     warthog::euclidean_heuristic h(&g);

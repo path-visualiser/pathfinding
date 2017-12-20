@@ -94,6 +94,7 @@ makedirs:
 warthog: $(WARTHOG_OBJ)
 	@echo "###  Archiving object files ###"
 	@echo "sources "$(WARTHOG_SRC)
+	-rm lib/lib$(@).a
 	ar -crs lib/lib$(@).a $(WARTHOG_OBJ)
 
 -include $(WARTHOG_OBJ:.o=.d)

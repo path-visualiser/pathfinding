@@ -25,6 +25,7 @@
 #include "geom.h"
 #include "solution.h"
 
+#include <fstream>
 #include <vector>
 #include <cstdint>
 
@@ -54,6 +55,12 @@ struct id_range_label
     }
 
     void
+    print(std::ostream& out)
+    {
+        out << "id-range " << left << " " << right;
+    }
+
+    void
     grow(int32_t val)
     {
         left = val < left  ? val : left;
@@ -76,8 +83,16 @@ struct id_range_label
     int32_t left, right;
 };
 
+std::istream&
+operator>>(std::istream& in, warthog::label::id_range_label& label);
+
+std::ostream& 
+operator<<(std::ostream& out, warthog::label::id_range_label& label);
+
+
 struct dfs_label
 {
+    typedef uint8_t T_FLAG;
     dfs_label(size_t arcflag_bytes)
     {
         for(uint32_t i = 0; i < arcflag_bytes; i++) { flags_.push_back(0); }
@@ -104,15 +119,39 @@ struct dfs_label
         { flags_[i] |= other.flags_[i]; }
     }
 
+    void
+    print(std::ostream& out)
+    {
+        out << " dfs_label";
+        rank_.print(out);
+        ids_.print(out);
+        bbox_.print(out);
+        out << " arcflags ";
+        for(uint32_t i = 0; i < flags_.size(); i++)
+        {
+            out << " " << flags_.at(i);
+        }
+    }
+
     id_range_label rank_;
     id_range_label ids_;
-    std::vector<uint8_t> flags_;
+    std::vector<T_FLAG> flags_;
     warthog::geom::rectangle bbox_;
 };
 
+std::istream&
+operator>>(std::istream& in, warthog::label::dfs_label& label);
+
+std::ostream&
+operator<<(std::ostream& out, warthog::label::dfs_label& label);
 
 class dfs_labelling 
 {
+    friend std::ostream&
+    operator<<(std::ostream& out, dfs_labelling& lab);
+
+    friend std::istream&
+    warthog::label::operator>>(std::istream& in, dfs_labelling& lab);
 
     public:
 
@@ -137,13 +176,70 @@ class dfs_labelling
             return lab_->at(node_id).at(edge_idx);
         }
 
-        void
-        print(std::ostream& out) { /* IMPLEMENT ME */ }
+        inline int32_t
+        get_dfs_index(uint32_t graph_id) { return dfs_order_->at(graph_id); }
+
+        inline size_t
+        mem()
+        {
+            size_t retval = sizeof(this);
+            for(uint32_t i = 0; i < lab_->size(); i++)
+            {
+                retval += (sizeof(dfs_label) + bytes_per_af_label_) 
+                    * lab_->at(i).size();
+            }
+            retval += sizeof(int32_t) * dfs_order_->size();
+            return retval;
+        }
 
         static warthog::label::dfs_labelling*
         load(const char* filename, warthog::graph::planar_graph* g, 
-            std::vector<uint32_t>* partitioning)
-        { return 0; /* IMPLEMENT ME */ }
+            std::vector<uint32_t>* rank, std::vector<uint32_t>* part)
+        {
+            std::cerr << "loading dfs_labelling from file " 
+                << filename << std::endl;
+            std::ifstream ifs(filename, 
+                    std::ios_base::in|std::ios_base::binary);
+
+            if(!ifs.good())
+            {
+                std::cerr << "load failed (no such file?)" << std::endl;
+                ifs.close();
+                return 0;
+            }
+
+            warthog::label::dfs_labelling* lab = 
+                new warthog::label::dfs_labelling(g, rank, part);
+
+            ifs >> *lab;
+
+            if(!ifs.good())
+            {
+                std::cerr << "load failed" << std::endl;
+                delete lab;
+                lab = 0;
+            }
+
+            ifs.close();
+            return lab;
+        }
+        
+        static void
+        save(const char* filename, warthog::label::dfs_labelling& lab)
+        {
+            std::cerr << "saving dfs_labelling to file \n";
+            std::ofstream out(filename, 
+                    std::ios_base::out|std::ios_base::binary);
+
+            out << lab;
+
+            if(!out.good())
+            {
+                std::cerr << "\nerror trying to write to file " 
+                    << filename << std::endl;
+            }
+            out.close();
+        }
 
         // compute labels for all nodes specified by the given workload
         static warthog::label::dfs_labelling*
@@ -302,23 +398,6 @@ class dfs_labelling
             return lab;
         }
 
-        inline int32_t
-        get_dfs_index(uint32_t graph_id) { return dfs_order_->at(graph_id); }
-
-        inline size_t
-        mem()
-        {
-            size_t retval = sizeof(this);
-            for(uint32_t i = 0; i < lab_->size(); i++)
-            {
-                retval += (sizeof(dfs_label) + bytes_per_af_label_) 
-                    * lab_->at(i).size();
-            }
-            retval += sizeof(int32_t) * dfs_order_->size();
-            return retval;
-        }
-
-
     private:
         // only via ::compute or ::load please
         dfs_labelling(
@@ -347,7 +426,15 @@ class dfs_labelling
         std::vector< std::vector< dfs_label >>* lab_;
 };
 
+std::istream&
+operator>>(std::istream& in, warthog::label::dfs_labelling& lab);
+
+std::ostream&
+operator<<(std::ostream& in, warthog::label::dfs_labelling& lab);
+
+
 }
+
 
 }
 

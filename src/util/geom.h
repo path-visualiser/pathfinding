@@ -9,6 +9,7 @@
 // @created 2016-07-31
 //
 
+#include <istream>
 #include <ostream>
 #include <float.h>
 
@@ -19,7 +20,8 @@ namespace geom
 
 struct rectangle
 {
-    int32_t x1, y1, x2, y2;
+    public:
+        int32_t x1, y1, x2, y2;
 
     rectangle()
     { 
@@ -65,6 +67,7 @@ struct rectangle
     {
         return !this->operator==(other);
     }
+
 
     uint32_t
     get_width() { return x2 - x1; }
@@ -153,7 +156,15 @@ struct rectangle
     }
 };
 
+std::ostream&
+operator<<(std::ostream& out, warthog::geom::rectangle& rect);
+
+std::istream&
+operator>>(std::istream& in, warthog::geom::rectangle& rect);
+
 }
+
+
 }
 
 #endif
