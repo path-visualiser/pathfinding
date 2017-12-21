@@ -1,23 +1,21 @@
-#ifndef WARTHOG_DFS_LABELLING_H
-#define WARTHOG_DFS_LABELLING_H
+#ifndef WARTHOG_CPD_LABELLING_H
+#define WARTHOG_CPD_LABELLING_H
 
-// label/dfs_labelling.h
+// label/firstmove_labelling.h
 //
-// Collects a variety of different labels that we can compute for 
-// the down-closure of a node. Intended for use with forward-driven 
-// contraction hierarchies.
-//
-// Current edge labels:
-//  - id range: specifying the range of ids in the down closure of each edge
-//
-//  - bounding box: a rectangular bounding box that contains every
-//  node in the down closure of each edge
+// Computes a compressed first-move labelling for every node in a given
+// graph. The compression scheme is run-length encoding. The column order
+// is given by a depth-first search post-order traversal of the graph.
+// For more details see:
 //  
-//  - arc flags: a bitfield that indicates set-reachability info for every
-//  node in the down closure of each edge
+// @inproceedings{DBLP:conf/socs/StrasserHB14,
+//   author    = {Ben Strasser and Daniel Harabor and Adi Botea},
+//   title     = {Fast First-Move Queries through Run-Length Encoding},
+//   booktitle = {Seventh Annual Symposium on Combinatorial Search}
+//   year      = {2014} }
 //
 // @author: dharabor
-// @created: 2017-12-06
+// @created: 2017-12-21
 // 
 
 #include "bbaf_labelling.h"
@@ -44,125 +42,75 @@ class edge;
 namespace label
 {
 
-struct id_range_label
+struct fm_run
 {
-    id_range_label() { left = INT32_MAX; right = INT32_MIN; } 
-
-    id_range_label&
-    operator=(const id_range_label& other)
-    {
-        left = other.left; right = other.right; 
-        return *this;
-    }
+    uint32_t head_;
+    uint8_t label_;
 
     void
     print(std::ostream& out)
     {
-        out << "id-range " << left << " " << right;
+        out << " [" << head_ << ", " << label_ << "]";
+    }
+}
+
+const uint32_t FM_MAX_DEGREE = 256;
+const uint32_t FM_MAX_QWORDS =  (FM_MAX_DEGREE & (FM_MAX_DEGREE-1) ? 
+        (((FM_MAX_DEGREE & (FM_MAX_DEGREE-1))<<1) >> 6) : 
+        (FM_MAX_DEGREE >> 6)) + 1; // need at least max-degree bits per label
+
+struct fm
+{
+    fm()
+    {
+        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        { moves_[i] = 0; }
+    }
+
+    fm&
+    operator=(const fm& other)
+    {
+        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        { moves_[i] = other.moves_[i]; }
+        return *this;
+    }
+
+    fm
+    intersect(const fm& other)
+    {
+        fm retval = 0;
+        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        { retval |= (moves_[i] & other.moves_[i]); }
+        return retval;
     }
 
     void
-    grow(int32_t val)
+    merge(const fm& other)
     {
-        left = val < left  ? val : left;
-        right = val > right ? val : right;
+        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
     }
 
-    void
-    grow(const id_range_label& other)
-    {
-        left = left < other.left ? left : other.left;
-        right = right > other.right ? right : other.right;
-    }
-
-    inline bool
-    contains(int32_t val)
-    {
-        return (right - val) + left >= left;
-    }
-
-    int32_t left, right;
-};
+    uint64_t moves_[4];
+    
+}
 
 std::istream&
-operator>>(std::istream& in, warthog::label::id_range_label& label);
+operator>>(std::istream& in, warthog::label::fm_label& label);
 
 std::ostream& 
-operator<<(std::ostream& out, warthog::label::id_range_label& label);
+operator<<(std::ostream& out, warthog::label::fm_label& label);
 
-
-struct dfs_label
-{
-    typedef uint8_t T_FLAG;
-    dfs_label(size_t arcflag_bytes)
-    {
-        for(uint32_t i = 0; i < arcflag_bytes; i++) { flags_.push_back(0); }
-    }
-
-    dfs_label&
-    operator=(const dfs_label& other)
-    {
-        rank_ = other.rank_;
-        ids_ = other.ids_;
-        bbox_ = other.bbox_;
-        for(uint32_t i = 0; i < other.flags_.size(); i++)
-        { flags_[i] = other.flags_.at(i); }
-        return *this;
-    }
-
-    void
-    merge(const dfs_label& other)
-    {
-        rank_.grow(other.rank_);
-        ids_.grow(other.ids_);
-        bbox_.grow(other.bbox_);
-        for(uint32_t i = 0; i < flags_.size(); i++)
-        { flags_[i] |= other.flags_[i]; }
-    }
-
-    void
-    print(std::ostream& out)
-    {
-        out << " dfs_label";
-        rank_.print(out);
-        ids_.print(out);
-        bbox_.print(out);
-        out << " arcflags ";
-        for(uint32_t i = 0; i < flags_.size(); i++)
-        {
-            out << " " << flags_.at(i);
-        }
-    }
-
-    id_range_label rank_;
-    id_range_label ids_;
-    std::vector<T_FLAG> flags_;
-    warthog::geom::rectangle bbox_;
-};
-
-std::istream&
-operator>>(std::istream& in, warthog::label::dfs_label& label);
-
-std::ostream&
-operator<<(std::ostream& out, warthog::label::dfs_label& label);
-
-class dfs_labelling 
+class fm_labelling 
 {
     friend std::ostream&
-    operator<<(std::ostream& out, dfs_labelling& lab);
+    operator<<(std::ostream& out, fm_labelling& lab);
 
     friend std::istream&
-    warthog::label::operator>>(std::istream& in, dfs_labelling& lab);
+    warthog::label::operator>>(std::istream& in, fm_labelling& lab);
 
     public:
 
-        ~dfs_labelling();
-
-        inline std::vector<uint32_t>*
-        get_partitioning()
-        {
-            return part_;
-        }
+        ~fm_labelling();
 
         inline warthog::graph::planar_graph*
         get_graph() 
@@ -170,15 +118,17 @@ class dfs_labelling
             return g_;
         }
 
-        dfs_label&
-        get_label(uint32_t node_id, uint32_t edge_idx)
+        // @param node_id: the current node
+        // @param target_id: the target node
+        //
+        // @return the index of the optimal move @param node_id to
+        // @param target_id
+        fm_label&
+        get_label(uint32_t node_id, uint32_t uint32_t target_id)
         {
-            assert(edge_idx < lab_->at(node_id).size());
-            return lab_->at(node_id).at(edge_idx);
+            assert(node_id < g_->get_num_nodes());
+            // IMPLEMENT ME
         }
-
-        inline int32_t
-        get_dfs_index(uint32_t graph_id) { return dfs_order_->at(graph_id); }
 
         inline size_t
         mem()
@@ -186,18 +136,18 @@ class dfs_labelling
             size_t retval = sizeof(this);
             for(uint32_t i = 0; i < lab_->size(); i++)
             {
-                retval += (sizeof(dfs_label) + bytes_per_af_label_) 
+                retval += (sizeof(fm_label) + bytes_per_af_label_) 
                     * lab_->at(i).size();
             }
-            retval += sizeof(int32_t) * dfs_order_->size();
+            retval += sizeof(int32_t) * firstmove_order_->size();
             return retval;
         }
 
-        static warthog::label::dfs_labelling*
+        static warthog::label::fm_labelling*
         load(const char* filename, warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* rank, std::vector<uint32_t>* part)
         {
-            std::cerr << "loading dfs_labelling from file " 
+            std::cerr << "loading fm_labelling from file " 
                 << filename << std::endl;
             std::ifstream ifs(filename, 
                     std::ios_base::in|std::ios_base::binary);
@@ -209,8 +159,8 @@ class dfs_labelling
                 return 0;
             }
 
-            warthog::label::dfs_labelling* lab = 
-                new warthog::label::dfs_labelling(g, rank, part);
+            warthog::label::fm_labelling* lab = 
+                new warthog::label::fm_labelling();
 
             ifs >> *lab;
 
@@ -226,7 +176,7 @@ class dfs_labelling
         }
         
         static void
-        save(const char* filename, warthog::label::dfs_labelling& lab)
+        save(const char* filename, warthog::label::fm_labelling& lab)
         {
             std::cerr << "writing labels to file " << filename << "\n";
             std::ofstream out(filename, 
@@ -243,25 +193,22 @@ class dfs_labelling
         }
 
         // compute labels for all nodes specified by the given workload
-        static warthog::label::dfs_labelling*
+        template <typename t_expander>
+        static warthog::label::fm_labelling*
         compute(warthog::graph::planar_graph* g, 
-                std::vector<uint32_t>* part, 
-                std::vector<uint32_t>* rank,
+                std::vector<uint32_t>* column_order,
+                std::function<t_expander*(void)>& fn_new_expander,
                 warthog::util::workload_manager* workload)
         {
             warthog::timer t;
             t.start();
 
-            if(g == 0 || rank == 0 || part  == 0) { return 0; } 
-
-            std::function<fch_expansion_policy*(void)> expander_fn = 
-            [g, rank] (void) -> fch_expansion_policy*
-            { return new warthog::fch_expansion_policy(g, rank); };
+            if(g == 0 || column_order == 0) { return 0; } 
 
             struct shared_data
             {
-                std::function<fch_expansion_policy*(void)> fn_new_expander_;
-                warthog::label::dfs_labelling* lab_;
+                std::function<t_expander*(void)> fn_new_expander_;
+                warthog::label::fm_labelling* lab_;
                 warthog::util::workload_manager* workload_;
                 std::vector<uint32_t>* rank_;
             };
@@ -276,14 +223,15 @@ class dfs_labelling
                     (warthog::helpers::thread_params*) args_in;
                 shared_data* shared = (shared_data*) par->shared_;
 
-                warthog::label::dfs_labelling* lab = shared->lab_;
+                warthog::label::fm_labelling* lab = shared->lab_;
                 warthog::util::workload_manager* workload = shared->workload_;
 
                 // variable used to track the node currently being processed
                 uint32_t source_id;
-                
+
                 // alocate memory for the first moves
-                std::vector<uint32_t> first_move(lab->g_->get_num_nodes());
+                std::vector<std::set<uint32_t>> 
+                    first_move(lab->g_->get_num_nodes());
 
                 // callback function used to record the optimal first move 
                 std::function<void(
@@ -300,7 +248,7 @@ class dfs_labelling
                     { 
                         assert(edge_id < 
                         lab->g_->get_node(source_id)->out_degree());
-                        first_move.at(succ->get_id()) = edge_id; 
+                        first_move.at(succ->get_id()).push_back(edge_id);
                     }
                     else // all other nodes
                     {
@@ -317,34 +265,18 @@ class dfs_labelling
                         //  update first move
                         if(alt_g < g_val) 
                         { first_move.at(s_id) = first_move.at(f_id); }
+                        
+                        // add to the list of optimal first moves
+                        if(alt_g == g_val)
+                        { 
+                            first_move.at(s_id).insert(
+                                first_move.at(f_id).begin(),
+                                first_move.at(f_id).end());
+                        }
+                        
+                        // limits on max degree help to save memory
+                        assert(first_move.at(s_id).size() <= 255);
                     }
-                };
-
-
-                std::function<void(warthog::search_node*)> on_expand_fn =
-                [&source_id, &first_move, lab]
-                (warthog::search_node* current) -> void
-                {
-                    if(current->get_id() == source_id) { return; }
-
-                    uint32_t node_id = current->get_id();
-                    assert(node_id < first_move.size());
-
-                    uint32_t edge_idx = first_move.at(node_id);
-                    assert(edge_idx < lab->lab_->at(source_id).size());
-                    dfs_label& s_lab = 
-                        lab->lab_->at(source_id).at(edge_idx);
-
-                    s_lab.rank_.grow(lab->rank_->at(node_id));
-                    s_lab.ids_.grow(lab->dfs_order_->at(node_id));
-
-                    int32_t x, y;
-                    lab->g_->get_xy(node_id, x, y);
-                    s_lab.bbox_.grow(x, y);
-
-                    uint32_t s_part = lab->part_->at(node_id);
-                    s_lab.flags_[s_part >> 3] |= (1 << (s_part & 7)); // div8, mod8
-                    assert(s_lab.flags_[s_part >> 3] & (1 << (s_part & 7)));
                 };
 
                 warthog::zero_heuristic h;
@@ -354,7 +286,6 @@ class dfs_labelling
                     <warthog::zero_heuristic, warthog::fch_expansion_policy>
                         dijk(&h, expander.get());
                 dijk.apply_on_generate(on_generate_fn);
-                dijk.apply_on_expand(on_expand_fn);
 
                 for(uint32_t i = 0; i < lab->g_->get_num_nodes(); i++)
                 {
@@ -374,14 +305,18 @@ class dfs_labelling
                             warthog::INF);
                     //problem.verbose_ = true;
                     warthog::solution sol;
+
                     dijk.get_path(problem, sol);
+                    compress(first_move.at(i));
                     par->nprocessed_++;
                 }
                 return 0;
             };
 
-            warthog::label::dfs_labelling* lab = 
-                new warthog::label::dfs_labelling(g, rank, part);
+            compute_dfs_order(g, dfs_order, apex_id);
+
+            warthog::label::fm_labelling* lab = 
+                new warthog::label::fm_labelling(g, rank, part);
 
             shared_data shared;
             shared.fn_new_expander_ = expander_fn;
@@ -396,7 +331,7 @@ class dfs_labelling
 
             std::cerr << "computing dfs labels...\n";
             workload->set_all_flags_complement();
-            lab->compute_dfs_labels(workload); // single threaded
+            lab->compute_fm_labels(workload); // single threaded
             t.stop();
 
             std::cerr 
@@ -408,37 +343,34 @@ class dfs_labelling
 
     private:
         // only via ::compute or ::load please
-        dfs_labelling(
+        fm_labelling(
             warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* rank,
             std::vector<uint32_t>* partitioning);
 
-        // DFS-based preprocessing computes labels for every edge 
+        // CPD-based preprocessing computes labels for every edge 
         // @param contraction order of every node in the graph
         void 
-        compute_dfs_labels(warthog::util::workload_manager* workload);
+        compute_fm_labels(warthog::util::workload_manager* workload);
 
-        // Computes a DFS post-order id for every node in the hierarchy
+        // Computes a CPD post-order id for every node in the hierarchy
         // (top-down traversal)
         // @param id of the highest node in the contraction hierarchy
         void
-        compute_dfs_ids(uint32_t apex_id);
+        compute_firstmove_ids(uint32_t apex_id);
+
+        void
+        compress(std::vector< std::vector < uint32_t >>& fm);
 
         warthog::graph::planar_graph* g_;
-        std::vector<uint32_t>* rank_;
-        std::vector<uint32_t>* part_;
-        size_t bytes_per_af_label_;
-        uint32_t apex_id_; 
-
-        std::vector<int32_t>* dfs_order_;
-        std::vector< std::vector< dfs_label >>* lab_;
+        std::vector< std::vector< fm_label >>* lab_;
 };
 
 std::istream&
-operator>>(std::istream& in, warthog::label::dfs_labelling& lab);
+operator>>(std::istream& in, warthog::label::fm_labelling& lab);
 
 std::ostream&
-operator<<(std::ostream& in, warthog::label::dfs_labelling& lab);
+operator<<(std::ostream& in, warthog::label::fm_labelling& lab);
 
 
 }
