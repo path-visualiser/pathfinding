@@ -163,7 +163,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         warthog::problem_instance pi(
                 exp.source, (exp.p2p ? exp.target : warthog::INF), verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0;
-        double micros = 0;
+        double micro_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
         {
             sol.reset();
@@ -173,7 +173,8 @@ run_experiments( warthog::search* algo, std::string alg_name,
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
-            micros += sol.time_elapsed_micro_;
+            micro_time = micro_time < sol.time_elapsed_micro_ 
+                            ?  micro_time : sol.time_elapsed_micro_;
         }
 
         out
@@ -183,7 +184,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
-            << micros / (double)nruns << "\t"
+            << micro_time << "\t" /// (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << sol.path_.size() << "\t" 
             << parser.get_problemfile() 
