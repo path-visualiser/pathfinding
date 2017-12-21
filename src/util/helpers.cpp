@@ -86,6 +86,10 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
     }
     std::cerr << "forked " << NUM_THREADS << " threads \n";
 
+    std::cerr << "progress: [";
+    for(uint32_t i = 0; i < 100; i++) { std::cerr <<" "; }
+    std::cerr << "]\rprogress: [";
+    uint32_t pct_done = 0;
     while(true)
     {
         // check progress
@@ -97,7 +101,15 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
             nfinished += task_data[i].thread_finished_;
         }
 
-        std::cerr << "\rprogress: " << nprocessed << " / " << task_total;
+        uint32_t pct_progress = (nprocessed * 100)/task_total;
+        if(pct_progress > pct_done)
+        {
+            for(uint32_t i = 0; i < (pct_progress - pct_done); i++)
+            {
+                std::cerr << "=";
+            }
+            pct_done = pct_progress;
+        }
 
         if(nfinished == NUM_THREADS) { break; }
         else { sleep(5); }

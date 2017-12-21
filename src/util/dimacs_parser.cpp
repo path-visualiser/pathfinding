@@ -84,10 +84,10 @@ warthog::dimacs_parser::load_graph(const char* filename)
                     retval = false;
                     break;
                 }
-                std::cerr << "loading gr; #edges: "<< tmp_num_edges << "\n";
+                std::cerr << "loading gr; #edges: "<< tmp_num_edges << "...";
                 edges_->resize(tmp_num_edges);
 				retval = load_gr_file(*fdimacs);
-                std::cerr << "gr loaded\n";
+                std::cerr << "done\n";
 			}
 			else if(strcmp(token, "aux") == 0)
 			{
@@ -122,9 +122,9 @@ warthog::dimacs_parser::load_graph(const char* filename)
                 }
 
                 std::cerr 
-                    << "loading co; #nodes: " << nodes_->capacity() << "\n";
+                    << "loading co; #nodes: " << nodes_->capacity() << "...";
 				retval = load_co_file(*fdimacs);
-                std::cerr << "co loaded\n";
+                std::cerr << "done\n";
 			}
 			else
 			{
@@ -182,10 +182,10 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 				fdimacs.getline(buf, 1024);
 				break;
 		}
-        if((line % 10000) == 0)
-        {
-                std::cerr << "\r co file; K lines read: " << (line / 1000) << " ";
-        }
+//        if((line % 10000) == 0)
+//        {
+//                std::cerr << "\r co file; K lines read: " << (line / 1000) << " ";
+//        }
 		line++;
 	}
 
@@ -235,10 +235,10 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 				fdimacs.getline(buf, 1024);
 				break;
 		}
-        if((line % 10000) == 0)
-        {
-                std::cerr << "\r gr file; K lines read: " << (line / 1000) << " ";
-        }
+//        if((line % 10000) == 0)
+//        {
+//                std::cerr << "\r gr file; K lines read: " << (line / 1000) << " ";
+//        }
 		line++;
 	}
 

@@ -926,7 +926,7 @@ compute_fch_bbaf_labels()
 void
 compute_fch_dfs_labels(std::string alg_name)
 {
-    std::string alg_params = cfg.get_param_value("alg");
+    std::string alg_params = cfg.get_param_value("type");
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
     std::string orderfile = cfg.get_param_value("input");
