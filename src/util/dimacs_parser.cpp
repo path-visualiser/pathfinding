@@ -84,7 +84,9 @@ warthog::dimacs_parser::load_graph(const char* filename)
                     retval = false;
                     break;
                 }
-                std::cerr << "loading gr; #edges: "<< tmp_num_edges << "...";
+                std::cerr 
+                    << "loading " << tmp_num_edges << " arcs "
+                    << "from "<< filename << " ... ";
                 edges_->resize(tmp_num_edges);
 				retval = load_gr_file(*fdimacs);
                 std::cerr << "done\n";
@@ -122,7 +124,8 @@ warthog::dimacs_parser::load_graph(const char* filename)
                 }
 
                 std::cerr 
-                    << "loading co; #nodes: " << nodes_->capacity() << "...";
+                    << "loading " << nodes_->capacity() << " nodes "
+                    << "from " << filename << " ... ";
 				retval = load_co_file(*fdimacs);
                 std::cerr << "done\n";
 			}
