@@ -10,21 +10,19 @@
 
 #include <algorithm>
 
-std::istream&
-warthog::label::operator>>(std::istream& in, 
-        warthog::label::id_range_label& label)
+istream&
+operator>>(fm_run& the_run, std::istream& in)
 {
-    in.read((char*)(&label.left), sizeof(label.left));
-    in.read((char*)(&label.right), sizeof(label.right));
+    in.read(&the_run.head_, 4);
+    in.read(&the_run.label_, 1);
     return in;
 }
 
-std::ostream& 
-warthog::label::operator<<(std::ostream& out, 
-        warthog::label::id_range_label& label)
+ostream&
+operator<<(fm_run& the_run, std::ostream& out)
 {
-    out.write((char*)(&label.left), sizeof(label.left));
-    out.write((char*)(&label.right), sizeof(label.right));
+    out.write(&the_run.head_, 4);
+    out.write(&the_run.label_, 1);
     return out;
 }
 
@@ -181,8 +179,6 @@ warthog::label::firstmove_labelling::compress(
     for(uint32_t i = 0; i < moves.size(); i++)
     {
 
-        
+         
     }
-    
-
 }

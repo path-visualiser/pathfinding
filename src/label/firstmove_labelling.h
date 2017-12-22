@@ -42,6 +42,18 @@ class edge;
 namespace label
 {
 
+// limits on the maximum degree help to save memory 
+// NB: if the max degree is not a power of two, we round up to 
+// the next power
+const uint32_t FM_MAX_DEGREE = 255;
+const uint32_t FM_QWORD_SZ = sizeof(uint64_t);
+const uint32_t FM_MAX_QWORDS =  
+    std::max<int32_t>(1, 
+        (FM_MAX_DEGREE & (FM_MAX_DEGREE-1) ? 
+            (((FM_MAX_DEGREE & (FM_MAX_DEGREE-1))<<1) >> 6) : 
+            (FM_MAX_DEGREE >> 6)) );
+
+// we use run-length encoding to compress first-move data
 struct fm_run
 {
     uint32_t head_;
@@ -54,12 +66,15 @@ struct fm_run
     }
 }
 
-const uint32_t FM_MAX_DEGREE = 256;
-const uint32_t FM_MAX_QWORDS =  (FM_MAX_DEGREE & (FM_MAX_DEGREE-1) ? 
-        (((FM_MAX_DEGREE & (FM_MAX_DEGREE-1))<<1) >> 6) : 
-        (FM_MAX_DEGREE >> 6)) + 1; // need at least max-degree bits per label
+istream&
+operator>>(fm_run& the_run, std::istream& in);
 
-struct fm
+ostream&
+operator<<(fm_run& the_run, std::ostream& out);
+
+// a collection of optimal first moves. 
+// this data structure is useful during preprocessing.
+struct fm_coll
 {
     fm()
     {
@@ -75,30 +90,43 @@ struct fm
         return *this;
     }
 
-    fm
-    intersect(const fm& other)
+    fm&
+    operator|=(const fm& other)
     {
-        fm retval = 0;
         for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
-        { retval |= (moves_[i] & other.moves_[i]); }
+        { moves_[i] |= other.moves_[i]; }
+        return *this;
+    }
+
+    fm&
+    operator&=(const fm& other)
+    {
+        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        { moves_[i] = moves_[i] & other.moves_[i]; }
         return retval;
     }
 
     void
-    merge(const fm& other)
+    add_move(uint32_t move)
     {
-        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        assert(move <= FM_MAX_DEGREE);
+        uint32_t byte = move >> 6;
+        uint32_t bit  = move & 63;
+        moves_[byte] |= (1 << bit);
     }
 
-    uint64_t moves_[4];
-    
+    // return true if the collection has anyfirst moves, otherwise false
+    bool
+    eval() 
+    {
+        uint64_t retval = 0; 
+        for(uint32_t i = 0; i < moves_[i]; i++)
+        { retval |= moves_[i]; }
+        return retval;
+    }
+
+    uint64_t moves_[FM_MAX_QWORDS];
 }
-
-std::istream&
-operator>>(std::istream& in, warthog::label::fm_label& label);
-
-std::ostream& 
-operator<<(std::ostream& out, warthog::label::fm_label& label);
 
 class fm_labelling 
 {
@@ -134,12 +162,11 @@ class fm_labelling
         mem()
         {
             size_t retval = sizeof(this);
+            retval += sizeof(lab_) * lab_->size();
             for(uint32_t i = 0; i < lab_->size(); i++)
             {
-                retval += (sizeof(fm_label) + bytes_per_af_label_) 
-                    * lab_->at(i).size();
+                retval += (sizeof(fm_label) * lab_->at(i).size();
             }
-            retval += sizeof(int32_t) * firstmove_order_->size();
             return retval;
         }
 
@@ -230,15 +257,14 @@ class fm_labelling
                 uint32_t source_id;
 
                 // alocate memory for the first moves
-                std::vector<std::set<uint32_t>> 
-                    first_move(lab->g_->get_num_nodes());
+                std::vector<fm> row(lab->g_->get_num_nodes());
 
                 // callback function used to record the optimal first move 
                 std::function<void(
                         warthog::search_node*, 
                         warthog::search_node*,
                         double, uint32_t)> on_generate_fn = 
-                [&source_id, &first_move, lab]
+                [&source_id, &row, lab]
                 (warthog::search_node* succ, warthog::search_node* from,
                             double edge_cost, uint32_t edge_id) -> void
                 {
@@ -248,7 +274,7 @@ class fm_labelling
                     { 
                         assert(edge_id < 
                         lab->g_->get_node(source_id)->out_degree());
-                        first_move.at(succ->get_id()).push_back(edge_id);
+                        row.at(succ->get_id()).add_move(edge_id);
                     }
                     else // all other nodes
                     {
@@ -263,21 +289,24 @@ class fm_labelling
                         lab->g_->get_node(source_id)->out_degree());
 
                         //  update first move
-                        if(alt_g < g_val) 
-                        { first_move.at(s_id) = first_move.at(f_id); }
+                        if(alt_g < g_val) { row.at(s_id) = row .at(f_id); }
                         
                         // add to the list of optimal first moves
-                        if(alt_g == g_val)
-                        { 
-                            first_move.at(s_id).insert(
-                                first_move.at(f_id).begin(),
-                                first_move.at(f_id).end());
-                        }
-                        
-                        // limits on max degree help to save memory
-                        assert(first_move.at(s_id).size() <= 255);
+                        if(alt_g == g_val) { row.at(s_id) |= row.at(f_id); }
                     }
                 };
+
+                compress_fn(std::vector<fm>& row, 
+                        std::vector<fm_run>& rle_row)
+                {
+                    fm current = row.at(0);
+                    for(uint32_t col = 0; col < row.size(); col++)
+                    {
+                        fm
+
+
+                    } 
+                }
 
                 warthog::zero_heuristic h;
                 std::shared_ptr<warthog::fch_expansion_policy> 
@@ -307,7 +336,7 @@ class fm_labelling
                     warthog::solution sol;
 
                     dijk.get_path(problem, sol);
-                    compress(first_move.at(i));
+                    compress_fn(row, lab_->at(i));
                     par->nprocessed_++;
                 }
                 return 0;
