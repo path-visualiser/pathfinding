@@ -6,7 +6,7 @@
 warthog::label::firstmove_labelling::firstmove_labelling(
         warthog::graph::planar_graph* g)
 {
-    lab_ = new std::vector< std::vector < warthog::label::fm_run > >();
+    lab_ = new std::vector< std::vector < warthog::label::fm_run > > ();
     lab_->resize(g_->get_num_nodes());
 }
 
@@ -15,19 +15,19 @@ warthog::label::firstmove_labelling::~firstmove_labelling()
     delete lab_;
 }
 
-istream&
-operator>>(fm_run& the_run, std::istream& in)
+std::istream&
+warthog::label::operator>>(std::istream& in, fm_run& the_run)
 {
-    in.read(&the_run.head_, 4);
-    in.read(&the_run.label_, 1);
-    return ininline ;
+    in.read((char*)(&the_run.head_), 4);
+    in.read((char*)(&the_run.label_), 1);
+    return in ;
 }
 
-ostream&
-operator<<(fm_run& the_run, std::ostream& out)
+std::ostream&
+warthog::label::operator<<(std::ostream& out, fm_run& the_run)
 {
-    out.write(&the_run.head_, 4);
-    out.write(&the_run.label_, 1);
+    out.write((char*)(&the_run.head_), 4);
+    out.write((char*)(&the_run.label_), 1);
     return out;
 }
 
@@ -35,31 +35,50 @@ std::istream&
 warthog::label::operator>>(std::istream& in, 
         warthog::label::firstmove_labelling& lab)
 {
-    // grr.. label size should be multiples of 8, not 64
-    fm_run dummy{UINT32_MAX, UI
-    for(uint32_t n_id = 0; n_id < lab.g_->get_num_nodes(); n_id++)
+    lab.lab_->resize(lab.g_->get_num_nodes());
+
+    uint32_t num_rows;
+    in.read((char*)(&num_rows), 4);
+
+    for(uint32_t row = 0; row < num_rows; row++)
     {
-        warthog::graph::node* n = lab.g_->get_node(n_id);
-        warthog::graph::edge_iter begin = n->outgoing_begin();
-        warthog::graph::edge_iter end = n->outgoing_end();
-        for(warthog::graph::edge_iter it = begin; it != end; it++)
+        uint32_t row_id; 
+        in.read((char*)(&row_id), 4);
+
+        if(row_id > lab.g_->get_num_nodes())
         {
-            lab.push_back(std::vector< fm_run >(0));
+            std::cerr << "err; " << row_id 
+                << " is aninvalid row identifier. aborting.\n";
+            break;
+        }
 
-            // some rows might not be populated
+        if(lab.lab_->at(row_id).size() != 0)
+        {
+            std::cerr << "err; row id "<< row_id 
+                << " appears more than once. aborting.\n";
+            break;
+        }
 
-            in >> fm_run;
-            if(fm_run.head_ = UINT32_MAX) { continue; }
-                
-            lab.lab_->at(n_id).at(it - begin);
+        uint32_t num_runs;
+        in.read((char*)(&num_runs), 4);
+
+        // read all the runs for the current row
+        for(uint32_t i = 0; i < num_runs; i++)
+        {
+            fm_run tmp;
+            in >> tmp;
+            lab.lab_->at(row_id).push_back(tmp);
+
             assert(in.good());
 
             if(!in.good())
             {
-                std::cerr << "unexpected error while reading labels\n";
+                std::cerr << "err; while reading firstmove labels\n";
                 std::cerr 
-                    << "[debug info] node: " << n_id
-                    << " out-edge-index: " << (it - begin) << "\n";
+                    << "[debug info] row# " << row
+                    << " row_id " << row_id 
+                    << " run# " << i << " of " << num_runs 
+                    << ". aborting.\n";
                 return in;
             }
         }
@@ -71,20 +90,32 @@ std::ostream&
 warthog::label::operator<<(std::ostream& out,
         warthog::label::firstmove_labelling& lab)
 {
+    uint32_t num_rows = 0;
     for(uint32_t n_id = 0; n_id < lab.g_->get_num_nodes(); n_id++)
     {
-        warthog::graph::node* n = lab.g_->get_node(n_id);
-        warthog::graph::edge_iter begin = n->outgoing_begin();
-        warthog::graph::edge_iter end = n->outgoing_end();
-        for(warthog::graph::edge_iter it = begin; it != end; it++)
+        if(lab.lab_->size() > 0) { num_rows++; }
+    }
+    out.write((char*)(&num_rows), 4);
+
+    for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
+    {
+        if(lab.lab_->size() == 0) { continue; }
+        out.write((char*)(&row_id), 4);
+
+        uint32_t num_runs = lab.lab_->at(row_id).size();
+        out.write((char*)(&num_runs), 4);
+
+        for(uint32_t run = 0; run < num_runs; run++)
         {
-            out << lab.lab_->at(n_id).at(it - begin);
+            out << lab.lab_->at(row_id).at(run);
             if(!out.good())
             {
-                std::cerr << "unexpected error while writing labels\n";
+                std::cerr << "err; while writing labels\n";
                 std::cerr 
-                    << "[debug info] node: " << n_id
-                    << " out-edge-index: " << (it-begin) << "\n";
+                    << "[debug info] "
+                    << " row_id " << row_id 
+                    << " run# " << run 
+                    << ". aborting.\n";
                 return out;
             }
         }

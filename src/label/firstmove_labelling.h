@@ -1,5 +1,5 @@
-#ifndef WARTHOG_CPD_LABELLING_H
-#define WARTHOG_CPD_LABELLING_H
+#ifndef WARTHOG_FIRSTMOVE_LABELLING_H
+#define WARTHOG_FIRSTMOVE_LABELLING_H
 
 // label/firstmove_labelling.h
 //
@@ -42,19 +42,20 @@ class edge;
 namespace label
 {
 
-// limits on the maximum degree help to save memory 
-// NB: if the max degree is not a power of two, we round up to 
-// the next power
-const uint32_t FM_MAX = 256;
-const uint32_t FM_QWORD_SZ = sizeof(uint64_t); const uint32_t FM_MAX_QWORDS =  
-    std::max<int32_t>(1, 
-        (FM_MAX & (FM_MAX-1) ? 
-            (((FM_MAX & (FM_MAX-1))<<1) >> 6) : 
-            (FM_MAX >> 6)) );
+// limits on the maximum number of first-move labels that need to be stored.
+// this value should be greater than the maximum degree of any node plus one
+// extra value for the case where a node is unreachable
+#define FM_MAX 256
 
-// designated special value to denote that no first move exists.
-// any node with this label is unreachable.
-const uint32_t FM_NONE = FM_MAX-1; 
+// special value to denote that no first move exists.
+#define FM_NONE (FM_MAX-1)
+
+// the number of bytes needed to store a single first-move label
+#if (FM_MAX & (FM_MAX+1))
+#define FM_MAX_BYTES ((FM_MAX >> 3) + 1)
+#else 
+#define FM_MAX_BYTES (FM_MAX >> 3)
+#endif
 
 // we use run-length encoding to compress first-move data
 struct fm_run
@@ -68,12 +69,12 @@ struct fm_run
     {
         out << " [" << head_ << ", " << label_ << "]";
     }
-}
+};
 
-istream&
+std::istream&
 operator>>(fm_run& the_run, std::istream& in);
 
-ostream&
+std::ostream&
 operator<<(fm_run& the_run, std::ostream& out);
 
 // a collection of optimal first moves. 
@@ -84,40 +85,77 @@ struct fm_coll
     {
         // NB: we use the special value FM_MAX_DEGREE-1 to indicate a
         // first move is not available
-        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        for(uint32_t i = 0; i < FM_MAX_BYTES; i++)
         { moves_[i] = FM_NONE; } 
     }
 
     fm_coll&
     operator=(const fm_coll& other)
     {
-        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+
+        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
+        { *(uint64_t*)(&moves_[i*8]) = *(uint64_t*)(&other.moves_[i*8]); }
+
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
         { moves_[i] = other.moves_[i]; }
+
         return *this;
     }
 
     fm_coll&
     operator|=(const fm_coll& other)
     {
-        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+
+        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
+        { *(uint64_t*)(&moves_[i*8]) |= *(uint64_t*)(&other.moves_[i*8]); }
+
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
         { moves_[i] |= other.moves_[i]; }
+
         return *this;
     }
 
     fm_coll&
     operator&=(const fm_coll& other)
     {
-        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
-        { moves_[i] = moves_[i] & other.moves_[i]; }
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+
+        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
+        { *(uint64_t*)(&moves_[i*8]) &= *(uint64_t*)(&other.moves_[i*8]); }
+
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        { moves_[i] &= other.moves_[i]; }
+
+        return *this;
+    }
+
+    fm_coll
+    operator&(const fm_coll& other)
+    {
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+        fm_coll retval;
+
+        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
+        { 
+            retval.moves_[i*8] = 
+            *(uint64_t*)(&moves_[i*8]) & *(uint64_t*)(&other.moves_[i*8]); 
+        }
+
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        { 
+            retval.moves_[i] = moves_[i] & other.moves_[i]; 
+        }
         return retval;
     }
 
     void
     add_move(uint32_t move)
     {
-        assert(move <= FM_MAX_DEGREE);
-        uint32_t byte = move >> 6;
-        uint32_t bit  = move & 63;
+        assert(move < FM_MAX);
+        uint32_t byte = move >> 3;
+        uint32_t bit  = move & 7;
         moves_[byte] |= (1 << bit);
     }
 
@@ -126,18 +164,31 @@ struct fm_coll
     uint32_t
     ffs()
     {
-        for(uint32_t i = 0; i < FM_MAX_QWORDS; i++)
+        // __builtin_ffs takes 32bit operands; stride label 4 bytes at a time
+        const uint32_t NUM_DOUBLE_WORDS = FM_MAX_BYTES >> 5;
+        for(uint32_t i = 0; i < NUM_DOUBLE_WORDS; i++)
+        {
+            uint32_t index = __builtin_ffs(*(uint32_t*)(&moves_[i*4]));
+            if(index)
+            {
+                return i*32 + index;
+            }
+        }
+
+        // no more 32bit dwords in the label; scan the rest one byte at a time
+        for(uint32_t i = NUM_DOUBLE_WORDS*4; i < FM_MAX_BYTES; i++)
         {
             uint32_t index = __builtin_ffs(moves_[i]);
             if(index)
             {
-                return i*FM_QWORD_SZ + index;
+                return NUM_DOUBLE_WORDS*32 + i*8 + index;
             }
         }
+        
         return 0;
     }
 
-    // return true if the collection has anyfirst moves, otherwise false
+    // return true if the collection has any first moves, otherwise false
     bool
     eval() 
     {
@@ -147,20 +198,20 @@ struct fm_coll
         return retval;
     }
 
-    uint64_t moves_[FM_MAX_QWORDS];
-}
+    uint8_t moves_[FM_MAX_BYTES];
+};
 
-class fm_labelling 
+class firstmove_labelling 
 {
     friend std::ostream&
-    operator<<(std::ostream& out, fm_labelling& lab);
+    operator<<(std::ostream& out, firstmove_labelling& lab);
 
     friend std::istream&
-    warthog::label::operator>>(std::istream& in, fm_labelling& lab);
+    warthog::label::operator>>(std::istream& in, firstmove_labelling& lab);
 
     public:
 
-        ~fm_labelling();
+        ~firstmove_labelling();
 
         inline warthog::graph::planar_graph*
         get_graph() 
@@ -175,17 +226,17 @@ class fm_labelling
         // node_id to @param target_id
         // if no such move exists, return FM_MAX_DEGREE+1
         inline uint32_t
-        get_label(uint32_t node_id, uint32_t uint32_t target_id)
+        get_label(uint32_t node_id, uint32_t target_id)
         {
             assert(node_id < g_->get_num_nodes());
             if(lab_->at(node_id).size() == 0) { return FM_NONE; }
 
-            std::vector<fm_run>& row = lab_->at(node_id)[0];
+            std::vector<fm_run>& row = lab_->at(node_id);
             uint32_t end = row.size();
             uint32_t begin = 0;
             while(begin<(end-1))
             {
-                uint32_t mid = begin + (end-begin)>>1;
+                uint32_t mid = begin + ((end-begin)>>1);
                 if(target_id < row.at(mid).head_) { end = mid ;  }
                 else { begin = mid; }
             }
@@ -199,16 +250,16 @@ class fm_labelling
             retval += sizeof(lab_) * lab_->size();
             for(uint32_t i = 0; i < lab_->size(); i++)
             {
-                retval += (sizeof(fm_label) * lab_->at(i).size();
+                retval += sizeof(fm_run) * lab_->at(i).size();
             }
             return retval;
         }
 
-        static warthog::label::fm_labelling*
+        static warthog::label::firstmove_labelling*
         load(const char* filename, warthog::graph::planar_graph* g, 
             std::vector<uint32_t>* rank, std::vector<uint32_t>* part)
         {
-            std::cerr << "loading fm_labelling from file " 
+            std::cerr << "loading firstmove_labelling from file " 
                 << filename << std::endl;
             std::ifstream ifs(filename, 
                     std::ios_base::in|std::ios_base::binary);
@@ -220,8 +271,8 @@ class fm_labelling
                 return 0;
             }
 
-            warthog::label::fm_labelling* lab = 
-                new warthog::label::fm_labelling();
+            warthog::label::firstmove_labelling* lab = 
+                new warthog::label::firstmove_labelling(g);
 
             ifs >> *lab;
 
@@ -237,7 +288,7 @@ class fm_labelling
         }
         
         static void
-        save(const char* filename, warthog::label::fm_labelling& lab)
+        save(const char* filename, warthog::label::firstmove_labelling& lab)
         {
             std::cerr << "writing labels to file " << filename << "\n";
             std::ofstream out(filename, 
@@ -255,7 +306,7 @@ class fm_labelling
 
         // compute labels for all nodes specified by the given workload
         template <typename t_expander>
-        static warthog::label::fm_labelling*
+        static warthog::label::firstmove_labelling*
         compute(warthog::graph::planar_graph* g, 
                 std::vector<uint32_t>* column_order,
                 std::function<t_expander*(void)>& fn_new_expander,
@@ -269,7 +320,7 @@ class fm_labelling
             struct shared_data
             {
                 std::function<t_expander*(void)> fn_new_expander_;
-                warthog::label::fm_labelling* lab_;
+                warthog::label::firstmove_labelling* lab_;
                 warthog::util::workload_manager* workload_;
                 std::vector<uint32_t>* rank_;
             };
@@ -284,15 +335,15 @@ class fm_labelling
                     (warthog::helpers::thread_params*) args_in;
                 shared_data* shared = (shared_data*) par->shared_;
 
-                warthog::label::fm_labelling* lab = shared->lab_;
+                warthog::label::firstmove_labelling* lab = shared->lab_;
                 warthog::util::workload_manager* workload = shared->workload_;
 
                 // bookkeeping data for the current source row
-                uint32_t s_id;
+                uint32_t source_id;
                 std::vector<fm_coll> s_row(lab->g_->get_num_nodes(), FM_NONE);
 
                 // callback function used to record the optimal first move 
-                auto  on_generate_fn = [&s_id, &s_row, lab]
+                auto  on_generate_fn = [&source_id, &s_row, lab]
                 (warthog::search_node* succ, warthog::search_node* from,
                      double edge_cost, uint32_t edge_id) -> void
                 {
@@ -306,21 +357,20 @@ class fm_labelling
                     }
                     else // all other nodes
                     {
-                        uint32_t s_id = succ->get_id();
-                        uint32_t f_id = from->get_id();
+                        uint32_t succ_id = succ->get_id();
+                        uint32_t from_id = from->get_id();
                         double alt_g = from->get_g() + edge_cost;
                         double g_val = 
                             succ->get_search_id() == from->get_search_id() ? 
                             succ->get_g() : warthog::INF; 
 
-                        assert(first_move.at(f_id) < 
-                        lab->g_->get_node(source_id)->out_degree());
-
                         //  update first move
-                        if(alt_g < g_val) {s_row.at(s_id) = s_row .at(f_id);}
+                        if(alt_g < g_val) 
+                        { s_row.at(succ_id) = s_row .at(from_id);}
                         
                         // add to the list of optimal first moves
-                        if(alt_g == g_val) {s_row.at(s_id) |= s_row.at(f_id);}
+                        if(alt_g == g_val) 
+                        { s_row.at(succ_id) |= s_row.at(from_id); }
                     }
                 };
 
@@ -335,7 +385,7 @@ class fm_labelling
                     uint32_t head = 0;
                     for(uint32_t index = 0; index < row.size(); index++)
                     {
-                        current |= row.at(index);
+                        fm_coll tmp = current & row.at(index);
                         if(!tmp.ffs())
                         {
                             uint32_t firstmove = current.ffs() - 1;
@@ -344,7 +394,7 @@ class fm_labelling
                             head = index;
                         }
                     } 
-                }
+                };
 
                 warthog::zero_heuristic h;
                 std::shared_ptr<warthog::fch_expansion_policy> 
@@ -365,9 +415,6 @@ class fm_labelling
                     if((i % par->max_threads_) != par->thread_id_) 
                     { continue; }
 
-                    // assume all nodes are unreachable prior to search
-                    s_row.assign(s_row.size(), FM_NONE);
-
                     source_id = i;
                     uint32_t ext_source_id = 
                         lab->g_->to_external_id(source_id);
@@ -377,19 +424,17 @@ class fm_labelling
                     warthog::solution sol;
 
                     dijk.get_path(problem, sol);
-                    compress_fn(s_row.at(i), lab_->at(i));
+                    compress_fn(s_row, lab->lab_->at(i));
                     par->nprocessed_++;
                 }
                 return 0;
             };
 
-            compute_dfs_order(g, dfs_order, apex_id);
-
-            warthog::label::fm_labelling* lab = 
-                new warthog::label::fm_labelling(g);
+            warthog::label::firstmove_labelling* lab = 
+                new warthog::label::firstmove_labelling(g);
 
             shared_data shared;
-            shared.fn_new_expander_ = expander_fn;
+            shared.fn_new_expander_ = fn_new_expander;
             shared.lab_ = lab;
             shared.workload_ = workload;
             shared.lab_ = lab;
@@ -413,7 +458,7 @@ class fm_labelling
 
     private:
         // only via ::compute or ::load please
-        fm_labelling(warthog::graph::planar_graph* g);
+        firstmove_labelling(warthog::graph::planar_graph* g);
 
         // CPD-based preprocessing computes labels for every edge 
         // @param contraction order of every node in the graph
@@ -430,14 +475,20 @@ class fm_labelling
         compress(std::vector< std::vector < uint32_t >>& fm);
 
         warthog::graph::planar_graph* g_;
-        std::vector< std::vector< fm_label >>* lab_;
+        std::vector< std::vector< fm_run >>* lab_;
 };
 
 std::istream&
-operator>>(std::istream& in, warthog::label::fm_labelling& lab);
+operator>>(std::istream& in, warthog::label::firstmove_labelling& lab);
 
 std::ostream&
-operator<<(std::ostream& in, warthog::label::fm_labelling& lab);
+operator<<(std::ostream& in, warthog::label::firstmove_labelling& lab);
+
+std::istream&
+operator>>(std::istream& in, fm_run& the_run);
+
+std::ostream&
+operator<<(std::ostream& out, fm_run& the_run);
 
 
 }
