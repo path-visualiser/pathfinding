@@ -19,7 +19,6 @@
 // 
 
 #include "bbaf_labelling.h"
-#include "fch_expansion_policy.h"
 #include "geom.h"
 #include "solution.h"
 #include "timer.h"
@@ -51,7 +50,7 @@ namespace label
 #define FM_NONE (FM_MAX-1)
 
 // the number of bytes needed to store a single first-move label
-#if (FM_MAX & (FM_MAX+1))
+#if (FM_MAX & (FM_MAX-1))
 #define FM_MAX_BYTES ((FM_MAX >> 3) + 1)
 #else 
 #define FM_MAX_BYTES (FM_MAX >> 3)
@@ -83,16 +82,15 @@ struct fm_coll
 {
     fm_coll()
     {
-        // NB: we use the special value FM_MAX_DEGREE-1 to indicate a
-        // first move is not available
+        // each collection begins empty
         for(uint32_t i = 0; i < FM_MAX_BYTES; i++)
-        { moves_[i] = FM_NONE; } 
+        { moves_[i] = 0; } 
     }
 
     fm_coll&
     operator=(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { *(uint64_t*)(&moves_[i*8]) = *(uint64_t*)(&other.moves_[i*8]); }
@@ -103,10 +101,28 @@ struct fm_coll
         return *this;
     }
 
+    bool
+    operator==(const fm_coll& other)
+    {
+        bool retval = true;
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
+
+        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
+        { retval &= 
+            (*(uint64_t*)(&moves_[i*8]) == *(uint64_t*)(&other.moves_[i*8])); 
+        }
+
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        { 
+            retval &= (moves_[i] == other.moves_[i]); 
+        }
+        return retval;
+    }
+
     fm_coll&
     operator|=(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { *(uint64_t*)(&moves_[i*8]) |= *(uint64_t*)(&other.moves_[i*8]); }
@@ -120,7 +136,7 @@ struct fm_coll
     fm_coll&
     operator&=(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { *(uint64_t*)(&moves_[i*8]) &= *(uint64_t*)(&other.moves_[i*8]); }
@@ -134,7 +150,7 @@ struct fm_coll
     fm_coll
     operator&(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 6;
+        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
         fm_coll retval;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
@@ -159,14 +175,28 @@ struct fm_coll
         moves_[byte] |= (1 << bit);
     }
 
+    uint32_t
+    num_set_bits()
+    {
+        uint32_t retval = 0;
+        for(uint32_t i = 0; i < FM_MAX_BYTES; i++)
+        {
+            for(uint32_t j = 0; j < 8; j++)
+            {
+                retval += !!(moves_[i] & (1 << j));
+            }
+        }
+        return retval;
+    }
+
     // return one plus the index of the first set bit in the collection
     // and zero if there are no set bits in the collection.
     uint32_t
     ffs()
     {
         // __builtin_ffs takes 32bit operands; stride label 4 bytes at a time
-        const uint32_t NUM_DOUBLE_WORDS = FM_MAX_BYTES >> 5;
-        for(uint32_t i = 0; i < NUM_DOUBLE_WORDS; i++)
+        const uint32_t NUM_DOUBLE_WORDS = FM_MAX_BYTES >> 2;
+        for(uint32_t i = 0; i < NUM_DOUBLE_WORDS; i+=4)
         {
             uint32_t index = __builtin_ffs(*(uint32_t*)(&moves_[i*4]));
             if(index)
@@ -188,18 +218,28 @@ struct fm_coll
         return 0;
     }
 
-    // return true if the collection has any first moves, otherwise false
-    bool
+    // sum the byte values of all firstmoves
+    uint32_t
     eval() 
     {
-        uint64_t retval = 0; 
-        for(uint32_t i = 0; i < moves_[i]; i++)
-        { retval |= moves_[i]; }
+        uint32_t retval = 0;
+        for(uint32_t i = 0; i < FM_MAX_BYTES; i++)
+        { retval += moves_[i]; }
         return retval;
     }
 
     uint8_t moves_[FM_MAX_BYTES];
 };
+
+// a DFS pre-order traversal of the input graph is known to produce an 
+// effective node order for the purposes of compression
+// @param g: the input graph
+// @param column_order: a list of node ids as visited by DFS from a random
+// start node
+void
+compute_fm_dfs_preorder(
+        warthog::graph::planar_graph& g, 
+        std::vector<uint32_t>& column_order);
 
 class firstmove_labelling 
 {
@@ -224,12 +264,12 @@ class firstmove_labelling
         //
         // @return the index of the first optimal move, from @param 
         // node_id to @param target_id
-        // if no such move exists, return FM_MAX_DEGREE+1
+        // if no fm data exists for the given source, returns warthog::INF
         inline uint32_t
         get_label(uint32_t node_id, uint32_t target_id)
         {
             assert(node_id < g_->get_num_nodes());
-            if(lab_->at(node_id).size() == 0) { return FM_NONE; }
+            if(lab_->at(node_id).size() == 0) { return warthog::INF; }
 
             std::vector<fm_run>& row = lab_->at(node_id);
             uint32_t end = row.size();
@@ -257,7 +297,7 @@ class firstmove_labelling
 
         static warthog::label::firstmove_labelling*
         load(const char* filename, warthog::graph::planar_graph* g, 
-            std::vector<uint32_t>* rank, std::vector<uint32_t>* part)
+            std::vector<uint32_t>* rank)
         {
             std::cerr << "loading firstmove_labelling from file " 
                 << filename << std::endl;
@@ -322,7 +362,7 @@ class firstmove_labelling
                 std::function<t_expander*(void)> fn_new_expander_;
                 warthog::label::firstmove_labelling* lab_;
                 warthog::util::workload_manager* workload_;
-                std::vector<uint32_t>* rank_;
+                std::vector<uint32_t>* column_order_;
             };
 
             // The actual precompute function. We construct a 
@@ -337,13 +377,16 @@ class firstmove_labelling
 
                 warthog::label::firstmove_labelling* lab = shared->lab_;
                 warthog::util::workload_manager* workload = shared->workload_;
+                std::vector<uint32_t>* c_order = shared->column_order_;
 
                 // bookkeeping data for the current source row
                 uint32_t source_id;
-                std::vector<fm_coll> s_row(lab->g_->get_num_nodes(), FM_NONE);
+                std::vector<fm_coll> s_row(lab->g_->get_num_nodes());
 
                 // callback function used to record the optimal first move 
-                auto  on_generate_fn = [&source_id, &s_row, lab]
+                std::function<void(warthog::search_node*, 
+                        warthog::search_node*, double, uint32_t)>  
+                    on_generate_fn = [&source_id, &s_row, lab]
                 (warthog::search_node* succ, warthog::search_node* from,
                      double edge_cost, uint32_t edge_id) -> void
                 {
@@ -351,9 +394,11 @@ class firstmove_labelling
 
                     if(from->get_id() == source_id) // start node successors
                     { 
+                        assert(s_row.at(succ->get_id()).num_set_bits() == 0);
                         assert(edge_id < 
                         lab->g_->get_node(source_id)->out_degree());
                         s_row.at(succ->get_id()).add_move(edge_id);
+                        assert(s_row.at(succ->get_id()).eval());
                     }
                     else // all other nodes
                     {
@@ -366,41 +411,68 @@ class firstmove_labelling
 
                         //  update first move
                         if(alt_g < g_val) 
-                        { s_row.at(succ_id) = s_row .at(from_id);}
+                        { 
+                            uint32_t sum_s = s_row.at(succ_id).eval();
+                            uint32_t sum_f = s_row.at(from_id).eval();
+                            assert(sum_f > 0);
+                            s_row.at(succ_id) = s_row.at(from_id);
+                            sum_s = s_row.at(succ_id).eval();
+                            if(sum_s != sum_f)
+                            {
+                                std::cerr << "master\n";
+                                fm_coll s_c = s_row.at(succ_id);
+                                fm_coll f_c = s_row.at(from_id);
+                                s_row.at(succ_id).eval();
+                                s_c.eval();
+                                s_row.at(from_id).eval();
+                                f_c.eval();
+                                s_c = f_c;
+                            }
+                            assert(sum_s == sum_f);
+                            assert(s_row.at(succ_id) == s_row.at(from_id));
+                        }
                         
                         // add to the list of optimal first moves
                         if(alt_g == g_val) 
-                        { s_row.at(succ_id) |= s_row.at(from_id); }
+                        { 
+                            s_row.at(succ_id) |= s_row.at(from_id); 
+                            assert(s_row.at(succ_id).eval() >=
+                                   s_row.at(from_id).eval());
+                        }
                     }
                 };
 
                 // run-length encoding to compress the firstmove data
                 // if there are several optimal moves available we (greedily)
                 // choose the one that maximises run length
-                auto compress_fn = [] 
+                auto compress_fn = [&c_order] 
                     (std::vector<fm_coll>& row, 
                     std::vector<fm_run>& rle_row) -> void
                 {
-                    fm_coll current = row.at(0);
+                    fm_coll current = row.at(c_order->at(0));
                     uint32_t head = 0;
                     for(uint32_t index = 0; index < row.size(); index++)
                     {
-                        fm_coll tmp = current & row.at(index);
+                        uint32_t next_id = c_order->at(index);
+                        fm_coll tmp = current & row.at(next_id);
                         if(!tmp.ffs())
                         {
                             uint32_t firstmove = current.ffs() - 1;
-                            rle_row.push_back(fm_run{head, firstmove});
-                            current = row.at(index);
+                            rle_row.push_back(
+                                    fm_run{head, (uint8_t)firstmove});
+                            current = row.at(next_id);
                             head = index;
                         }
                     } 
                 };
 
-                warthog::zero_heuristic h;
-                std::shared_ptr<warthog::fch_expansion_policy> 
+                std::shared_ptr<t_expander> 
                     expander(shared->fn_new_expander_());
-                warthog::flexible_astar 
-                    <warthog::zero_heuristic, warthog::fch_expansion_policy>
+
+
+
+                warthog::zero_heuristic h;
+                warthog::flexible_astar <warthog::zero_heuristic, t_expander> 
                         dijk(&h, expander.get());
                 dijk.apply_on_generate(on_generate_fn);
 
@@ -423,8 +495,14 @@ class firstmove_labelling
                     //problem.verbose_ = true;
                     warthog::solution sol;
 
+                    s_row.clear();
+                    s_row.resize(lab->g_->get_num_nodes());
                     dijk.get_path(problem, sol);
                     compress_fn(s_row, lab->lab_->at(i));
+                    std::cerr 
+                        << "compressed row " << i
+                        << " into " << lab->lab_->at(i).size() << " runs "
+                        << std::endl;
                     par->nprocessed_++;
                 }
                 return 0;
@@ -437,18 +515,14 @@ class firstmove_labelling
             shared.fn_new_expander_ = fn_new_expander;
             shared.lab_ = lab;
             shared.workload_ = workload;
-            shared.lab_ = lab;
+            shared.column_order_ = column_order;
 
             std::cerr << "computing dijkstra labels\n";
             warthog::helpers::parallel_compute(
                     thread_compute_fn, &shared, 
                     workload->num_flags_set());
 
-            std::cerr << "computing dfs labels...\n";
-            workload->set_all_flags_complement();
-            lab->compute_fm_labels(workload); // single threaded
             t.stop();
-
             std::cerr 
                 << "total preproc time (seconds): "
                 << t.elapsed_time_micro() / 1000000 << "\n";

@@ -2,6 +2,7 @@
 #include "bb_labelling.h"
 #include "bbaf_labelling.h"
 #include "dfs_labelling.h"
+#include "firstmove_labelling.h"
 #include "cfg.h"
 #include "contraction.h"
 #include "corner_point_graph.h"
@@ -31,8 +32,8 @@ help()
 	std::cerr << "valid parameters:\n"
     //<< "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	//<< "\t--order [order-of-contraction file]\n"
-    << "\t--type [ af | bb | bbaf | fch-af | fch-bb "
-    << "| fch-bbaf | fch-bb-jpg | fch-dfs ] \n"
+    << "\t--type [ af | bb | bbaf | fm | fch-af | fch-bb "
+    << "| fch-bbaf | fch-bb-jpg | fch-dfs | fch-fm ] \n"
     << "\t--input [ algorithm-specific input files (omit to show options) ]\n" 
 	<< "\t--verbose (optional)\n";
 }
@@ -926,7 +927,7 @@ compute_fch_bbaf_labels()
 void
 compute_fch_dfs_labels(std::string alg_name)
 {
-    std::string alg_params = cfg.get_param_value("alg");
+    std::string alg_params = cfg.get_param_value("type");
     std::string grfile = cfg.get_param_value("input");
     std::string cofile = cfg.get_param_value("input");
     std::string orderfile = cfg.get_param_value("input");
@@ -1007,6 +1008,163 @@ compute_fch_dfs_labels(std::string alg_name)
     std::cerr << "done.\n";
 }
 
+void
+compute_fch_fm_labels(std::string alg_name)
+{
+    std::string alg_params = cfg.get_param_value("type");
+    std::string grfile = cfg.get_param_value("input");
+    std::string cofile = cfg.get_param_value("input");
+    std::string orderfile = cfg.get_param_value("input");
+
+    if( grfile == "" || cofile == "" || orderfile == "")
+    {
+        std::cerr << "err; insufficient input parameters."
+                  << " required, in order:\n"
+                  << " --input [gr file] [co file]"
+                  << " [node ordering file]"
+                  << "\n";
+        return;
+    }
+    std::cerr << "computing labels" << std::endl;
+
+    // load up the graph
+    warthog::graph::planar_graph g;
+    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
+
+    // load up the node ordering
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+
+    if(order.size() != g.get_num_nodes())
+    {
+        std::cerr 
+            << "err; partial contraction ordering not supported\n";
+    }
+
+    // sort the edges of each node according to the order (descending)
+    warthog::ch::fch_sort_successors(&g, &order);
+
+    // define the preprocessing workload size
+    double cutoff = 1;
+    if(alg_params != "")
+    {
+        std::cerr << "wtf params " << alg_params << std::endl;
+        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
+        {
+            std::cerr << "dijkstra percentage must be in range 0-100\n";
+            return;
+        }
+        cutoff = pct_dijkstra > 0 ? (1 - ((double)pct_dijkstra)/100) : 0;
+        alg_name += "-dijk-";
+        alg_name += std::to_string(pct_dijkstra);
+    }
+    warthog::util::workload_manager workload(g.get_num_nodes());
+    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        if(order.at(i) >= (uint32_t)(order.size()*cutoff))
+        { workload.set_flag(i, true); }
+    }
+
+    std::cerr << "computing fch-firstmove labelling... \n";
+    std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
+        [&g, &order]() -> warthog::fch_expansion_policy*
+        {
+            return new warthog::fch_expansion_policy(&g, &order);
+        };
+
+    // now we need to specify a column order to use during run-length 
+    // compression
+    std::vector<uint32_t> column_order;
+    //warthog::label::dfs_labelling::compute_dfs_ids(&g, &order, &column_order);
+    warthog::label::compute_fm_dfs_preorder(g, column_order);
+    
+    // gogogogo
+    std::shared_ptr<warthog::label::firstmove_labelling> lab(
+            warthog::label::firstmove_labelling::compute
+                <warthog::fch_expansion_policy> 
+                    (&g, &column_order, fn_new_expander, &workload));
+
+    std::string arclab_file =  grfile + "." + alg_name + "." + "label";
+    warthog::label::firstmove_labelling::save(arclab_file.c_str(), *lab);
+    std::cerr << "done.\n";
+}
+
+void
+compute_fm_labels(std::string alg_name)
+{
+    std::string alg_params = cfg.get_param_value("type");
+    std::string grfile = cfg.get_param_value("input");
+    std::string cofile = cfg.get_param_value("input");
+
+    if( grfile == "" || cofile == "")
+    {
+        std::cerr << "err; insufficient input parameters."
+                  << " required, in order:\n"
+                  << " --input [gr file] [co file]"
+                  << "\n";
+        return;
+    }
+    std::cerr << "computing labels" << std::endl;
+
+    // load up the graph
+    warthog::graph::planar_graph g;
+    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    {
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
+
+    // define the preprocessing workload size
+    int32_t pct_dijkstra = 100;
+    if(alg_params != "") { pct_dijkstra = std::stoi(alg_params.c_str()); } 
+
+    if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
+    {
+        std::cerr << "dijkstra percentage must be in range 0-100\n";
+        return;
+    }
+    alg_name += "-dijk-";
+    alg_name += std::to_string(pct_dijkstra);
+
+    warthog::util::workload_manager workload(g.get_num_nodes());
+    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        if(rand() % 100 <= pct_dijkstra)
+        { workload.set_flag(i, true); }
+    }
+
+    // now we need to specify a column order to use during run-length 
+    // compression; here we use a dfs ordering from a random seed node
+    std::vector<uint32_t> column_order;
+    warthog::label::compute_fm_dfs_preorder(g, column_order);
+
+    std::cerr << "computing firstmove labelling... \n";
+    std::function<warthog::graph_expansion_policy<warthog::dummy_filter>*(void)> fn_new_expander = 
+        [&g]() -> warthog::graph_expansion_policy<warthog::dummy_filter>*
+        {
+            return new warthog::graph_expansion_policy<warthog::dummy_filter>(&g);
+        };
+    
+    // gogogogo
+    std::shared_ptr<warthog::label::firstmove_labelling> lab(
+            warthog::label::firstmove_labelling::compute
+                <warthog::graph_expansion_policy<warthog::dummy_filter>> 
+                    (&g, &column_order, fn_new_expander, &workload));
+
+    std::string arclab_file =  grfile + "." + alg_name + "." + "label";
+    warthog::label::firstmove_labelling::save(arclab_file.c_str(), *lab);
+    std::cerr << "done.\n";
+}
+
 int main(int argc, char** argv)
 {
 
@@ -1065,6 +1223,14 @@ int main(int argc, char** argv)
     else if(arclabel.compare("fch-dfs") == 0)
     {
         compute_fch_dfs_labels(arclabel);
+    }
+    else if(arclabel.compare("fch-fm") == 0)
+    {
+        compute_fch_fm_labels(arclabel);
+    }
+    else if(arclabel.compare("fm") == 0)
+    {
+        compute_fm_labels(arclabel);
     }
     else
     {

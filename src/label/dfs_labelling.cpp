@@ -111,16 +111,8 @@ warthog::label::dfs_labelling::dfs_labelling(
         std::vector<uint32_t>* partitioning)
     : g_(g), rank_(rank), part_(partitioning)
 {
-    // find the apex of the hierarchy
-    apex_id_ = 0;
-    for(uint32_t i = 0; i < rank_->size(); i++)
-    { 
-        if(rank_->at(i) > rank_->at(apex_id_)) 
-        { apex_id_ = i; } 
-    }
-
-    dfs_order_ = new std::vector< int32_t >();
-    compute_dfs_ids(apex_id_);
+    dfs_order_ = new std::vector< uint32_t >();
+    apex_id_ = compute_dfs_ids(g_, rank_, dfs_order_);
     
     // figure out how many bytes are required per label
     uint32_t max_id = *(std::max_element(part_->begin(), part_->end()));
@@ -141,36 +133,6 @@ warthog::label::dfs_labelling::~dfs_labelling()
 { 
     delete lab_;
     delete dfs_order_;
-}
-
-void
-warthog::label::dfs_labelling::compute_dfs_ids(uint32_t apex_id)
-{
-    uint32_t dfs_id = 0;
-    dfs_order_->resize(g_->get_num_nodes(), INT32_MAX);
-    std::function<void(uint32_t)> dfs_id_fn =
-    [this, &dfs_id, &dfs_id_fn] (uint32_t source_id) -> void
-    {
-        warthog::graph::node* source = this->g_->get_node(source_id);
-        warthog::graph::edge_iter begin = source->outgoing_begin();
-        for( warthog::graph::edge_iter it = begin; 
-                it != source->outgoing_end();
-                it++)
-        {
-            // skip up edges
-            if(this->rank_->at(it->node_id_) > this->rank_->at(source_id)) 
-            { continue; }
-
-            // recurse
-            if(this->dfs_order_->at(it->node_id_) == INT32_MAX)
-            { dfs_id_fn(it->node_id_); }
-        }
-        if(this->dfs_order_->at(source_id) == INT32_MAX)
-        { this->dfs_order_->at(source_id) = dfs_id++; }
-    };
-
-    // gogogo
-    dfs_id_fn(apex_id);
 }
 
 void
