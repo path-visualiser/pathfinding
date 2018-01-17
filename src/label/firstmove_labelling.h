@@ -5,14 +5,16 @@
 //
 // Computes a compressed first-move labelling for every node in a given
 // graph. The compression scheme is single-row run-length encoding. 
-// The column order is given by a depth-first search post-order traversal of 
-// the graph. For more details see:
-//  
+// The column order is given by a depth-first pre-order traversal of 
+// the input graph, starting from a radom node. For more details see:
+// 
 // @inproceedings{DBLP:conf/socs/StrasserHB14,
 //   author    = {Ben Strasser and Daniel Harabor and Adi Botea},
 //   title     = {Fast First-Move Queries through Run-Length Encoding},
 //   booktitle = {Seventh Annual Symposium on Combinatorial Search}
 //   year      = {2014} }
+//
+// NB: This implementation assumes the maximum degree of any node is < 256
 //
 // @author: dharabor
 // @created: 2017-12-21
