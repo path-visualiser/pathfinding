@@ -99,8 +99,8 @@ warthog::label::operator<<(std::ostream& out,
     }
     out.write((char*)(&num_rows), 4);
 
-    uint32_t row_count = 0;
-    uint32_t run_count = 0;
+    //uint32_t row_count = 0;
+    //uint32_t run_count = 0;
     for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
     {
         if(lab.lab_->at(row_id).size() == 0) { continue; }
