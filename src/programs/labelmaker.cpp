@@ -1085,7 +1085,9 @@ compute_fch_fm_labels(std::string alg_name)
     // compression
     std::vector<uint32_t> column_order;
     //warthog::label::dfs_labelling::compute_dfs_ids(&g, &order, &column_order);
-    warthog::label::compute_fm_dfs_preorder(g, column_order);
+    //warthog::label::compute_fm_dfs_preorder(g, column_order);
+    warthog::label::compute_fm_fch_dfs_preorder(g, order, column_order);
+    //warthog::label::compute_fm_fch_dijkstra_dfs_preorder(g, order, column_order);
     
     // gogogogo
     std::shared_ptr<warthog::label::firstmove_labelling> lab(

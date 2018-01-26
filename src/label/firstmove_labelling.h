@@ -243,6 +243,17 @@ compute_fm_dfs_preorder(
         warthog::graph::planar_graph& g, 
         std::vector<uint32_t>& column_order);
 
+void
+compute_fm_fch_dfs_preorder(
+        warthog::graph::planar_graph& g, 
+        std::vector<uint32_t>& contraction_order,
+        std::vector<uint32_t>& column_order);
+void
+compute_fm_fch_dijkstra_dfs_preorder(
+        warthog::graph::planar_graph& g, 
+        std::vector<uint32_t>& contraction_order,
+        std::vector<uint32_t>& column_order);
+
 class firstmove_labelling 
 {
     friend std::ostream&
@@ -414,23 +425,23 @@ class firstmove_labelling
                         //  update first move
                         if(alt_g < g_val) 
                         { 
-                            uint32_t sum_s = s_row.at(succ_id).eval();
-                            uint32_t sum_f = s_row.at(from_id).eval();
-                            assert(sum_f > 0);
+//                            uint32_t sum_s = s_row.at(succ_id).eval();
+//                            uint32_t sum_f = s_row.at(from_id).eval();
+//                            assert(sum_f > 0);
                             s_row.at(succ_id) = s_row.at(from_id);
-                            sum_s = s_row.at(succ_id).eval();
-                            if(sum_s != sum_f)
-                            {
-                                std::cerr << "master\n";
-                                fm_coll s_c = s_row.at(succ_id);
-                                fm_coll f_c = s_row.at(from_id);
-                                s_row.at(succ_id).eval();
-                                s_c.eval();
-                                s_row.at(from_id).eval();
-                                f_c.eval();
-                                s_c = f_c;
-                            }
-                            assert(sum_s == sum_f);
+//                            sum_s = s_row.at(succ_id).eval();
+//                            if(sum_s != sum_f)
+//                            {
+//                                std::cerr << "master\n";
+//                                fm_coll s_c = s_row.at(succ_id);
+//                                fm_coll f_c = s_row.at(from_id);
+//                                s_row.at(succ_id).eval();
+//                                s_c.eval();
+//                                s_row.at(from_id).eval();
+//                                f_c.eval();
+//                                s_c = f_c;
+//                            }
+//                            assert(sum_s == sum_f);
                             assert(s_row.at(succ_id) == s_row.at(from_id));
                         }
                         
@@ -501,10 +512,10 @@ class firstmove_labelling
                     s_row.resize(lab->g_->get_num_nodes());
                     dijk.get_path(problem, sol);
                     compress_fn(s_row, lab->lab_->at(i));
-                    std::cerr 
-                        << "compressed row " << i
-                        << " into " << lab->lab_->at(i).size() << " runs "
-                        << std::endl;
+//                    std::cerr 
+//                        << "compressed row " << i
+//                        << " into " << lab->lab_->at(i).size() << " runs "
+//                        << std::endl;
                     par->nprocessed_++;
                 }
                 return 0;
