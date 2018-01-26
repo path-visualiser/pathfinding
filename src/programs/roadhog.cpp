@@ -28,8 +28,10 @@
 #include "fch_bb_expansion_policy.h"
 #include "fch_bbaf_expansion_policy.h"
 #include "fch_dfs_expansion_policy.h"
+#include "fch_fm_expansion_policy.h"
 #include "fch_expansion_policy.h"
 #include "fch_x_expansion_policy.h"
+#include "firstmove_labelling.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
@@ -883,6 +885,114 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
+run_fch_fm(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string alg_params = cfg.get_param_value("alg");
+    std::string orderfile = cfg.get_param_value("input");
+    if(orderfile == "")
+    {
+        std::cerr << "err; insufficient input parameters for --alg "
+                  << alg_name << ". required, in order:\n"
+                  << " --input [gr file] [co file] "
+                  << " [contraction order file] "
+                  << "\n";
+        return;
+    }
+
+    // load up the graph 
+    warthog::graph::planar_graph g;
+    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files (one or both)\n";
+        return;
+    }
+
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load node order input file\n";
+        return;
+    }
+
+    std::cerr << "preparing to search\n";
+
+    // sort the graph edges
+    warthog::ch::fch_sort_successors(&g, &order);
+
+    // define the workload
+    double cutoff = 1;
+    if(alg_params != "")
+    {
+        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
+        {
+            std::cerr << "dijkstra percentage must be in range 0-100\n";
+            return;
+        }
+        cutoff = pct_dijkstra > 0 ? (1 - ((double)pct_dijkstra)/100) : 0;
+        alg_name += "-dijk-";
+        alg_name += std::to_string(pct_dijkstra);
+    }
+
+    warthog::util::workload_manager workload(g.get_num_nodes());
+    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        if(order.at(i) >= (uint32_t)(order.size()*cutoff))
+        { workload.set_flag(i, true); }
+    }
+
+    // load up the labelling
+    std::string arclab_file =  gr + "." + alg_name + "." + "label";
+
+    warthog::label::firstmove_labelling* lab =
+        warthog::label::firstmove_labelling::load(
+            arclab_file.c_str(), &g, &order);
+
+    if(lab == 0)
+    {
+        //std::cerr << "computing fch-firstmove labelling... \n";
+        std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
+            [&g, &order]() -> warthog::fch_expansion_policy*
+            {
+                return new warthog::fch_expansion_policy(&g, &order);
+            };
+        lab = warthog::label::firstmove_labelling::compute
+            <warthog::fch_expansion_policy>
+                (&g, &order, fn_new_expander, &workload);
+        std::cerr << "precompute finished. saving result to " 
+            << arclab_file << "...";
+        warthog::label::firstmove_labelling::save(arclab_file.c_str(), *lab);
+        std::cerr << "done.\n";
+    }
+
+    warthog::fch_fm_expansion_policy fexp(&g, &order, lab, false);
+    warthog::euclidean_heuristic h(&g);
+    warthog::flexible_astar< warthog::euclidean_heuristic, 
+        warthog::fch_fm_expansion_policy> alg(&h, &fexp);
+    
+    // extra metric; how many nodes do we expand above the apex?
+    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+    [&order] (warthog::search_node* n) -> uint32_t
+    {
+        while(true)
+        {
+            warthog::search_node* p = n->get_parent();
+            if(!p || order.at(p->get_id()) < order.at(n->get_id()))
+            { break; }
+            n = p;
+        }
+        return order.at(n->get_id());
+    };
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+
+    delete lab;
+}
+
+void
 run_fch_apex_experiment(warthog::util::cfg& cfg, 
         warthog::dimacs_parser& parser, std::string alg_name, 
         std::string gr, std::string co)
@@ -1713,6 +1823,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch-dfs")
     {
         run_fch_dfs(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "fch-fm")
+    {
+        run_fch_fm(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-cpg")
     {

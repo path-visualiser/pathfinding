@@ -252,7 +252,7 @@ class dfs_labelling
             warthog::timer t;
             t.start();
 
-            if(g == 0 || part  == 0) { return 0; } 
+            if(g == 0 || rank == 0 || part  == 0) { return 0; } 
 
             std::function<fch_expansion_policy*(void)> expander_fn = 
             [g, rank] (void) -> fch_expansion_policy*
@@ -406,6 +406,52 @@ class dfs_labelling
             return lab;
         }
 
+        // Computes a DFS post-order id for every node in a contraction
+        // hierarchy (i.e. a top-down traversal)
+        // @param id of the highest node in the contraction hierarchy
+        static uint32_t
+        compute_dfs_ids(
+                warthog::graph::planar_graph* g, 
+                std::vector<uint32_t>* rank, 
+                std::vector<uint32_t>* dfs_ids)
+        {
+            // find the apex of the hierarchy
+            uint32_t apex_id = 0;
+            for(uint32_t i = 0; i < rank->size(); i++)
+            { 
+                if(rank->at(i) > rank->at(apex_id)) 
+                { apex_id = i; } 
+            }
+
+            uint32_t next_id = 0;
+            dfs_ids->resize(g->get_num_nodes(), INT32_MAX);
+            std::function<void(uint32_t)> dfs_id_fn =
+            [dfs_ids, rank, &next_id, &dfs_id_fn, g] (uint32_t source_id) 
+            -> void
+            {
+                warthog::graph::node* source = g->get_node(source_id);
+                warthog::graph::edge_iter begin = source->outgoing_begin();
+                for( warthog::graph::edge_iter it = begin; 
+                        it != source->outgoing_end();
+                        it++)
+                {
+                    // skip up edges
+                    if(rank->at(it->node_id_) > rank->at(source_id)) 
+                    { continue; }
+
+                    // recurse
+                    if(dfs_ids->at(it->node_id_) == INT32_MAX)
+                    { dfs_id_fn(it->node_id_); }
+                }
+                if(dfs_ids->at(source_id) == INT32_MAX)
+                { dfs_ids->at(source_id) = next_id++; }
+            };
+
+            // gogogo
+            dfs_id_fn(apex_id);
+            return apex_id;
+        }
+
     private:
         // only via ::compute or ::load please
         dfs_labelling(
@@ -418,19 +464,13 @@ class dfs_labelling
         void 
         compute_dfs_labels(warthog::util::workload_manager* workload);
 
-        // Computes a DFS post-order id for every node in the hierarchy
-        // (top-down traversal)
-        // @param id of the highest node in the contraction hierarchy
-        void
-        compute_dfs_ids(uint32_t apex_id);
-
         warthog::graph::planar_graph* g_;
         std::vector<uint32_t>* rank_;
         std::vector<uint32_t>* part_;
         size_t bytes_per_af_label_;
         uint32_t apex_id_; 
 
-        std::vector<int32_t>* dfs_order_;
+        std::vector<uint32_t>* dfs_order_;
         std::vector< std::vector< dfs_label >>* lab_;
 };
 

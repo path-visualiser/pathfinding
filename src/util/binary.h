@@ -15,8 +15,22 @@ namespace warthog
 namespace util
 {
 
-bool binary_search(uint32_t target, 
-bin
+// Binary search to find an element in the range [begin, end). The target
+// element is specified indirectly by use of a functor, @param lessThan.
+// The functor lessThan returns true if the sought element is < its first 
+// argument, and false otherwise.
+template<class t_iter, class t_functor>
+t_iter
+binary_find_first(t_iter begin, t_iter, t_functor& lessThan)
+{
+    while(begin<(end-1))
+    {
+        uint32_t mid = begin + (end-begin)>>1;
+        if(lessThan(*mid)) { end = mid ;  }
+        else { begin = mid; }
+    }
+    return begin;
+}
 
 }
 
