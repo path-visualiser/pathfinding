@@ -41,9 +41,17 @@ warthog::graph::planar_graph::planar_graph(
 warthog::graph::planar_graph&
 warthog::graph::planar_graph::operator=(const warthog::graph::planar_graph& other)
 {
+    // free and reallocate from scratch
+    delete [] xy_;
+    delete [] nodes_;
+    id_map_.clear();
+
     verbose_ = other.verbose_;
     filename_ = other.filename_;
-    resize(other.nodes_sz_); // NB: minimum memory for new graph
+    nodes_sz_ = other.nodes_sz_;
+    nodes_cap_ = other.nodes_cap_;
+    warthog::graph::node* nodes_ = new warthog::graph::node[nodes_cap_];
+    int32_t* xy_ = new int32_t[2*nodes_cap_];
 
     for(uint32_t i = 0; i < nodes_sz_; i++)
     {
@@ -52,7 +60,6 @@ warthog::graph::planar_graph::operator=(const warthog::graph::planar_graph& othe
         xy_[2*i+1] = other.xy_[2*i+1];
     }
 
-    id_map_.clear();
     for(uint32_t i = 0; i < other.id_map_.size(); i++)
     {
         id_map_.push_back(other.id_map_.at(i));

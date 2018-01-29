@@ -162,8 +162,8 @@ class planar_graph
 
         // increase the node capacity of the graph
         // (NB: capacity is not the same as size!)
-        bool
-        reserve(uint32_t new_cap);
+        inline size_t 
+        reserve(uint32_t new_cap) { return resize(new_cap); }
 
         inline size_t
         mem()

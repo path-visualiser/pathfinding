@@ -137,6 +137,7 @@ class node
         {
             in_deg_ = other.in_deg_;
             in_cap_ = other.in_cap_;
+            delete [] incoming_;
             incoming_ = new edge[other.in_cap_];
             for(ECAP_T i = 0; i < other.in_deg_; i++)
             {
@@ -145,6 +146,7 @@ class node
 
             out_deg_ = other.out_deg_;
             out_cap_ = other.out_cap_;
+            delete [] outgoing_;
             outgoing_ = new edge[other.out_cap_];
             for(ECAP_T i = 0; i < other.out_deg_; i++)
             {
