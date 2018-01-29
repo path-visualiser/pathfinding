@@ -538,7 +538,7 @@ run_chbb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    //warthog::ch::optimise_graph_for_bch(g.get(), &order);
+    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
 
     std::shared_ptr<warthog::label::bb_labelling> fwd_lab(fwd_lab_ptr);
     std::shared_ptr<warthog::label::bb_labelling> bwd_lab(bwd_lab_ptr);

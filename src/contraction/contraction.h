@@ -105,7 +105,13 @@ load_contraction_hierarchy_and_optimise_for_bch(
         bool enforce_euclidean=true);
 
 void
-optimise_graph_for_bch(warthog::graph::planar_graph* g,
+optimise_graph_for_bch(
+        warthog::graph::planar_graph* g,
+        std::vector<uint32_t>* rank);
+
+void
+optimise_graph_for_bch_v2(
+        warthog::graph::planar_graph* g, 
         std::vector<uint32_t>* rank);
 
 void
