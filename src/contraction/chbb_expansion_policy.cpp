@@ -18,11 +18,17 @@ warthog::chbb_expansion_policy::chbb_expansion_policy(
     {
         fn_begin_iter_ = &warthog::chbb_expansion_policy::get_bwd_begin_iter;
         fn_end_iter_ = &warthog::chbb_expansion_policy::get_bwd_end_iter;
+
+        fn_rev_end_iter_ = &warthog::chbb_expansion_policy::get_fwd_end_iter;
+        fn_rev_begin_iter_ = &warthog::chbb_expansion_policy::get_fwd_begin_iter;
     }
     else
     {
         fn_begin_iter_ = &warthog::chbb_expansion_policy::get_fwd_begin_iter;
         fn_end_iter_ = &warthog::chbb_expansion_policy::get_fwd_end_iter;
+
+        fn_rev_begin_iter_ = &warthog::chbb_expansion_policy::get_bwd_begin_iter;
+        fn_rev_end_iter_ = &warthog::chbb_expansion_policy::get_bwd_end_iter;
     }
 }
 
@@ -38,6 +44,21 @@ warthog::chbb_expansion_policy::expand(warthog::search_node* current,
     warthog::graph::edge_iter begin, end;
     begin = (this->*fn_begin_iter_)(n);
     end = (this->*fn_end_iter_)(n);
+
+    // stall-on-demand
+    begin = (this->*fn_rev_begin_iter_)(n);
+    end = (this->*fn_rev_end_iter_)(n);
+    for(warthog::graph::edge_iter it = begin; it != end; it++)
+    {
+        warthog::graph::edge& e = *it;
+        assert(e.node_id_ < g_->get_num_nodes());
+        warthog::search_node* next = this->generate(e.node_id_);
+        if(next->get_search_id() == current->get_search_id() &&
+                current->get_g() > (next->get_g() + e.wt_))
+        {
+            return; // stall
+        }
+    }
 
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
