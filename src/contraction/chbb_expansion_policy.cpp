@@ -42,8 +42,6 @@ warthog::chbb_expansion_policy::expand(warthog::search_node* current,
     warthog::graph::node* n = g_->get_node(current_id);
    
     warthog::graph::edge_iter begin, end;
-    begin = (this->*fn_begin_iter_)(n);
-    end = (this->*fn_end_iter_)(n);
 
     // stall-on-demand
     begin = (this->*fn_rev_begin_iter_)(n);
@@ -60,6 +58,9 @@ warthog::chbb_expansion_policy::expand(warthog::search_node* current,
         }
     }
 
+    // OK, node doesn't need stalling; generate successors as usual
+    begin = (this->*fn_begin_iter_)(n);
+    end = (this->*fn_end_iter_)(n);
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;

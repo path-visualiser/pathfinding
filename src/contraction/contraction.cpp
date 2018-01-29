@@ -333,10 +333,6 @@ warthog::ch::optimise_graph_for_bch_v2(
             // outgoing up 
             else
             {
-                if(i == 5135)
-                {
-                    std::cerr << "5135 -> " << e_iter->node_id_ << "\n";
-                }
                 bch_g.get_node(i)->add_outgoing(*e_iter);
             }
         }

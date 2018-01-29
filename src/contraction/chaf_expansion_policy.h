@@ -62,8 +62,14 @@ class chaf_expansion_policy : public  expansion_policy
         typedef warthog::graph::edge_iter
                 (warthog::chaf_expansion_policy::*chep_get_iter_fn) 
                 (warthog::graph::node* n);
+
+        // pointers to the neighbours in the direction of the search
         chep_get_iter_fn fn_begin_iter_;
         chep_get_iter_fn fn_end_iter_;
+
+        // pointers to neighbours in the reverse direction to the search
+        chep_get_iter_fn fn_rev_begin_iter_;
+        chep_get_iter_fn fn_rev_end_iter_;
 
         inline warthog::graph::edge_iter
         get_fwd_begin_iter(warthog::graph::node* n) 
