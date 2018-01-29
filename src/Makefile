@@ -77,6 +77,7 @@ main: makedirs warthog
 .PHONY: extras__
 extras__: makedirs warthog 
 	@echo "linking..."
+	$(CC) programs/convert.cpp -o ./bin/convert -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/labelmaker.cpp -o ./bin/labelmaker -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)

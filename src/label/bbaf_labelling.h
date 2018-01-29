@@ -33,11 +33,22 @@ class bbaf_label
             flags_ = 0;
         }
 
+        // NB: shallow copy only
         bbaf_label(const bbaf_label& other)
         {
             flags_ = &*other.flags_;
             bbox_ = other.bbox_;
         }
+
+        // NB: shallow copy only
+        bbaf_label&
+        operator=(const bbaf_label& other)
+        {
+            flags_ = &*other.flags_;
+            bbox_ = other.bbox_;
+            return *this;
+        }
+
 
         uint8_t* flags_;
         warthog::geom::rectangle bbox_;
@@ -54,16 +65,33 @@ class bbaf_labelling
             return part_;
         }
 
+        inline std::vector<std::vector<bbaf_label>>*
+        get_raw_labels()
+        {
+            return &labels_;
+        }
+
         inline warthog::graph::planar_graph*
         get_graph() 
         { 
             return g_; 
         }
 
-        bbaf_label&
+        inline bbaf_label&
         get_label(uint32_t node_id, uint32_t edge_id)
         {
             return labels_.at(node_id).at(edge_id);
+        }
+
+        inline void
+        print_label(std::ostream& out, bbaf_label& label)
+        {
+            out << label.bbox_.x1 << " " << label.bbox_.y1 << " " 
+                << label.bbox_.x2 << " " << label.bbox_.y2;
+            for(uint32_t i = 0; i < bytes_per_af_label_; i++)
+            {
+                out << " " << (int)label.flags_[i];
+            }
         }
 
         // @param out: (out) the target stream to write to

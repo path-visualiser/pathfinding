@@ -316,20 +316,15 @@ run_bch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-
     // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
-    {
-        std::cerr << "err; could not load gr or co input files " 
-                  << "(one or both)\n";
-        return;
-    }
-    warthog::ch::optimise_graph_for_bch(&g, &order);
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get()) { return; }
 
     std::cerr << "preparing to search\n";
-    warthog::bch_expansion_policy fexp(&g, &order);
-    warthog::bch_expansion_policy bexp (&g, &order, true);
+    warthog::bch_expansion_policy fexp(g.get(), &order);
+    warthog::bch_expansion_policy bexp (g.get(), &order, true);
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
 
@@ -468,18 +463,16 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
-    {
-        std::cerr << "err; could not load gr or co input files (one or both)\n";
-        return;
-    }
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get()) { return; }
 
     // load up the arc-flags; we divide the labels into two sets, one for the 
     // up graph and one for the down graph
     warthog::label::af_labelling *fwd_lab=0, *bwd_lab=0;
     bool result = warthog::label::af_labelling::load_bch_labels(
-            arclabels_file.c_str(), &g, &part, &order, fwd_lab, bwd_lab);
+            arclabels_file.c_str(), g.get(), &part, &order, fwd_lab, bwd_lab);
     if(!result)
     {
         std::cerr << "err; could not load arcflags file\n";
@@ -491,13 +484,10 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::af_filter fwd_filter(fwd_afl.get());
     warthog::af_filter bwd_filter(bwd_afl.get());
 
-    // make the graph suitable for BCH
-    warthog::ch::optimise_graph_for_bch(&g, &order);
-
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
-    warthog::chase_expansion_policy fexp(&g, &fwd_filter);
-    warthog::chase_expansion_policy bexp (&g, &bwd_filter, true);
+    warthog::chase_expansion_policy fexp(g.get(), &fwd_filter);
+    warthog::chase_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::chase_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h, &order, core_pct_value);
 
@@ -528,36 +518,37 @@ run_chbb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            new warthog::graph::planar_graph());
+    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
     {
-        std::cerr << "err; could not load gr or co input files (one or both)\n";
+        std::cerr 
+            << "err; could not load gr or co input files "
+            << "(one or both)\n";
         return;
     }
 
-    // load up the arc-flags; we divide the labels into two sets, one for the 
-    // up graph and one for the down graph
+    // load up the edge labels
     warthog::label::bb_labelling *fwd_lab_ptr=0, *bwd_lab_ptr=0;
     bool result = warthog::label::bb_labelling::load_bch_labels(
-            arclabels_file.c_str(), &g, &order, fwd_lab_ptr, bwd_lab_ptr);
+            arclabels_file.c_str(), g.get(), &order, 
+            fwd_lab_ptr, bwd_lab_ptr);
     if(!result)
     {
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
+    //warthog::ch::optimise_graph_for_bch(g.get(), &order);
+
     std::shared_ptr<warthog::label::bb_labelling> fwd_lab(fwd_lab_ptr);
     std::shared_ptr<warthog::label::bb_labelling> bwd_lab(bwd_lab_ptr);
-    
+
     warthog::bb_filter fwd_filter(fwd_lab.get());
     warthog::bb_filter bwd_filter(bwd_lab.get());
 
-    // make the graph suitable for BCH
-    warthog::ch::optimise_graph_for_bch(&g, &order);
-
     std::cerr << "preparing to search\n";
-    warthog::chbb_expansion_policy fexp(&g, &fwd_filter);
-    warthog::chbb_expansion_policy bexp (&g, &bwd_filter, true);
+    warthog::chbb_expansion_policy fexp(g.get(), &fwd_filter);
+    warthog::chbb_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
@@ -605,18 +596,16 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
-    {
-        std::cerr << "err; could not load gr or co input files (one or both)\n";
-        return;
-    }
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get()) { return; }
 
     // load up the arc-flags; we divide the labels into two sets, one for the 
     // up graph and one for the down graph
     warthog::label::af_labelling *fwd_lab=0, *bwd_lab=0;
     bool result = warthog::label::af_labelling::load_bch_labels(
-            arclabels_file.c_str(), &g, &part, &order, fwd_lab, bwd_lab);
+            arclabels_file.c_str(), g.get(), &part, &order, fwd_lab, bwd_lab);
     if(!result)
     {
         std::cerr << "err; could not load arcflags file\n";
@@ -628,12 +617,9 @@ run_chaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::af_filter fwd_filter(fwd_afl.get());
     warthog::af_filter bwd_filter(bwd_afl.get());
 
-    // make the graph suitable for BCH
-    warthog::ch::optimise_graph_for_bch(&g, &order);
-
     std::cerr << "preparing to search\n";
-    warthog::chaf_expansion_policy fexp(&g, &fwd_filter);
-    warthog::chaf_expansion_policy bexp (&g, &bwd_filter, true);
+    warthog::chaf_expansion_policy fexp(g.get(), &fwd_filter);
+    warthog::chaf_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
@@ -681,18 +667,16 @@ run_chaf_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
-    {
-        std::cerr << "err; could not load gr or co input files (one or both)\n";
-        return;
-    }
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get()) { return; }
 
     // load up the arc-flags; we divide the labels into two sets, one for the 
     // up graph and one for the down graph
     warthog::label::bbaf_labelling *fwd_lab_ptr=0, *bwd_lab_ptr=0;
     bool result = warthog::label::bbaf_labelling::load_bch_labels(
-            arclabels_file.c_str(), &g, &part, &order, 
+            arclabels_file.c_str(), g.get(), &part, &order, 
             fwd_lab_ptr, bwd_lab_ptr);
     if(!result)
     {
@@ -705,14 +689,10 @@ run_chaf_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::bbaf_filter fwd_filter(fwd_lab.get());
     warthog::bbaf_filter bwd_filter(bwd_lab.get());
 
-    // make the graph suitable for BCH
-    warthog::ch::optimise_graph_for_bch(&g, &order);
-
-
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
-    warthog::chafbb_expansion_policy fexp(&g, &fwd_filter);
-    warthog::chafbb_expansion_policy bexp (&g, &bwd_filter, true);
+    warthog::chafbb_expansion_policy fexp(g.get(), &fwd_filter);
+    warthog::chafbb_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
 
@@ -1134,8 +1114,10 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get())
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -1144,7 +1126,7 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // load up the arc-flags
     std::shared_ptr<warthog::label::af_labelling> afl
         (warthog::label::af_labelling::load
-        (arclabels_file.c_str(), &g, &part));
+        (arclabels_file.c_str(), g.get(), &part));
     if(!afl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
@@ -1152,8 +1134,8 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     warthog::af_filter filter(afl.get());
-    warthog::euclidean_heuristic h(&g);
-    warthog::fch_af_expansion_policy fexp(&g, &order, &filter);
+    warthog::euclidean_heuristic h(g.get());
+    warthog::fch_af_expansion_policy fexp(g.get(), &order, &filter);
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_af_expansion_policy>
@@ -1179,24 +1161,25 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the node order
     std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
+    bool lex_order = true;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, lex_order))
     {
         std::cerr << "err; could not load node order input file\n";
         return;
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get())
     {
-        std::cerr 
-            << "err; could not load gr or co input files (one or both)\n";
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
     }
     // load up the arc labels
     std::shared_ptr<warthog::label::bb_labelling> bbl
-        (warthog::label::bb_labelling::load(arclabels_file.c_str(), &g));
+        (warthog::label::bb_labelling::load(arclabels_file.c_str(), g.get()));
     if(!bbl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
@@ -1204,8 +1187,8 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
     warthog::bb_filter filter(bbl.get());
 
-    warthog::euclidean_heuristic h(&g);
-    warthog::fch_bb_expansion_policy fexp(&g, &order, &filter);
+    warthog::euclidean_heuristic h(g.get());
+    warthog::fch_bb_expansion_policy fexp(g.get(), &order, &filter);
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_bb_expansion_policy>
@@ -1251,16 +1234,19 @@ run_fch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
-    if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get())
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
     }
+
     // load up the arc-flags
     std::shared_ptr<warthog::label::bbaf_labelling> lab(
             warthog::label::bbaf_labelling::load(
-                arclabels_file.c_str(), &g, &part));
+                arclabels_file.c_str(), g.get(), &part));
 
     if(!lab.get())
     {
@@ -1269,8 +1255,8 @@ run_fch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     std::cerr << "preparing to search\n";
-    warthog::euclidean_heuristic h(&g);
-    warthog::fch_bbaf_expansion_policy fexp(&g, &order, lab.get());
+    warthog::euclidean_heuristic h(g.get());
+    warthog::fch_bbaf_expansion_policy fexp(g.get(), &order, lab.get());
 
     warthog::flexible_astar< warthog::euclidean_heuristic, 
        warthog::fch_bbaf_expansion_policy>
