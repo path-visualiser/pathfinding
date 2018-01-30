@@ -341,63 +341,6 @@ warthog::ch::optimise_graph_for_bch_v2(
 }
 
 warthog::graph::planar_graph* 
-warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
-        const char* gr_file, 
-        const char* co_file, 
-        std::vector<uint32_t>* rank,
-        bool reverse_arcs,
-        bool store_incoming_edges, 
-        bool enforce_euclidean)
-{
-    warthog::graph::planar_graph* g = new warthog::graph::planar_graph();
-    if(!g->load_dimacs( gr_file, co_file, reverse_arcs, 
-                store_incoming_edges, enforce_euclidean))
-    {
-        std::cerr 
-            << "err; could not load gr or co input files "
-            << "(one or both)\n";
-        delete g;
-        return 0;
-    }
-
-    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
-    {
-        warthog::graph::node* n = g->get_node(i);
-        uint32_t n_rank = rank->at(i);
-
-//        std::cerr << "before: node "<< i << "; in_deg="<<n->in_degree()
-//                  << "; out_deg="<<n->out_degree() << "\n";
-
-        // delete all incoming edges except reverse down edges
-        for(uint32_t j = 0; j < n->in_degree(); j++)
-        {
-            warthog::graph::edge_iter e_iter = (n->incoming_begin()+j);
-            uint32_t in_rank = rank->at((*e_iter).node_id_);
-            if(in_rank < n_rank)
-            {
-                n->del_incoming(e_iter);
-                j--;
-            }
-        }
-
-        // delete all outgoing edges except those going up
-        for(uint32_t j = 0; j < n->out_degree(); j++)
-        {
-            warthog::graph::edge_iter e_iter = (n->outgoing_begin()+j);
-            uint32_t out_rank = rank->at((*e_iter).node_id_);
-            if(out_rank < n_rank)
-            {
-                n->del_outgoing(e_iter);
-                j--;
-            }
-        }
-//        std::cerr << "after: node "<< i << "; in_deg="<<n->in_degree()
-//                  << "; out_deg="<<n->out_degree() << "\n";
-    }
-    return g;
-}
-
-warthog::graph::planar_graph* 
 warthog::ch::load_contraction_hierarchy_and_optimise_for_fch( 
         const char* gr_file, 
         const char* co_file, 

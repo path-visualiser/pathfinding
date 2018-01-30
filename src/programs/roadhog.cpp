@@ -316,11 +316,17 @@ run_bch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the graph 
+    // load up the graph
     std::shared_ptr<warthog::graph::planar_graph> g(
-            warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
-                gr.c_str(), co.c_str(), &order, false, true));
-    if(!g.get()) { return; }
+            new warthog::graph::planar_graph());
+    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files "
+            << "(one or both)\n";
+        return;
+    }
+    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
 
     std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy fexp(g.get(), &order);
@@ -464,9 +470,14 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the graph 
     std::shared_ptr<warthog::graph::planar_graph> g(
-            warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
-                gr.c_str(), co.c_str(), &order, false, true));
-    if(!g.get()) { return; }
+            new warthog::graph::planar_graph());
+    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files "
+            << "(one or both)\n";
+        return;
+    }
 
     // load up the arc-flags; we divide the labels into two sets, one for the 
     // up graph and one for the down graph
@@ -478,6 +489,8 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
+    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+
     std::shared_ptr<warthog::label::af_labelling> fwd_afl(fwd_lab);
     std::shared_ptr<warthog::label::af_labelling> bwd_afl(bwd_lab);
     
