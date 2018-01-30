@@ -15,7 +15,7 @@
 #include "cfg.h"
 #include "bch_expansion_policy.h"
 #include "bch_af_expansion_policy.h"
-#include "chafbb_expansion_policy.h"
+#include "bch_bbaf_expansion_policy.h"
 #include "bch_bb_expansion_policy.h"
 #include "chase_expansion_policy.h"
 #include "chase_search.h"
@@ -84,7 +84,7 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tbch, bch-astar, chase, bch-af, bch-bb, chaf-bb, ch-cpg\n"
+    << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf, chase, ch-cpg\n"
     << "\tfch, fchx, fch-af, fch-bb, fch-bbaf, fch-down-dfs\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
@@ -640,7 +640,7 @@ run_bch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_bch_af_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_bch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
     std::string orderfile = cfg.get_param_value("input");
@@ -676,9 +676,14 @@ run_bch_af_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the graph 
     std::shared_ptr<warthog::graph::planar_graph> g(
-            warthog::ch::load_contraction_hierarchy_and_optimise_for_bch(
-                gr.c_str(), co.c_str(), &order, false, true));
-    if(!g.get()) { return; }
+            new warthog::graph::planar_graph());
+    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files "
+            << "(one or both)\n";
+        return;
+    }
 
     // load up the arc-flags; we divide the labels into two sets, one for the 
     // up graph and one for the down graph
@@ -691,6 +696,8 @@ run_bch_af_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
+    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+
     std::shared_ptr<warthog::label::bbaf_labelling> fwd_lab(fwd_lab_ptr);
     std::shared_ptr<warthog::label::bbaf_labelling> bwd_lab(bwd_lab_ptr);
     
@@ -699,8 +706,8 @@ run_bch_af_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     std::cerr << "preparing to search\n";
     warthog::zero_heuristic h;
-    warthog::chafbb_expansion_policy fexp(g.get(), &fwd_filter);
-    warthog::chafbb_expansion_policy bexp (g.get(), &bwd_filter, true);
+    warthog::bch_bbaf_expansion_policy fexp(g.get(), &fwd_filter);
+    warthog::bch_bbaf_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
 
@@ -1786,9 +1793,9 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_bch_af(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "chaf-bb")
+    else if(alg_name == "bch-bbaf")
     {
-        run_bch_af_bb(cfg, parser, alg_name, gr, co);
+        run_bch_bbaf(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "ch-cpg")
     {

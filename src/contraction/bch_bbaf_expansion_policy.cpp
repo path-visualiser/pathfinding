@@ -1,10 +1,10 @@
 #include "bbaf_filter.h"
-#include "chafbb_expansion_policy.h"
+#include "bch_bbaf_expansion_policy.h"
 #include "contraction.h"
 #include "problem_instance.h"
 #include "search_node.h"
 
-warthog::chafbb_expansion_policy::chafbb_expansion_policy(
+warthog::bch_bbaf_expansion_policy::bch_bbaf_expansion_policy(
         warthog::graph::planar_graph* g, 
         warthog::bbaf_filter* filter,
         bool backward)
@@ -16,22 +16,22 @@ warthog::chafbb_expansion_policy::chafbb_expansion_policy(
 
     if(backward_)
     {
-        fn_begin_iter_ = &warthog::chafbb_expansion_policy::get_bwd_begin_iter;
-        fn_end_iter_ = &warthog::chafbb_expansion_policy::get_bwd_end_iter;
-        fn_rev_end_iter_ = &warthog::chafbb_expansion_policy::get_fwd_end_iter;
-        fn_rev_begin_iter_ = &warthog::chafbb_expansion_policy::get_fwd_begin_iter;
+        fn_begin_iter_ = &warthog::bch_bbaf_expansion_policy::get_bwd_begin_iter;
+        fn_end_iter_ = &warthog::bch_bbaf_expansion_policy::get_bwd_end_iter;
+        fn_rev_end_iter_ = &warthog::bch_bbaf_expansion_policy::get_fwd_end_iter;
+        fn_rev_begin_iter_ = &warthog::bch_bbaf_expansion_policy::get_fwd_begin_iter;
     }
     else
     {
-        fn_begin_iter_ = &warthog::chafbb_expansion_policy::get_fwd_begin_iter;
-        fn_end_iter_ = &warthog::chafbb_expansion_policy::get_fwd_end_iter;
-        fn_rev_begin_iter_ = &warthog::chafbb_expansion_policy::get_bwd_begin_iter;
-        fn_rev_end_iter_ = &warthog::chafbb_expansion_policy::get_bwd_end_iter;
+        fn_begin_iter_ = &warthog::bch_bbaf_expansion_policy::get_fwd_begin_iter;
+        fn_end_iter_ = &warthog::bch_bbaf_expansion_policy::get_fwd_end_iter;
+        fn_rev_begin_iter_ = &warthog::bch_bbaf_expansion_policy::get_bwd_begin_iter;
+        fn_rev_end_iter_ = &warthog::bch_bbaf_expansion_policy::get_bwd_end_iter;
     }
 }
 
 void
-warthog::chafbb_expansion_policy::expand(warthog::search_node* current,
+warthog::bch_bbaf_expansion_policy::expand(warthog::search_node* current,
         warthog::problem_instance* problem)
 {
     reset();
@@ -70,7 +70,7 @@ warthog::chafbb_expansion_policy::expand(warthog::search_node* current,
 }
 
 size_t
-warthog::chafbb_expansion_policy::mem()
+warthog::bch_bbaf_expansion_policy::mem()
 {
     return 
         expansion_policy::mem() + 
@@ -78,14 +78,14 @@ warthog::chafbb_expansion_policy::mem()
 }
 
 void
-warthog::chafbb_expansion_policy::get_xy(
+warthog::bch_bbaf_expansion_policy::get_xy(
         uint32_t node_id, int32_t& x, int32_t& y)
 {
     g_->get_xy(node_id, x, y);
 }
 
 warthog::search_node* 
-warthog::chafbb_expansion_policy::generate_start_node(
+warthog::bch_bbaf_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
     // update the filter with the new target location
@@ -102,7 +102,7 @@ warthog::chafbb_expansion_policy::generate_start_node(
 }
 
 warthog::search_node*
-warthog::chafbb_expansion_policy::generate_target_node(
+warthog::bch_bbaf_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
     uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
