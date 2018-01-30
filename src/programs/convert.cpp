@@ -131,7 +131,6 @@ main(int argc, char** argv)
         // sanity
         for(uint32_t i = 0; i < n->out_degree(); i++)
         {
-            warthog::graph::edge_iter it = (n->outgoing_begin() + i);
             assert(id2index_before[it->node_id_] == i);
             assert(index2id_before[i] == it->node_id_);
         }
