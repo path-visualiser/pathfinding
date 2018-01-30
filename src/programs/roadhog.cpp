@@ -16,7 +16,7 @@
 #include "bch_expansion_policy.h"
 #include "chaf_expansion_policy.h"
 #include "chafbb_expansion_policy.h"
-#include "chbb_expansion_policy.h"
+#include "bch_bb_expansion_policy.h"
 #include "chase_expansion_policy.h"
 #include "chase_search.h"
 #include "constants.h"
@@ -84,7 +84,7 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tbch, bch-astar, chase, chaf, chbb, chaf-bb, ch-cpg\n"
+    << "\tbch, bch-astar, chase, chaf, bch-bb, chaf-bb, ch-cpg\n"
     << "\tfch, fchx, fch-af, fch-bb, fch-bbaf, fch-down-dfs\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
@@ -495,7 +495,7 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_chbb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
     std::string orderfile = cfg.get_param_value("input");
@@ -547,8 +547,8 @@ run_chbb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::bb_filter bwd_filter(bwd_lab.get());
 
     std::cerr << "preparing to search\n";
-    warthog::chbb_expansion_policy fexp(g.get(), &fwd_filter);
-    warthog::chbb_expansion_policy bexp (g.get(), &bwd_filter, true);
+    warthog::bch_bb_expansion_policy fexp(g.get(), &fwd_filter);
+    warthog::bch_bb_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic> 
         alg(&fexp, &bexp, &h);
@@ -1770,9 +1770,9 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_bch_astar(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "chbb")
+    else if(alg_name == "bch-bb")
     {
-        run_chbb(cfg, parser, alg_name, gr, co);
+        run_bch_bb(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "chaf")
     {
