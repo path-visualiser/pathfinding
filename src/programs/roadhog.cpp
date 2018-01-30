@@ -85,11 +85,11 @@ help()
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf, chase, ch-cpg\n"
-    << "\tfch, fchx, fch-af, fch-bb, fch-bbaf, fch-down-dfs\n"
+    << "\tfch, fchx, fch-af, fch-bb, fch-bbaf, fch-dfs\n"
     << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
     << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
     << "\nRecognised values for --input:\n "
-    << "\ttoo many to list. missing input files will be listed at uuntime\n";
+    << "\ttoo many to list. missing input files will be listed at runtime\n";
 }
 
 ////////////////////////////////////////////////////////////////////////////
