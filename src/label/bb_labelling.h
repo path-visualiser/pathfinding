@@ -47,6 +47,12 @@ class bb_labelling
                 uint32_t firstid=0, 
                 uint32_t lastid=UINT32_MAX);
 
+        inline std::vector<std::vector<warthog::geom::rectangle>>*
+        get_raw_labels()
+        {
+            return labels_;
+        }
+
         inline warthog::geom::rectangle&
         get_label(uint32_t node_id, uint32_t edge_id)
         {

@@ -21,6 +21,9 @@ void
 warthog::label::bb_labelling::print(
         std::ostream& out, uint32_t first_id, uint32_t last_id)
 {
+    if(first_id > labels_->size()) { return; }
+    if(last_id > labels_->size()) { last_id = labels_->size(); }
+
     out << "# Before printing labels are sorted by tail index. \n"
         << "# Ties are broken using the order edges appear in the file \n"
         << "# " << g_->get_filename() << std::endl

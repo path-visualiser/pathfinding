@@ -108,6 +108,9 @@ compute_fch_bb_labels()
     // node order becomes a lex order for the purposes of search
     warthog::ch::value_index_swap_dimacs(order);
 
+    // FCH assumes the successors list is sorted 
+    warthog::ch::fch_sort_successors(&g, &order);
+
     // gogogo
     std::cerr << "computing fch-bb labelling... \n";
     std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 
@@ -431,6 +434,9 @@ compute_fch_af_labels()
 
     // node order becomes a lex order for the purposes of search
     warthog::ch::value_index_swap_dimacs(order);
+
+    // FCH assumes the successors list is sorted 
+    warthog::ch::fch_sort_successors(&g, &order);
 
     // gogogo
     std::cerr << "computing fch-af labelling... \n";
@@ -884,6 +890,9 @@ compute_fch_bbaf_labels()
 
     // node order becomes a lex order for the purposes of search
     warthog::ch::value_index_swap_dimacs(order);
+
+    // FCH assumes the successors list is sorted 
+    warthog::ch::fch_sort_successors(&g, &order);
 
     // gogogo
     std::function<warthog::fch_expansion_policy*(void)> fn_new_expander = 

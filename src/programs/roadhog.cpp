@@ -531,14 +531,13 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the graph
+    // load up the graph 
     std::shared_ptr<warthog::graph::planar_graph> g(
-            new warthog::graph::planar_graph());
-    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get())
     {
-        std::cerr 
-            << "err; could not load gr or co input files "
-            << "(one or both)\n";
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
     }
 
@@ -611,12 +610,11 @@ run_bch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the graph 
     std::shared_ptr<warthog::graph::planar_graph> g(
-            new warthog::graph::planar_graph());
-    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get())
     {
-        std::cerr 
-            << "err; could not load gr or co input files "
-            << "(one or both)\n";
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
     }
 
@@ -689,12 +687,11 @@ run_bch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     // load up the graph 
     std::shared_ptr<warthog::graph::planar_graph> g(
-            new warthog::graph::planar_graph());
-    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
+            warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
+                gr.c_str(), co.c_str(), &order, false, true));
+    if(!g.get())
     {
-        std::cerr 
-            << "err; could not load gr or co input files "
-            << "(one or both)\n";
+        std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
     }
 
