@@ -215,6 +215,33 @@ logplot <- function(x, y,
     }
 }
 
+logplot_y <- function(y, 
+                    ylim=c(min(floor(log10(y))), max(ceiling(log10(y)))),
+                    x_axis=TRUE,
+                    x_power_labels=FALSE,
+                    y_power_labels=FALSE, cex=1, cex.axis=1,
+                    las=1, type="l", col="black",...)
+{
+    print(ylim)
+    y <- log10(y)
+    x_range <- c(1, length(y))
+    x_labels=pretty(seq(1, length(y), by=length(y)/10))
+    print(x_labels)
+    plot(NULL, xaxt="n", yaxt="n", ylim=ylim, 
+         xlim=x_range, type=type, ...)
+    axis.draw(2, power_labels=FALSE, cex.axis=cex.axis)
+    lims <- par("usr")
+    if(x_axis)
+    {
+        x_labels <- x_labels-min(x_labels)
+        x_ticks <- (x_labels/max(x_labels))*max(x_labels)
+        print(x_ticks)
+        print(x_labels)
+        axis(1, at=x_ticks, labels=x_labels, cex.axis=cex.axis)
+    }
+    lines(y, cex=cex, col=col, type=type, ...)
+}
+
 loglogplot <- function(x, y, 
                     xlim=c(min(floor(log10(x))), max(ceiling(log10(x)))),
                     ylim=c(min(floor(log10(y))), max(ceiling(log10(y)))),
