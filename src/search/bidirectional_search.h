@@ -78,7 +78,6 @@ class bidirectional_search : public warthog::search
                 sol.sum_of_edge_costs_ = best_cost_;
                 reconstruct_path(sol);
             }
-            cleanup();
 
             #ifndef NDEBUG
             if(pi_.verbose_)
@@ -182,18 +181,13 @@ class bidirectional_search : public warthog::search
             warthog::timer mytimer;
             mytimer.start();
 
+            fopen_->clear();
+            bopen_->clear();
+
             // init
             best_cost_ = warthog::INF;
             v_ = w_ = 0;
             forward_next_ = false;
-
-            // generate the start and target nodes. also, we update the 
-            // problem instance with internal ids (makes debugging easier)
-            warthog::search_node *start, *target;
-            start = fexpander_->generate_start_node(&pi_);
-            target = bexpander_->generate_target_node(&pi_);
-            pi_.start_id_ = start->get_id();
-            pi_.target_id_ = target->get_id();
 
             #ifndef NDEBUG
             if(pi_.verbose_)
@@ -204,14 +198,20 @@ class bidirectional_search : public warthog::search
             }
             #endif
 
-
-            // compute an initial priority for both the start and target
+            // generate the start and target nodes.
+            warthog::search_node *start, *target;
+            start = fexpander_->generate_start_node(&pi_);
+            target = bexpander_->generate_target_node(&pi_);
             start->init(pi_.instance_id_, 0, 0, 
                         heuristic_->h(start->get_id(), target->get_id()));
             target->init(pi_.instance_id_, 0, 0, 
                          heuristic_->h(start->get_id(), target->get_id()));
             fopen_->push(start);
             bopen_->push(target);
+
+            // also update problem instance with internal ids (for debugging)
+            pi_.start_id_ = start->get_id();
+            pi_.target_id_ = target->get_id();
 
             // interleave search; we terminate when the best lower bound
             // is larger than the cost of the best solution so far (or when
@@ -343,68 +343,16 @@ class bidirectional_search : public warthog::search
             // generate all neighbours
             warthog::search_node* n = 0;
             double cost_to_n = warthog::INF;
-            for(expander->first(n, cost_to_n); n != 0; expander->next(n, cost_to_n))
+            for(expander->first(n, cost_to_n); 
+                    n != 0; 
+                    expander->next(n, cost_to_n))
             {
                 sol.nodes_touched_++;
-                if(n->get_expanded())
-                {
-                    // skip neighbours already expanded
-                    #ifndef NDEBUG
-                    if(pi_.verbose_)
-                    {
-                        int32_t x, y;
-                        expander->get_xy(n->get_id(), x, y);
-                        std::cerr << "  closed; (edgecost=" << cost_to_n << ") "
-                            << "("<<x<<", "<<y<<")...";
-                        n->print(std::cerr);
-                        std::cerr << std::endl;
 
-                    }
-                    #endif
-                    continue;
-                }
-
-                // relax (or generate) each neighbour
-                double gval = current->get_g() + cost_to_n;
-                if(open->contains(n))
+                // add new nodes to the fringe
+                if(n->get_search_id() != current->get_search_id())
                 {
-                    // update a node from the fringe
-                    if(gval < n->get_g())
-                    {
-                        n->relax(gval, current);
-                        open->decrease_key(n);
-                        #ifndef NDEBUG
-                        if(pi_.verbose_)
-                        {
-                            int32_t x, y;
-                            expander->get_xy(n->get_id(), x, y);
-                            std::cerr << "  open; updating "
-                                << "(edgecost="<< cost_to_n<<") "
-                                << "("<<x<<", "<<y<<")...";
-                            n->print(std::cerr);
-                            std::cerr << std::endl;
-                        }
-                        #endif
-                    }
-                    #ifndef NDEBUG
-                    else
-                    {
-                        if(pi_.verbose_)
-                        {
-                            int32_t x, y;
-                            expander->get_xy(n->get_id(), x, y);
-                            std::cerr << "  open; not updating "
-                                << "(edgecost=" << cost_to_n<< ") "
-                                << "("<<x<<", "<<y<<")...";
-                            n->print(std::cerr);
-                            std::cerr << std::endl;
-                        }
-                    }
-                    #endif
-                }
-                else
-                {
-                    // add a new node to the fringe
+                    double gval = current->get_g() + cost_to_n;
                     n->init(current->get_search_id(), 
                             current, 
                             gval,
@@ -425,20 +373,78 @@ class bidirectional_search : public warthog::search
                     sol.nodes_inserted_++;
                 }
 
+                // process neighbour nodes that the search has seen before
+                else
+                {
+                    // skip neighbours already expanded
+                    if(n->get_expanded())
+                    {
+                        #ifndef NDEBUG
+                        if(pi_.verbose_)
+                        {
+                            int32_t x, y;
+                            expander->get_xy(n->get_id(), x, y);
+                            std::cerr << "  closed; (edgecost=" << cost_to_n << ") "
+                                << "("<<x<<", "<<y<<")...";
+                            n->print(std::cerr);
+                            std::cerr << std::endl;
+
+                        }
+                        #endif
+                        continue;
+                    }
+
+                    // relax nodes on the fringe
+                    if(open->contains(n))
+                    {
+                        double gval = current->get_g() + cost_to_n;
+                        if(gval < n->get_g())
+                        {
+                            n->relax(gval, current);
+                            open->decrease_key(n);
+                            sol.nodes_updated_++;
+                            #ifndef NDEBUG
+                            if(pi_.verbose_)
+                            {
+                                int32_t x, y;
+                                expander->get_xy(n->get_id(), x, y);
+                                std::cerr << "  open; updating "
+                                    << "(edgecost="<< cost_to_n<<") "
+                                    << "("<<x<<", "<<y<<")...";
+                                n->print(std::cerr);
+                                std::cerr << std::endl;
+                            }
+                            #endif
+                        }
+                        #ifndef NDEBUG
+                        else
+                        {
+                            if(pi_.verbose_)
+                            {
+                                int32_t x, y;
+                                expander->get_xy(n->get_id(), x, y);
+                                std::cerr << "  open; not updating "
+                                    << "(edgecost=" << cost_to_n<< ") "
+                                    << "("<<x<<", "<<y<<")...";
+                                n->print(std::cerr);
+                                std::cerr << std::endl;
+                            }
+                        }
+                        #endif
+                    }
+                }
+
                 // update the best solution if possible
                 warthog::search_node* reverse_n = 
                     reverse_expander->generate(n->get_id());
                 if(reverse_n->get_search_id() == n->get_search_id())
-//                        && reverse_n->get_expanded())
                 {
                     if((current->get_g() + cost_to_n + reverse_n->get_g()) < best_cost_)
                     {
-                        //v_ = current;
                         v_ = n;
                         w_ = reverse_n;
                         best_cost_ = 
                             current->get_g() + cost_to_n + reverse_n->get_g();
-                        sol.nodes_updated_++;
 
                         #ifndef NDEBUG
                         if(pi_.verbose_)
@@ -464,13 +470,15 @@ class bidirectional_search : public warthog::search
             #endif
         }
 
+        // clear the open lists and return all memory allocated for nodes
+        // to the node pool
         void
-        cleanup()
+        reclaim()
         {
             fopen_->clear();
             bopen_->clear();
-            fexpander_->clear();
-            bexpander_->clear();
+            fexpander_->reclaim();
+            bexpander_->reclaim();
         }
 
 };

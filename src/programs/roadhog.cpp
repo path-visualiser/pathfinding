@@ -338,6 +338,91 @@ run_bch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
+run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+        std::string alg_name, std::string gr, std::string co)
+{
+    std::string orderfile = cfg.get_param_value("input");
+    if(orderfile == "")
+    {
+        std::cerr << "err; missing contraction order input file\n";
+        return;
+    }
+
+    // load up the node order
+    std::vector<uint32_t> order;
+    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
+    {
+        std::cerr << "err; could not load contraction order file\n";
+        return;
+    }
+
+    // load up the graph
+    std::shared_ptr<warthog::graph::planar_graph> g(
+            new warthog::graph::planar_graph());
+    if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
+    {
+        std::cerr 
+            << "err; could not load gr or co input files "
+            << "(one or both)\n";
+        return;
+    }
+    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+
+    std::cerr << "preparing to search\n";
+    warthog::bch_expansion_policy bexp (g.get(), &order, true);
+    warthog::zero_heuristic h;
+    warthog::flexible_astar<
+        warthog::zero_heuristic, 
+        warthog::bch_expansion_policy> alg(&h, &bexp);
+
+    std::cerr << "running experiments\n";
+    std::cerr << "(averaging over " << nruns << " runs per instance)\n";
+
+    if(!suppress_header)
+    {
+        std::cout 
+            << "id\talg\texpanded\tinserted\tupdated\ttouched"
+            << "\tmicros\tpcost\tplen\tmap\n";
+    }
+    uint32_t exp_id = 0;
+    for(auto it = parser.experiments_begin(); 
+            it != parser.experiments_end(); 
+            it++)
+    {
+        warthog::dimacs_parser::experiment exp = (*it);
+        warthog::solution sol;
+        warthog::problem_instance pi(exp.source, warthog::INF, verbose);
+        uint32_t expanded=0, inserted=0, updated=0, touched=0;
+        double micro_time = DBL_MAX;
+        for(uint32_t i = 0; i < nruns; i++)
+        {
+            sol.reset();
+            alg.get_path(pi, sol);
+
+            expanded += sol.nodes_expanded_;
+            inserted += sol.nodes_inserted_;
+            touched += sol.nodes_touched_;
+            updated += sol.nodes_updated_;
+            micro_time = micro_time < sol.time_elapsed_micro_ 
+                            ?  micro_time : sol.time_elapsed_micro_;
+        }
+
+        std::cout
+            << exp_id++ <<"\t" 
+            << alg_name << "\t" 
+            << expanded / nruns << "\t" 
+            << inserted / nruns << "\t"
+            << updated / nruns << "\t"
+            << touched / nruns << "\t"
+            << micro_time << "\t" /// (double)nruns << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << sol.path_.size() << "\t" 
+            << parser.get_problemfile() 
+            << std::endl;
+    }
+}
+
+void
 run_bch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
@@ -1786,6 +1871,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "bch")
     {
         run_bch(cfg, parser, alg_name, gr, co);
+    }
+    else if(alg_name == "bchb")
+    {
+        run_bch_backwards_only(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "chase")
     {

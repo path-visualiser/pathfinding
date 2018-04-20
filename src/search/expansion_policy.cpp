@@ -10,7 +10,7 @@ warthog::expansion_policy::expansion_policy(uint32_t nodes_pool_size)
 
 warthog::expansion_policy::~expansion_policy()
 {
-    neis_->clear();
+    reset();
     delete neis_;
     delete nodepool_;
 }

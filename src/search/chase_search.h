@@ -82,6 +82,10 @@ class chase_search : public warthog::search
 
         ~chase_search()
         {
+            fexpander_->reclaim();
+            bexpander_->reclaim();
+            fopen_->clear();
+            bopen_->clear();
             delete fopen_;
             delete bopen_;
         }
@@ -96,7 +100,6 @@ class chase_search : public warthog::search
                 sol.sum_of_edge_costs_ = best_cost_;
                 reconstruct_path(sol);
             }
-            cleanup();
 
             #ifndef NDEBUG
             if(pi_.verbose_)
@@ -175,15 +178,23 @@ class chase_search : public warthog::search
         void 
         search(warthog::solution& sol)
         {
+            std::cerr << "CHASE_SEARCH IS BROKEN\n" << std::endl;
+            return;
             warthog::timer mytimer;
             mytimer.start();
 
-            // init
-            best_cost_ = warthog::INF;
-            v_ = w_ = 0;
-            forward_next_ = true;
+            // init data structures used during search
+            fopen_->clear();
+            bopen_->clear();
             fwd_norelax_.clear();
             bwd_norelax_.clear();
+            fexpander_->reset();
+            bexpander_->reset();
+
+            // init search parameters
+            forward_next_ = true;
+            best_cost_ = warthog::INF;
+            v_ = w_ = 0;
 
             warthog::search_node *start, *target;
             start = fexpander_->generate_start_node(&pi_);
@@ -401,100 +412,29 @@ class chase_search : public warthog::search
             for(expander->first(n, cost_to_n); n != 0; expander->next(n, cost_to_n))
             {
                 sol.nodes_touched_++;
-                if(n->get_expanded())
-                {
-                    // skip neighbours already expanded
-                    #ifndef NDEBUG
-                    if(pi_.verbose_)
-                    {
-                        int32_t x, y;
-                        expander->get_xy(n->get_id(), x, y);
-                        std::cerr << "  closed; (edgecost=" << cost_to_n << ") "
-                            << "("<<x<<", "<<y<<")...";
-                        n->print(std::cerr);
-                        std::cerr << std::endl;
 
-                    }
-                    #endif
-                    continue;
-                }
+                // add new nodes to the fringe
+                if(n->get_search_id() != current->get_search_id())
+                {
+                    double gval = current->get_g() + cost_to_n;
+                    n->init(current->get_search_id(), current, gval,
+                            gval + 
+                            heuristic_->h(n->get_id(), tmp_targetid));
 
-                // relax (or generate) each neighbour
-                double gval = current->get_g() + cost_to_n;
-                if(open->contains(n))
-                {
-                    // update a node from the fringe
-                    if(gval < n->get_g())
+                    // during phase1, only new nodes whose rank is below the 
+                    // limit are queued on the open list
+                    // during phase2, all new nodes are queued
+                    if( phase_ == 2 || rank_->at(n->get_id()) < max_phase1_rank_ )
                     {
-                        sol.nodes_updated_++;
-                        n->relax(gval, current);
-                        open->decrease_key(n);
-                        #ifndef NDEBUG
-                        if(pi_.verbose_)
-                        {
-                            int32_t x, y;
-                            expander->get_xy(n->get_id(), x, y);
-                            std::cerr << " updating "
-                                << "(edgecost="<< cost_to_n<<") "
-                                << "("<<x<<", "<<y<<")...";
-                            n->print(std::cerr);
-                            std::cerr << std::endl;
-                        }
-                        #endif
-                    }
-                    else
-                    {
-                        #ifndef NDEBUG
-                        if(pi_.verbose_)
-                        {
-                            int32_t x, y;
-                            expander->get_xy(n->get_id(), x, y);
-                            std::cerr << " not updating "
-                                << "(edgecost=" << cost_to_n<< ") "
-                                << "("<<x<<", "<<y<<")...";
-                            n->print(std::cerr);
-                            std::cerr << std::endl;
-                        }
-                        #endif
-                    }
-                }
-                else
-                {
-                    if(phase_ == 1 && 
-                            n->get_search_id() == current->get_search_id())
-                    {
-                        // relax the g-value of the nodes not being
-                        // expanded in phase1
-                        // (these are not added to open yet)
-                        if(gval < n->get_g())
-                        {
-                            n->relax(gval, current);
-                            if(gval < norelax_distance_min)
-                            {
-                                norelax_distance_min = gval; 
-                            }
-                        }
-                    }
-                    else
-                    {
-                        // add a new node to the fringe
                         sol.nodes_inserted_++;
-                        n->init(current->get_search_id(), current, gval,
-                                gval + 
-                                heuristic_->h(n->get_id(), tmp_targetid));
-
-                        if( phase_ == 2 || 
-                            rank_->at(n->get_id()) < max_phase1_rank_ )
+                        open->push(n);
+                    }
+                    else
+                    {
+                        norelax.push_back(n);
+                        if(gval < norelax_distance_min)
                         {
-                            open->push(n);
-                        }
-                        else
-                        {
-                            norelax.push_back(n);
-                            if(gval < norelax_distance_min)
-                            {
-                                norelax_distance_min = gval; 
-                            }
+                            norelax_distance_min = gval; 
                         }
                     }
 
@@ -520,6 +460,83 @@ class chase_search : public warthog::search
                         std::cerr << std::endl;
                     }
                     #endif
+                }
+
+                // update neighbours the search has seen before
+                else
+                {
+                    if(n->get_expanded())
+                    {
+                        // skip neighbours already expanded
+                        #ifndef NDEBUG
+                        if(pi_.verbose_)
+                        {
+                            int32_t x, y;
+                            expander->get_xy(n->get_id(), x, y);
+                            std::cerr << "  closed; (edgecost=" << cost_to_n << ") "
+                                << "("<<x<<", "<<y<<")...";
+                            n->print(std::cerr);
+                            std::cerr << std::endl;
+
+                        }
+                        #endif
+                        continue;
+                    }
+
+                    // relax (or generate) each neighbour
+                    double gval = current->get_g() + cost_to_n;
+                    if(open->contains(n))
+                    {
+                        // update a node from the fringe
+                        if(gval < n->get_g())
+                        {
+                            sol.nodes_updated_++;
+                            n->relax(gval, current);
+                            open->decrease_key(n);
+                            #ifndef NDEBUG
+                            if(pi_.verbose_)
+                            {
+                                int32_t x, y;
+                                expander->get_xy(n->get_id(), x, y);
+                                std::cerr << " updating "
+                                    << "(edgecost="<< cost_to_n<<") "
+                                    << "("<<x<<", "<<y<<")...";
+                                n->print(std::cerr);
+                                std::cerr << std::endl;
+                            }
+                            #endif
+                        }
+                        else
+                        {
+                            #ifndef NDEBUG
+                            if(pi_.verbose_)
+                            {
+                                int32_t x, y;
+                                expander->get_xy(n->get_id(), x, y);
+                                std::cerr << " not updating "
+                                    << "(edgecost=" << cost_to_n<< ") "
+                                    << "("<<x<<", "<<y<<")...";
+                                n->print(std::cerr);
+                                std::cerr << std::endl;
+                            }
+                            #endif
+                        }
+                    }
+                    else
+                    {
+                        // relax the g-value of the nodes not being
+                        // expanded in phase1
+                        // (these are not added to open yet)
+                        assert(phase_ == 1);
+                        if(gval < n->get_g())
+                        {
+                            n->relax(gval, current);
+                            if(gval < norelax_distance_min)
+                            {
+                                norelax_distance_min = gval; 
+                            }
+                        }
+                    }
                 }
 
                 // update the best solution if possible
@@ -557,14 +574,16 @@ class chase_search : public warthog::search
             }
             #endif
         }
-
+        
+        // clear the open lists and return all memory allocated for nodes
+        // to the node pool
         void
-        cleanup()
+        reclaim()
         {
             fopen_->clear();
             bopen_->clear();
-            fexpander_->clear();
-            bexpander_->clear();
+            fexpander_->reclaim();
+            bexpander_->reclaim();
         }
 
 };

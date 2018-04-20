@@ -31,10 +31,10 @@ class expansion_policy
         get_nodes_pool_size() { return nodes_pool_size_; } 
        
         inline void
-        clear()
+        reclaim()
         {
             reset();
-            nodepool_->clear();
+            nodepool_->reclaim();
         }        
 
 		inline void

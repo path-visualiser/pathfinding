@@ -56,7 +56,7 @@ class flexible_astar : public warthog::search
 
 		virtual ~flexible_astar()
 		{
-			cleanup();
+			reclaim();
 			delete open_;
 		}
 
@@ -221,8 +221,7 @@ class flexible_astar : public warthog::search
 		{
 			warthog::timer mytimer;
 			mytimer.start();
-            cleanup();
-
+			open_->clear();
 
             // generate the start and goal. then
             // update the instance with their internal ids 
@@ -310,10 +309,37 @@ class flexible_astar : public warthog::search
 				{
                     sol.nodes_touched_++;
                     on_generate_fn_(n, current, cost_to_n, edge_id++);
+                    
+                    // add new nodes to the fringe
+                    if(n->get_search_id() != current->get_search_id())
+                    {
+						double gval = current->get_g() + cost_to_n;
+                        int32_t nx, ny;
+                        expander_->get_xy(n->get_id(), nx, ny);
+                        n->init(pi_.instance_id_, current, 
+                            gval, gval + heuristic_->h(nx, ny, gx, gy));
 
+                        open_->push(n);
+                        sol.nodes_inserted_++;
+
+                        #ifndef NDEBUG
+                        if(pi_.verbose_)
+                        {
+                            std::cerr 
+                                << "  generating (edgecost=" 
+                                << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
+                            n->print(std::cerr);
+                            std::cerr << std::endl;
+                        }
+                        #endif
+
+                        on_relax_fn_(n);
+                        continue;
+                    }
+
+                    // skip neighbours already expanded
 					if(n->get_expanded())
 					{
-						// skip neighbours already expanded
                         #ifndef NDEBUG
                         if(pi_.verbose_)
                         {
@@ -328,9 +354,9 @@ class flexible_astar : public warthog::search
 						continue;
 					}
 
+                    // update a node from the fringe
 					if(open_->contains(n))
 					{
-						// update a node from the fringe
 						double gval = current->get_g() + cost_to_n;
 						if(gval < n->get_g())
 						{
@@ -368,31 +394,6 @@ class flexible_astar : public warthog::search
 							#endif
 						}
 					}
-					else
-					{
-						// add a new node to the fringe
-						double gval = current->get_g() + cost_to_n;
-                        int32_t nx, ny;
-                        expander_->get_xy(n->get_id(), nx, ny);
-                        n->init(pi_.instance_id_, current, 
-                            gval, gval + heuristic_->h(nx, ny, gx, gy));
-
-                        open_->push(n);
-                        sol.nodes_inserted_++;
-
-                        #ifndef NDEBUG
-                        if(pi_.verbose_)
-                        {
-                            std::cerr 
-                                << "  generating (edgecost=" 
-                                << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
-                            n->print(std::cerr);
-                            std::cerr << std::endl;
-                        }
-                        #endif
-
-                        on_relax_fn_(n);
-					}
 				}
 			}
 
@@ -413,11 +414,13 @@ class flexible_astar : public warthog::search
             return target;
 		}
 
+        // clear the open lists and return all memory allocated for nodes
+        // to the node pool
 		void
-		cleanup()
+		reclaim()
 		{
 			open_->clear();
-			expander_->clear();
+			expander_->reclaim();
 		}
 };
 

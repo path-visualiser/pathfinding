@@ -42,7 +42,7 @@ dev: main
 
 .PHONY: profile
 profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES) 
-profile: main
+profile: main extras__
 
 .PHONY: extras
 extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 

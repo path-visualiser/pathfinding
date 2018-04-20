@@ -30,7 +30,7 @@ warthog::blocklist::init(uint32_t num_nodes)
 
 warthog::blocklist::~blocklist()
 {
-	clear();
+	reclaim();
 	delete pool_;
 	delete blockspool_;
     delete blocks_;
@@ -97,7 +97,7 @@ warthog::blocklist::get_ptr(uint32_t node_id)
 }
 
 void
-warthog::blocklist::clear()
+warthog::blocklist::reclaim()
 {
 	for(uint32_t i=0; i < num_blocks_; i++)
 	{

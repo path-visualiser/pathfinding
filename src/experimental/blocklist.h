@@ -56,7 +56,7 @@ class blocklist
 
         // reclaim all allocated memory
 		void
-		clear();
+		reclaim();
 
 		uint32_t
 		mem();
