@@ -45,13 +45,15 @@ class flexible_astar : public warthog::search
 			open_ = new warthog::pqueue(1024, true);
             cost_cutoff_ = warthog::INF;
             exp_cutoff_ = warthog::INF;
-            on_relax_fn_ = [](warthog::search_node*){ };
-            on_generate_fn_ = 
-                [](warthog::search_node* succ, 
-                   warthog::search_node* from, 
-                   double edge_cost,
-                   uint32_t edge_num){ };
-            on_expand_fn_ = [](warthog::search_node*){ };
+            //on_relax_fn_ = [](warthog::search_node*){ };
+            on_relax_fn_ = 0;
+            on_generate_fn_ = 0;
+//                [](warthog::search_node* succ, 
+//                   warthog::search_node* from, 
+//                   double edge_cost,
+//                   uint32_t edge_num){ };
+//            on_expand_fn_ = [](warthog::search_node*){ };
+            on_expand_fn_ = 0;
 		}
 
 		virtual ~flexible_astar()
@@ -142,7 +144,7 @@ class flexible_astar : public warthog::search
         void
         apply_on_relax(std::function<void(warthog::search_node*)>& fn)
         {
-            on_relax_fn_ = fn;
+            on_relax_fn_ = &fn;
         }
 
         // apply @param fn every time a node is generated (equiv, reached)
@@ -154,7 +156,7 @@ class flexible_astar : public warthog::search
                     double edge_cost, 
                     uint32_t edge_id)>& fn)
         {
-            on_generate_fn_ = fn;
+            on_generate_fn_ = &fn;
         }
 
         // apply @param fn when a node is popped off the open list for 
@@ -162,7 +164,7 @@ class flexible_astar : public warthog::search
         void
         apply_on_expand(std::function<void(warthog::search_node*)>& fn)
         {
-            on_expand_fn_ = fn;
+            on_expand_fn_ = &fn;
         }
 
         // set a cost-cutoff to run a bounded-cost A* search.
@@ -210,17 +212,17 @@ class flexible_astar : public warthog::search
         uint32_t exp_cutoff_;
 
         // callback for when a node is relaxed
-        std::function<void(warthog::search_node*)> on_relax_fn_;
+        std::function<void(warthog::search_node*)>* on_relax_fn_;
 
         // callback for when a node is reached / generated
         std::function<void(
                 warthog::search_node*, 
                 warthog::search_node*, 
                 double edge_cost, 
-                uint32_t edge_id)> on_generate_fn_;
+                uint32_t edge_id)>* on_generate_fn_;
 
         // callback for when a node is expanded
-        std::function<void(warthog::search_node*)> on_expand_fn_;
+        std::function<void(warthog::search_node*)>* on_expand_fn_;
 
 		// no copy ctor
 		flexible_astar(const flexible_astar& other) { } 
@@ -241,7 +243,7 @@ class flexible_astar : public warthog::search
             if(pi_.start_id_ == warthog::INF) { return 0; }
             start = expander_->generate_start_node(&pi_);
             pi_.start_id_ = start->get_id();
-            on_generate_fn_(start, 0, 0, UINT32_MAX);
+            if(on_generate_fn_) { (*on_generate_fn_)(start, 0, 0, UINT32_MAX); }
 
 			warthog::search_node* target = 0;
             if(pi_.target_id_ != warthog::INF)
@@ -309,7 +311,7 @@ class flexible_astar : public warthog::search
 				expander_->expand(current, &pi_);
 
 				sol.nodes_expanded_++;
-                on_expand_fn_(current); 
+                if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
 				warthog::search_node* n = 0;
 				double cost_to_n = warthog::INF;
@@ -319,7 +321,8 @@ class flexible_astar : public warthog::search
 					   	expander_->next(n, cost_to_n))
 				{
                     sol.nodes_touched_++;
-                    on_generate_fn_(n, current, cost_to_n, edge_id++);
+                    if(on_generate_fn_) 
+                    { (*on_generate_fn_)(n, current, cost_to_n, edge_id++); }
                     
                     // add new nodes to the fringe
                     if(n->get_search_id() != current->get_search_id())
@@ -344,7 +347,7 @@ class flexible_astar : public warthog::search
                         }
                         #endif
 
-                        on_relax_fn_(n);
+                        if(on_relax_fn_) { (*on_relax_fn_)(n); }
                         continue;
                     }
 
@@ -387,7 +390,7 @@ class flexible_astar : public warthog::search
 								std::cerr << std::endl;
 							}
 							#endif
-                            on_relax_fn_(n);
+                            if(on_relax_fn_) { (*on_relax_fn_)(n); }
 						}
 						else
 						{

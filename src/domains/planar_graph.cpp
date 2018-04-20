@@ -103,6 +103,7 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     
     uint32_t num_nodes_dimacs = dimacs.get_num_nodes();
     resize(num_nodes_dimacs);
+    ext_id_map_.reserve(num_nodes_dimacs*0.8);
 
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
             it != dimacs.nodes_end(); it++)
@@ -351,18 +352,25 @@ warthog::graph::planar_graph::resize(uint32_t new_cap)
 uint32_t
 warthog::graph::planar_graph::add_node(int32_t x, int32_t y, uint32_t ext_id)
 {
+    // check if a node with the same external id already exists; if so 
+    // return the id of the existing node. otherwise, add a new node
+    uint32_t graph_id = to_graph_id(ext_id);
+    if(graph_id != warthog::INF) { return graph_id; } 
+
+    // add a new node
     if(nodes_cap_ == nodes_sz_)
     {
         resize(nodes_cap_ == 0 ? 1 : (nodes_cap_*2));
     }
-    uint32_t index = nodes_sz_;
+    graph_id = nodes_sz_;
     nodes_sz_++;
-    xy_[index*2] = x;
-    xy_[index*2+1] = y;
+    xy_[graph_id*2] = x;
+    xy_[graph_id*2+1] = y;
     
     if(ext_id != warthog::INF)
     {
         id_map_.push_back(ext_id);
+        ext_id_map_.insert(std::pair<uint32_t, uint32_t>(ext_id, graph_id));
     }
-    return index;
+    return graph_id;
 }

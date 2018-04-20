@@ -139,12 +139,17 @@ class planar_graph
             return 0;
         }
 
-        // Add a new node into the graph
+        // Add a new node into the graph. If a node already exists in the 
+        // graph with the same external id as @param ext_id then then nothing 
+        // is added.
+        // NB: a new node is always added if @param ext_id is equal to the 
+        // value warthog::INF
         //
         // @param x: the x-coordinate of the new node
         // @param y: the y-coordinate of the new node
         // @param ext_id: an (optional) external id for this node
-        // @return: the internal graph id of the new node
+        // @return: the internal graph id of the new node or the id of the
+        // existing node whose graph id is equal to @param ext_id
         uint32_t
         add_node(int32_t x, int32_t y, uint32_t ext_id = warthog::INF);
 
@@ -188,22 +193,28 @@ class planar_graph
         // was not created from an input file) the function returns
         // the value warthog::INF
         inline uint32_t 
-        to_graph_id(uint32_t ex_id) 
+        to_graph_id(uint32_t ext_id) 
         { 
             if(id_map_.size() == 0) { return warthog::INF; }
 
-            uint32_t min = 0;
-            uint32_t max = id_map_.size()-1;
-            uint32_t pos = max >> 1;
-            while(min <= max)
-            {
-                uint32_t current = id_map_.at(pos);
-                if(current == ex_id) { return pos; }
-                if(ex_id < current) { max = pos-1; }
-                else { min = pos+1; }
-                pos = (max+min) >> 1;
-            } 
-            return warthog::INF;
+        //    uint32_t min = 0;
+        //    uint32_t max = id_map_.size()-1;
+        //    uint32_t pos = max >> 1;
+        //    while(min <= max)
+        //    {
+        //        uint32_t current = id_map_.at(pos);
+        //        if(current == ex_id) { return pos; }
+        //        if(ex_id < current) { max = pos-1; }
+        //        else { min = pos+1; }
+        //        pos = (max+min) >> 1;
+        //    } 
+        //    return warthog::INF;
+
+            std::unordered_map<uint32_t, uint32_t>::iterator it 
+                    = ext_id_map_.find(ext_id);
+
+            if(it == ext_id_map_.end()) { return warthog::INF; }
+            return (*it).second;
         }
 
         // convert an internal node id (i.e. as used by the current graph
@@ -224,7 +235,11 @@ class planar_graph
 
     private:
         std::string filename_;
-        std::vector<uint32_t> id_map_;
+
+        // these containers serve to map from external graph ids to 
+        // internal graph ids
+        std::vector<uint32_t> id_map_; 
+        std::unordered_map<uint32_t, uint32_t> ext_id_map_; 
         
         // the set of nodes that comprise the graph
         uint32_t nodes_sz_;
@@ -241,6 +256,7 @@ class planar_graph
 
         bool
         grid2graph(warthog::gridmap*, bool);
+
 
 };
 
