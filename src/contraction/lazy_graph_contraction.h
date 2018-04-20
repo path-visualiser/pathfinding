@@ -35,6 +35,7 @@
 #include "contraction.h"
 #include "graph_contraction.h"
 #include "heap.h"
+#include "solution.h"
 
 #include <cstdint>
 #include <unordered_map>
@@ -110,6 +111,11 @@ class lazy_graph_contraction : public graph_contraction
         warthog::heap<ch_pair>* heap_;
         warthog::heap_node<ch_pair>* hn_pool_;
         std::vector<uint32_t> order_; // node ids, as retured by ::next
+
+        // these objects get recycled across all witness searches
+        warthog::solution sol_;
+        warthog::problem_instance pi_;
+        std::vector<uint32_t> updateset_;
 
         // a variety of heuristics are used to order nodes
         struct node_order_terms

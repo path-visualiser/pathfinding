@@ -75,7 +75,10 @@ warthog::ch::lazy_graph_contraction::preliminaries()
     for(uint32_t i = 0;
         i < get_graph()->get_num_nodes(); i++)
     {
-        std::cerr << i << " / " << get_graph()->get_num_nodes() << "\r";
+        if((i % 1000) == 0)
+        {
+            std::cerr << i << " / " << get_graph()->get_num_nodes() << "\r";
+        }
         terms_[i].ed_ = edge_difference(i,true); // contraction value
         hn_pool_[i] = heap_node<ch_pair>(ch_pair(i, terms_[i].ed_));
         heap_->push(&hn_pool_[i]);
@@ -136,7 +139,7 @@ warthog::ch::lazy_graph_contraction::next()
     }
     
     warthog::graph::node* bn = get_graph()->get_node(best_id);
-    std::set<uint32_t> updateset;
+    updateset_.clear();
 
     // figure out which un-contracted nodes are adjacent to the best node
     for(warthog::graph::edge_iter it = bn->outgoing_begin();
@@ -144,7 +147,7 @@ warthog::ch::lazy_graph_contraction::next()
     {
         uint32_t neighbour_id = (*it).node_id_;
         if(filter_->get_flag(neighbour_id)) { continue; }
-        updateset.insert(neighbour_id);
+        updateset_.push_back(neighbour_id);
     }
 
     for(warthog::graph::edge_iter it = bn->incoming_begin();
@@ -152,14 +155,13 @@ warthog::ch::lazy_graph_contraction::next()
     {
         uint32_t neighbour_id = (*it).node_id_;
         if(filter_->get_flag(neighbour_id)) { continue; }
-        updateset.insert(neighbour_id);
+        updateset_.push_back(neighbour_id);
     }
 
     // update un-contracted neighbour priority terms
-    for(std::set<uint32_t>::iterator it = updateset.begin();
-            it != updateset.end(); it++)
+    for(uint32_t i = 0; i < updateset_.size(); i++)
     {
-        uint32_t neighbour_id = *(it);
+        uint32_t neighbour_id = updateset_.at(i);
         node_order_terms& nb_not = terms_[neighbour_id];
 
         // re-compute the edge difference estimate
@@ -185,7 +187,7 @@ warthog::ch::lazy_graph_contraction::next()
     num_expansions = total_expansions_ - num_expansions;
 
     std::cerr << 
-        "; neis: " << updateset.size() << 
+        "; neis: " << updateset_.size() << 
         "; num_witness: " << (total_searches_-num_searches) << 
         "; num_lazy: " << (total_lazy_updates_-num_lazy) << 
         "; num_exps: " << num_expansions << 
@@ -215,15 +217,20 @@ warthog::ch::lazy_graph_contraction::witness_search(
 
     // need to specify start + target ids using the identifier
     // that appears in the input file
-    uint32_t ext_from_id = g->to_external_id(from_id);
-    uint32_t ext_to_id = g->to_external_id(to_id);
+    pi_.start_id_ = g->to_external_id(from_id);
+    pi_.target_id_ = g->to_external_id(to_id);
+    sol_.sum_of_edge_costs_ = warthog::INF;
+    sol_.time_elapsed_micro_ = 0;
+    sol_.nodes_expanded_ = 0; 
+    sol_.nodes_inserted_ = 0; 
+    sol_.nodes_updated_ = 0;
+    sol_.nodes_touched_ = 0;
 
-    warthog::problem_instance pi(ext_from_id, ext_to_id);
-    warthog::solution sol;
-    alg_->get_path(pi, sol);
-    total_expansions_ += sol.nodes_expanded_;
+    // gogogo
+    alg_->get_distance(pi_, sol_);
+    total_expansions_ += sol_.nodes_expanded_;
     total_searches_++;
-    return sol.sum_of_edge_costs_;
+    return sol_.sum_of_edge_costs_;
 }
 
 // calculate the net number of edges that result from contracting
@@ -239,28 +246,27 @@ warthog::ch::lazy_graph_contraction::edge_difference(uint32_t node_id, bool esti
 {
     ws_max_expansions_ = (estimate ? 1000 : warthog::INF);
     int32_t eadd = 0;
+    int32_t edel = 0;
     warthog::graph::node* n = get_graph()->get_node(node_id);
 
-    std::set<uint64_t> deleted;
     filter_->set_flag_true(node_id);
-    for(int i = 0; i < n->out_degree(); i++)
+    for(int i = 0; i < n->in_degree(); i++)
     {
-        warthog::graph::edge& out = *(n->outgoing_begin() + i);
+        warthog::graph::edge& in = *(n->incoming_begin() + i);
 
         // skip contracted neighbours
-        if(filter_->get_flag(out.node_id_)) { continue; }
+        if(filter_->get_flag(in.node_id_)) { continue; }
 
-        for(int j = 0; j < n->in_degree(); j++)
+        for(int j = 0; j < n->out_degree(); j++)
         {
-            warthog::graph::edge& in = *(n->incoming_begin() + j);
+            warthog::graph::edge& out = *(n->outgoing_begin() + j);
 
             // skip contracted neighbours
-            if(filter_->get_flag(in.node_id_)) { continue; }
+            if(filter_->get_flag(out.node_id_)) { continue; }
 
             // skip reflexive arcs
             if(out.node_id_ == in.node_id_) { continue; }
 
-            deleted.insert((uint64_t)&in);
             double via_len = in.wt_ + out.wt_;
             double witness_len  =
                     witness_search(in.node_id_, out.node_id_, via_len);
@@ -272,10 +278,19 @@ warthog::ch::lazy_graph_contraction::edge_difference(uint32_t node_id, bool esti
                 eadd++;
             }
         }
-        deleted.insert((uint64_t)&out);
+        edel++; // count all incoming edges deleted by contracting node n
     }
+
+    // count all outgoing edges deleted by contracting node n 
+    for(int j = 0; j < n->out_degree(); j++)
+    {
+        warthog::graph::edge& out = *(n->outgoing_begin() + j);
+        if(filter_->get_flag(out.node_id_)) { continue; }
+        edel++;
+    }
+        
     filter_->set_flag_false(node_id);
-    int32_t retval = eadd - deleted.size();
+    int32_t retval = eadd - edel;
     return retval;
 }
 

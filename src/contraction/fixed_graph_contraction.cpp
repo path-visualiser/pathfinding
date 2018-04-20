@@ -86,7 +86,7 @@ warthog::ch::fixed_graph_contraction::witness_search(
     alg_->set_cost_cutoff(via_len);
     warthog::problem_instance pi(ext_from_id, ext_to_id);
     warthog::solution sol;
-    alg_->get_path(pi, sol);
+    alg_->get_distance(pi, sol);
     total_expansions_ += sol.nodes_expanded_;
     total_searches_++;
     return sol.sum_of_edge_costs_;

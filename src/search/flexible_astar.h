@@ -61,6 +61,17 @@ class flexible_astar : public warthog::search
 		}
 
         void
+		get_distance(
+                warthog::problem_instance& instance, warthog::solution& sol)
+        {
+
+            assert(
+                sol.path_.empty() && sol.sum_of_edge_costs_ == warthog::INF);
+            pi_ = instance;
+			search(sol);
+        }
+
+        void
 		get_path(warthog::problem_instance& instance, warthog::solution& sol)
 		{
             assert(
