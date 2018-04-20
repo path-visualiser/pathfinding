@@ -45,14 +45,8 @@ class flexible_astar : public warthog::search
 			open_ = new warthog::pqueue(1024, true);
             cost_cutoff_ = warthog::INF;
             exp_cutoff_ = warthog::INF;
-            //on_relax_fn_ = [](warthog::search_node*){ };
             on_relax_fn_ = 0;
             on_generate_fn_ = 0;
-//                [](warthog::search_node* succ, 
-//                   warthog::search_node* from, 
-//                   double edge_cost,
-//                   uint32_t edge_num){ };
-//            on_expand_fn_ = [](warthog::search_node*){ };
             on_expand_fn_ = 0;
 		}
 

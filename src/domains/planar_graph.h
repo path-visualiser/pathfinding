@@ -197,19 +197,6 @@ class planar_graph
         { 
             if(id_map_.size() == 0) { return warthog::INF; }
 
-        //    uint32_t min = 0;
-        //    uint32_t max = id_map_.size()-1;
-        //    uint32_t pos = max >> 1;
-        //    while(min <= max)
-        //    {
-        //        uint32_t current = id_map_.at(pos);
-        //        if(current == ex_id) { return pos; }
-        //        if(ex_id < current) { max = pos-1; }
-        //        else { min = pos+1; }
-        //        pos = (max+min) >> 1;
-        //    } 
-        //    return warthog::INF;
-
             std::unordered_map<uint32_t, uint32_t>::iterator it 
                     = ext_id_map_.find(ext_id);
 
