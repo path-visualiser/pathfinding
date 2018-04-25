@@ -16,7 +16,7 @@ CFLAGS = -std=c++11 -pedantic -pthread -Wall -Wno-strict-aliasing \
 			-Wno-constant-logical-operand -Werror 
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
-PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG
+PROFILE_CFLAGS = $(DEV_CFLAGS) -DNDEBUG 
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
   CC = g++
@@ -30,15 +30,15 @@ endif
 
 
 .PHONY: all
-all: dev
+all: fast
 
 .PHONY: fast
 fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
 fast: main extras__
 
-.PHONY: dev
+.PHONY: dev 
 dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
-dev: main 
+dev: main extras__
 
 .PHONY: profile
 profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES) 

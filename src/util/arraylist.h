@@ -25,7 +25,7 @@ namespace warthog
 
 			arraylist(size_t size=100) : max_size_(size), terminator_(0)
 			{
-				collection_ = new T[max_size_];	
+				collection_ = new uint8_t[max_size_*sizeof(T)];	
 				next_ = 0;
 			}
 
@@ -37,13 +37,13 @@ namespace warthog
 			inline T
 			at(uint32_t index)
 			{
-				return collection_[index];
+				return ((T*)collection_)[index];
 			}
 
 			inline T
 			operator[](uint32_t index)
 			{
-				return collection_[index];
+				return ((T*)collection_)[index];
 			}
 
 			inline void
@@ -51,13 +51,13 @@ namespace warthog
 			{
 				if(next_ < max_size_)
 				{
-					collection_[next_] = element;	
+					((T*)collection_)[next_] = element;	
 					next_++;
 				}
 				else
 				{
 					grow(size()*2);
-					collection_[next_] = element;
+					((T*)collection_)[next_] = element;
 					next_++;
 				}
 			}
@@ -83,12 +83,18 @@ namespace warthog
 				return next_;
 			}
 
+            inline size_t
+            capacity()
+            {
+                return max_size_;
+            }
+
 			size_t
 			mem() { return sizeof(T)*max_size_;}
 
 
 		private:
-			T* collection_;
+			uint8_t* collection_;
 			size_t next_;
 			uint32_t max_size_;
 			const typename warthog::arraylist<T>::iterator terminator_;
@@ -98,10 +104,10 @@ namespace warthog
 			{
 				if(newsize <= max_size_) { return; }
 
-				T* bigcollection = new T[newsize];
+				uint8_t* bigcollection = new uint8_t[newsize*sizeof(T)];
 				for(size_t i = 0; i < max_size_; i++)
 				{
-					bigcollection[i] = collection_[i];
+					((T*)bigcollection)[i] = ((T*)collection_)[i];
 				}
 				delete [] collection_;
 				collection_ = bigcollection;

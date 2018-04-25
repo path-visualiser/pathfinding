@@ -12,6 +12,7 @@
 // @created: 2016-01-26
 //
 
+#include "arraylist.h"
 #include "blocklist.h"
 #include "search_node.h"
 #include "problem_instance.h"
@@ -73,11 +74,11 @@ class expansion_policy
             n(ret, cost);
 		}
 
-        inline warthog::search_node* 
-        last()
-        {
-            return (neis_->back()).node_;
-        }
+        //inline warthog::search_node* 
+        //last()
+        //{
+        //    return (neis_->back()).node_;
+        //}
 
         inline uint32_t 
         get_num_neighbours() { return neis_->size(); } 
@@ -176,7 +177,8 @@ class expansion_policy
         };
 
         warthog::blocklist* nodepool_;
-        std::vector<neighbour_record>* neis_;
+        //std::vector<neighbour_record>* neis_;
+        arraylist<neighbour_record>* neis_;
         uint32_t current_;
         uint32_t nodes_pool_size_;
 };

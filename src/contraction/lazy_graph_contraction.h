@@ -80,33 +80,42 @@ class ch_pair
 bool
 operator<(const ch_pair& first, const ch_pair& second);
 
-class lazy_graph_contraction : public graph_contraction
+class lazy_graph_contraction 
 {
     public:
         lazy_graph_contraction(warthog::graph::planar_graph* g);
+
         virtual ~lazy_graph_contraction();
 
-        virtual size_t
-        mem();
+        // contract the graph lazily
+        //
+        // @param c_pct: limit contraction to k% of nodes with 
+        // highest priority
+        // @param verify_priorities: when true, the priority of each top
+        // candidate node is recomputed. if the new value is not better than
+        // the second best node on the contraction queue the node is requeued. 
+        // process repeats until the top node priority is verified.
+        // the hope is that this process yields a better ordering
+        void
+        contract(bool verify_priorities=false, uint32_t c_pct=100);
 
-        // the order of contraction according to ::next
+        // @return the order in which nodes were contracted
         void  
         get_order(std::vector<uint32_t>& order);
 
-    protected:
-        virtual void
-        preliminaries();
+        void
+        set_verbose(bool verbose) { this->verbose_ = verbose; }
 
-        virtual void
-        postliminaries();
+        bool 
+        get_verbose() { return verbose_; } 
 
-        virtual uint32_t
-        next();
-
-        virtual double
-        witness_search(uint32_t from_id, uint32_t to_id, double via_len);
+        size_t
+        mem();
 
     private:
+        warthog::graph::planar_graph* g_;
+        bool verbose_;
+
         // node order stuff
         warthog::heap<ch_pair>* heap_;
         warthog::heap_node<ch_pair>* hn_pool_;
@@ -115,24 +124,56 @@ class lazy_graph_contraction : public graph_contraction
         // these objects get recycled across all witness searches
         warthog::solution sol_;
         warthog::problem_instance pi_;
-        std::vector<uint32_t> updateset_;
+        std::vector<uint32_t> uc_neis_;
+        uint32_t uc_neis_incoming_begin_;
 
-        // a variety of heuristics are used to order nodes
-        struct node_order_terms
+        // a variety of "node importance values" are computed for each node
+        // in order to determine the order of contraction
+        struct niv_metrics
         {
-            node_order_terms()
+            niv_metrics()
             {
+                eadd_ = 0;
+                edel_ = 0;
                 depth_ = 0; 
                 nc_ = 0;
-                hop_count_ = 0;
+                hops_added_ = 0;
+                hops_removed_ = 0;
+                level_ = 0;
+
             }
 
-            int32_t ed_; // edge difference 
+            niv_metrics&
+            operator=(niv_metrics& other)
+            {
+                eadd_ = other.eadd_;
+                edel_ = other.edel_;
+                depth_ = other.depth_;
+                nc_ = other.nc_;
+                hops_added_ = other.hops_added_;
+                hops_removed_ = other.hops_removed_;
+                level_ = other.level_;
+                return *this;
+            }
+
+            void
+            print(std::ostream& out)
+            {
+                out << " eadd: " << eadd_ 
+                    << " edel: " << edel_
+                    << " hadd: " << hops_added_
+                    << " hdel: " << hops_removed_;
+            }
+
+            uint32_t eadd_; // edges added by contracting this node
+            uint32_t edel_; // edges deleted by contracting this node
             uint32_t depth_; // max search space depth
             uint32_t nc_; // neis contracted (aka "deleted neighbours")
-            uint32_t hop_count_;  // num edges being bypassed
+            uint32_t hops_added_;  // #hops added by contracting this node
+            uint32_t hops_removed_;  // #hops deleted by contracting this node
+            uint32_t level_;  // ch level of the node
         };
-        node_order_terms* terms_;
+        niv_metrics* terms_;
 
         // witness search stuff
         uint32_t ws_max_expansions_; 
@@ -147,14 +188,24 @@ class lazy_graph_contraction : public graph_contraction
         uint64_t total_expansions_;
         uint64_t total_searches_;
         uint64_t total_lazy_updates_;
-        
-        
-        int32_t 
-        edge_difference(uint32_t node_id, bool estimate);
+
+        void
+        preliminaries();
+
+        void
+        postliminaries();
+
+        uint32_t
+        next(bool verify_priorities, uint32_t c_pct);
+
+        double
+        witness_search(uint32_t from_id, uint32_t to_id, double via_len);
 
         int32_t
-        compute_contraction_value(uint32_t node_id);
+        compute_contraction_priority(niv_metrics& niv);
 
+        niv_metrics
+        contract_node(uint32_t node_id, bool metrics_only);
 };
 
 }

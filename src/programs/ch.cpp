@@ -10,6 +10,7 @@
 #include <string>
 
 int verbose=false;
+int verify=false;
 warthog::util::cfg cfg;
 
 void
@@ -22,7 +23,8 @@ help()
 	<< "\t--order [ fixed | lazy ]\n"
     << "\t--partial [1-100] (optional; percentage of nodes to contract)\n"
     << "\t--input [gr file] [co file] (IN THIS ORDER!!)\n"
-	<< "\t--verbose (optional)\n";
+	<< "\t--verbose (optional)\n"
+	<< "\t--verify (verify lazy node priorities before contraction)\n";
 }
 
 void 
@@ -108,9 +110,8 @@ contract_graph()
             return;
         }
         warthog::ch::lazy_graph_contraction contractor(&g);
-        contractor.set_partial_contraction_percentage(pct_nodes_to_contract);
         contractor.set_verbose(verbose);
-        contractor.contract();
+        contractor.contract(verify, pct_nodes_to_contract);
 
 
         // save the result
@@ -135,7 +136,9 @@ contract_graph()
         contractor.get_order(order);
         std::string orderfile = grfile + ".ooc";
         std::cerr << "saving order to file " << orderfile << std::endl;
+
         warthog::ch::write_node_order(orderfile.c_str(), order);
+        //warthog::ch::write_node_order(std::cout, order);
 
     }
     else
@@ -154,6 +157,7 @@ int main(int argc, char** argv)
 	warthog::util::param valid_args[] = 
 	{
 		{"verbose", no_argument, &verbose, 1},
+		{"verify", no_argument, &verify, 1},
 		{"input",  required_argument, 0, 2},
 		{"order",  required_argument, 0, 3},
 		{"partial",  required_argument, 0, 4}
