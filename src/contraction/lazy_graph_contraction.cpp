@@ -89,7 +89,7 @@ warthog::ch::lazy_graph_contraction::contract(
         uint32_t best_id = next(verify_priorities, c_pct); 
         if(best_id == warthog::INF) { break; }
 
-        contract_node(best_id, false);
+        terms_[best_id] = contract_node(best_id, false);
         update_neis.clear();
         for(auto& i : uc_neis_) { update_neis.push_back(i); }
 
@@ -401,14 +401,14 @@ warthog::ch::lazy_graph_contraction::compute_contraction_priority(
         niv_metrics& niv)
 {  
 //      ** RoutingKit heuristic **
-//		return 1 + 
-//            1000*niv.level_ + 
-//            (1000*niv.eadd_) / niv.edel_ + 
-//            (1000*niv.hops_added_) / niv.hops_removed_;
-//
+		return 1 + 
+            1000*niv.level_ + 
+            (1000*niv.eadd_) / niv.edel_ + 
+            (1000*niv.hops_added_) / niv.hops_removed_;
+
 //        ** GEISBERGER's EDSL heuristic, for use with verify_priority**
-        return
-            (niv.eadd_ - niv.edel_)*190 + 
-            niv.nc_*120 + 
-            niv.depth_;
+//        return
+//            (niv.eadd_ - niv.edel_)*190 + 
+//            niv.nc_*120 + 
+//            niv.depth_;
 }

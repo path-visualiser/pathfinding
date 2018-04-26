@@ -143,7 +143,7 @@ class lazy_graph_contraction
             }
 
             niv_metrics&
-            operator=(niv_metrics& other)
+            operator=(const niv_metrics& other)
             {
                 eadd_ = other.eadd_;
                 edel_ = other.edel_;
