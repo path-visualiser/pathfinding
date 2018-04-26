@@ -266,17 +266,13 @@ warthog::ch::lazy_graph_contraction::witness_search(
 
     // need to specify start + target ids using the identifier
     // that appears in the input file
-    pi_.start_id_ = g->to_external_id(from_id);
-    pi_.target_id_ = g->to_external_id(to_id);
-    sol_.sum_of_edge_costs_ = warthog::INF;
-    sol_.time_elapsed_micro_ = 0;
-    sol_.nodes_expanded_ = 0; 
-    sol_.nodes_inserted_ = 0; 
-    sol_.nodes_updated_ = 0;
-    sol_.nodes_touched_ = 0;
+    warthog::problem_instance pi(
+            g->to_external_id(from_id), 
+            g->to_external_id(to_id));
+    sol_.reset();
 
     // gogogo
-    alg_->get_distance(pi_, sol_);
+    alg_->get_distance(pi, sol_);
     total_expansions_ += sol_.nodes_expanded_;
     total_searches_++;
     return sol_.sum_of_edge_costs_;
@@ -345,6 +341,8 @@ warthog::ch::lazy_graph_contraction::contract_node(
                 niv.hops_added_ = e_in.label_ + e_out.label_ + 1;
                 if(!metrics_only)
                 {
+                    if(e_in.node_id_ == 1) 
+                    { std::cerr << "master"; }
                     warthog::graph::node* tail = g_->get_node(e_in.node_id_);
                     tail->add_outgoing(
                             warthog::graph::edge(

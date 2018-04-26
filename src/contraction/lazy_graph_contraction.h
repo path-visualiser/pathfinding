@@ -123,7 +123,6 @@ class lazy_graph_contraction
 
         // these objects get recycled across all witness searches
         warthog::solution sol_;
-        warthog::problem_instance pi_;
         std::vector<uint32_t> uc_neis_;
         uint32_t uc_neis_incoming_begin_;
 
