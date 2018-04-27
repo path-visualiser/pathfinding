@@ -178,7 +178,8 @@ class lazy_graph_contraction
         uint32_t ws_max_expansions_; 
         warthog::zero_heuristic* heuristic_;
         warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
-        warthog::apriori_filter* filter_;
+        warthog::apriori_filter* c_filter_; // track contractions 
+        warthog::apriori_filter* u_filter_; // track updates
         warthog::flexible_astar<
             warthog::zero_heuristic,
             warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
