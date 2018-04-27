@@ -6,6 +6,7 @@ warthog::apriori_filter::apriori_filter(uint32_t num_elements)
 {
     filter_sz_ = (num_elements >> warthog::LOG2_DBWORD_BITS)+1;
     filter_ = new warthog::dbword[filter_sz_];
+    reset_filter();
 }
 
 warthog::apriori_filter::~apriori_filter()

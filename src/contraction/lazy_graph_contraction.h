@@ -46,7 +46,7 @@ namespace warthog
 {
 
 class apriori_filter;
-class euclidean_heuristic;
+class zero_heuristic;
 
 template<class FILTER>
 class graph_expansion_policy;
@@ -123,7 +123,7 @@ class lazy_graph_contraction
 
         // these objects get recycled across all witness searches
         warthog::solution sol_;
-        std::vector<uint32_t> uc_neis_;
+        std::vector<warthog::graph::edge> uc_neis_;
         uint32_t uc_neis_incoming_begin_;
 
         // a variety of "node importance values" are computed for each node
@@ -176,11 +176,11 @@ class lazy_graph_contraction
 
         // witness search stuff
         uint32_t ws_max_expansions_; 
-        warthog::euclidean_heuristic* heuristic_;
+        warthog::zero_heuristic* heuristic_;
         warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
         warthog::apriori_filter* filter_;
         warthog::flexible_astar<
-            warthog::euclidean_heuristic,
+            warthog::zero_heuristic,
             warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
 
         // metrics
