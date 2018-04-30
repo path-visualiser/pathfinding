@@ -60,6 +60,8 @@ class bidirectional_search : public warthog::search
             {
                 dijkstra_ = true;
             }
+            cost_cutoff_ = warthog::INF;
+            exp_cutoff_ = warthog::INF;
         }
 
         ~bidirectional_search()
@@ -91,6 +93,34 @@ class bidirectional_search : public warthog::search
             #endif
         }
 
+        void
+        get_distance(warthog::problem_instance& pi, warthog::solution& sol)
+        {
+            pi_ = pi;
+            this->search(sol);
+            if(sol.nodes_expanded_ > exp_cutoff_ ) { std::cerr << "wtf!"; exit(1); }
+            if(best_cost_ != warthog::INF) 
+            { sol.sum_of_edge_costs_ = best_cost_; }
+        }
+        
+        // set a cost-cutoff to run a bounded-cost A* search.
+        // the search terminates when the target is found or the f-cost 
+        // limit is reached.
+        inline void
+        set_cost_cutoff(double cutoff) { cost_cutoff_ = cutoff; }
+
+        inline double
+        get_cost_cutoff() { return cost_cutoff_; }
+
+        // set a cutoff on the maximum number of node expansions.
+        // the search terminates when the target is found or when
+        // the limit is reached
+        inline void
+        set_max_expansions_cutoff(uint32_t cutoff) { exp_cutoff_ = cutoff; }
+
+        inline uint32_t 
+        get_max_expansions_cutoff() { return exp_cutoff_; }  
+
         size_t
         mem()
         {
@@ -109,6 +139,10 @@ class bidirectional_search : public warthog::search
         H* heuristic_;
         bool dijkstra_;
         bool forward_next_;
+
+        // early termination limits
+        double cost_cutoff_; 
+        uint32_t exp_cutoff_;
 
         // v is the section of the path in the forward
         // direction and w is the section of the path
@@ -234,6 +268,9 @@ class bidirectional_search : public warthog::search
                 // on directed planar graphs with asymmetric costs
                 uint32_t best_bound = std::min( 
                     ftop->get_f(), btop->get_f());
+
+                if(best_bound > cost_cutoff_) { break; } 
+                if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
 
                 // terminate if we cannot improve the best solution so far.
                 // NB: bidirectional dijkstra stops when the two search 
