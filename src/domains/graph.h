@@ -136,22 +136,21 @@ class node
         operator=(const warthog::graph::node& other)
         {
             in_deg_ = other.in_deg_;
-            in_cap_ = other.in_cap_;
-            delete [] incoming_;
-            incoming_ = new edge[other.in_cap_];
-            for(ECAP_T i = 0; i < other.in_deg_; i++)
-            {
-                incoming_[i] = other.incoming_[i];
-            }
-
+            in_cap_ = other.in_deg_;
             out_deg_ = other.out_deg_;
-            out_cap_ = other.out_cap_;
+            out_cap_ = other.out_deg_;
+
+            delete [] incoming_;
             delete [] outgoing_;
+            incoming_ = new edge[other.in_cap_];
             outgoing_ = new edge[other.out_cap_];
+
+            for(ECAP_T i = 0; i < other.in_deg_; i++)
+            { incoming_[i] = other.incoming_[i]; }
+
             for(ECAP_T i = 0; i < other.out_deg_; i++)
-            {
-                outgoing_[i] = other.outgoing_[i];
-            }
+            { outgoing_[i] = other.outgoing_[i]; }
+
             return *this;
         }
 
@@ -275,6 +274,37 @@ class node
                 }
             }
             return outgoing_end();
+        }
+
+        inline size_t
+        in_capacity() { return in_cap_; }
+
+        inline size_t
+        out_capacity() { return out_cap_; }
+
+        // resize the containers that store incoming and outgoing edges
+        void
+        edge_capacity(uint32_t new_in_cap, uint32_t new_out_cap)
+        {
+            increase_capacity(new_in_cap, in_cap_, incoming_);
+            increase_capacity(new_out_cap, out_cap_, outgoing_);
+        }
+
+        // EXPERIMENTAL; DO NOT USE
+        inline void
+        relocate(edge* tmp_in, edge* tmp_out)
+        {
+            for(uint32_t i = 0; i < in_deg_; i++)
+            { tmp_in[i] = incoming_[i]; }
+            for(uint32_t i = 0; i < out_deg_; i++)
+            { tmp_out[i] = outgoing_[i]; }
+
+            delete [] incoming_;
+            delete [] outgoing_; 
+            incoming_ = tmp_in;
+            outgoing_ = tmp_out;
+            out_cap_ = out_deg_;
+            in_cap_ = in_deg_;
         }
 
         inline size_t

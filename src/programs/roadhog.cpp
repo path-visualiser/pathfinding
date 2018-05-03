@@ -259,15 +259,7 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
     warthog::simple_graph_expansion_policy fexp(&g);
-
-    warthog::graph::planar_graph backward_g;
-    if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
-    {
-        std::cerr << "err; could not load gr or co input files " 
-                  << "(one or both)\n";
-        return;
-    }
-    warthog::simple_graph_expansion_policy bexp(&backward_g);
+    warthog::simple_graph_expansion_policy bexp(&g);
 
     warthog::zero_heuristic h;
     warthog::bidirectional_search<warthog::zero_heuristic>

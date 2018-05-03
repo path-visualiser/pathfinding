@@ -112,6 +112,22 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
     }
     if(verbose_) { std::cerr << "nodes, converted" << std::endl; }
 
+    // preallocate memory for edges
+//    std::vector<uint32_t> in_deg(dimacs.get_num_nodes(), 0);
+//    std::vector<uint32_t> out_deg(dimacs.get_num_nodes(), 0);
+//    for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
+//            it != dimacs.edges_end(); it++)
+//    {
+//        in_deg[(*it).head_id_]++;
+//        out_deg[(*it).tail_id_]++;
+//    }
+//    for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
+//            it != dimacs.nodes_end(); it++)
+//    {
+//        uint32_t nid = it - dimacs.nodes_begin();
+//        nodes_[nid].edge_capacity(in_deg[nid], out_deg[nid]);
+//    }
+
     // convert edges to graph format
     warthog::euclidean_heuristic h(0);
     for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
@@ -183,8 +199,10 @@ warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_fi
                 << (it - dimacs.edges_begin()) / 1000;
         }
     }
-
     if(verbose_) { std::cout << "edges, converted" << std::endl; }
+
+    std::cerr << "edge memory fragmentation: (1=none): " 
+        << this->edge_mem_frag() << std::endl;
     return true;
 }
 

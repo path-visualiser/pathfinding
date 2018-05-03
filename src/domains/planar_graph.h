@@ -86,6 +86,7 @@ class planar_graph
             for(uint32_t i = 0; i < nodes_sz_; i++)
             {
                 num_edges += nodes_[i].out_degree();
+                num_edges += nodes_[i].in_degree();
             }
             return num_edges;
         }
@@ -219,6 +220,58 @@ class planar_graph
             return id_map_.at(in_id);
         }
 
+        // compute the proportion of bytes allocated to edges with respect
+        // to the size of the address space those bytes span.
+        // a value of 1 using this metric indicates that the edges perfectly 
+        // fit into the allocated address space
+        inline double
+        edge_mem_frag()
+        {
+            warthog::graph::edge *min_addr, *max_addr;
+            min_addr = this->get_node(0)->outgoing_begin();
+            max_addr = this->get_node(0)->outgoing_end();
+            for(uint32_t i = 0; i < this->get_num_nodes(); i++)
+            {
+                warthog::graph::node* n = this->get_node(i);
+                warthog::graph::edge* out_begin = n->outgoing_begin();
+                warthog::graph::edge* out_end = n->outgoing_end();
+                warthog::graph::edge* in_begin = n->incoming_begin();
+                warthog::graph::edge* in_end = n->incoming_end();
+
+                min_addr = out_begin ? 
+                            (out_begin < min_addr ? out_begin : min_addr) :
+                            min_addr;
+                max_addr = out_end ? 
+                            (out_end > max_addr ? out_end : max_addr) :
+                            max_addr;
+                min_addr = in_begin ? 
+                            (in_begin < min_addr ? in_begin : min_addr) :
+                            min_addr;
+                max_addr = in_end ? 
+                            (in_end > max_addr ? in_end : max_addr) :
+                            max_addr;
+            }
+            
+            uint64_t mem_lb =
+                this->get_num_edges() * sizeof(warthog::graph::edge);
+            uint64_t mem_actual =
+                (max_addr-min_addr) * sizeof(warthog::graph::edge);
+            return mem_actual / (double)mem_lb;
+        }
+
+        //inline void
+        //shrink_to_fit()
+        //{
+        //    edge* tmp = new edge[get_num_edges()];
+        //    uint32_t e_index = 0;
+        //    for(uint32_t i = 0; i < this->get_num_nodes(); i++)
+        //    { 
+        //        uint32_t in_deg = nodes_[i].in_degree();
+        //        uint32_t out_deg = nodes_[i].out_degree();
+        //        nodes_[i].relocate(&tmp[e_index], &tmp[e_index + in_deg]);
+        //        e_index += (in_deg + out_deg);
+        //    }
+        //}
 
     private:
         std::string filename_;
@@ -232,6 +285,7 @@ class planar_graph
         uint32_t nodes_sz_;
         uint32_t nodes_cap_;
         warthog::graph::node* nodes_;
+
 
         // planar coordinates stored as adjacent pairs (x, then y)
         int32_t* xy_;
