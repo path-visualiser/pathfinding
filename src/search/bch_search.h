@@ -42,14 +42,11 @@ class search_node;
 typedef double (* heuristicFn)
 (uint32_t nodeid, uint32_t targetid);
 
-template<class H>
+template<class H, class E>
 class bch_search : public warthog::search
 {
     public:
-        bch_search(
-                warthog::expansion_policy* fexp,
-                warthog::expansion_policy* bexp,
-                H* heuristic) 
+        bch_search(E* fexp, E* bexp, H* heuristic) 
             : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
             fopen_ = new pqueue(512, true);
@@ -71,7 +68,7 @@ class bch_search : public warthog::search
             delete bopen_;
         }
 
-        void
+        virtual void
         get_path(warthog::problem_instance& pi, warthog::solution& sol)
         {
             pi_ = pi;
@@ -94,7 +91,7 @@ class bch_search : public warthog::search
             #endif
         }
 
-        void
+        virtual void
         get_distance(warthog::problem_instance& pi, warthog::solution& sol)
         {
             pi_ = pi;
@@ -122,13 +119,19 @@ class bch_search : public warthog::search
         inline uint32_t 
         get_max_expansions_cutoff() { return exp_cutoff_; } 
 
-        warthog::search_node* 
-        get_search_node(uint32_t id, int direction=0)
-        {
-            if(direction == 0)
-                return fexpander_->get_ptr(id, pi_.instance_id_);
-            return bexpander_->get_ptr(id, pi_.instance_id_);
-        }
+        //warthog::search_node* 
+        //get_search_node(uint32_t id, int direction=0)
+        //{
+        //    warthog::search_node* ret = 0;
+        //    if(direction == 0) { ret = fexpander_->generate(id); }
+        //    else { ret = bexpander_->generate(id); }
+
+        //    if(ret.get_search_node() == pi_.instance_id_)
+        //    {
+        //        return ret;
+        //    }
+        //    return 0;
+        //}
 
         size_t
         mem()
@@ -143,8 +146,8 @@ class bch_search : public warthog::search
     private:
         warthog::pqueue* fopen_;
         warthog::pqueue* bopen_;
-        warthog::expansion_policy* fexpander_;
-        warthog::expansion_policy* bexpander_;
+        E* fexpander_;
+        E* bexpander_;
         H* heuristic_;
         bool dijkstra_;
 
@@ -337,12 +340,9 @@ class bch_search : public warthog::search
         }
 
         void
-        expand( warthog::search_node* current,
-                warthog::pqueue* open,
-                warthog::expansion_policy* expander,
-                warthog::expansion_policy* reverse_expander, 
-                uint32_t tmp_targetid, 
-                warthog::solution& sol)
+        expand( warthog::search_node* current, warthog::pqueue* open, 
+                E* expander, E* reverse_expander, 
+                uint32_t tmp_targetid, warthog::solution& sol)
         {
             current->set_expanded(true);
             expander->expand(current, &pi_);

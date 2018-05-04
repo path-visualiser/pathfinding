@@ -90,7 +90,7 @@ class chase_search : public warthog::search
             delete bopen_;
         }
 
-        void
+        virtual void
         get_path(warthog::problem_instance& pi, warthog::solution& sol)
         {
             pi_ = pi;
@@ -111,6 +111,17 @@ class chase_search : public warthog::search
                 }
             }
             #endif
+        }
+
+        virtual void
+        get_distance(warthog::problem_instance& pi, warthog::solution& sol)
+        {
+            pi_ = pi;
+            this->search(sol);
+            if(best_cost_ != warthog::INF) 
+            { 
+                sol.sum_of_edge_costs_ = best_cost_;
+            }
         }
             
         size_t

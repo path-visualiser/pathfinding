@@ -29,6 +29,9 @@ class search
         virtual void
         get_path(warthog::problem_instance&, warthog::solution&) = 0;
 
+        virtual void
+        get_distance(warthog::problem_instance&, warthog::solution&) = 0;
+
         virtual size_t
         mem() = 0;
 };

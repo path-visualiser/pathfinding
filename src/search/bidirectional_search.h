@@ -41,14 +41,11 @@ class search_node;
 typedef double (* heuristicFn)
 (uint32_t nodeid, uint32_t targetid);
 
-template<class H>
+template<class H, class E>
 class bidirectional_search : public warthog::search
 {
     public:
-        bidirectional_search(
-                warthog::expansion_policy* fexp,
-                warthog::expansion_policy* bexp,
-                H* heuristic) 
+        bidirectional_search(E* fexp, E* bexp, H* heuristic) 
             : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
             fopen_ = new pqueue(512, true);
@@ -70,7 +67,7 @@ class bidirectional_search : public warthog::search
             delete bopen_;
         }
 
-        void
+        virtual void
         get_path(warthog::problem_instance& pi, warthog::solution& sol)
         {
             pi_ = pi;
@@ -93,7 +90,7 @@ class bidirectional_search : public warthog::search
             #endif
         }
 
-        void
+        virtual void
         get_distance(warthog::problem_instance& pi, warthog::solution& sol)
         {
             pi_ = pi;
@@ -142,8 +139,8 @@ class bidirectional_search : public warthog::search
     private:
         warthog::pqueue* fopen_;
         warthog::pqueue* bopen_;
-        warthog::expansion_policy* fexpander_;
-        warthog::expansion_policy* bexpander_;
+        E* fexpander_;
+        E* bexpander_;
         H* heuristic_;
         bool dijkstra_;
 
@@ -269,12 +266,9 @@ class bidirectional_search : public warthog::search
         }
 
         void
-        expand( warthog::search_node* current,
-                warthog::pqueue* open,
-                warthog::expansion_policy* expander,
-                warthog::expansion_policy* reverse_expander, 
-                uint32_t tmp_targetid, 
-                warthog::solution& sol)
+        expand( warthog::search_node* current, 
+                warthog::pqueue* open, E* expander, E* reverse_expander, 
+                uint32_t tmp_targetid, warthog::solution& sol)
         {
             if(current == 0) { return; }
             current->set_expanded(true);

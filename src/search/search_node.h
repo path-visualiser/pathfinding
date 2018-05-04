@@ -21,11 +21,11 @@ const uint32_t STATUS_MASK = 1;
 class search_node
 {
 	public:
-		search_node(uint32_t id) 
+		search_node(uint32_t id=UINT32_MAX)
 			: id_and_status_(id << 1), f_(warthog::INF), g_(warthog::INF), parent_(0), 
 			priority_(warthog::INF), searchid_(0)
 		{
-			assert(this->get_id() < ((1ul<<31)-1));
+			assert(this->get_id() <= ((1ul<<31)-1));
             set_pdir(warthog::jps::direction::NONE);
 			refcount_++;
 		}
@@ -63,8 +63,7 @@ class search_node
 		inline void
 		set_id(uint32_t id) 
 		{ 
-			id = ((id << 1) | (id_and_status_ & 1)) & NODEID_AND_STATUS_MASK;
-			id_and_status_ |= id;
+			id_and_status_ = (id << 1) | (id_and_status_ & 1);
 		} 
 
 		inline warthog::jps::direction

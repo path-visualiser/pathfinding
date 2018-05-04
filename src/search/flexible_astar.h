@@ -52,11 +52,10 @@ class flexible_astar : public warthog::search
 
 		virtual ~flexible_astar()
 		{
-			reclaim();
 			delete open_;
 		}
 
-        void
+        virtual void
 		get_distance(
                 warthog::problem_instance& instance, warthog::solution& sol)
         {
@@ -64,10 +63,15 @@ class flexible_astar : public warthog::search
             assert(
                 sol.path_.empty() && sol.sum_of_edge_costs_ == warthog::INF);
             pi_ = instance;
-			search(sol);
+
+			warthog::search_node* target = search(sol);
+			if(target)
+			{
+                sol.sum_of_edge_costs_ = target->get_g();
+            }
         }
 
-        void
+        virtual void
 		get_path(warthog::problem_instance& instance, warthog::solution& sol)
 		{
             assert(
@@ -99,8 +103,8 @@ class flexible_astar : public warthog::search
                         std::cerr 
                             << "final path: (" << x << ", " << y << ")...";
                         warthog::search_node* n = 
-                            expander_->get_ptr(node_id, pi_.instance_id_);
-                        assert(n);
+                            expander_->generate(node_id)
+                        assert(n->get_search_id() == pi_.instance_id_);
                         n->print(std::cerr);
                         std::cerr << std::endl;
                     }
@@ -116,9 +120,11 @@ class flexible_astar : public warthog::search
         {
             for(uint32_t i = 0; i < expander_->get_nodes_pool_size(); i++)
             {
-                warthog::search_node* current = 
-                    expander_->get_ptr(i, pi_.instance_id_);
-                if(current) { coll.push_back(current); }
+                warthog::search_node* current = expander_->generate(i);
+                if(current->get_search_id() == pi_.instance_id_) 
+                { 
+                    coll.push_back(current);
+                }
             }
         }
 
@@ -134,9 +140,9 @@ class flexible_astar : public warthog::search
         {
             for(uint32_t i = 0; i < expander_->get_nodes_pool_size(); i++)
             {
-                warthog::search_node* current = 
-                    expander_->get_ptr(i, pi_.instance_id_);
-                if(current) { fn(current); }
+                warthog::search_node* current = expander_->generate(i);
+                if(current->get_search_id() == pi_.instance_id_)
+                { fn(current); }
             }
         }
 
@@ -426,15 +432,6 @@ class flexible_astar : public warthog::search
 
 			sol.time_elapsed_micro_ = mytimer.elapsed_time_micro();
             return target;
-		}
-
-        // clear the open lists and return all memory allocated for nodes
-        // to the node pool
-		void
-		reclaim()
-		{
-			open_->clear();
-			expander_->reclaim();
 		}
 };
 

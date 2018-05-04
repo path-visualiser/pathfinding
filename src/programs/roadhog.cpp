@@ -170,7 +170,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         for(uint32_t i = 0; i < nruns; i++)
         {
             sol.reset();
-            algo->get_path(pi, sol);
+            algo->get_distance(pi, sol);
 
             expanded += sol.nodes_expanded_;
             inserted += sol.nodes_inserted_;
@@ -241,8 +241,10 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::simple_graph_expansion_policy bexp(&g);
 
     warthog::euclidean_heuristic h(&g);
-    warthog::bidirectional_search<warthog::euclidean_heuristic>
-        alg(&fexp, &bexp, &h);
+    warthog::bidirectional_search<
+        warthog::euclidean_heuristic,
+        warthog::simple_graph_expansion_policy> 
+            alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -262,7 +264,8 @@ run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::simple_graph_expansion_policy bexp(&g);
 
     warthog::zero_heuristic h;
-    warthog::bidirectional_search<warthog::zero_heuristic>
+    warthog::bidirectional_search<
+        warthog::zero_heuristic, warthog::simple_graph_expansion_policy>
         alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
@@ -325,7 +328,10 @@ run_bch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::bch_expansion_policy fexp(g.get(), &order);
     warthog::bch_expansion_policy bexp (g.get(), &order, true);
     warthog::zero_heuristic h;
-    warthog::bch_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+    warthog::bch_search<
+        warthog::zero_heuristic, 
+        warthog::bch_expansion_policy> 
+            alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -447,7 +453,10 @@ run_bch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::euclidean_heuristic h(&g);
     warthog::bch_expansion_policy fexp(&g, &order);
     warthog::bch_expansion_policy bexp (&g, &order, true);
-    warthog::bch_search<warthog::euclidean_heuristic> alg(&fexp, &bexp, &h);
+    warthog::bch_search<
+        warthog::euclidean_heuristic,
+        warthog::bch_expansion_policy>
+            alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -496,7 +505,10 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 	warthog::zero_heuristic h;
 	warthog::ch::ch_cpg_expansion_policy fexp(&cpg, &order);
 	warthog::ch::ch_cpg_expansion_policy bexp(&cpg, &order, true);
-    warthog::bch_search<warthog::zero_heuristic> alg(&fexp, &bexp, &h);
+    warthog::bch_search<
+        warthog::zero_heuristic,
+        warthog::ch::ch_cpg_expansion_policy>
+        alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -641,8 +653,10 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::bch_bb_expansion_policy fexp(g.get(), &fwd_filter);
     warthog::bch_bb_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::zero_heuristic h;
-    warthog::bch_search<warthog::zero_heuristic> 
-        alg(&fexp, &bexp, &h);
+    warthog::bch_search<
+        warthog::zero_heuristic,
+        warthog::bch_bb_expansion_policy> 
+            alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -714,8 +728,10 @@ run_bch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::bch_af_expansion_policy fexp(g.get(), &fwd_filter);
     warthog::bch_af_expansion_policy bexp (g.get(), &bwd_filter, true);
     warthog::zero_heuristic h;
-    warthog::bch_search<warthog::zero_heuristic> 
-        alg(&fexp, &bexp, &h);
+    warthog::bch_search<
+        warthog::zero_heuristic,
+        warthog::bch_af_expansion_policy>
+            alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -788,8 +804,10 @@ run_bch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::zero_heuristic h;
     warthog::bch_bbaf_expansion_policy fexp(g.get(), &fwd_filter);
     warthog::bch_bbaf_expansion_policy bexp (g.get(), &bwd_filter, true);
-    warthog::bch_search<warthog::zero_heuristic> 
-        alg(&fexp, &bexp, &h);
+    warthog::bch_search<
+        warthog::zero_heuristic,
+        warthog::bch_bbaf_expansion_policy> 
+            alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
