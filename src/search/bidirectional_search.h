@@ -168,18 +168,20 @@ class bidirectional_search : public warthog::search
             }
 
             warthog::search_node* current = v_;
-            while(current)
+            while(true)
             {
                sol.path_.push_back(current->get_id());
-               current = bexpander_->generate(current->get_parent());
+               if(current->get_parent() == warthog::NODE_NONE) break;
+               current = fexpander_->generate(current->get_parent());
+
             }
             std::reverse(sol.path_.begin(), sol.path_.end());
 
-            current = fexpander_->generate(w_->get_parent());
-            while(current)
+            current = w_;
+            while(current->get_parent() != warthog::NODE_NONE)
             {  
-               sol.path_.push_back(current->get_id());
-               current = fexpander_->generate(current->get_parent());
+               sol.path_.push_back(current->get_parent());
+               current = bexpander_->generate(current->get_parent());
             }
         }
 

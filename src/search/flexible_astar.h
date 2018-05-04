@@ -86,9 +86,10 @@ class flexible_astar : public warthog::search
 				// follow backpointers to extract the path
 				assert(target->get_id() == pi_.target_id_);
                 warthog::search_node* current = target;
-				while(current)
+				while(true)
                 {
 					sol.path_.push_back(current->get_id());
+                    if(current->get_parent() == warthog::NODE_NONE) break;
                     current = expander_->generate(current->get_parent());
 				}
 				assert(sol.path_.back() == pi_.start_id_);

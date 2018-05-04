@@ -276,7 +276,7 @@ warthog::ch::lazy_graph_contraction::witness_search(
     sol_.reset();
 
     // gogogo
-    alg_->get_path(pi, sol_);
+    alg_->get_distance(pi, sol_);
     total_expansions_ += sol_.nodes_expanded_;
     total_searches_++;
     return sol_.sum_of_edge_costs_;
