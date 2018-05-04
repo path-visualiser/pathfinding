@@ -45,7 +45,6 @@ class graph_expansion_policy
             }
 
             nodes_pool_size_ = g_->get_num_nodes();
-            //nodepool_ = new warthog::blocklist(nodes_pool_size_);
             nodepool_ = new warthog::search_node[nodes_pool_size_];
             for(uint32_t i = 0; i < nodes_pool_size_; i++)
             {
@@ -55,7 +54,6 @@ class graph_expansion_policy
 
         ~graph_expansion_policy() 
         {
-            //delete nodepool_;
             delete [] nodepool_;
         }
 
@@ -122,7 +120,6 @@ class graph_expansion_policy
         {
             uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
             if(s_graph_id == warthog::INF) { return 0; }
-            //return nodepool_->generate(s_graph_id);
             return &nodepool_[s_graph_id];
         }
 
@@ -132,12 +129,11 @@ class graph_expansion_policy
             // convert from external id to internal id
             uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
             if(t_graph_id == warthog::INF) { return 0; }
-
+            
             // also update the filter with the new target location
-            filter_->set_target(t_graph_id);
+            filter_->set_target(pi->target_id_-1);
 
             // generate the search node
-            //return nodepool_->generate(t_graph_id);
             return &nodepool_[t_graph_id];
         }
 
@@ -178,7 +174,6 @@ class graph_expansion_policy
         uint32_t edge_index_;
         warthog::graph::node* current_graph_node_;
 
-        //warthog::blocklist* nodepool_;
         warthog::search_node* nodepool_;
         uint32_t nodes_pool_size_;
 
