@@ -1,18 +1,14 @@
-#ifndef WARTHOG_APRIORI_FILTER_H
-#define WARTHOG_APRIORI_FILTER_H
+#ifndef WARTHOG_BITFIELD_FILTER_H
+#define WARTHOG_BITFIELD_FILTER_H
 
-// search/apriori_filter.h
+// search/bitfield_filter.h
 //
 // Sometimes during search it is desriable to ignore certain nodes that
-// are identified apriori as not useful for any query. This filter helps to 
-// achieve the goal by keeping track of a byte-sized label  for each node in a
+// are identified bitfield as not useful for any query. This filter helps to 
+// achieve the goal by keeping track of a single bit for each node in a 
 // discrete graph. During search the filter can be queried about the 
-// state of each node and those nodes whose bit is set can be ignored 
+// bit-state of each node and those nodes whose bit is set can be ignored 
 // (not generated or expanded).
-//
-// NB: This class duplicates the functionality of warthog::bitfifield_filter,
-// trading space for a little bit of extra speed (no boolean logic ops).
-// 
 // 
 // @author: dharabor
 // @created: 2016-07-19
@@ -24,11 +20,11 @@
 namespace warthog
 {
 
-class apriori_filter 
+class bitfield_filter 
 {
     public:
-        apriori_filter(uint32_t num_nodes);
-        virtual ~apriori_filter();
+        bitfield_filter(uint32_t num_nodes);
+        virtual ~bitfield_filter();
 
         // returns true if the successor node specified by @param edge_idx
         // is being filtered. if the successor is not filtered, returns false
@@ -61,7 +57,7 @@ class apriori_filter
         }
 
     private:
-        uint8_t* filter_;
+        warthog::dbword* filter_;
         uint32_t filter_sz_;
 };
 
