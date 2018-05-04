@@ -74,10 +74,6 @@ class heap
 		void 
 		clear()
         {
-            for(unsigned int i=0; i < queuesize_; i++)
-            {
-                elts_[i] = 0;
-            }
             queuesize_ = 0;
         }
 
