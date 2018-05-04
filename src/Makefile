@@ -84,6 +84,7 @@ extras__: makedirs warthog
 	$(CC) programs/grid2dimacs.cpp -o ./bin/grid2dimacs -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/closure.cpp -o ./bin/closure -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/fix_dimacs_arc_weights.cpp -o ./bin/fix_dimacs_arc_weights -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: makedirs
 makedirs:
