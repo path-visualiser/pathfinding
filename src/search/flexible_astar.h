@@ -103,7 +103,7 @@ class flexible_astar : public warthog::search
                         std::cerr 
                             << "final path: (" << x << ", " << y << ")...";
                         warthog::search_node* n = 
-                            expander_->generate(node_id)
+                            expander_->generate(node_id);
                         assert(n->get_search_id() == pi_.instance_id_);
                         n->print(std::cerr);
                         std::cerr << std::endl;
@@ -242,9 +242,9 @@ class flexible_astar : public warthog::search
 			mytimer.start();
 			open_->clear();
 
-            // generate the start and goal. then
-            // update the instance with their internal ids 
-            // (this is just to make debugging easier)
+            // generate the start node. 
+            // also, update the instance with the start and target internal
+            // ids (this is just to make debugging easier)
 			warthog::search_node* start;
             if(pi_.start_id_ == warthog::INF) { return 0; }
             start = expander_->generate_start_node(&pi_);
@@ -256,48 +256,42 @@ class flexible_astar : public warthog::search
             { 
                 target = expander_->generate_target_node(&pi_); 
                 pi_.target_id_ = target->get_id();
-                target = 0; // just need the id; FIXME: hacky 
+                target = 0; 
             }
+
+            // initialise start node
+            int32_t sx, sy, gx, gy;
+            expander_->get_xy(pi_.start_id_, sx, sy);
+            expander_->get_xy(pi_.target_id_, gx, gy);
+			start->init(pi_.instance_id_, 0, 0, 
+                    heuristic_->h(sx, sy, gx, gy));
 
 			#ifndef NDEBUG
 			if(pi_.verbose_) { pi_.print(std::cerr); std:: cerr << "\n";}
 			#endif
 
-            int32_t sx, sy, gx, gy;
-            expander_->get_xy(pi_.start_id_, sx, sy);
-            expander_->get_xy(pi_.target_id_, gx, gy);
-
-			start->init(pi_.instance_id_, 0, 0, 
-                    heuristic_->h(sx, sy, gx, gy));
+            // begin expanding
 			open_->push(start);
-
 			while(open_->size())
 			{
-                // early termination: no point expanding the goal
-				if(open_->peek()->get_id() == pi_.target_id_)
-				{
-					#ifndef NDEBUG
-					if(pi_.verbose_)
-					{
-						int32_t x, y;
-						warthog::search_node* current = open_->peek();
-                        expander_->get_xy(current->get_id(), x, y);
-						std::cerr << "target found ("<<x<<", "<<y<<")...";
-						current->print(std::cerr);
-						std::cerr << std::endl;
-					}
-					#endif
-					target = open_->peek();
-					break;
-				}
+				warthog::search_node* current = open_->pop();
+				current->set_expanded(true); // NB: set before generating
+				assert(current->get_expanded());
+				sol.nodes_expanded_++;
+                if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
+                // goal test
+                if(current->get_id() == pi_.target_id_) 
+                {
+                    target = current;
+                    break;
+                }
+                    
                 // early termination: in case we want bounded-cost 
                 // search or if we want to impose some memory limit
-                if(open_->peek()->get_f() > cost_cutoff_) { break; } 
+                if(current->get_f() > cost_cutoff_) { break; } 
                 if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
 
-                // expand
-				warthog::search_node* current = open_->pop();
 
 				#ifndef NDEBUG
 				if(pi_.verbose_)
@@ -312,13 +306,8 @@ class flexible_astar : public warthog::search
 				}
 				#endif
 
-				current->set_expanded(true); // NB: set before generating
-				assert(current->get_expanded());
+                // generate successors
 				expander_->expand(current, &pi_);
-
-				sol.nodes_expanded_++;
-                if(on_expand_fn_) { (*on_expand_fn_)(current); }
-
 				warthog::search_node* n = 0;
 				double cost_to_n = warthog::INF;
                 uint32_t edge_id = 0;
@@ -417,6 +406,9 @@ class flexible_astar : public warthog::search
 				}
 			}
 
+			mytimer.stop();
+			sol.time_elapsed_micro_ = mytimer.elapsed_time_micro();
+
             #ifndef NDEBUG
             if(pi_.verbose_)
             {
@@ -425,12 +417,17 @@ class flexible_astar : public warthog::search
                     std::cerr 
                         << "search failed; no solution exists " << std::endl;
                 }
+                else
+                {
+                    int32_t x, y;
+                    expander_->get_xy(target->get_id(), x, y);
+                    std::cerr << "target found ("<<x<<", "<<y<<")...";
+                    target->print(std::cerr);
+                    std::cerr << std::endl;
+                }
             }
             #endif
 
-			mytimer.stop();
-
-			sol.time_elapsed_micro_ = mytimer.elapsed_time_micro();
             return target;
 		}
 };
