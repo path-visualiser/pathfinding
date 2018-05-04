@@ -21,7 +21,7 @@ warthog::jps_expansion_policy_wgm::expand(
 
 	// compute the direction of travel used to reach the current node.
 	warthog::jps::direction dir_c =
-	   	this->compute_direction(current->get_parent(), current);
+	   	this->compute_direction(current->get_parent(), current->get_id());
 
 	// get the tiles around the current node c
     warthog::dbword c_tiles[9];

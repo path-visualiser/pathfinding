@@ -21,8 +21,9 @@ const uint32_t STATUS_MASK = 1;
 class search_node
 {
 	public:
-		search_node(uint32_t id=UINT32_MAX)
-			: id_and_status_(id << 1), f_(warthog::INF), g_(warthog::INF), parent_(0), 
+		search_node(uint32_t id=warthog::NODE_NONE)
+			: id_and_status_(id << 1), f_(warthog::INF), 
+            g_(warthog::INF), parent_id_(warthog::NODE_NONE), 
 			priority_(warthog::INF), searchid_(0)
 		{
 			assert(this->get_id() <= ((1ul<<31)-1));
@@ -36,10 +37,10 @@ class search_node
 		}
 
 		inline void
-		init(uint32_t searchid, warthog::search_node* parent, double g, double f)
+		init(uint32_t searchid, uint32_t parent_id, double g, double f)
 		{
 			id_and_status_ &= ~1;
-            parent_ = parent;
+            parent_id_= parent_id;
             f_ = f;
             g_ = g;
 			searchid_ = searchid;
@@ -89,11 +90,11 @@ class search_node
 			id_and_status_ ^= (uint32_t)(expanded?1:0); // set it anew
 		}
 
-		inline warthog::search_node* 
-		get_parent() const { return parent_; }
+		inline uint32_t
+		get_parent() const { return parent_id_; }
 
 		inline void
-		set_parent(warthog::search_node* parent) { parent_ = parent; } 
+		set_parent(uint32_t parent_id) { parent_id_ = parent_id; } 
 
 		inline uint32_t
 		get_priority() const { return priority_; }
@@ -114,12 +115,12 @@ class search_node
 		set_f(double f) { f_ = f; }
 
 		inline void 
-		relax(double g, warthog::search_node* parent)
+		relax(double g, uint32_t parent_id)
 		{
 			assert(g < g_);
 			f_ = (f_ - g_) + g;
 			g_ = g;
-			parent_ = parent;
+			parent_id_ = parent_id;
 		}
 
 		inline bool
@@ -205,14 +206,7 @@ class search_node
 		{
 			out << "search_node id:" << get_id();
             out << " p_id: ";
-            if(parent_)
-            {
-                out << parent_->get_id();
-            }
-            else
-            {
-                out << -1;
-            }
+            out << parent_id_;
             out << " g: "<<g_ <<" f: "<<this->get_f() 
             << " expanded: " << get_expanded() << " " 
             << " searchid: " << searchid_ 
@@ -232,7 +226,7 @@ class search_node
 		uint32_t id_and_status_; // bit 0 is expansion status; 1-31 are id
 		double f_;
 		double g_;
-		warthog::search_node* parent_;
+        uint32_t parent_id_;
 		uint32_t priority_; // expansion priority
 		uint32_t searchid_;
 

@@ -59,7 +59,7 @@ warthog::fch_bb_jpg_expansion_policy::expand(
     {
         // get the direction of travel used to reach the current node
         // (i.e. the last direction we must have traveled in)
-        uint32_t parent_id = current->get_parent()->get_id();
+        uint32_t parent_id = current->get_parent();
         warthog::graph::node* parent = g_->get_node(parent_id);
         warthog::graph::edge* e_pn = parent->find_edge(current_id);
         warthog::jps::direction d_last = warthog::jpg::get_dir(
@@ -79,7 +79,7 @@ warthog::fch_bb_jpg_expansion_policy::expand(
         succ_dirs = warthog::jps::compute_successors(d_last, tiles);
     }
 
-    warthog::search_node* parent = current->get_parent();
+    warthog::search_node* parent = generate(current->get_parent());
     uint32_t current_rank = get_rank(current_id);
     bool up_travel = !parent || (current_rank > get_rank(parent->get_id()));
 

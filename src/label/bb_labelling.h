@@ -92,31 +92,35 @@ class bb_labelling
                     (warthog::helpers::thread_params*) args_in;
                 bb_shared_data* shared = (bb_shared_data*)par->shared_;
 
-                // need to keep track of the first edge on the way to the 
-                // current node (the solution is a bit hacky as we break the 
-                // chain of backpointers to achieve this; it doesn't matter, 
-                // we don't care about the path)
-                std::function<void(warthog::search_node*)> relax_fn = 
-                    [] (warthog::search_node* n) -> void
-                    {
-                        // the start node and its children don't need their 
-                        // parent pointers updated. for all other nodes the
-                        // grandparent becomes the parent
-                        if(n->get_parent()->get_parent() != 0)
-                        {
-                            if(n->get_parent()->get_parent()->get_parent() 
-                                    != 0)
-                            {
-                                n->set_parent(n->get_parent()->get_parent());
-                            }
-                        }
-                    };
-
                 std::shared_ptr<t_expander> 
                     expander(shared->fn_new_expander_());
                 warthog::zero_heuristic heuristic;
                 warthog::flexible_astar<warthog::zero_heuristic, t_expander>
                      dijkstra(&heuristic, expander.get());
+
+                // need to keep track of the first edge on the way to the 
+                // current node (the solution is a bit hacky as we break the 
+                // chain of backpointers to achieve this; it doesn't matter, 
+                // we don't care about the path)
+                std::function<void(warthog::search_node*)> relax_fn = 
+                    [&expander] (warthog::search_node* n) -> void
+                    {
+                        // the start node and its children don't need their 
+                        // parent pointers updated. for all other nodes the
+                        // grandparent becomes the parent
+                        uint32_t gp_id = 
+                            expander->generate(n->get_parent())->get_parent();
+
+                        if(gp_id != warthog::NODE_NONE)
+                        {
+                            if(expander->generate(gp_id)->get_parent()
+                                    != warthog::NODE_NONE)
+                            {
+                                n->set_parent(gp_id);
+                            }
+                        }
+                    };
+
                 dijkstra.apply_on_relax(relax_fn);
 
                 for(uint32_t i = 0; 
@@ -159,8 +163,8 @@ class bb_labelling
 
                     // compute the extent of each rectangle bounding box
                     std::function<void(warthog::search_node*)> bbox_fn = 
-                    [shared, &source_id, &idmap](warthog::search_node* n) 
-                    -> void
+                        [shared, &source_id, &idmap, &expander]
+                            (warthog::search_node* n) -> void
                     {
                         // skip the source node
                         // (it doesn't belong to any rectangle)
@@ -171,18 +175,19 @@ class bb_labelling
                         std::unordered_map<uint32_t, uint32_t>::iterator it;
 
                         // successors of the source are special
-                        if(n->get_parent()->get_parent() == 0)
+                        if(expander->generate(n->get_parent())->get_parent() 
+                                == warthog::NODE_NONE)
                         { it = idmap.find(n->get_id()); }
                         else
                         // all the other nodes
-                        { it = idmap.find(n->get_parent()->get_id()); }
+                        { it = idmap.find(n->get_parent()); }
 
                         if(it == idmap.end())
                         {
                             // sanity check
                             std::cerr << "err; invalid first edge; "
                                  << " n id: "<< n->get_id() << " parent id: " 
-                                 << n->get_parent()->get_id() << std::endl;
+                                 << n->get_parent() << std::endl;
                             exit(0);
                         }
 

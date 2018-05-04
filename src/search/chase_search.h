@@ -173,17 +173,16 @@ class chase_search : public warthog::search
             while(current)
             {
                sol.path_.push_back(current->get_id());
-               current = current->get_parent();
+               current = bexpander_->generate(current->get_parent());
             }
             std::reverse(sol.path_.begin(), sol.path_.end());
 
-            current = w_->get_parent();
+            current = fexpander_->generate(w_->get_parent());
             while(current)
             {  
                sol.path_.push_back(current->get_id());
-               current = current->get_parent();
+               current = fexpander_->generate(current->get_parent());
             }
-
         }
 
         void 
@@ -223,10 +222,10 @@ class chase_search : public warthog::search
             #endif
 
             // initialise the start and target
-            start->init(pi_.instance_id_, 0, 0, 
-                    heuristic_->h(pi_.start_id_, pi_.target_id_));
-            target->init(pi_.instance_id_, 0, 0, 
-                    heuristic_->h(pi_.start_id_, pi_.target_id_));
+            start->init(pi_.instance_id_, warthog::NODE_NONE, 
+                    0, heuristic_->h(pi_.start_id_, pi_.target_id_));
+            target->init(pi_.instance_id_, warthog::NODE_NONE, 
+                    0, heuristic_->h(pi_.start_id_, pi_.target_id_));
 
             // these variables help interleave the search, decide when to
             // switch phases and when to terminate
@@ -428,7 +427,7 @@ class chase_search : public warthog::search
                 if(n->get_search_id() != current->get_search_id())
                 {
                     double gval = current->get_g() + cost_to_n;
-                    n->init(current->get_search_id(), current, gval,
+                    n->init(current->get_search_id(), current->get_id(), gval,
                             gval + 
                             heuristic_->h(n->get_id(), tmp_targetid));
 
@@ -502,7 +501,7 @@ class chase_search : public warthog::search
                         if(gval < n->get_g())
                         {
                             sol.nodes_updated_++;
-                            n->relax(gval, current);
+                            n->relax(gval, current->get_parent());
                             open->decrease_key(n);
                             #ifndef NDEBUG
                             if(pi_.verbose_)
@@ -541,7 +540,7 @@ class chase_search : public warthog::search
                         assert(phase_ == 1);
                         if(gval < n->get_g())
                         {
-                            n->relax(gval, current);
+                            n->relax(gval, current->get_parent());
                             if(gval < norelax_distance_min)
                             {
                                 norelax_distance_min = gval; 

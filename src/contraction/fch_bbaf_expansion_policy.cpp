@@ -27,7 +27,7 @@ warthog::fch_bbaf_expansion_policy::expand(
 {
     reset();
 
-    warthog::search_node* pn = current->get_parent();
+    warthog::search_node* pn = generate(current->get_parent());
     uint32_t current_id = current->get_id();
     uint32_t current_rank = get_rank(current_id);
 

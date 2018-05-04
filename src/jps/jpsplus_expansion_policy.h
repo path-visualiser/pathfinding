@@ -59,13 +59,13 @@ class jpsplus_expansion_policy : public expansion_policy
 		// computes the direction of travel; from a node n1
 		// to a node n2.
 		inline warthog::jps::direction
-		compute_direction(warthog::search_node* n1, warthog::search_node* n2)
+		compute_direction(uint32_t n1_id, uint32_t n2_id)
 		{
-			if(n1 == 0) { return warthog::jps::NONE; }
+			if(n1_id == warthog::NODE_NONE) { return warthog::jps::NONE; }
 
 			int32_t x, y, x2, y2;
-			warthog::helpers::index_to_xy(n1->get_id(), map_->width(), x, y);
-			warthog::helpers::index_to_xy(n2->get_id(), map_->width(), x2, y2);
+			warthog::helpers::index_to_xy(n1_id, map_->width(), x, y);
+			warthog::helpers::index_to_xy(n2_id, map_->width(), x2, y2);
 			warthog::jps::direction dir = warthog::jps::NONE;
 			if(y2 == y)
 			{

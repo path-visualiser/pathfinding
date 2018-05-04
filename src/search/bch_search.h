@@ -178,15 +178,15 @@ class bch_search : public warthog::search
             while(current)
             {
                sol.path_.push_back(current->get_id());
-               current = current->get_parent();
+               current = bexpander_->generate(current->get_parent());
             }
             std::reverse(sol.path_.begin(), sol.path_.end());
 
-            current = w_->get_parent();
+            current = fexpander_->generate(w_->get_parent());
             while(current)
             {  
                sol.path_.push_back(current->get_id());
-               current = current->get_parent();
+               current = fexpander_->generate(current->get_parent());
             }
 
         }
@@ -230,9 +230,9 @@ class bch_search : public warthog::search
             warthog::search_node *start, *target;
             start = fexpander_->generate_start_node(&pi_);
             target = bexpander_->generate_target_node(&pi_);
-            start->init(pi_.instance_id_, 0, 0, 
+            start->init(pi_.instance_id_, warthog::NODE_NONE, 0, 
                         heuristic_->h(start->get_id(), target->get_id()));
-            target->init(pi_.instance_id_, 0, 0, 
+            target->init(pi_.instance_id_, warthog::NODE_NONE, 0, 
                          heuristic_->h(start->get_id(), target->get_id()));
             fopen_->push(start);
             bopen_->push(target);
@@ -399,7 +399,7 @@ class bch_search : public warthog::search
                 {
                     double gval = current->get_g() + cost_to_n;
                     n->init(current->get_search_id(), 
-                            current, 
+                            current->get_id(), 
                             gval,
                             gval + heuristic_->h(n->get_id(), tmp_targetid));
                     open->push(n);
@@ -445,7 +445,7 @@ class bch_search : public warthog::search
                         double gval = current->get_g() + cost_to_n;
                         if(gval < n->get_g())
                         {
-                            n->relax(gval, current);
+                            n->relax(gval, current->get_parent());
                             open->decrease_key(n);
                             sol.nodes_updated_++;
                             #ifndef NDEBUG

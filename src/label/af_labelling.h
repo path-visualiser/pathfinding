@@ -138,6 +138,12 @@ class af_labelling
                 warthog::helpers::thread_params* par = 
                     (warthog::helpers::thread_params*) args_in;
                 af_shared_data* shared = (af_shared_data*) par->shared_;
+
+                std::shared_ptr<t_expander> 
+                    expander(shared->fn_new_expander_());
+                warthog::zero_heuristic heuristic;
+                warthog::flexible_astar< warthog::zero_heuristic, t_expander >
+                    dijkstra(&heuristic, expander.get());
             
                 // helper function to track the first edge on the path from 
                 // the source node to each node in the graph. we apply this 
@@ -146,26 +152,23 @@ class af_labelling
                 // backpointers to achieve this; it doesn't matter, we don't 
                 // care about the path)
                 std::function<void(warthog::search_node*)> relax_fn = 
-                    [] (warthog::search_node* n) -> void
+                    [&expander] (warthog::search_node* n) -> void
                     {
                         // the start node and its children don't need 
                         // their parent pointers updated. for all other 
                         // nodes the grandparent becomes the parent
-                        if(n->get_parent()->get_parent() != 0)
+                        uint32_t gp_id = 
+                            expander->generate(n->get_parent())->get_parent();
+                        if(gp_id != warthog::NODE_NONE)
                         {
-                            if(n->get_parent()->get_parent()->get_parent() 
-                                    != 0)
+                            if(expander->generate(gp_id)->get_parent() !=
+                                    warthog::NODE_NONE)
                             {
-                                n->set_parent(n->get_parent()->get_parent());
+                                n->set_parent(gp_id);
                             }
                         }
                     };
 
-                std::shared_ptr<t_expander> 
-                    expander(shared->fn_new_expander_());
-                warthog::zero_heuristic heuristic;
-                warthog::flexible_astar< warthog::zero_heuristic, t_expander >
-                    dijkstra(&heuristic, expander.get());
                 dijkstra.apply_on_relax(relax_fn);
 
                 for(uint32_t i = 0; 
@@ -234,9 +237,9 @@ class af_labelling
                                 shared->lab_->part_->at(n->get_id());
                             uint32_t e_idx  = 
                                 (*idmap.find(
-                                    n->get_parent()->get_id() == source_id ?  
+                                    n->get_parent() == source_id ?  
                                     n->get_id() : 
-                                    n->get_parent()->get_id())).second;
+                                    n->get_parent())).second;
                             uint8_t* label = 
                                 shared->lab_->flags_->at(source_id).at(e_idx);
                             label[part_id >> 3] |= (1 << (part_id & 7));

@@ -1,12 +1,14 @@
 #include "apriori_filter.h"
-#include "zero_heuristic.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
 #include "heap.h"
 #include "lazy_graph_contraction.h"
+#include "zero_heuristic.h"
+#include "euclidean_heuristic.h"
 
 #include <algorithm>
 #include <functional>
+#include <utility>
 
 bool
 warthog::ch::operator<(const ch_pair& first, const ch_pair& second)
@@ -17,16 +19,17 @@ warthog::ch::operator<(const ch_pair& first, const ch_pair& second)
 warthog::ch::lazy_graph_contraction::lazy_graph_contraction(
         warthog::graph::planar_graph* g) : g_(g)
 {
-    heuristic_ = new zero_heuristic();
+    heuristic_ = new warthog::euclidean_heuristic(g_);
     c_filter_ = new warthog::apriori_filter(g_->get_num_nodes());
     u_filter_ = new warthog::apriori_filter(g_->get_num_nodes());
-    expander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
+    fexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
+                g_, c_filter_);
+    bexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
                 g_, c_filter_);
 
-    alg_ = new flexible_astar<
-        warthog::zero_heuristic,
-         warthog::graph_expansion_policy<warthog::apriori_filter>>
-             (heuristic_, expander_);
+    alg_ = new bidirectional_search< warthog::euclidean_heuristic,
+                 warthog::graph_expansion_policy<warthog::apriori_filter>>(
+                         fexpander_, bexpander_, heuristic_);
 
     uint32_t sz_g = g_->get_num_nodes();
     heap_ = new warthog::heap<ch_pair>(sz_g, true);
@@ -36,7 +39,6 @@ warthog::ch::lazy_graph_contraction::lazy_graph_contraction(
 
     ws_max_expansions_ = warthog::INF;
     verbose_ = false;
-
 }
 
 warthog::ch::lazy_graph_contraction::~lazy_graph_contraction()
@@ -62,9 +64,11 @@ warthog::ch::lazy_graph_contraction::~lazy_graph_contraction()
     delete heuristic_;
     heuristic_ = 0;
 
-    delete expander_;
-    expander_ = 0;
+    delete fexpander_;
+    fexpander_ = 0;
 
+    delete bexpander_;
+    bexpander_ = 0;
 }
 
 void
@@ -78,13 +82,15 @@ warthog::ch::lazy_graph_contraction::contract(
     std::cerr << "contracting graph " << g_->get_filename() << std::endl;
     uint32_t edges_before = g_->get_num_edges();
 
+    warthog::timer mytimer;
+    double t_begin = mytimer.get_time_micro();
     preliminaries();
 
     // contract nodes in the order produced by ::next
     uint32_t total_nodes = (g_->get_num_nodes()*c_pct) / 100;
 
     std::vector<uint32_t> update_neis;
-    warthog::timer mytimer;
+    double t_last = mytimer.get_time_micro();
     while(true)
     {
         // contract the highest priority node  +
@@ -106,6 +112,7 @@ warthog::ch::lazy_graph_contraction::contract(
         {
             uint32_t neighbour_id = update_neis.at(i);
             u_filter_->set_flag_true(neighbour_id);
+            //std::cerr << "c: " << best_id << " u: "<<neighbour_id << " idx: " << hn_pool_[neighbour_id].get_index()<< " cval "<< hn_pool_[neighbour_id].get_element().cval_ << std::endl;
         }
         mytimer.stop();
 
@@ -113,18 +120,24 @@ warthog::ch::lazy_graph_contraction::contract(
         num_searches = total_searches_ - num_searches;
         num_lazy = total_lazy_updates_ - num_lazy;
 
-        std::cerr 
-            //<< "\r " 
-            << (int)((order_.size() / (double)g_->get_num_nodes()) * 100)
-            << "%; " << order_.size() << " /  " << total_nodes 
-            << "; nid: " << best_id 
-            << "; out_deg: " << g_->get_node(best_id)->out_degree()
-            << "; #witn " << num_searches
-            << "; #lazy: " << num_lazy
-            << "; #exps: " << num_expansions
-            << "; micros: " << (int32_t)mytimer.elapsed_time_micro();
-        terms_[best_id].print(std::cerr);
-        std::cerr << std::endl;
+        if((mytimer.get_time_micro() - t_last) > 1000000)
+        {
+            t_last = mytimer.get_time_micro();
+            std::cerr 
+                //<< "\r " 
+                //<< (int)((order_.size() / (double)g_->get_num_nodes()) * 100)
+                << "time: " << (int)((t_last - t_begin)/1000000) << "s"
+                << "%; " << order_.size() << " /  " << total_nodes 
+                << "; nid: " << best_id 
+                << ", pri: " << hn_pool_[best_id].get_element().cval_
+                << "; #out: " << g_->get_node(best_id)->out_degree()
+                << "; #witn " << num_searches
+                << "; #lazy: " << num_lazy
+                << "; #exps: " << num_expansions
+                << "; micros: " << (int32_t)mytimer.elapsed_time_micro();
+            terms_[best_id].print(std::cerr);
+            std::cerr << std::endl;
+        }
     }
 
     std::cerr << "\ngraph, contracted. ";
@@ -263,7 +276,7 @@ warthog::ch::lazy_graph_contraction::witness_search(
     sol_.reset();
 
     // gogogo
-    alg_->get_distance(pi, sol_);
+    alg_->get_path(pi, sol_);
     total_expansions_ += sol_.nodes_expanded_;
     total_searches_++;
     return sol_.sum_of_edge_costs_;
@@ -287,6 +300,8 @@ warthog::ch::lazy_graph_contraction::contract_node(
     // will need to be updated due to contracting @param node_id.
     // here we also track some importance metrics related to "deleted" edges
     uc_neis_.clear();
+    niv.hops_removed_ = 1; // i.e. the current node
+    niv.edel_ = 1; // as per routingkit
     for(uint32_t i = 0; i < n->out_degree(); i++)
     {
         warthog::graph::edge& e_out = *(n->outgoing_begin() + i);
@@ -305,30 +320,30 @@ warthog::ch::lazy_graph_contraction::contract_node(
         uc_neis_.push_back(e_in);
     }
 
+    // temporary storage for shortcuts that will be added
+    std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
+        in_shorts;
+    std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
+        out_shorts;
+
     // witness searches (i.e. between every pair of (in, out) neighbours)
     // NB: during each witness search, we never expand the current node
     c_filter_->set_flag_true(node_id);
-    ws_max_expansions_ = (metrics_only ? 1000 : warthog::INF); // ddh
-    //ws_max_expansions_ = 500; // as recommended by RoutingKit's implementation
-    double  max_outgoing_wt = 0;
-    for(uint32_t j = 0; j < uc_neis_incoming_begin_; j++)
-    {
-        warthog::graph::edge& e_out = uc_neis_.at(j);
-        if(e_out.wt_ > max_outgoing_wt) { max_outgoing_wt = e_out.wt_; }
-    }
+    //ws_max_expansions_ = (metrics_only ? 1000 : warthog::INF); // ddh
+    ws_max_expansions_ = 500; // as recommended by RoutingKit's implementation
 
     for(uint32_t i = uc_neis_incoming_begin_; i < uc_neis_.size(); i++)
     {
         warthog::graph::edge& e_in = uc_neis_.at(i);
-        double cost_cutoff = e_in.wt_ + max_outgoing_wt;
-        witness_search(e_in.node_id_, warthog::INF, cost_cutoff);
 
         for(uint32_t j = 0; j < uc_neis_incoming_begin_; j++)
         {
             warthog::graph::edge& e_out = uc_neis_.at(j);
             if(e_in.node_id_ == e_out.node_id_) { continue; }
-            warthog::search_node* nei = alg_->get_search_node(e_out.node_id_);
-            double witness_len = nei ? nei->get_g() : warthog::INF;
+
+           double cost_cutoff = e_in.wt_ + e_out.wt_;
+            double witness_len = 
+                witness_search(e_in.node_id_, e_out.node_id_, cost_cutoff);
 
             // contraction will introduce a shortcut edge only if
             // the path <in, n, out> is the only shortest path
@@ -340,21 +355,38 @@ warthog::ch::lazy_graph_contraction::contract_node(
                 niv.hops_added_ = e_in.label_ + e_out.label_ + 1;
                 if(!metrics_only)
                 {
-                    warthog::graph::node* tail = g_->get_node(e_in.node_id_);
-                    tail->add_outgoing(
-                            warthog::graph::edge(
-                                e_out.node_id_, via_len, niv.hops_added_));
+                    if(e_in.node_id_ == 35058 || e_out.node_id_ == 35058)
+                    {
+                        std::cerr << "master" << std::endl;
+                    }
 
-                    warthog::graph::node* head = g_->get_node(e_out.node_id_);
-                    head->add_incoming(
-                            warthog::graph::edge(
-                                e_in.node_id_, via_len, niv.hops_added_));
+                    out_shorts.push_back(
+                        std::pair<warthog::graph::node*, 
+                            warthog::graph::edge>(
+                                g_->get_node(e_in.node_id_),
+                                warthog::graph::edge(e_out.node_id_, 
+                                          via_len, niv.hops_added_)));
+                    in_shorts.push_back(
+                        std::pair<warthog::graph::node*, 
+                            warthog::graph::edge>(
+                                g_->get_node(e_out.node_id_),
+                                warthog::graph::edge(e_in.node_id_, 
+                                          via_len, niv.hops_added_)));
                 }
             }
         }
     }
     if(metrics_only) { c_filter_->set_flag_false(node_id); }
-    else { order_.push_back(node_id); }
+    else 
+    { 
+        for(auto& pair : out_shorts) 
+        { (pair.first)->add_outgoing(pair.second); }
+        for(auto& pair : in_shorts) 
+        { (pair.first)->add_incoming(pair.second); }
+
+        order_.push_back(node_id); 
+    }
+
 
     // another metric is the level estimate for the current node 
     // (at least equal to [#contractions], assuming first level is zero)
@@ -397,15 +429,19 @@ int32_t
 warthog::ch::lazy_graph_contraction::compute_contraction_priority(
         niv_metrics& niv)
 {  
+    if(niv.edel_ == 0 || niv.hops_removed_ == 0) 
+    {
+        std::cerr << "master" << std::endl;
+    }
 //      ** RoutingKit heuristic **
-//:		return 1 + 
-//:            1000*niv.level_ + 
-//:            (1000*niv.eadd_) / niv.edel_ + 
-//:            (1000*niv.hops_added_) / niv.hops_removed_;
-//:
+		return 1 + 
+            1000*niv.level_ + 
+            (1000*niv.eadd_) / (1+niv.edel_) +
+            (1000*niv.hops_added_) / (1+niv.hops_removed_);
+
 //        ** GEISBERGER's EDSL heuristic, for use with verify_priority**
-        return
-            (niv.eadd_ - niv.edel_)*190 + 
-            niv.nc_*120 + 
-            niv.depth_;
+//        return
+//            (niv.eadd_ - niv.edel_)*190 + 
+//            niv.nc_*120 + 
+//            niv.depth_;
 }

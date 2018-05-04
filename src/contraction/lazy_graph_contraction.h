@@ -36,6 +36,7 @@
 #include "graph_contraction.h"
 #include "heap.h"
 #include "solution.h"
+#include "bidirectional_search.h"
 
 #include <cstdint>
 #include <unordered_map>
@@ -47,6 +48,7 @@ namespace warthog
 
 class apriori_filter;
 class zero_heuristic;
+class euclidean_heuristic;
 
 template<class FILTER>
 class graph_expansion_policy;
@@ -176,12 +178,13 @@ class lazy_graph_contraction
 
         // witness search stuff
         uint32_t ws_max_expansions_; 
-        warthog::zero_heuristic* heuristic_;
-        warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
+        warthog::euclidean_heuristic* heuristic_;
+        warthog::graph_expansion_policy<warthog::apriori_filter>* fexpander_;
+        warthog::graph_expansion_policy<warthog::apriori_filter>* bexpander_;
         warthog::apriori_filter* c_filter_; // track contractions 
         warthog::apriori_filter* u_filter_; // track updates
-        warthog::flexible_astar<
-            warthog::zero_heuristic,
+        warthog::bidirectional_search<
+            warthog::euclidean_heuristic,
             warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
 
         // metrics

@@ -89,7 +89,7 @@ class flexible_astar : public warthog::search
 				while(current)
                 {
 					sol.path_.push_back(current->get_id());
-                    current = current->get_parent();
+                    current = expander_->generate(current->get_parent());
 				}
 				assert(sol.path_.back() == pi_.start_id_);
 
@@ -263,8 +263,8 @@ class flexible_astar : public warthog::search
             int32_t sx, sy, gx, gy;
             expander_->get_xy(pi_.start_id_, sx, sy);
             expander_->get_xy(pi_.target_id_, gx, gy);
-			start->init(pi_.instance_id_, 0, 0, 
-                    heuristic_->h(sx, sy, gx, gy));
+			start->init(pi_.instance_id_, warthog::NODE_NONE, 
+                    0, heuristic_->h(sx, sy, gx, gy));
 
 			#ifndef NDEBUG
 			if(pi_.verbose_) { pi_.print(std::cerr); std:: cerr << "\n";}
@@ -325,7 +325,7 @@ class flexible_astar : public warthog::search
 						double gval = current->get_g() + cost_to_n;
                         int32_t nx, ny;
                         expander_->get_xy(n->get_id(), nx, ny);
-                        n->init(pi_.instance_id_, current, 
+                        n->init(current->get_search_id(), current->get_id(),
                             gval, gval + heuristic_->h(nx, ny, gx, gy));
 
                         open_->push(n);
@@ -369,7 +369,7 @@ class flexible_astar : public warthog::search
 						double gval = current->get_g() + cost_to_n;
 						if(gval < n->get_g())
 						{
-							n->relax(gval, current);
+							n->relax(gval, current->get_id());
 							open_->decrease_key(n);
                             sol.nodes_updated_++;
 

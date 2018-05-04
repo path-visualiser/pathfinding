@@ -34,6 +34,8 @@ namespace warthog
     static const int32_t INF = INT32_MAX;
     static const int32_t ONE = 100000;
 
+    static const uint32_t NODE_NONE = UINT32_MAX;
+
 	// hashing constants
 	static const uint32_t FNV32_offset_basis = 2166136261;
 	static const uint32_t FNV32_prime = 16777619;

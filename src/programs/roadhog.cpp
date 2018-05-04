@@ -852,11 +852,11 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
-    [&order] (warthog::search_node* n) -> uint32_t
+    [&order, &fexp] (warthog::search_node* n) -> uint32_t
     {
         while(true)
         {
-            warthog::search_node* p = n->get_parent();
+            warthog::search_node* p = fexp.generate(n->get_parent());
             if(!p || order.at(p->get_id()) < order.at(n->get_id()))
             { break; }
             n = p;
@@ -960,11 +960,11 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
-    [&order] (warthog::search_node* n) -> uint32_t
+    [&order, &fexp] (warthog::search_node* n) -> uint32_t
     {
         while(true)
         {
-            warthog::search_node* p = n->get_parent();
+            warthog::search_node* p = fexp.generate(n->get_parent());
             if(!p || order.at(p->get_id()) < order.at(n->get_id()))
             { break; }
             n = p;
@@ -1068,11 +1068,11 @@ run_fch_fm(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
-    [&order] (warthog::search_node* n) -> uint32_t
+    [&order, &fexp] (warthog::search_node* n) -> uint32_t
     {
         while(true)
         {
-            warthog::search_node* p = n->get_parent();
+            warthog::search_node* p = fexp.generate(n->get_parent());
             if(!p || order.at(p->get_id()) < order.at(n->get_id()))
             { break; }
             n = p;

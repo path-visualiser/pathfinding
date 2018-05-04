@@ -157,31 +157,34 @@ class bbaf_labelling
                     (warthog::helpers::thread_params*) args_in;
                 bbaf_shared_data* shared = (bbaf_shared_data*)par->shared_;
 
+                warthog::zero_heuristic heuristic;
+                std::shared_ptr<t_expander> 
+                    expander(shared->fn_new_expander_());
+                warthog::flexible_astar<warthog::zero_heuristic, t_expander> 
+                        dijkstra(&heuristic, expander.get());
+
                 // need to keep track of the first edge on the way to the 
                 // current node(the solution is a bit hacky as we break the 
                 // chain of backpointers to achieve this; it doesn't matter, 
                 // we don't care about the path)
                 std::function<void(warthog::search_node*)> relax_fn = 
-                [] (warthog::search_node* n) -> void
+                [&expander] (warthog::search_node* n) -> void
                 {
                     // the start node and its children don't need their 
                     // parent pointers updated. for all other nodes the
                     // grandparent becomes the parent
-                    if(n->get_parent()->get_parent() != 0)
+                    uint32_t gp_id = 
+                        expander->generate(n->get_parent())->get_parent();
+                    if(gp_id != warthog::NODE_NONE)
                     {
-                        if(n->get_parent()->get_parent()->get_parent() != 0)
+                        if(expander->generate(gp_id)->get_parent() 
+                                != warthog::NODE_NONE)
                         {
-                            n->set_parent(n->get_parent()->get_parent());
+                            n->set_parent(gp_id);
                         }
                     }
                 };
 
-                warthog::zero_heuristic heuristic;
-                std::shared_ptr<t_expander> 
-                    expander(shared->fn_new_expander_());
-
-                warthog::flexible_astar<warthog::zero_heuristic, t_expander> 
-                        dijkstra(&heuristic, expander.get());
                 dijkstra.apply_on_relax(relax_fn);
 
                 // run a dijkstra search from each node
@@ -234,8 +237,8 @@ class bbaf_labelling
                     // now analyse the nodes on the closed list and label the 
                     // edges of the source node accordingly
                     std::function<void(warthog::search_node*)> fn_arcflags =
-                    [shared, &source_id, &idmap](warthog::search_node* n) 
-                    -> void
+                    [shared, &source_id, &idmap, &expander]
+                        (warthog::search_node* n) -> void
                     {
                         // skip edges from the source to itself
                         assert(n);
@@ -248,9 +251,9 @@ class bbaf_labelling
                             = shared->lab_->part_->at(n->get_id());
                         uint32_t e_idx  
                             = (*idmap.find(
-                                n->get_parent()->get_id() == source_id ? 
+                                n->get_parent() == source_id ? 
                                 n->get_id() : 
-                                n->get_parent()->get_id())).second;
+                                n->get_parent())).second;
                         shared->lab_->labels_.at(source_id).at(
                                 e_idx).flags_[part_id >> 3] |= 
                                     (1 << (part_id & 7));

@@ -40,7 +40,7 @@ warthog::jps::jpg_expansion_policy::expand(
         // travel direction from the parent
         int32_t px, py, x, y;
         this->get_xy(graph_id, x, y);
-        this->get_xy(current->get_parent()->get_id(), px, py);
+        this->get_xy(current->get_parent(), px, py);
         
         // TODO: fix these hacky divs. What's needed here is for
         // warthog::corner_point_graph to allow easy conversion 
