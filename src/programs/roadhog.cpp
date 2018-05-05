@@ -288,7 +288,9 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::zero_heuristic h;
     warthog::flexible_astar<warthog::zero_heuristic, 
-        warthog::simple_graph_expansion_policy> alg(&h, &expander);
+        warthog::simple_graph_expansion_policy,
+        warthog::pqueue<warthog::cmp_less_search_node_f_only, warthog::min_q>> 
+        alg(&h, &expander);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }

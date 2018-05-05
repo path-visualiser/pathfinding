@@ -318,7 +318,7 @@ void pqueue_insert_test()
 {
 	std::cout << "pqueue_insert_test...\n";
 	unsigned int pqueuenodes = 1000000;
-	warthog::pqueue mypqueue(pqueuenodes, true);
+	warthog::pqueue_min mypqueue(pqueuenodes);
 	warthog::search_node** nodes = new warthog::search_node*[pqueuenodes];
 	for(int i=pqueuenodes; i > 0 ; i--)
 	{

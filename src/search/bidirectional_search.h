@@ -35,7 +35,6 @@ namespace graph
 }
 
 class expansion_policy;
-class pqueue;
 class search_node;
 
 typedef double (* heuristicFn)
@@ -48,8 +47,8 @@ class bidirectional_search : public warthog::search
         bidirectional_search(E* fexp, E* bexp, H* heuristic) 
             : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
-            fopen_ = new pqueue(512, true);
-            bopen_ = new pqueue(512, true);
+            fopen_ = new pqueue_min(512);
+            bopen_ = new pqueue_min(512);
             
             dijkstra_ = false;
             if(typeid(*heuristic_) == typeid(warthog::zero_heuristic))
@@ -137,8 +136,8 @@ class bidirectional_search : public warthog::search
         }
 
     private:
-        warthog::pqueue* fopen_;
-        warthog::pqueue* bopen_;
+        warthog::pqueue_min* fopen_;
+        warthog::pqueue_min* bopen_;
         E* fexpander_;
         E* bexpander_;
         H* heuristic_;
@@ -269,7 +268,7 @@ class bidirectional_search : public warthog::search
 
         void
         expand( warthog::search_node* current, 
-                warthog::pqueue* open, E* expander, E* reverse_expander, 
+                warthog::pqueue_min* open, E* expander, E* reverse_expander, 
                 uint32_t tmp_targetid, warthog::solution& sol)
         {
             if(current == 0) { return; }

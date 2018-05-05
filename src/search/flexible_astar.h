@@ -35,14 +35,15 @@ namespace warthog
 // H is a heuristic function
 // E is an expansion policy
 template< class H, 
-          class E >
+          class E, 
+          class Q = warthog::pqueue_min >
 class flexible_astar : public warthog::search
 {
 	public:
 		flexible_astar(H* heuristic, E* expander) :
             heuristic_(heuristic), expander_(expander)
 		{
-			open_ = new warthog::pqueue(1024, true);
+			open_ = new Q(1024);
             cost_cutoff_ = warthog::INF;
             exp_cutoff_ = warthog::INF;
             on_relax_fn_ = 0;
@@ -211,7 +212,7 @@ class flexible_astar : public warthog::search
 	private:
 		H* heuristic_;
 		E* expander_;
-		warthog::pqueue* open_;
+		Q* open_;
         warthog::problem_instance pi_;
 
         // early termination limits
@@ -243,36 +244,37 @@ class flexible_astar : public warthog::search
 			mytimer.start();
 			open_->clear();
 
-            // generate the start node. 
-            // also, update the instance with the start and target internal
-            // ids (this is just to make debugging easier)
 			warthog::search_node* start;
+			warthog::search_node* target = 0;
+
+            // get the internal target id
+            if(pi_.target_id_ != warthog::INF)
+            { 
+                pi_.target_id_ = 
+                    expander_->generate_target_node(&pi_)->get_id();
+            }
+
+            // initialise and push the start node
             if(pi_.start_id_ == warthog::INF) { return 0; }
             start = expander_->generate_start_node(&pi_);
             pi_.start_id_ = start->get_id();
-            if(on_generate_fn_) { (*on_generate_fn_)(start, 0, 0, UINT32_MAX); }
 
-			warthog::search_node* target = 0;
-            if(pi_.target_id_ != warthog::INF)
-            { 
-                target = expander_->generate_target_node(&pi_); 
-                pi_.target_id_ = target->get_id();
-                target = 0; 
-            }
-
-            // initialise start node
-            int32_t sx, sy, gx, gy;
-            expander_->get_xy(pi_.start_id_, sx, sy);
-            expander_->get_xy(pi_.target_id_, gx, gy);
 			start->init(pi_.instance_id_, warthog::NODE_NONE, 
-                    0, heuristic_->h(sx, sy, gx, gy));
+                    0, heuristic_->h(pi_.start_id_, pi_.target_id_));
+
+			open_->push(start);
+            sol.nodes_inserted_++;
+            
+            if(on_generate_fn_) 
+            { (*on_generate_fn_)(start, 0, 0, UINT32_MAX); }
+
+
 
 			#ifndef NDEBUG
 			if(pi_.verbose_) { pi_.print(std::cerr); std:: cerr << "\n";}
 			#endif
 
             // begin expanding
-			open_->push(start);
 			while(open_->size())
 			{
 				warthog::search_node* current = open_->pop();
@@ -324,10 +326,9 @@ class flexible_astar : public warthog::search
                     if(n->get_search_id() != current->get_search_id())
                     {
 						double gval = current->get_g() + cost_to_n;
-                        int32_t nx, ny;
-                        expander_->get_xy(n->get_id(), nx, ny);
                         n->init(current->get_search_id(), current->get_id(),
-                            gval, gval + heuristic_->h(nx, ny, gx, gy));
+                            gval, 
+                            gval + heuristic_->h(n->get_id(),pi_.target_id_));
 
                         open_->push(n);
                         sol.nodes_inserted_++;
@@ -335,6 +336,8 @@ class flexible_astar : public warthog::search
                         #ifndef NDEBUG
                         if(pi_.verbose_)
                         {
+                            int32_t nx, ny;
+                            expander_->get_xy(n->get_id(), nx, ny);
                             std::cerr 
                                 << "  generating (edgecost=" 
                                 << cost_to_n<<") ("<< nx <<", "<< ny <<")...";

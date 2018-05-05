@@ -19,30 +19,97 @@ namespace warthog
 {
 
 class search_node;
+
+struct min_q 
+{ static const bool is_min_ = true; };
+
+struct max_q
+{ static const bool is_min_ = false; };
+
+
+template <class Comparator = warthog::cmp_less_search_node,
+          class QType = warthog::min_q>
 class pqueue 
 {
 	public:
-		pqueue(unsigned int size, bool minqueue);
-		~pqueue();
+		pqueue(unsigned int size)
+            : maxsize_(size), minqueue_(QType().is_min_), queuesize_(0), 
+            elts_(0)
+        {
+            resize(size);
+        }
+
+        ~pqueue()
+        {
+            delete [] elts_;
+        }
 
 		// removes all elements from the pqueue
-		void 
-		clear();
+        void
+        clear()
+        {
+            queuesize_ = 0;
+        }
 
 		// reprioritise the specified element (up or down)
-		void
-		decrease_key(warthog::search_node* val);
+        void 
+        decrease_key(warthog::search_node* val)
+        {	
+            assert(val->get_priority() < queuesize_);
+            minqueue_ ?  
+                heapify_up(val->get_priority()) :
+                heapify_down(val->get_priority());
+        }
 
-		void 
-		increase_key(warthog::search_node* val);
+        void 
+        increase_key(warthog::search_node* val)
+        {
+            assert(val->get_priority() < queuesize_);
+            minqueue_ ? 
+                heapify_down(val->get_priority()) :
+                heapify_up(val->get_priority());
+        }
 
 		// add a new element to the pqueue
-		void 
-		push(warthog::search_node* val);
+        void 
+        push(warthog::search_node* val)
+        {
+            if(contains(val))
+            {
+                return;
+            }
+
+            if(queuesize_+1 > maxsize_)
+            {
+                resize(maxsize_*2);
+            }
+            unsigned int priority = queuesize_;
+            elts_[priority] = val;
+            val->set_priority(priority);
+            queuesize_++;
+            heapify_up(priority);
+        }
 
 		// remove the top element from the pqueue
-		warthog::search_node*
-		pop();
+        warthog::search_node*
+        pop()
+        {
+            if (queuesize_ == 0)
+            {
+                return 0;
+            }
+
+            warthog::search_node *ans = elts_[0];
+            queuesize_--;
+
+            if(queuesize_ > 0)
+            {
+                elts_[0] = elts_[queuesize_];
+                elts_[0]->set_priority(0);
+                heapify_down(0);
+            }
+            return ans;
+        }
 
 		// @return true if the priority of the element is 
 		// otherwise
@@ -80,8 +147,15 @@ class pqueue
 			return minqueue_; 
 		} 
 		
-		void
-		print(std::ostream& out);
+        void 
+        print(std::ostream& out)
+        {
+            for(unsigned int i=0; i < queuesize_; i++)
+            {
+                elts_[i]->print(out);
+                out << std::endl;
+            }
+        }
 
 		unsigned int
 		mem()
@@ -95,41 +169,72 @@ class pqueue
 		bool minqueue_;
 		unsigned int queuesize_;
 		warthog::search_node** elts_;
+        Comparator cmp_;
 
 		// reorders the subpqueue containing elts_[index]
-		void 
-		heapify_up(unsigned int);
+        void 
+        heapify_up(unsigned int index)
+        {
+            assert(index < queuesize_);
+            while(index > 0)
+            {
+                unsigned int parent = (index-1) >> 1;
+                if(cmp_(*elts_[index], *elts_[parent]))
+                //if(*elts_[index] < *elts_[parent])
+                {
+                    swap(parent, index);
+                    index = parent;
+                }
+                else { break; }
+            }
+        }
 		
 		// reorders the subpqueue under elts_[index]
-		void 
-		heapify_down(unsigned int);
+        void 
+        heapify_down(unsigned int index)
+        {
+            unsigned int first_leaf_index = queuesize_ >> 1;
+            while(index < first_leaf_index)
+            {
+                // find smallest (or largest, depending on heap type) child
+                unsigned int child1 = (index<<1)+1;
+                unsigned int child2 = (index<<1)+2;
+                unsigned int which = child1;
+                if((child2 < queuesize_) && 
+                    cmp_(*elts_[child2], *elts_[child1])) 
+                   //*elts_[child2] < *elts_[child1])
+                { which = child2; }
+
+                // swap child with parent if necessary
+                if(cmp_(*elts_[which], *elts_[index]))
+                //if(*elts_[which] < *elts_[index])
+                {
+                    swap(index, which);
+                    index = which;
+                }
+                else { break; }
+            }
+        }
 
 		// allocates more memory so the pqueue can grow
-		void 
-		resize(unsigned int newsize);
-	
-		// returns true if:
-		//   minqueue is true and the priority of second < first
-		//   minqueue is false and the priority of second > first
-		inline bool 
-		rotate(warthog::search_node& first, warthog::search_node& second)
-		{
-			if(minqueue_)
-			{
-				if(second < first)
-				{
-					return true;
-				}
-			}
-			else
-			{
-				if(second > first)
-				{
-					return true;
-				}
-			}
-			return false;
-		}
+        void
+        resize(unsigned int newsize)
+        {
+            if(newsize < queuesize_)
+            {
+                std::cerr << "err; pqueue::resize newsize < queuesize " << std::endl;
+                exit(1);
+            }
+
+            warthog::search_node** tmp = new search_node*[newsize];
+            for(unsigned int i=0; i < queuesize_; i++)
+            {
+                tmp[i] = elts_[i];
+            }
+            delete [] elts_;
+            elts_ = tmp;
+            maxsize_ = newsize;
+        }
 
 		// swap the positions of two nodes in the underlying array
 		inline void 
@@ -144,6 +249,9 @@ class pqueue
 			tmp->set_priority(index2);
 		}
 };
+
+typedef pqueue<warthog::cmp_less_search_node, warthog::min_q> pqueue_min;
+typedef pqueue<warthog::cmp_greater_search_node, warthog::max_q> pqueue_max;
 
 }
 

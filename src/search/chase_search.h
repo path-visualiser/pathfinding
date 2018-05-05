@@ -48,7 +48,6 @@ namespace graph
     class planar_graph;
 }
 
-class pqueue;
 class search_node;
 
 typedef double (* heuristicFn)
@@ -67,8 +66,8 @@ class chase_search : public warthog::search
                 double core_pct)
             : fexpander_(fexp), bexpander_(bexp), heuristic_(heuristic)
         {
-            fopen_ = new pqueue(512, true);
-            bopen_ = new pqueue(512, true);
+            fopen_ = new pqueue_min(512);
+            bopen_ = new pqueue_min(512);
             
             dijkstra_ = false;
             if(typeid(*heuristic_) == typeid(warthog::zero_heuristic))
@@ -135,8 +134,8 @@ class chase_search : public warthog::search
         }
 
     private:
-        warthog::pqueue* fopen_;
-        warthog::pqueue* bopen_;
+        warthog::pqueue_min* fopen_;
+        warthog::pqueue_min* bopen_;
         warthog::chase_expansion_policy* fexpander_;
         warthog::chase_expansion_policy* bexpander_;
         H* heuristic_;
@@ -388,7 +387,7 @@ class chase_search : public warthog::search
 
         void
         expand( warthog::search_node* current,
-                warthog::pqueue* open,
+                warthog::pqueue_min* open,
                 warthog::chase_expansion_policy* expander,
                 warthog::chase_expansion_policy* reverse_expander, 
                 uint32_t tmp_targetid,

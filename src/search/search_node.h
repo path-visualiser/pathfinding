@@ -233,6 +233,39 @@ class search_node
 		static uint32_t refcount_;
 };
 
+struct cmp_less_search_node
+{
+    inline bool
+    operator()(
+            const warthog::search_node& first,
+            const warthog::search_node& second)
+    {
+        return first < second;
+    }
+};
+
+struct cmp_greater_search_node
+{
+    inline bool
+    operator()(
+            const warthog::search_node& first,
+            const warthog::search_node& second)
+    {
+        return first > second;
+    }
+};
+
+struct cmp_less_search_node_f_only
+{
+    inline bool
+    operator()(
+            const warthog::search_node& first,
+            const warthog::search_node& second)
+    {
+        return first.get_f() < second.get_f();
+    }
+};
+
 }
 
 #endif
