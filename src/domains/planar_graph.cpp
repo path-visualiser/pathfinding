@@ -311,7 +311,7 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss,
     if(nodes_sz_ > 0)
     {
         oss << "p sp " << (last_id - first_id) << " " << 
-            this->get_num_edges() << std::endl;
+            this->get_num_edges_out() << std::endl;
         for(uint32_t i = first_id; i < last_id; i++)
         {
             warthog::graph::node* n = get_node(i);

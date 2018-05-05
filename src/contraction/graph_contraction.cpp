@@ -29,7 +29,7 @@ warthog::ch::graph_contraction::contract()
                   << "("<<c_pct_<<"% of nodes) ";
     }
     std::cerr << "contracting graph " << g_->get_filename() << std::endl;
-    uint32_t edges_before = g_->get_num_edges();
+    uint32_t edges_before = g_->get_num_edges_out();
 
     preliminaries();
 
@@ -102,7 +102,7 @@ warthog::ch::graph_contraction::contract()
 
     std::cerr << "\ngraph, contracted. ";
     std::cerr << "edges before " << edges_before 
-        << "; edges after " << g_->get_num_edges() << std::endl;
+        << "; edges after " << g_->get_num_edges_out() << std::endl;
     postliminaries();
 }
 

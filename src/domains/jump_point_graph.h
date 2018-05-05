@@ -84,7 +84,7 @@ class jump_point_graph
         inline uint32_t 
         get_num_edges()
         {
-            return g_->get_num_edges();
+            return g_->get_num_edges_out();
         }
 
         void

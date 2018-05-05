@@ -80,12 +80,22 @@ class planar_graph
         }
 
         inline uint32_t 
-        get_num_edges()
+        get_num_edges_out()
         {
             uint32_t num_edges = 0;
             for(uint32_t i = 0; i < nodes_sz_; i++)
             {
                 num_edges += nodes_[i].out_degree();
+            }
+            return num_edges;
+        }
+
+        inline uint32_t
+        get_num_edges_in()
+        {
+            uint32_t num_edges = 0;
+            for(uint32_t i = 0; i < nodes_sz_; i++)
+            {
                 num_edges += nodes_[i].in_degree();
             }
             return num_edges;
@@ -252,8 +262,8 @@ class planar_graph
                             max_addr;
             }
             
-            uint64_t mem_lb =
-                this->get_num_edges() * sizeof(warthog::graph::edge);
+            uint64_t mem_lb = sizeof(warthog::graph::edge) *
+                (this->get_num_edges_out() + this->get_num_edges_in());
             uint64_t mem_actual =
                 (max_addr-min_addr) * sizeof(warthog::graph::edge);
             return mem_actual / (double)mem_lb;

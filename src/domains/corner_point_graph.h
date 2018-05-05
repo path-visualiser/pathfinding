@@ -92,7 +92,7 @@ class corner_point_graph
         inline uint32_t 
         get_num_edges()
         {
-            return g_->get_num_edges();
+            return g_->get_num_edges_out();
         }
 
         // retrieve the xy coordinates of a node

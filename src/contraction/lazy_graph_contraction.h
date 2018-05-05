@@ -123,6 +123,11 @@ class lazy_graph_contraction
         warthog::heap_node<ch_pair>* hn_pool_;
         std::vector<uint32_t> order_; // node ids, as retured by ::next
 
+        std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
+            in_shorts;
+        std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
+            out_shorts;
+
         // these objects get recycled across all witness searches
         warthog::solution sol_;
         std::vector<warthog::graph::edge> uc_neis_;

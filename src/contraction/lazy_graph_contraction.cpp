@@ -80,7 +80,8 @@ warthog::ch::lazy_graph_contraction::contract(
     if(c_pct < 100)
     { std::cerr << "partially " << "("<<c_pct<<"% of nodes) "; }
     std::cerr << "contracting graph " << g_->get_filename() << std::endl;
-    uint32_t edges_before = g_->get_num_edges();
+    uint32_t edges_before = g_->get_num_edges_out();
+    std::cerr << " edges before " << edges_before << " ";
 
     warthog::timer mytimer;
     double t_begin = mytimer.get_time_micro();
@@ -102,17 +103,44 @@ warthog::ch::lazy_graph_contraction::contract(
 
         uint32_t best_id = next(verify_priorities, c_pct); 
         if(best_id == warthog::INF) { break; }
-
         terms_[best_id] = contract_node(best_id, false);
-        update_neis.clear();
-        for(auto& e : uc_neis_) { update_neis.push_back(e.node_id_); }
 
         // mark adjacent un-contracted neighbours as needing to be updated
+        update_neis.clear();
+        for(auto& e : uc_neis_) 
+        { 
+            update_neis.push_back(e.node_id_); 
+            u_filter_->set_flag_true(e.node_id_);
+        }
+
         for(uint32_t i = 0; i < update_neis.size(); i++)
         {
             uint32_t neighbour_id = update_neis.at(i);
-            u_filter_->set_flag_true(neighbour_id);
-            //std::cerr << "c: " << best_id << " u: "<<neighbour_id << " idx: " << hn_pool_[neighbour_id].get_index()<< " cval "<< hn_pool_[neighbour_id].get_element().cval_ << std::endl;
+            if(!u_filter_->get_flag(neighbour_id)) { continue; } // updated 
+
+            // re-compute importance metrics
+            niv_metrics niv = 
+            contract_node(neighbour_id, true);
+
+            // update the "search space size" estimate
+            niv.depth_ = std::max(niv.depth_, terms_[best_id].depth_+1);
+
+            // recompute priority and update heap 
+            int32_t cval = compute_contraction_priority(niv);
+            if(cval < hn_pool_[neighbour_id].get_element().cval_)
+            {
+               hn_pool_[neighbour_id].get_element().cval_ = cval;
+               heap_->decrease_key(&hn_pool_[neighbour_id]);
+            }
+            else
+            {
+                hn_pool_[neighbour_id].get_element().cval_ = cval;
+                heap_->increase_key(&hn_pool_[neighbour_id]);
+            }
+
+            // store the metrics
+            terms_[neighbour_id] = niv;
+            u_filter_->set_flag_false(neighbour_id);
         }
         mytimer.stop();
 
@@ -121,6 +149,7 @@ warthog::ch::lazy_graph_contraction::contract(
         num_lazy = total_lazy_updates_ - num_lazy;
 
         if((mytimer.get_time_micro() - t_last) > 1000000)
+        //if(true)
         {
             t_last = mytimer.get_time_micro();
             std::cerr 
@@ -142,7 +171,7 @@ warthog::ch::lazy_graph_contraction::contract(
 
     std::cerr << "\ngraph, contracted. ";
     std::cerr << "edges before " << edges_before 
-        << "; edges after " << g_->get_num_edges() << std::endl;
+        << "; edges after " << g_->get_num_edges_out() << std::endl;
 
     postliminaries();
 }
@@ -226,33 +255,8 @@ warthog::ch::lazy_graph_contraction::next(
     }
 
     // pop the best contraction candidate off the heap
-    uint32_t best_id;
-    //const uint32_t MAX_VERIFY = 3;
-    //uint32_t num_verify = 0;
-    while(true)
-    {
-        heap_node<ch_pair>* best = heap_->pop();
-        best_id = best->get_element().node_id_; 
-
-        // recompute the priority of the best node if some adjacent 
-        // neighbour has been recently contracted
-        if(u_filter_->get_flag(best_id))
-        {
-            niv_metrics niv = contract_node(best_id, true);
-            niv.depth_ = terms_[best_id].depth_;
-            terms_[best_id] = niv;
-
-            int32_t cval = compute_contraction_priority(niv);
-            hn_pool_[best_id].get_element().cval_ = cval;
-            heap_->push(&hn_pool_[best_id]);
-
-            u_filter_->set_flag_false(best_id);
-            total_lazy_updates_++;
-            continue;
-        } 
-        break;
-    }
-    return best_id;
+    heap_node<ch_pair>* best = heap_->pop();
+    return best->get_element().node_id_; 
 }
 
 // NB: assumes the via-node is already marked as contracted
@@ -321,10 +325,11 @@ warthog::ch::lazy_graph_contraction::contract_node(
     }
 
     // temporary storage for shortcuts that will be added
-    std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
-        in_shorts;
-    std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
-        out_shorts;
+    if(!metrics_only)
+    {
+        in_shorts.clear();
+        out_shorts.clear();
+    }
 
     // witness searches (i.e. between every pair of (in, out) neighbours)
     // NB: during each witness search, we never expand the current node
@@ -352,14 +357,9 @@ warthog::ch::lazy_graph_contraction::contract_node(
             {
                 // importance metrics related to the newly added edge
                 niv.eadd_++;
-                niv.hops_added_ = e_in.label_ + e_out.label_ + 1;
+                niv.hops_added_ += e_in.label_ + e_out.label_;
                 if(!metrics_only)
                 {
-                    if(e_in.node_id_ == 35058 || e_out.node_id_ == 35058)
-                    {
-                        std::cerr << "master" << std::endl;
-                    }
-
                     out_shorts.push_back(
                         std::pair<warthog::graph::node*, 
                             warthog::graph::edge>(
@@ -429,13 +429,9 @@ int32_t
 warthog::ch::lazy_graph_contraction::compute_contraction_priority(
         niv_metrics& niv)
 {  
-    if(niv.edel_ == 0 || niv.hops_removed_ == 0) 
-    {
-        std::cerr << "master" << std::endl;
-    }
 //      ** RoutingKit heuristic **
 		return 1 + 
-            1000*niv.level_ + 
+            1000*niv.depth_+ 
             (1000*niv.eadd_) / (1+niv.edel_) +
             (1000*niv.hops_added_) / (1+niv.hops_removed_);
 
