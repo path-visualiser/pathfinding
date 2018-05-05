@@ -165,7 +165,9 @@ class lazy_graph_contraction
             void
             print(std::ostream& out)
             {
-                out << " eadd: " << eadd_ 
+                out 
+                    << " depth: " << depth_
+                    << " eadd: " << eadd_ 
                     << " edel: " << edel_
                     << " hadd: " << hops_added_
                     << " hdel: " << hops_removed_;
