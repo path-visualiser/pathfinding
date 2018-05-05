@@ -133,7 +133,7 @@ class flexible_astar : public warthog::search
         warthog::search_node* 
         get_search_node(uint32_t id)
         {
-            return expander_->get_ptr(id, pi_.instance_id_);
+            return expander_->generate(id);
         }
 
         // apply @param fn to every node on the closed list
