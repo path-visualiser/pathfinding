@@ -78,7 +78,6 @@ warthog::ch::fixed_graph_contraction::contract()
 
     uint32_t total_nodes = g_->get_num_nodes();
     uint32_t num_contractions = 0;
-//    warthog::apriori_filter* filter = get_filter();
     for(uint32_t cid = next(); cid != warthog::INF; cid = next())
     {
         
@@ -90,54 +89,73 @@ warthog::ch::fixed_graph_contraction::contract()
             break; 
         }
 
+        warthog::graph::node* n = g_->get_node(cid);
+
         std::cerr << "\r " << pct << "%; " << ++num_contractions << " /  " << total_nodes;
-        if(verbose_)
+        //if(verbose_)
+        //{
+            std::cerr << "; current: " << " in: " << n->in_degree() 
+                << " out: " << n->out_degree() << std::endl;
+            std::cerr << std::flush;
+        //}
+
+        uc_neis_.clear();
+        for(uint32_t i = 0; i < n->out_degree(); i++)
         {
-            std::cerr << "; current: " << cid;
+            warthog::graph::edge& e_out = *(n->outgoing_begin() + i);
+            if(filter_->get_flag(e_out.node_id_)) { continue; }
+            uc_neis_.push_back(e_out);
         }
 
-        warthog::graph::node* n = g_->get_node(cid);
-        //filter->filter(cid); // never expand this node again
-
-        for(int i = 0; i < n->out_degree(); i++)
+        uint32_t uc_neis_incoming_begin_ = uc_neis_.size();
+        for(uint32_t i = 0; i < n->in_degree(); i++)
         {
-            warthog::graph::edge& out = *(n->outgoing_begin() + i);
+            warthog::graph::edge& e_in = *(n->incoming_begin() + i);
+            if(filter_->get_flag(e_in.node_id_)) { continue; }
+            uc_neis_.push_back(e_in);
+        }
+        
+        uint32_t max_expand = warthog::INF;
+        double  max_outgoing_wt = 0;
+        for(uint32_t j = 0; j < uc_neis_incoming_begin_; j++)
+        {
+            warthog::graph::edge& e_out = uc_neis_.at(j);
+            if(e_out.wt_ > max_outgoing_wt) { max_outgoing_wt = e_out.wt_; }
+        }
 
-            // skip already-contracted neighbours
-//            if(filter->filter(out.node_id_)) { continue; }
+        // contract
+        for(uint32_t i = uc_neis_incoming_begin_; i < uc_neis_.size(); i++)
+        {
+            warthog::graph::edge& e_in = uc_neis_.at(i);
+            double max_cost = e_in.wt_ + max_outgoing_wt;
+            witness_search(e_in.node_id_, warthog::INF, max_cost, max_expand);
 
-            for(int j = 0; j < n->in_degree(); j++)
+            for(uint32_t j = 0; j < uc_neis_incoming_begin_; j++)
             {
-                warthog::graph::edge& in = *(n->incoming_begin() + j);
-
-                // skip already-contracted neighbours
-//                if(filter->filter(in.node_id_)) { continue; }
-
-                // no reflexive arcs please
-                if(out.node_id_ == in.node_id_) { continue; }
-
-                // terminate when we prove there is no witness 
-                // path with len <= via_len
-                double via_len = in.wt_ + out.wt_;
-                double witness_len = 
-                    witness_search(in.node_id_, out.node_id_, via_len);
+                warthog::graph::edge& e_out = uc_neis_.at(j);
+                if(e_in.node_id_ == e_out.node_id_) { continue; }
+                
+                warthog::search_node* nei =
+                    alg_->get_search_node(e_out.node_id_);
+                double witness_len = nei ? nei->get_g() : warthog::INF;
+                double via_len = e_in.wt_ + e_out.wt_;
 
                 if(witness_len > via_len)
                 {
                     if(verbose_)
                     {
-                        std::cerr << "\tshortcut " << in.node_id_ << " -> "
-                            << cid << " -> " << out.node_id_;
+                        std::cerr << "\tshortcut " << e_in.node_id_ << " -> "
+                            << cid << " -> " << e_out.node_id_;
                         std::cerr << " via-len " << via_len;
                         std::cerr << " witness-len " << witness_len << std::endl;
                     }
 
-                    warthog::graph::node* tail = g_->get_node(in.node_id_);
+                    warthog::graph::node* tail = g_->get_node(e_in.node_id_);
                     tail->add_outgoing(
-                            warthog::graph::edge(out.node_id_, via_len));
-                    warthog::graph::node* head = g_->get_node(out.node_id_);
+                            warthog::graph::edge(e_out.node_id_, via_len));
+                    warthog::graph::node* head = g_->get_node(e_out.node_id_);
                     head->add_incoming(
-                            warthog::graph::edge(in.node_id_, via_len));
+                            warthog::graph::edge(e_in.node_id_, via_len));
                 }
             }
         }
@@ -154,7 +172,6 @@ warthog::ch::fixed_graph_contraction::next()
 {
     if(order_index_ < order_->size())
     {
-        filter_->set_flag_true(order_index_); // mark as contracted
         return order_->at(order_index_++);
     }
     return warthog::INF;
@@ -163,10 +180,11 @@ warthog::ch::fixed_graph_contraction::next()
 // NB: assumes the via-node is already contracted
 double
 warthog::ch::fixed_graph_contraction::witness_search(
-        uint32_t from_id, uint32_t to_id, double via_len)
+        uint32_t from_id, uint32_t to_id, double via_len,
+        uint32_t max_expand)
 {
     // only search for witness paths between uncontracted neighbours
-    if(filter_->get_flag(from_id) || filter_->get_flag(to_id)) { return 0; }
+    //if(filter_->get_flag(from_id) || filter_->get_flag(to_id)) { return 0; }
 
     // pathfinding queries must specify an external start and target id
     // (i.e. as they appear in the input file)
@@ -176,7 +194,7 @@ warthog::ch::fixed_graph_contraction::witness_search(
 
     // run the search
     alg_->set_cost_cutoff(via_len);
-    alg_->set_max_expansions_cutoff(1000);
+    alg_->set_max_expansions_cutoff(max_expand);
     warthog::problem_instance pi(ext_from_id, ext_to_id);
     warthog::solution sol;
     alg_->get_distance(pi, sol);

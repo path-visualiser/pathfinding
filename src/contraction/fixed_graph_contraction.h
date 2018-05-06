@@ -75,22 +75,22 @@ class fixed_graph_contraction
         size_t
         mem();
 
-    protected:
-        virtual void
-        preliminaries();
-
-        virtual void
-        postliminaries() { } 
-
-        virtual uint32_t
-        next();
-
-        virtual double
-        witness_search(uint32_t from_id, uint32_t to_id, double via_len);
-
     private:
         void 
         init();
+        
+        void
+        preliminaries();
+
+        void
+        postliminaries() { } 
+
+        uint32_t
+        next();
+
+        double
+        witness_search(uint32_t from_id, uint32_t to_id, double via_len,
+                uint32_t max_expand);
 
         uint32_t order_index_;
         std::vector<uint32_t>* order_;
@@ -99,6 +99,8 @@ class fixed_graph_contraction
         bool verbose_;
         bool done_;
         uint32_t c_pct_;
+
+        std::vector<warthog::graph::edge> uc_neis_;
 
         // witness search stuff
         warthog::euclidean_heuristic* heuristic_;
