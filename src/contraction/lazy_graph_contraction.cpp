@@ -113,6 +113,7 @@ warthog::ch::lazy_graph_contraction::contract(
             u_filter_->set_flag_true(e.node_id_);
         }
 
+
         for(uint32_t i = 0; i < update_neis.size(); i++)
         {
             uint32_t neighbour_id = update_neis.at(i);

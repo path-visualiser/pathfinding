@@ -33,7 +33,6 @@
 
 #include "constants.h"
 #include "contraction.h"
-#include "graph_contraction.h"
 #include "heap.h"
 #include "solution.h"
 #include "bidirectional_search.h"
