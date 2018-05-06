@@ -1,6 +1,6 @@
 #include "apriori_filter.h"
 #include "constants.h"
-#include "euclidean_heuristic.h"
+#include "zero_heuristic.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
@@ -46,21 +46,14 @@ warthog::ch::fixed_graph_contraction::init()
     expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
         (get_graph(), filter_);
 
-    heuristic_ = new warthog::euclidean_heuristic(get_graph());
+    heuristic_ = new warthog::zero_heuristic();
     alg_ = new flexible_astar<
-                    warthog::euclidean_heuristic,
+                    warthog::zero_heuristic,
                     warthog::graph_expansion_policy<warthog::apriori_filter>>
                         (heuristic_, expander_);
 }
 
 void
-warthog::ch::fixed_graph_contraction::preliminaries()
-{
-    total_searches_ = 0;
-    total_expansions_ = 0;
-}
-void
-
 warthog::ch::fixed_graph_contraction::contract()
 {
     if(done_) { return; }
@@ -71,13 +64,18 @@ warthog::ch::fixed_graph_contraction::contract()
         std::cerr << "partially "
                   << "("<<c_pct_<<"% of nodes) ";
     }
+
+    warthog::timer mytimer;
+    double t_begin = mytimer.get_time_micro();
+
     std::cerr << "contracting graph " << g_->get_filename() << std::endl;
+    total_searches_ = 0;
+    total_expansions_ = 0;
+
     uint32_t edges_before = g_->get_num_edges_out();
-
-    preliminaries();
-
     uint32_t total_nodes = g_->get_num_nodes();
     uint32_t num_contractions = 0;
+    double t_last = mytimer.get_time_micro();
     for(uint32_t cid = next(); cid != warthog::INF; cid = next())
     {
         
@@ -91,13 +89,6 @@ warthog::ch::fixed_graph_contraction::contract()
 
         warthog::graph::node* n = g_->get_node(cid);
 
-        std::cerr << "\r " << pct << "%; " << ++num_contractions << " /  " << total_nodes;
-        //if(verbose_)
-        //{
-            std::cerr << "; current: " << " in: " << n->in_degree() 
-                << " out: " << n->out_degree() << std::endl;
-            std::cerr << std::flush;
-        //}
 
         uc_neis_.clear();
         for(uint32_t i = 0; i < n->out_degree(); i++)
@@ -124,6 +115,8 @@ warthog::ch::fixed_graph_contraction::contract()
         }
 
         // contract
+        filter_->set_flag_true(cid);
+        uint32_t eadd = 0;
         for(uint32_t i = uc_neis_incoming_begin_; i < uc_neis_.size(); i++)
         {
             warthog::graph::edge& e_in = uc_neis_.at(i);
@@ -135,21 +128,14 @@ warthog::ch::fixed_graph_contraction::contract()
                 warthog::graph::edge& e_out = uc_neis_.at(j);
                 if(e_in.node_id_ == e_out.node_id_) { continue; }
                 
-                warthog::search_node* nei =
-                    alg_->get_search_node(e_out.node_id_);
+                warthog::search_node* nei = 
+                    alg_->get_generated_node(e_out.node_id_);
                 double witness_len = nei ? nei->get_g() : warthog::INF;
                 double via_len = e_in.wt_ + e_out.wt_;
 
                 if(witness_len > via_len)
                 {
-                    if(verbose_)
-                    {
-                        std::cerr << "\tshortcut " << e_in.node_id_ << " -> "
-                            << cid << " -> " << e_out.node_id_;
-                        std::cerr << " via-len " << via_len;
-                        std::cerr << " witness-len " << witness_len << std::endl;
-                    }
-
+                    eadd++;
                     warthog::graph::node* tail = g_->get_node(e_in.node_id_);
                     tail->add_outgoing(
                             warthog::graph::edge(e_out.node_id_, via_len));
@@ -159,12 +145,26 @@ warthog::ch::fixed_graph_contraction::contract()
                 }
             }
         }
+
+        if((mytimer.get_time_micro() - t_last) > 1000000)
+        {
+            std::cerr 
+                << pct << "%; " << ++num_contractions 
+                << " /  " << total_nodes
+                << "; current: " << cid 
+                << " in: " << n->in_degree() << " out: " << n->out_degree() 
+                << " eadd " << eadd << std::endl;
+                std::cerr << std::flush;
+                t_last = mytimer.get_time_micro();
+        }
     }
 
-    std::cerr << "\ngraph, contracted. ";
-    std::cerr << "edges before " << edges_before 
+    std::cerr 
+        << "\ngraph, contracted. "
+        << " time (s): " << 
+        (mytimer.get_time_micro() - t_begin) / 1000000.0
+        << ". edges before " << edges_before 
         << "; edges after " << g_->get_num_edges_out() << std::endl;
-    postliminaries();
 }
 
 uint32_t 
@@ -183,9 +183,6 @@ warthog::ch::fixed_graph_contraction::witness_search(
         uint32_t from_id, uint32_t to_id, double via_len,
         uint32_t max_expand)
 {
-    // only search for witness paths between uncontracted neighbours
-    //if(filter_->get_flag(from_id) || filter_->get_flag(to_id)) { return 0; }
-
     // pathfinding queries must specify an external start and target id
     // (i.e. as they appear in the input file)
     warthog::graph::planar_graph* g = this->get_graph();
@@ -198,6 +195,8 @@ warthog::ch::fixed_graph_contraction::witness_search(
     warthog::problem_instance pi(ext_from_id, ext_to_id);
     warthog::solution sol;
     alg_->get_distance(pi, sol);
+
+    // metrics
     total_expansions_ += sol.nodes_expanded_;
     total_searches_++;
     return sol.sum_of_edge_costs_;

@@ -16,7 +16,6 @@
 namespace warthog
 {
 	
-const uint32_t NODEID_AND_STATUS_MASK = (1 << 24) - 1;
 const uint32_t STATUS_MASK = 1;
 class search_node
 {
@@ -59,7 +58,7 @@ class search_node
 		}
 
 		inline uint32_t 
-		get_id() const { return (id_and_status_ & NODEID_AND_STATUS_MASK) >> 1; }
+		get_id() const { return id_and_status_ >> 1; }
 
 		inline void
 		set_id(uint32_t id) 
@@ -70,14 +69,14 @@ class search_node
 		inline warthog::jps::direction
 		get_pdir() const
 		{
-			return (warthog::jps::direction)
-			   	*(((uint8_t*)(&id_and_status_))+3);
+			return (warthog::jps::direction)jps_parent_direction_;
+			   	
 		}
 
 		inline void
 		set_pdir(warthog::jps::direction d)
 		{
-			*(((uint8_t*)(&id_and_status_))+3) = d;
+			jps_parent_direction_ = d;
 		}
 
 		inline bool
@@ -229,6 +228,7 @@ class search_node
         uint32_t parent_id_;
 		uint32_t priority_; // expansion priority
 		uint32_t searchid_;
+        uint8_t jps_parent_direction_; // hack
 
 		static uint32_t refcount_;
 };

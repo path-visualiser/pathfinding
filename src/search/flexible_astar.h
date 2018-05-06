@@ -49,6 +49,7 @@ class flexible_astar : public warthog::search
             on_relax_fn_ = 0;
             on_generate_fn_ = 0;
             on_expand_fn_ = 0;
+            pi_.instance_id_ = UINT32_MAX;
 		}
 
 		virtual ~flexible_astar()
@@ -130,10 +131,14 @@ class flexible_astar : public warthog::search
             }
         }
 
-        warthog::search_node* 
-        get_search_node(uint32_t id)
+        // return a pointer to the warthog::search_node object associated
+        // with node @param id. If this node was not generate during the 
+        // last search instance, 0 is returned instead
+        warthog::search_node*
+        get_generated_node(uint32_t id)
         {
-            return expander_->generate(id);
+            warthog::search_node* ret = expander_->generate(id);
+            return ret->get_search_id() == pi_.instance_id_ ? ret : 0;
         }
 
         // apply @param fn to every node on the closed list

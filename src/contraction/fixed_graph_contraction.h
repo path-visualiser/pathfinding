@@ -21,7 +21,7 @@ namespace warthog
 {
 
 class apriori_filter;
-class euclidean_heuristic;
+class zero_heuristic;
 
 template<class FILTER>
 class graph_expansion_policy;
@@ -79,12 +79,6 @@ class fixed_graph_contraction
         void 
         init();
         
-        void
-        preliminaries();
-
-        void
-        postliminaries() { } 
-
         uint32_t
         next();
 
@@ -103,11 +97,11 @@ class fixed_graph_contraction
         std::vector<warthog::graph::edge> uc_neis_;
 
         // witness search stuff
-        warthog::euclidean_heuristic* heuristic_;
+        warthog::zero_heuristic* heuristic_;
         warthog::apriori_filter* filter_;
         warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
         warthog::flexible_astar<
-           warthog::euclidean_heuristic,
+           warthog::zero_heuristic,
            warthog::graph_expansion_policy<warthog::apriori_filter>,
            warthog::pqueue_min>* alg_;
         uint32_t total_expansions_;
