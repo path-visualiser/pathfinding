@@ -40,6 +40,9 @@ class planar_graph
 
         warthog::graph::planar_graph&
         operator=(const warthog::graph::planar_graph& other);
+        
+        bool
+        operator==(const warthog::graph::planar_graph& other);
 
         // read in a grid map in the format used at the 
         // international Grid-based Path Planning Competition
@@ -72,6 +75,22 @@ class planar_graph
         // NB: if the range is invalid, nothing is printed
         void
         print_dimacs_co(std::ostream& oss, uint32_t first_id, uint32_t last_id);
+
+        // write a binary blob description of the graph
+        void
+        save(std::ostream& oss);
+        
+        // load graph from a binary blob description
+        void
+        load( std::istream& oss, 
+                    bool store_incoming_edges = false, 
+                    bool enforce_euclidean=true);
+
+        // check if arc weights are Euclidean and (optionally) fix if not.
+        // "fixing" means arc weights must be at least as large as the
+        // Euclidean distance between the arc's head and tail vertex.
+        bool
+        is_euclidean(bool fix_if_not=true);
 
         inline uint32_t
         get_num_nodes()
@@ -128,11 +147,13 @@ class planar_graph
         inline void
         set_xy(uint32_t id, int32_t x, int32_t y)
         {
-            if(id < nodes_sz_)
+            if(id >= nodes_sz_) { return; }
+            if(xy_.size() != nodes_sz_)
             {
-                xy_[id*2] = x;
-                xy_[id*2+1] = y;
+                xy_.reserve(nodes_sz_);
             }
+            xy_[id*2] = x;
+            xy_[id*2+1] = y;
         }
 
         // Fetch a node
@@ -162,7 +183,13 @@ class planar_graph
         // @return: the internal graph id of the new node or the id of the
         // existing node whose graph id is equal to @param ext_id
         uint32_t
-        add_node(int32_t x, int32_t y, uint32_t ext_id = warthog::INF);
+        add_node(int32_t x, int32_t y, uint32_t ext_id);
+
+        uint32_t
+        add_node(int32_t x, int32_t y);
+
+        uint32_t
+        add_node();
 
         // print extra stuff to std::err 
         inline void 
@@ -189,7 +216,7 @@ class planar_graph
             {
                 mem += nodes_[i].mem();
             }
-            mem += sizeof(*xy_) * nodes_sz_ * 2;
+            mem += sizeof(int32_t) * xy_.size() * 2;
             mem += sizeof(char)*filename_.length() +
                 sizeof(*this);
             return mem;
@@ -284,22 +311,20 @@ class planar_graph
         //}
 
     private:
-        std::string filename_;
+        // the set of nodes that comprise the graph
+        uint32_t nodes_sz_;
+        uint32_t nodes_cap_;
+        warthog::graph::node* nodes_;
+        
+        // planar coordinates stored as adjacent pairs (x, then y)
+        std::vector<int32_t> xy_;
 
         // these containers serve to map from external graph ids to 
         // internal graph ids
         std::vector<uint32_t> id_map_; 
         std::unordered_map<uint32_t, uint32_t> ext_id_map_; 
-        
-        // the set of nodes that comprise the graph
-        uint32_t nodes_sz_;
-        uint32_t nodes_cap_;
-        warthog::graph::node* nodes_;
 
-
-        // planar coordinates stored as adjacent pairs (x, then y)
-        int32_t* xy_;
-
+        std::string filename_;
         bool verbose_;
 
         size_t

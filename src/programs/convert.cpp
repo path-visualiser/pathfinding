@@ -4,8 +4,46 @@
 #include "cfg.h"
 #include "contraction.h"
 
+#include <fstream>
+
 int
-main(int argc, char** argv)
+main_dimacs_to_binary(int argc, char** argv)
+{
+    if(argc < 3)
+    {
+        std::cerr 
+            << argv[0] 
+            << " [dimacs gr file] [dimacs co file] [output file]\n";
+        exit(EINVAL);
+    }
+
+    warthog::graph::planar_graph g;
+    g.load_dimacs(argv[1], argv[2]);
+
+    std::ofstream ofs(argv[3], std::ofstream::binary);
+    g.save(ofs);
+    ofs.close();
+
+    warthog::graph::planar_graph g2;
+    std::ifstream ifs(argv[3], std::ifstream::binary);
+    g2.load(ifs, true, true);
+    ifs.close();
+
+//    if(g == g2)
+//    {
+//        std::cout << "conversion finished and verified. all good!" 
+//            << std::endl;
+//    }
+//    else
+//    {
+//        std::cout << "conversion failed" << std::endl;
+//    }
+    return 0; 
+}
+
+
+int
+main_af(int argc, char** argv)
 {
 	// parse arguments
 	warthog::util::param valid_args[] = 
@@ -363,3 +401,10 @@ main_bbaf_convert(int argc, char** argv)
     lab->print(std::cout);
     return 0;
 }
+
+int
+main(int argc, char** argv)
+{
+    main_dimacs_to_binary(argc, argv);
+}
+

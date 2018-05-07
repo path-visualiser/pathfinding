@@ -56,6 +56,7 @@ class edge
             return *this;
         }
 
+
         void
         print(std::ostream& out)
         {
@@ -69,6 +70,24 @@ class edge
         ELABEL_T label_;
 };
 typedef edge* edge_iter;
+
+inline bool
+operator==(const warthog::graph::edge e1, const warthog::graph::edge e2)
+{
+    uint32_t qword = 0;
+    for( ; qword < sizeof(e1) >> 3; qword++)
+    {
+        if(((uint64_t*)&e1)[qword] != ((uint64_t*)&e2)[qword]) 
+        { return false; }
+    }
+
+    uint64_t byte = qword * 8;
+    for( ; byte < sizeof(e1); byte++)
+    {
+        if(((char*)&e1)[byte] != ((char*)&e2)[byte]) { return false; }
+    }
+    return true;
+}
 
 class node
 {
@@ -131,6 +150,7 @@ class node
 
             return *this;
         }
+
 
         warthog::graph::node&
         operator=(const warthog::graph::node& other)
@@ -283,12 +303,6 @@ class node
         out_capacity() { return out_cap_; }
 
         // resize the containers that store incoming and outgoing edges
-        void
-        edge_capacity(uint32_t new_in_cap, uint32_t new_out_cap)
-        {
-            increase_capacity(new_in_cap, in_cap_, incoming_);
-            increase_capacity(new_out_cap, out_cap_, outgoing_);
-        }
 
         // EXPERIMENTAL; DO NOT USE
         inline void
@@ -316,7 +330,48 @@ class node
                 sizeof(this);
         }
 
-    private: 
+        inline void
+        capacity(uint32_t new_in_cap, uint32_t new_out_cap)
+        {
+            if(new_in_cap > in_cap_)
+            {
+                in_cap_ = increase_capacity(new_in_cap, in_cap_, incoming_);
+            }
+            if(new_out_cap > out_cap_)
+            {
+                out_cap_ = increase_capacity(new_out_cap, out_cap_, outgoing_);
+            }
+        }
+
+        inline  void
+        load(std::istream& in_s)
+        {
+            //in_s.read((char*)&(in_deg_), sizeof(in_deg_));
+            in_s.read( (char*)&(out_deg_), sizeof(out_deg_));
+
+            // allocate memory
+            capacity(in_deg_, out_deg_);
+
+            //in_s.read((char*)&incoming_,
+            //          sizeof(warthog::graph::edge) * in_deg_);
+            in_s.read((char*)outgoing_, 
+                      sizeof(warthog::graph::edge) * out_deg_);
+        }
+
+        inline void
+        save(std::ostream& out_s)
+        {
+            //out_s.write((char*)&(in_deg_), sizeof(in_deg_));
+            out_s.write( (char*)&(out_deg_), sizeof(out_deg_));
+
+            //out_s.write((char*)&incoming_,
+            //          sizeof(warthog::graph::edge) * in_deg_);
+            out_s.write((char*)outgoing_, 
+                      sizeof(warthog::graph::edge) * out_deg_);
+        }
+
+
+    private:
         edge* incoming_;
         ECAP_T in_deg_;
         ECAP_T in_cap_;
@@ -332,18 +387,19 @@ class node
             out_deg_ = out_cap_ = 0;
             incoming_ = 0;
             in_deg_ = in_cap_ = 0;
+            capacity(in_capacity, out_capacity);
 
-            if(in_capacity > 0)
-            {
-                incoming_ = new edge[in_capacity];
-                in_cap_ = in_capacity;
-            }
+            //if(in_capacity > 0)
+            //{
+            //    incoming_ = new edge[in_capacity];
+            //    in_cap_ = in_capacity;
+            //}
 
-            if(out_capacity > 0)
-            {
-                outgoing_ = new edge[out_capacity];
-                out_cap_ = out_capacity;
-            }
+            //if(out_capacity > 0)
+            //{
+            //    outgoing_ = new edge[out_capacity];
+            //    out_cap_ = out_capacity;
+            //}
         }
 
         // increase max (incoming or outgoing) edges that can be 
@@ -352,7 +408,6 @@ class node
         increase_capacity(ECAP_T newcap, ECAP_T oldcap, edge*& collection)
         {
             newcap = std::max<int>(1, newcap);
-            assert(newcap > oldcap);
             if(newcap <= oldcap) { return oldcap; }
 
             edge* newcollection = new edge[newcap];
@@ -419,6 +474,26 @@ class node
 
 };
 typedef node* node_iter;
+
+inline bool
+operator==(warthog::graph::node& n1, warthog::graph::node& n2)
+{
+    if(!(n1.in_degree() == n2.in_degree()) &&
+        (n1.out_degree() == n2.out_degree())) { return false; }
+    
+    for(uint32_t i = 0; i < n1.in_degree(); i++)
+    {
+        if(!(n1.incoming_begin()[i] == n2.incoming_begin()[i])) 
+        { return false; }
+    }
+
+    for(uint32_t i = 0; i < n1.out_degree(); i++)
+    {
+        if(!(n1.outgoing_begin()[i] == n2.outgoing_begin()[i])) 
+        { return false; }
+    }
+    return true;
+}
         
 // grid costs have double precision edge weights 
 // but our graphs use integer costs; we scale

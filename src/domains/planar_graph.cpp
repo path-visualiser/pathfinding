@@ -13,7 +13,6 @@
 
 warthog::graph::planar_graph::planar_graph()
 {
-    xy_ = 0;
     nodes_ = 0;
     nodes_sz_ = 0;
     nodes_cap_ = 0;
@@ -23,7 +22,6 @@ warthog::graph::planar_graph::planar_graph()
 warthog::graph::planar_graph::planar_graph(
         warthog::gridmap* map, bool store_incoming)
 {
-    xy_ = 0;
     nodes_ = 0;
     nodes_sz_ = 0;
     nodes_cap_ = 0;
@@ -42,40 +40,68 @@ warthog::graph::planar_graph&
 warthog::graph::planar_graph::operator=(const warthog::graph::planar_graph& other)
 {
     // free and reallocate from scratch
-    delete [] xy_;
     delete [] nodes_;
     id_map_.clear();
 
     verbose_ = other.verbose_;
     filename_ = other.filename_;
+
     nodes_sz_ = other.nodes_sz_;
     nodes_cap_ = other.nodes_cap_;
     warthog::graph::node* nodes_ = new warthog::graph::node[nodes_cap_];
-    int32_t* xy_ = new int32_t[2*nodes_cap_];
-
     for(uint32_t i = 0; i < nodes_sz_; i++)
     {
         nodes_[i] = other.nodes_[i];
-        xy_[2*i] = other.xy_[2*i];
-        xy_[2*i+1] = other.xy_[2*i+1];
     }
-
-    for(uint32_t i = 0; i < other.id_map_.size(); i++)
-    {
-        id_map_.push_back(other.id_map_.at(i));
-    }
+    xy_ = other.xy_;
+    id_map_ = other.id_map_;
+    ext_id_map_ = other.ext_id_map_;
     return *this;
+}
+
+bool
+warthog::graph::planar_graph::operator==(
+        const warthog::graph::planar_graph& other)
+{
+    if(xy_.size() == other.xy_.size())
+    {
+        for(uint32_t i = 0; i < xy_.size(); i++)
+        {
+            if(xy_[i] != other.xy_[i]) { return false; }
+        }
+    } 
+    else { return false; }
+
+
+    if(id_map_.size() == other.id_map_.size())
+    {
+        for(uint32_t i = 0; i < id_map_.size(); i++)
+        {
+            if(id_map_[i] != other.id_map_[i]) { return false; }
+        }
+    }
+    else { return false; }
+    
+    if(nodes_sz_ == other.nodes_sz_)
+    {
+        for(uint32_t i = 0; i < nodes_sz_; i++)
+        {
+            if(!(nodes_[i] == other.nodes_[i])) { return false; }
+        }
+        return true;
+    }
+    return false;
 }
 
 warthog::graph::planar_graph::~planar_graph()
 {
-    delete [] xy_;
     delete [] nodes_;
 }
 
 
 bool
-warthog::graph::planar_graph::load_dimacs(const char* gr_file, const char* co_file, 
+warthog::graph::planar_graph::load_dimacs(
+        const char* gr_file, const char* co_file, 
         bool reverse_arcs, 
         bool store_incoming_edges, 
         bool enforce_euclidean)
@@ -213,7 +239,6 @@ warthog::graph::planar_graph::load_grid(
         const char* file, bool store_incoming)
 {
     delete [] nodes_;
-    delete [] xy_;
 
     warthog::gridmap gm(file);
     return grid2graph(&gm, store_incoming);
@@ -348,24 +373,37 @@ size_t
 warthog::graph::planar_graph::resize(uint32_t new_cap)
 {
     if(new_cap <= nodes_cap_) { return false; }
+
     warthog::graph::node* big_nodes = new warthog::graph::node[new_cap];
-    int32_t* big_xy = new int32_t[new_cap*2];
     for(uint32_t i = 0; i < nodes_sz_; i++)
     {
         big_nodes[i] = std::move(nodes_[i]);
-        big_xy[i*2] = xy_[i*2];
-        big_xy[i*2+1] = xy_[i*2+1];
     }
     delete [] nodes_;
-    delete [] xy_;
-
     nodes_ = big_nodes;
-    xy_ = big_xy;
     nodes_cap_ = new_cap;
-
     return nodes_cap_;
 }
 
+uint32_t
+warthog::graph::planar_graph::add_node()
+{
+    // add a new node
+    uint32_t graph_id = nodes_sz_;
+    if(nodes_cap_ == nodes_sz_)
+    { resize(nodes_cap_ == 0 ? 1 : (nodes_cap_*2)); }
+    nodes_sz_++;
+    return graph_id;
+}
+
+uint32_t
+warthog::graph::planar_graph::add_node(int32_t x, int32_t y)
+{
+    uint32_t graph_id = add_node();
+    xy_.push_back(x);
+    xy_.push_back(y);
+    return graph_id;
+}
 
 uint32_t
 warthog::graph::planar_graph::add_node(int32_t x, int32_t y, uint32_t ext_id)
@@ -375,20 +413,185 @@ warthog::graph::planar_graph::add_node(int32_t x, int32_t y, uint32_t ext_id)
     uint32_t graph_id = to_graph_id(ext_id);
     if(graph_id != warthog::INF) { return graph_id; } 
 
-    // add a new node
-    if(nodes_cap_ == nodes_sz_)
-    {
-        resize(nodes_cap_ == 0 ? 1 : (nodes_cap_*2));
-    }
-    graph_id = nodes_sz_;
-    nodes_sz_++;
-    xy_[graph_id*2] = x;
-    xy_[graph_id*2+1] = y;
-    
-    if(ext_id != warthog::INF)
-    {
-        id_map_.push_back(ext_id);
-        ext_id_map_.insert(std::pair<uint32_t, uint32_t>(ext_id, graph_id));
-    }
+    graph_id = add_node(x, y);
+    id_map_.push_back(ext_id);
+    ext_id_map_.insert(std::pair<uint32_t, uint32_t>(ext_id, graph_id));
     return graph_id;
+}
+
+void
+warthog::graph::planar_graph::save(std::ostream& oss)
+{
+    // write number of nodes
+    oss.write((char*)(&nodes_sz_), sizeof(nodes_sz_));
+    if(!oss.good()) 
+    { std::cerr << "err writing #nodes\n"; return; }
+
+    // write xy values
+    uint32_t xy_sz = xy_.size();
+    oss.write((char*)&xy_sz, sizeof(xy_sz));
+    if(!oss.good()) 
+    { std::cerr << "err writing #xy\n"; return; }
+    oss.write((char*)&xy_[0], sizeof(int32_t)*xy_sz);
+    if(!oss.good()) 
+    { std::cerr << "err writing xy coordinates data\n"; return; }
+
+    // write external ids
+    uint32_t id_map_sz = id_map_.size();
+    oss.write((char*)&id_map_sz, sizeof(int32_t));
+    if(!oss.good()) 
+    { std::cerr << "err writing #external ids\n"; return; }
+    oss.write((char*)&id_map_[0], sizeof(int32_t)*id_map_sz);
+    if(!oss.good()) 
+    { std::cerr << "err writing external ids\n"; return; }
+    
+    // write edge data
+    uint32_t nid = 0;
+    for( ; nid < nodes_sz_; nid++)
+    {
+        nodes_[nid].save(oss);
+        if(!oss.good()) 
+        { std::cerr 
+            << "err; writing outgoing adj list for node " << nid
+            << std::endl;
+            break;
+        }
+    }
+}
+
+void
+warthog::graph::planar_graph::load(
+        std::istream& oss,
+        bool store_incoming_edges, 
+        bool enforce_euclidean)
+{
+    // read number of nodes 
+    uint32_t num_nodes;
+    oss.read((char*)&num_nodes, sizeof(num_nodes));
+    resize(num_nodes);
+    nodes_sz_ = num_nodes;
+    if(!oss.good()) { std::cerr << "err; reading #nodes data\n"; return; }
+
+    // ready xy coordinates
+    uint32_t xy_sz;
+    oss.read((char*)&xy_sz, sizeof(xy_sz));
+    if(!oss.good())
+    { std::cerr << "err; reading #xy data\n"; return;}
+    if(xy_sz > 0)
+    {
+        xy_.resize(xy_sz);
+        oss.read((char*)&xy_[0], sizeof(int32_t)*xy_sz);
+        if(!oss.good()) { std::cerr << "err; reading xy data\n"; return; }
+    }
+
+    // read external ids
+    uint32_t id_map_sz;
+    oss.read((char*)&id_map_sz, sizeof(id_map_sz));
+    if(!oss.good()) { std::cerr << "err; reading #external-ids\n"; return; }
+    if(id_map_sz == nodes_sz_)
+    {
+        id_map_.resize(id_map_sz);
+        oss.read((char*)&id_map_[0], sizeof(int32_t)*id_map_sz);
+        if(!oss.good()) 
+        { std::cerr << "err; reading external id data\n"; return;}
+
+        // build hashtable for reverse lookups
+        ext_id_map_.reserve(nodes_sz_*0.8);
+        for(uint32_t i = 0; i < id_map_.size(); i++)
+        {
+            ext_id_map_.insert(std::pair<uint32_t, uint32_t>(id_map_[i], i));
+        }
+    }
+    else
+    {
+        std::cerr 
+            << "warn; ignoring external id values (read " << id_map_sz 
+            << " ids but graph has " << nodes_sz_ << " nodes)" << std::endl;
+    }
+
+    // read node and edge data
+    uint32_t nid = 0;
+    for( ; nid < nodes_sz_; nid++)
+    {
+        nodes_[nid].load(oss);
+        if(!oss.good()) 
+        { std::cerr 
+            << "err; reading outgoing adj list for node " << nid
+            << std::endl;
+            break;
+        }
+    }
+    if(nid != nodes_sz_)
+    {
+        std::cerr 
+            << "err; read " << nid << " of " << nodes_sz_ 
+            << " adjacency lists. missing data? "
+            << std::endl;
+    }
+
+    if(store_incoming_edges)
+    {
+        std::cerr << "#outgoing " << this->get_num_edges_out() << std::endl;
+
+        // collect all edges and compute in degree of every node
+        std::vector<uint32_t> in_deg_all(nodes_sz_, 0);
+        std::vector<uint32_t> from_id;
+        std::vector<uint32_t> to_id;
+        std::vector<double> weight;
+
+        for( nid = 0; nid < nodes_sz_; nid++)
+        {
+            for( warthog::graph::edge_iter it = nodes_[nid].outgoing_begin();
+                    it != nodes_[nid].outgoing_end(); 
+                    it++ ) 
+            { 
+                in_deg_all[it->node_id_]++;
+                from_id.push_back(nid);
+                to_id.push_back(it->node_id_);
+                weight.push_back(it->wt_);
+            }
+        }
+
+        // allocate memory
+        for( nid = 0; nid < nodes_sz_; nid++)
+        { nodes_[nid].capacity(in_deg_all[nid], nodes_[nid].out_degree()); }
+
+        // add incoming edges 
+        for(uint32_t i = 0; i < from_id.size(); i++)
+        {
+            nodes_[to_id[i]].add_incoming(
+                    warthog::graph::edge(from_id[i], weight[i]));
+        }
+        std::cerr << "#incoming " << this->get_num_edges_in() << std::endl;
+    }
+
+    if(enforce_euclidean) { is_euclidean(true); }
+}
+
+bool
+warthog::graph::planar_graph::is_euclidean(bool fix_if_not)
+{
+    warthog::euclidean_heuristic h_euc(this);
+    for(uint32_t t_id= 0; t_id < nodes_sz_; t_id++)
+    {
+        int32_t tx, ty, hx, hy;
+        get_xy(t_id, tx, ty);
+        if(tx == warthog::INF || ty == warthog::INF) { continue; }
+
+        for(warthog::graph::edge_iter it = nodes_[t_id].outgoing_begin();
+            it != nodes_[t_id].outgoing_end();
+            it++)
+        {
+            uint32_t h_id = (*it).node_id_;
+            get_xy(h_id, hx, hy);
+
+            double hdist = h_euc.h(tx, ty, hx, hy);
+            if((*it).wt_ < hdist)
+            {
+                if(!fix_if_not) { return false; }
+                (*it).wt_ = ceil(hdist);
+            } 
+        }
+    }
+    return true;
 }
