@@ -152,7 +152,7 @@ class dfs_labelling
     operator<<(std::ostream& out, dfs_labelling& lab);
 
     friend std::istream&
-    warthog::label::operator>>(std::istream& in, dfs_labelling& lab);
+    operator>>(std::istream& in, warthog::label::dfs_labelling& lab);
 
     public:
 
@@ -290,7 +290,7 @@ class dfs_labelling
                         warthog::search_node*, 
                         warthog::search_node*,
                         double, uint32_t)> on_generate_fn = 
-                [&source_id, &first_move, lab]
+                [&source_id, &first_move]
                 (warthog::search_node* succ, warthog::search_node* from,
                             double edge_cost, uint32_t edge_id) -> void
                 {

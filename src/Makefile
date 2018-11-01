@@ -5,7 +5,7 @@ WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
 
 WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 
-D_WARTHOG_INCLUDES = -I./domains -I./util -I./search -I./experimental \
+D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
 					 -I./heuristics -I./jps -I./contraction -I./label
 
 D_INCLUDES = -I/usr/include -I/usr/local/include $(D_WARTHOG_INCLUDES)
@@ -19,10 +19,10 @@ DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
 PROFILE_CFLAGS = $(DEV_CFLAGS) -DNDEBUG 
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
-  CC = g++
+  CC = clang++
   CFLAGS += -DOS_MAC
 else
-  CC = g++
+  CC = clang++
   ifeq ("$(findstring Linux, "$(shell uname -s)")", "Linux")
     D_LIBS += -lrt
   endif
@@ -96,8 +96,8 @@ makedirs:
 warthog: $(WARTHOG_OBJ)
 	@echo "###  Archiving object files ###"
 	@echo "sources "$(WARTHOG_SRC)
-	-rm lib/lib$(@).a
 	ar -crs lib/lib$(@).a $(WARTHOG_OBJ)
+	#rm lib/lib$(@).a
 
 -include $(WARTHOG_OBJ:.o=.d)
 

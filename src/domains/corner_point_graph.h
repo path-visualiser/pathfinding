@@ -159,8 +159,8 @@ class corner_point_graph
         inline warthog::gridmap* 
         get_gridmap() { return cpl_->get_map(); } 
 
-        inline bool
-        reserve(uint32_t new_cap) { return g_->reserve(new_cap); }
+        //inline bool
+        //reserve(uint32_t new_cap) { return g_->reserve(new_cap); }
 
         virtual size_t
         mem();

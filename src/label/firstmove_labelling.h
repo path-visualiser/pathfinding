@@ -260,7 +260,7 @@ class firstmove_labelling
     operator<<(std::ostream& out, firstmove_labelling& lab);
 
     friend std::istream&
-    warthog::label::operator>>(std::istream& in, firstmove_labelling& lab);
+    operator>>(std::istream& in, firstmove_labelling& lab);
 
     public:
 
@@ -399,7 +399,7 @@ class firstmove_labelling
                 // callback function used to record the optimal first move 
                 std::function<void(warthog::search_node*, 
                         warthog::search_node*, double, uint32_t)>  
-                    on_generate_fn = [&source_id, &s_row, lab]
+                    on_generate_fn = [&source_id, &s_row]
                 (warthog::search_node* succ, warthog::search_node* from,
                      double edge_cost, uint32_t edge_id) -> void
                 {
@@ -576,6 +576,7 @@ operator>>(std::istream& in, fm_run& the_run);
 
 std::ostream&
 operator<<(std::ostream& out, fm_run& the_run);
+
 
 
 }

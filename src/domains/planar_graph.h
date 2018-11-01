@@ -31,15 +31,13 @@ namespace graph
 {
 class planar_graph
 {
-
     public:
-        planar_graph();
+        planar_graph(uint32_t num_nodes=0);
         planar_graph(warthog::gridmap* gm, bool store_incoming=true);
-        planar_graph(warthog::graph::planar_graph& other);
-        ~planar_graph();
+        ~planar_graph() { }
 
         warthog::graph::planar_graph&
-        operator=(const warthog::graph::planar_graph& other);
+        operator=(const warthog::graph::planar_graph&& other);
         
         bool
         operator==(const warthog::graph::planar_graph& other);
@@ -68,13 +66,15 @@ class planar_graph
         // all nodes in the range [firstid, lastid)
         // NB: if the range is invalid, nothing is printed
         void
-        print_dimacs_gr(std::ostream& oss, uint32_t first_id, uint32_t last_id);
+        print_dimacs_gr(std::ostream& oss, 
+                uint32_t first_id, uint32_t last_id);
 
         // print text descriptions of the set of nodes 
         // in the range [firstid, lastid)
         // NB: if the range is invalid, nothing is printed
         void
-        print_dimacs_co(std::ostream& oss, uint32_t first_id, uint32_t last_id);
+        print_dimacs_co(std::ostream& oss, 
+                uint32_t first_id, uint32_t last_id);
 
         // write a binary blob description of the graph
         void
@@ -86,6 +86,24 @@ class planar_graph
                     bool store_incoming_edges = false, 
                     bool enforce_euclidean=true);
 
+        // set the number of nodes and edges in the graph to zero.
+        // any currently assigned nodes and edges have their destructors 
+        // called
+        void
+        clear();
+
+        // grow the graph so that the number of vertices is equal to 
+        // @param num_nodes. if @param num_nodes is less thna the current
+        // number of nodes, this function does nothing.
+        void
+        grow(uint32_t num_nodes);
+
+        // allocate capacity for at least @param num_nodes
+        // when @param num_nodes <= the number of nodes in the graph, this
+        // function does nothing
+        void
+        capacity(uint32_t num_nodes);
+
         // check if arc weights are Euclidean and (optionally) fix if not.
         // "fixing" means arc weights must be at least as large as the
         // Euclidean distance between the arc's head and tail vertex.
@@ -93,29 +111,29 @@ class planar_graph
         is_euclidean(bool fix_if_not=true);
 
         inline uint32_t
-        get_num_nodes()
+        get_num_nodes() const
         {
-            return nodes_sz_;
+            return nodes_.size();
         }
 
         inline uint32_t 
-        get_num_edges_out()
+        get_num_edges_out() const
         {
             uint32_t num_edges = 0;
-            for(uint32_t i = 0; i < nodes_sz_; i++)
+            for(auto& node : nodes_)
             {
-                num_edges += nodes_[i].out_degree();
+                num_edges += node.out_degree();
             }
             return num_edges;
         }
 
         inline uint32_t
-        get_num_edges_in()
+        get_num_edges_in() const
         {
             uint32_t num_edges = 0;
-            for(uint32_t i = 0; i < nodes_sz_; i++)
+            for(auto& node : nodes_)
             {
-                num_edges += nodes_[i].in_degree();
+                num_edges += node.in_degree();
             }
             return num_edges;
         }
@@ -126,9 +144,9 @@ class planar_graph
         // @return x: the x coordinate of node @param id
         // @return y: the y coordinate of node @param id
         inline void
-        get_xy(uint32_t id, int32_t& x, int32_t& y)
+        get_xy(uint32_t id, int32_t& x, int32_t& y) const
         {
-            if(id < nodes_sz_)
+            if(id < get_num_nodes())
             {
                 x = xy_[id*2];
                 y = xy_[id*2+1];
@@ -147,11 +165,9 @@ class planar_graph
         inline void
         set_xy(uint32_t id, int32_t x, int32_t y)
         {
-            if(id >= nodes_sz_) { return; }
-            if(xy_.size() != nodes_sz_)
-            {
-                xy_.reserve(nodes_sz_);
-            }
+            uint32_t nodes_sz = get_num_nodes();
+            if(id >= nodes_sz) { return; }
+            if(xy_.size() != nodes_sz) { xy_.resize(nodes_sz); }
             xy_[id*2] = x;
             xy_[id*2+1] = y;
         }
@@ -161,10 +177,10 @@ class planar_graph
         // @param id: an internal graph id
         // @return: the node object associated with @param id
         inline warthog::graph::node* 
-        get_node(uint32_t id)
+        get_node(uint32_t id) 
         {
             //if(id >= ID_OFFSET && id < nodes_sz_)
-            if(id < nodes_sz_)
+            if(id < get_num_nodes())
             {
                 return &nodes_[id];
             }
@@ -196,23 +212,18 @@ class planar_graph
         set_verbose(bool verbose) { verbose_ = verbose; } 
 
         inline bool
-        get_verbose() { return verbose_; }
+        get_verbose() const { return verbose_; }
 
         // @return the name of the file from which the 
         // current graph object was constructed
         inline const char* 
-        get_filename() { return filename_.c_str(); }
-
-        // increase the node capacity of the graph
-        // (NB: capacity is not the same as size!)
-        inline size_t 
-        reserve(uint32_t new_cap) { return resize(new_cap); }
+        get_filename() const { return filename_.c_str(); }
 
         inline size_t
         mem()
         {
             size_t mem = 0;
-            for(uint32_t i = 0; i < nodes_sz_; i++)
+            for(uint32_t i = 0; i < get_num_nodes(); i++)
             {
                 mem += nodes_[i].mem();
             }
@@ -251,9 +262,9 @@ class planar_graph
         // was not created from an input file) the function returns
         // the value warthog::INF
         inline uint32_t 
-        to_external_id(uint32_t in_id) 
+        to_external_id(uint32_t in_id)  const
         { 
-            if(in_id > nodes_sz_) { return warthog::INF; }
+            if(in_id > get_num_nodes()) { return warthog::INF; }
             return id_map_.at(in_id);
         }
 
@@ -262,7 +273,7 @@ class planar_graph
         // a value of 1 using this metric indicates that the edges perfectly 
         // fit into the allocated address space
         inline double
-        edge_mem_frag()
+        edge_mem_frag() 
         {
             warthog::graph::edge *min_addr, *max_addr;
             min_addr = this->get_node(0)->outgoing_begin();
@@ -312,9 +323,7 @@ class planar_graph
 
     private:
         // the set of nodes that comprise the graph
-        uint32_t nodes_sz_;
-        uint32_t nodes_cap_;
-        warthog::graph::node* nodes_;
+        std::vector<warthog::graph::node> nodes_;
         
         // planar coordinates stored as adjacent pairs (x, then y)
         std::vector<int32_t> xy_;
@@ -327,12 +336,8 @@ class planar_graph
         std::string filename_;
         bool verbose_;
 
-        size_t
-        resize(uint32_t new_cap);
-
         bool
         grid2graph(warthog::gridmap*, bool);
-
 
 };
 

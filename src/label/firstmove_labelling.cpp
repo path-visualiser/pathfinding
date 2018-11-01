@@ -336,7 +336,7 @@ warthog::label::compute_fm_fch_dijkstra_dfs_preorder(
 
     std::function<
         void(warthog::search_node*, warthog::search_node*, double, uint32_t)>  
-            on_generate_fn = [&source_id, &s_row, &g]
+            on_generate_fn = [&source_id, &s_row]
                 (warthog::search_node* succ, warthog::search_node* from,
                  double edge_cost, uint32_t edge_id) -> void
     {

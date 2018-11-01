@@ -237,7 +237,7 @@ class bbaf_labelling
                     // now analyse the nodes on the closed list and label the 
                     // edges of the source node accordingly
                     std::function<void(warthog::search_node*)> fn_arcflags =
-                    [shared, &source_id, &idmap, &expander]
+                    [shared, &source_id, &idmap]
                         (warthog::search_node* n) -> void
                     {
                         // skip edges from the source to itself

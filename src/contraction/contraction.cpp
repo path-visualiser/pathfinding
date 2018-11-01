@@ -301,7 +301,7 @@ warthog::ch::optimise_graph_for_bch_v2(
 
     // create an new graph with all the same nodes but no edges
     warthog::graph::planar_graph bch_g;
-    bch_g.reserve(g->get_num_nodes());
+    bch_g.capacity(g->get_num_nodes());
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {
         int32_t node_x, node_y;
@@ -337,7 +337,7 @@ warthog::ch::optimise_graph_for_bch_v2(
             }
         }
     }
-    *g = bch_g;
+    *g = std::move(bch_g);
 }
 
 warthog::graph::planar_graph* 

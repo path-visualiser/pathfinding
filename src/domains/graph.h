@@ -223,40 +223,40 @@ class node
         }
 
         inline edge_iter
-        incoming_begin()
+        incoming_begin() const
         {
             //return incoming_;
             return (in_deg_ == 0 ? 0 : &incoming_[0]);
         }
 
         inline edge_iter
-        incoming_end()
+        incoming_end() const
         {
             //return &incoming_[in_deg_];
             return (in_deg_ == 0 ? 0 : &incoming_[in_deg_]);
         }
 
         inline edge_iter
-        outgoing_begin()
+        outgoing_begin() const
         {
             return (out_deg_ == 0 ? 0 : &outgoing_[0]);
             //return outgoing_;
         }
 
         inline edge_iter
-        outgoing_end()
+        outgoing_end() const
         {
             return (out_deg_ == 0 ? 0 : &outgoing_[out_deg_]);
         }
 
         inline ECAP_T
-        in_degree()
+        in_degree() const 
         {
             return in_deg_;
         }
 
         inline ECAP_T
-        out_degree()
+        out_degree() const
         {
             return out_deg_;
         }
@@ -476,7 +476,7 @@ class node
 typedef node* node_iter;
 
 inline bool
-operator==(warthog::graph::node& n1, warthog::graph::node& n2)
+operator==(const warthog::graph::node& n1, const warthog::graph::node& n2)
 {
     if(!(n1.in_degree() == n2.in_degree()) &&
         (n1.out_degree() == n2.out_degree())) { return false; }
