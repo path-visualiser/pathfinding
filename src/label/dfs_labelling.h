@@ -290,7 +290,7 @@ class dfs_labelling
                         warthog::search_node*, 
                         warthog::search_node*,
                         double, uint32_t)> on_generate_fn = 
-                [&source_id, &first_move]
+                [&source_id, &first_move, lab]
                 (warthog::search_node* succ, warthog::search_node* from,
                             double edge_cost, uint32_t edge_id) -> void
                 {

@@ -21,7 +21,13 @@ class octile_heuristic
 {
 	public:
 		octile_heuristic(unsigned int mapwidth, unsigned int mapheight)
-	    	: mapwidth_(mapwidth), hscale_(1.0) { }
+	    	: mapwidth_(mapwidth), hscale_(1.0)
+        {
+            uint32_t bitwidth_map = 
+                32 - __builtin_clz(mapwidth*mapheight);
+            id_mask_ = (1 << bitwidth_map)-1;
+        }
+
 		~octile_heuristic() { }
 
 		inline double
@@ -39,6 +45,9 @@ class octile_heuristic
 		inline double
 		h(unsigned int id, unsigned int id2)
 		{
+            id = id & id_mask_;
+            id2 = id2 & id_mask_;
+
 			int32_t x, x2;
 			int32_t y, y2;
 			warthog::helpers::index_to_xy(id, mapwidth_, x, y);
@@ -57,6 +66,7 @@ class octile_heuristic
 
 	private:
 		unsigned int mapwidth_;
+        uint32_t id_mask_;
         double hscale_;
 };
 

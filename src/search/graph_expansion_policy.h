@@ -16,7 +16,6 @@
 
 #include "dummy_filter.h"
 #include "arraylist.h"
-#include "blocklist.h"
 #include "planar_graph.h"
 #include "problem_instance.h"
 #include "search_node.h"
@@ -141,6 +140,12 @@ class graph_expansion_policy
         generate(uint32_t nid)
         {
             return &nodepool_[nid];
+        }
+
+        bool
+        is_target(warthog::search_node* n, warthog::problem_instance* pi)
+        {
+            return n->get_id() == pi->target_id_;
         }
 
         inline uint32_t 

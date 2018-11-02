@@ -9,7 +9,6 @@
 // @created: 28/10/2010
 //
 
-#include "blocklist.h"
 #include "expansion_policy.h"
 #include "gridmap.h"
 #include "search_node.h"

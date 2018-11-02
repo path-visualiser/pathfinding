@@ -1,12 +1,13 @@
 WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
 			  $(wildcard search/*.cpp) $(wildcard experimental/*.cpp) \
 			  $(wildcard heuristics/*.cpp) $(wildcard jps/*.cpp) \
-			  $(wildcard contraction/*.cpp) $(wildcard label/*.cpp) 
+			  $(wildcard contraction/*.cpp) $(wildcard label/*.cpp) \
+			  $(wildcard memory/*.cpp) 
 
 WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 
 D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
-					 -I./heuristics -I./jps -I./contraction -I./label
+					 -I./heuristics -I./jps -I./contraction -I./label -I./memory
 
 D_INCLUDES = -I/usr/include -I/usr/local/include $(D_WARTHOG_INCLUDES)
 D_LIBS = -L/usr/local/lib -L./lib
@@ -15,7 +16,8 @@ CFLAGS = -std=c++11 -pedantic -pthread -Wall -Wno-strict-aliasing \
 			-Wno-long-long -Wno-deprecated -Wno-deprecated-declarations \
 			-Wno-constant-logical-operand -Werror 
 FAST_CFLAGS = -O3 -DNDEBUG
-DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
+DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 
+#DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
 PROFILE_CFLAGS = $(DEV_CFLAGS) -DNDEBUG 
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")

@@ -13,7 +13,7 @@
 //
 
 #include "arraylist.h"
-#include "blocklist.h"
+#include "node_pool.h"
 #include "search_node.h"
 #include "problem_instance.h"
 
@@ -34,8 +34,8 @@ class expansion_policy
         inline void
         reclaim()
         {
-            reset();
-            nodepool_->reclaim();
+            //reset();
+            //nodepool_->eclaim();
         }        
 
 		inline void
@@ -129,6 +129,16 @@ class expansion_policy
         virtual void
         get_xy(uint32_t node_id, int32_t& x, int32_t& y) = 0;
 
+        // check if a given search node @param n corresponds to the
+        // target. we do this here to decouple the internal 
+        // representation of states from the search algorithm which
+        // only knows about warthog::search_node objects.
+        bool
+        is_target(warthog::search_node* n, warthog::problem_instance* pi)
+        {
+            return n->get_id() == pi->target_id_;
+        }
+
         // get a search_node memory pointer associated with @param node_id. 
         // (value is null if @param node_id is bigger than nodes_pool_size_)
 		inline warthog::search_node*
@@ -176,7 +186,7 @@ class expansion_policy
             double cost_;
         };
 
-        warthog::blocklist* nodepool_;
+        warthog::node_pool* nodepool_;
         //std::vector<neighbour_record>* neis_;
         arraylist<neighbour_record>* neis_;
         uint32_t current_;

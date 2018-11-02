@@ -86,7 +86,7 @@ class flexible_astar : public warthog::search
                 sol.sum_of_edge_costs_ = target->get_g();
 
 				// follow backpointers to extract the path
-				assert(target->get_id() == pi_.target_id_);
+				assert(expander_->is_target(target, &pi_));
                 warthog::search_node* current = target;
 				while(true)
                 {
@@ -289,7 +289,7 @@ class flexible_astar : public warthog::search
                 if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
                 // goal test
-                if(current->get_id() == pi_.target_id_) 
+                if(expander_->is_target(current, &pi_))
                 {
                     target = current;
                     break;

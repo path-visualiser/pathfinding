@@ -14,6 +14,7 @@
 #include "flexible_astar.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
+#include "gridmap_time_expansion_policy.h"
 #include "jpg_expansion_policy.h"
 #include "jps_expansion_policy.h"
 #include "jps_expansion_policy_wgm.h"
@@ -53,7 +54,7 @@ help()
 	<< "\t--checkopt (optional)\n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tdijkstra, astar, astar_wgm, sssp\n"
+    << "\tdijkstra, astar, astar_timex, astar_wgm, sssp\n"
     << "\tjps, jps2, jps+, jps2+, jps, jps_wgm\n"
     << "\tcpg, jpg\n";
 }
@@ -212,6 +213,22 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
+
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
+run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::gridmap_time_expansion_policy expander(&map);
+	warthog::octile_heuristic heuristic(map.width(), map.height());
+
+	warthog::flexible_astar<
+		warthog::octile_heuristic,
+	   	warthog::gridmap_time_expansion_policy> astar(&heuristic, &expander);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -426,6 +443,11 @@ main(int argc, char** argv)
     else if(alg == "astar")
     {
         run_astar(scenmgr, alg); 
+    }
+
+    else if(alg == "astar_timex")
+    {
+        run_astar_timex(scenmgr, alg); 
     }
 
     else if(alg == "astar_wgm")
