@@ -189,7 +189,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
             << touched / nruns << "\t"
             << micro_time << "\t" /// (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
-            << sol.path_.size() << "\t" 
+            << (sol.path_.size()-1) << "\t" 
             << parser.get_problemfile() 
             << std::endl;
     }

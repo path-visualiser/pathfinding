@@ -9,6 +9,8 @@
 // @created: 2017-01-10
 //
 
+#include <stdint.h>
+
 namespace warthog
 {
 
@@ -21,7 +23,7 @@ namespace util
 // argument, and false otherwise.
 template<class t_iter, class t_functor>
 t_iter
-binary_find_first(t_iter begin, t_iter, t_functor& lessThan)
+binary_find_first(t_iter begin, t_iter end, t_functor& lessThan)
 {
     while(begin<(end-1))
     {
@@ -36,3 +38,4 @@ binary_find_first(t_iter begin, t_iter, t_functor& lessThan)
 
 }
 
+#endif

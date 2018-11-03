@@ -14,7 +14,7 @@
 #include "flexible_astar.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
-#include "gridmap_time_expansion_policy.h"
+#include "manhattan_time_expansion_policy.h"
 #include "jpg_expansion_policy.h"
 #include "jps_expansion_policy.h"
 #include "jps_expansion_policy_wgm.h"
@@ -117,7 +117,7 @@ run_experiments(warthog::search* algo, std::string alg_name,
             << sol.nodes_touched_ << "\t"
             << sol.time_elapsed_micro_ << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
-            << sol.path_.size() << "\t" 
+            << (sol.path_.size()-1) << "\t" 
             << scenmgr.last_file_loaded() 
             << std::endl;
 
@@ -223,12 +223,12 @@ void
 run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
-	warthog::gridmap_time_expansion_policy expander(&map);
+	warthog::manhattan_time_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::gridmap_time_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::manhattan_time_expansion_policy> astar(&heuristic, &expander);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);

@@ -1,11 +1,10 @@
-#ifndef WARTHOG_GRIDMAP_TIME_EXPANSION_POLICY_H
-#define WARTHOG_GRIDMAP_TIME_EXPANSION_POLICY_H
+#ifndef WARTHOG_MANHATTAN_TIME_EXPANSION_POLICY_H
+#define WARTHOG_MANHATTAN_TIME_EXPANSION_POLICY_H
 
-// search/gridmap_time_expansion_policy.h
+// search/manhattan_time_expansion_policy.h
 //
-// An time-based expansion policy for square uniform-cost grids.
-// At each location there are three different types of actions:
-// - diagonal moves (at a cost of sqrt(2))
+// An time-based expansion policy for uniform-cost manhattan grids.
+// At each location there are two different types of actions:
 // - cardinal moves (at a cost of 1)
 // - wait moves (at a cost of 1)
 //
@@ -27,11 +26,104 @@ namespace warthog
 {
 
 class problem_instance;
-class gridmap_time_expansion_policy 
+
+// this data structure describes the constraints imposed on a single 
+// grid cell. a brief description of the members:
+//
+// timestep_ is the time at which the constraints apply
+// v_ is true if the cell is constrained / blocked
+// e_ indicates which of the 8 outgoing directions are constrained / blocked
+struct cell_constraints
+{
+    cell_constraints()
+    {
+        timestep_ = 0;
+        v_ = 0;
+        e_ = 0;
+    }
+
+    uint16_t timestep_; 
+    uint8_t v_;
+    uint8_t e_;
+};
+
+// this data structure describes the all constraints that currently apply
+class time_constraints
+{
+    public:
+
+       time_constraints(warthog::gridmap* map)
+       {
+           uint32_t map_sz = map->height() * map->width();
+           cons_ = new std::vector< std::vector<cell_constraints> >(map_sz);
+       } 
+
+       ~time_constraints()
+       {
+           delete cons_;
+       }
+
+       inline void
+       add_constraint(uint32_t padded_id, cell_constraints con)
+       {
+           assert(padded_id < cons_->size());
+           cons_->at(padded_id).push_back(con);
+       }
+
+       // return all constraints associated with the xy location
+       // @param padded_id
+       inline std::vector<cell_constraints>& 
+       get_constraints(uint32_t padded_id)
+       {
+           return cons_->at(padded_id);
+       }
+
+       // return any constraints associated with the xy location
+       // @param padded_id at time @param timestep
+       inline cell_constraints
+       get_constraints(uint32_t padded_id, uint32_t timestep)
+       {
+            cell_constraints retval;
+            std::vector<cell_constraints>::iterator con_iter = 
+                std::find_if(
+                        cons_->at(padded_id).begin(), 
+                        cons_->at(padded_id).end(),
+                    [timestep](warthog::cell_constraints& tmp)
+                    -> bool
+                    {
+                        return tmp.timestep_  == timestep;
+                    });
+            if(con_iter != cons_->at(padded_id).end())
+            {
+                retval = *con_iter;
+            }
+            return retval;
+       }
+
+       void
+       clear_constraints(uint32_t padded_id)
+       {
+           cons_->at(padded_id).clear();
+       }
+
+       void
+       clear_constraints()
+       {
+           for(uint32_t i = 0; i < cons_->size(); i++)
+           {
+               cons_->at(i).clear();
+           }   
+       }
+
+    private:
+        std::vector< std::vector<cell_constraints> >* cons_;
+};
+
+class manhattan_time_expansion_policy 
 {
 	public:
-		gridmap_time_expansion_policy(warthog::gridmap* map, bool manhattan = false);
-		~gridmap_time_expansion_policy();
+		manhattan_time_expansion_policy(warthog::gridmap* map, bool manhattan = false);
+		~manhattan_time_expansion_policy();
 
 		inline void
 		reset()
@@ -103,7 +195,6 @@ class gridmap_time_expansion_policy
 		warthog::gridmap* map_;
         uint32_t id_mask_;
         uint32_t bitwidth_map_;
-        bool manhattan_;
         std::vector<warthog::node_pool*>* time_map_;
 
         struct neighbour_record
