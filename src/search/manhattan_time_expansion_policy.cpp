@@ -6,7 +6,7 @@
 #include <algorithm>
 
 warthog::manhattan_time_expansion_policy::manhattan_time_expansion_policy(
-		warthog::gridmap* map, bool manhattan) : map_(map)
+		warthog::gridmap* map) : map_(map)
 {
     neis_ = new warthog::arraylist<neighbour_record>(32);
 

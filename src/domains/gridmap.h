@@ -19,8 +19,9 @@
 // 
 
 #include "constants.h"
-#include "helpers.h"
+#include "grid.h"
 #include "gm_parser.h"
+#include "helpers.h"
 
 #include <climits>
 #include "stdint.h"

@@ -21,6 +21,7 @@
 #include "jps2_expansion_policy.h"
 #include "jpsplus_expansion_policy.h"
 #include "jps2plus_expansion_policy.h"
+#include "manhattan_heuristic.h"
 #include "octile_heuristic.h"
 #include "scenario_manager.h"
 #include "timer.h"
@@ -224,14 +225,73 @@ run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::manhattan_time_expansion_policy expander(&map);
-	warthog::octile_heuristic heuristic(map.width(), map.height());
+	warthog::manhattan_heuristic heuristic(map.width(), map.height());
+    warthog::time_constraints cons(&map);
 
 	warthog::flexible_astar<
-		warthog::octile_heuristic,
+		warthog::manhattan_heuristic,
 	   	warthog::manhattan_time_expansion_policy> astar(&heuristic, &expander);
 
-    run_experiments(&astar, alg_name, scenmgr, 
-            verbose, checkopt, std::cout);
+//    run_experiments(&astar, alg_name, scenmgr, 
+//            verbose, checkopt, std::cout);
+	std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tmicros\tpcost\tplen\tmap\n";
+	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+		int startid = exp->starty() * exp->mapwidth() + exp->startx();
+		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+        warthog::problem_instance pi(startid, goalid, verbose);
+        pi.extra_params_ = &cons;
+        warthog::solution sol;
+
+        astar.get_path(pi, sol);
+
+        std::cout
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_micro_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (sol.path_.size()-1) << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
+
+        if(checkopt) { check_optimality(sol, exp); }
+
+        uint32_t padded_startid = map.to_padded_id(startid);
+        warthog::cell_constraints s_con;
+        s_con.timestep_ = 0;
+        s_con.e_ |= warthog::grid::WEST;
+        cons.add_constraint(padded_startid, 
+                warthog::cell_constraints(0, 0, warthog::grid::WEST));
+        cons.add_constraint(padded_startid-1, 
+                warthog::cell_constraints(2, 0, warthog::grid::ALL));
+        cons.add_constraint(padded_startid-6, 
+                warthog::cell_constraints(8, 1, warthog::grid::NONE));
+        
+        pi.instance_id_++;
+        sol.reset();
+        astar.get_path(pi, sol);
+
+        std::cout
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_micro_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (sol.path_.size()-1) << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
+
+	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 

@@ -35,12 +35,11 @@ class problem_instance;
 // e_ indicates which of the 8 outgoing directions are constrained / blocked
 struct cell_constraints
 {
-    cell_constraints()
-    {
-        timestep_ = 0;
-        v_ = 0;
-        e_ = 0;
-    }
+    cell_constraints() 
+        : timestep_(0), v_(0), e_(0) { }
+
+    cell_constraints(uint16_t timestep, uint8_t v, uint8_t e) 
+        : timestep_(timestep), v_(v), e_(e) { }
 
     uint16_t timestep_; 
     uint8_t v_;
@@ -122,7 +121,7 @@ class time_constraints
 class manhattan_time_expansion_policy 
 {
 	public:
-		manhattan_time_expansion_policy(warthog::gridmap* map, bool manhattan = false);
+		manhattan_time_expansion_policy(warthog::gridmap* map);
 		~manhattan_time_expansion_policy();
 
 		inline void
