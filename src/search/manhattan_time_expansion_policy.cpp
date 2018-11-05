@@ -13,8 +13,11 @@ warthog::manhattan_time_expansion_policy::manhattan_time_expansion_policy(
     uint32_t map_sz = map->height() * map->width();
     assert(map_sz > 0);
 
+    // preallocate memory for up to some number of timesteps 
+    // in advance. for subsequent timesteps memory is allocated
+    // dynamically
     time_map_ = new std::vector<warthog::mem::node_pool*>();
-    for(uint32_t i = 0; i < 256; i++)
+    for(uint32_t i = 0; i < 128; i++)
     {
         time_map_->push_back(new warthog::mem::node_pool(map_sz));
     }
