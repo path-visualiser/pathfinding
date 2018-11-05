@@ -10,6 +10,11 @@
 // This implementation assumes the input graph is a 4-connected 
 // uniform-cost grid. 
 //
+// For more details see: 
+// Sharon, Guni, et al. "Conflict-based search for optimal multi-agent pathfinding." 
+// Artificial Intelligence 219 (2015): 40-66.
+//
+//
 // @author: dharabor
 // @created: 2018-11-04
 //

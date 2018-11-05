@@ -24,7 +24,7 @@ namespace warthog
 namespace mem
 {
 
-const int DEFAULT_CHUNK_SIZE = 1024*1024; // 1MB
+const uint32_t DEFAULT_CHUNK_SIZE = 1024*1024; // 1MB
 
 class cchunk
 {
@@ -191,7 +191,7 @@ class cpool
 			if(!mem_ptr)
 			{
 				// look for space in an existing chunk
-				// NB: linear-time search! increase DEFAULT_CHUNK_SIZE if
+				// NB: linear-time search! increase CHUNK_SIZE_ if
 				// number of chunks grows too large
 				for(unsigned int i=0; i < num_chunks_; i++)
 				{
@@ -204,7 +204,7 @@ class cpool
 				}
 
 				// not enough space in any existing chunk; make a new one
-				add_chunk(warthog::mem::DEFAULT_CHUNK_SIZE);
+				add_chunk(CHUNK_SIZE_);
 				current_chunk_ = chunks_[num_chunks_-1];
 				mem_ptr = current_chunk_->allocate();
 			}
@@ -262,6 +262,7 @@ class cpool
 		size_t num_chunks_;
 		size_t max_chunks_;
 		size_t obj_size_;
+        size_t CHUNK_SIZE_;
 
 		// no copy
 		cpool(const warthog::mem::cpool& other) { } 
@@ -271,10 +272,14 @@ class cpool
 		void
 		init()
 		{
+            // chunk size needs to be at least as big as one object
+            CHUNK_SIZE_ = std::max<uint32_t>(obj_size_, 
+                    warthog::mem::DEFAULT_CHUNK_SIZE);
+
 			chunks_ = new cchunk*[max_chunks_];
 			for(int i = 0; i < (int) max_chunks_; i++)
 			{
-				add_chunk(warthog::mem::DEFAULT_CHUNK_SIZE);
+				add_chunk(CHUNK_SIZE_);
 			}
 			current_chunk_ = chunks_[0];
 		}
