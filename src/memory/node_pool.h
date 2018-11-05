@@ -1,5 +1,6 @@
 #ifndef WARTHOG_NODE_POOL_H
 #define WARTHOG_NODE_POOL_H
+
 // memory/node_pool.h
 //
 // A memory pool of warthog::search_node objects.
@@ -19,6 +20,7 @@
 //
 // @author: dharabor
 // @created: 02/09/2012
+// @updated: 2018-11-01
 //
 
 #include "cpool.h"
@@ -34,9 +36,9 @@ namespace mem
 
 namespace node_pool_ns
 {
-	static const uint32_t NBS = 64; // node block size; set this >= 8
-	static const uint32_t LOG2_NBS = 6;
-	static const uint32_t NBS_MASK = 63;
+	static const uint32_t NBS = 8; // node block size; set this >= 8
+	static const uint32_t LOG2_NBS = 3;
+	static const uint32_t NBS_MASK = 7;
 }
 
 class node_pool
@@ -56,10 +58,6 @@ class node_pool
         warthog::search_node*
         get_ptr(uint32_t node_id);
 
-        // reclaim all allocated memory
-		void
-		clear();
-
 		uint32_t
 		mem();
 
@@ -67,9 +65,10 @@ class node_pool
         void init(uint32_t nblocks);
 
 		uint32_t num_blocks_;
-		warthog::search_node*** blocks_;
+		warthog::search_node** blocks_;
 		warthog::mem::cpool* blockspool_;
-		warthog::mem::cpool* pool_;
+//        uint64_t* node_init_;
+//        uint64_t node_init_sz_;
 };
 
 }
