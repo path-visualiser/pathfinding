@@ -24,7 +24,7 @@ namespace warthog
 namespace mem
 {
 
-const int DEFAULT_CHUNK_SIZE = 1024*256; // 256K
+const int DEFAULT_CHUNK_SIZE = 1024*1024; // 1MB
 
 class cchunk
 {

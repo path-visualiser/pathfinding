@@ -17,21 +17,15 @@ warthog::mem::node_pool::init(uint32_t num_nodes)
 	{
 		blocks_[i] = 0;
 	}
+
+    // by default: 
+    // allocate one chunk of memory of size
+    // warthog::mem::DEFAULT_CHUNK_SIZE and assign addresses
+    // from that pool in order to generate blocks of nodes. when the pool is
+    // full, cpool pre-allocates more, one chunk at a time. 
     uint32_t block_sz = 
         warthog::mem::node_pool_ns::NBS * sizeof(warthog::search_node);
-	//uint32_t mem_chunks_prealloc = 
-    //    (((num_blocks_ / 10) * block_sz) / warthog::mem::DEFAULT_CHUNK_SIZE)+1;
-   // blockspool_ = new warthog::mem::cpool(block_sz, mem_chunks_prealloc);
     blockspool_ = new warthog::mem::cpool(block_sz, 1);
-    
-    
-    // we keep one bit per node to track whether memory is initialised
-    //node_init_sz_ = (num_nodes >> 6) + 1;
-    //node_init_ = new uint64_t[node_init_sz_];
-    //for(uint32_t i = 0; i < node_init_sz_; i++)
-    //{
-    //    node_init_[i] = 0;
-    //}
 }
 
 warthog::mem::node_pool::~node_pool()
@@ -80,17 +74,6 @@ warthog::mem::node_pool::generate(uint32_t node_id)
             new (&blocks_[block_id][i+7]) warthog::search_node(current_id++);
 		}
 	}
-
-    // initialise memory 
-//    uint64_t flag = 1;
-//    if(!(node_init_[node_id >> 6] & (flag << (node_id & 63))))
-//    {
-//        new (&blocks_[block_id][list_id]) warthog::search_node(node_id);
-//        node_init_[node_id >> 6] |= (flag << (node_id & 63));
-//    }
-
-//    warthog::search_node* blah = &(blocks_[block_id][list_id]);
-//    assert(blah->get_id() == node_id);
 
 	// return the node from its position in the assocated block 
     return &(blocks_[block_id][list_id]);
