@@ -1,7 +1,7 @@
 #ifndef WARTHOG_MANHATTAN_TIME_EXPANSION_POLICY_H
 #define WARTHOG_MANHATTAN_TIME_EXPANSION_POLICY_H
 
-// search/manhattan_time_expansion_policy.h
+// mapf/manhattan_time_expansion_policy.h
 //
 // An time-based expansion policy for uniform-cost manhattan grids.
 // At each location there are two different types of actions:

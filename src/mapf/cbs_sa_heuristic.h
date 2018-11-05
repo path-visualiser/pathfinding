@@ -1,7 +1,7 @@
 #ifndef WARTHOG_CBS_SA_HEURISTIC_H
 #define WARTHOG_CBS_SA_HEURISTIC_H
 
-// heuristics/cbs_sa_heuristic.h
+// mapf/cbs_sa_heuristic.h
 //
 // The single-agent heuristic function used in Conflict-based Search.
 // Pre-computes all distances, from every target node to every other
