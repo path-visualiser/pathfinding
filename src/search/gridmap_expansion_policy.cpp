@@ -3,8 +3,8 @@
 #include "problem_instance.h"
 
 warthog::gridmap_expansion_policy::gridmap_expansion_policy(
-		warthog::gridmap* map)
-: expansion_policy(map->height()*map->width()), map_(map)
+		warthog::gridmap* map, bool manhattan)
+: expansion_policy(map->height()*map->width()), map_(map), manhattan_(manhattan)
 {
 }
 
@@ -37,45 +37,44 @@ warthog::gridmap_expansion_policy::expand(warthog::search_node* current,
 	uint32_t nid_m_w = nodeid - map_->width();
 	uint32_t nid_p_w = nodeid + map_->width();
 
-	if((tiles & 514) == 514) // N
+	// generate cardinal moves
+    if((tiles & 514) == 514) // N
 	{  
 		add_neighbour(this->generate(nid_m_w), 1);
 	} 
-
-	if((tiles & 1542) == 1542) // NE
-	{ 
-        add_neighbour(this->generate(nid_m_w + 1), warthog::DBL_ROOT_TWO);
-	}
-
 	if((tiles & 1536) == 1536) // E
 	{
 		add_neighbour(this->generate(nodeid + 1), 1);
 	}
-	
-	if((tiles & 394752) == 394752) // SE
-	{	
-        add_neighbour(this->generate(nid_p_w + 1), warthog::DBL_ROOT_TWO);
-	}
-
 	if((tiles & 131584) == 131584) // S
 	{ 
 		add_neighbour(this->generate(nid_p_w), 1);
 	}
-
-	if((tiles & 197376) == 197376) // SW
-	{ 
-        add_neighbour(this->generate(nid_p_w - 1), warthog::DBL_ROOT_TWO);
-	}
-
 	if((tiles & 768) == 768) // W
 	{ 
 		add_neighbour(this->generate(nodeid - 1), 1);
 	}
+    if(manhattan_) { return; }
 
+    // generate diagonal moves
+	if((tiles & 1542) == 1542) // NE
+	{ 
+        add_neighbour(this->generate(nid_m_w + 1), warthog::DBL_ROOT_TWO);
+	}
+	if((tiles & 394752) == 394752) // SE
+	{	
+        add_neighbour(this->generate(nid_p_w + 1), warthog::DBL_ROOT_TWO);
+	}
+	if((tiles & 197376) == 197376) // SW
+	{ 
+        add_neighbour(this->generate(nid_p_w - 1), warthog::DBL_ROOT_TWO);
+	}
 	if((tiles & 771) == 771) // NW
 	{ 
 		add_neighbour(this->generate(nid_m_w - 1), warthog::DBL_ROOT_TWO);
 	}
+
+
 }
 
 void

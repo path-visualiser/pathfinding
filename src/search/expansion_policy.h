@@ -186,7 +186,7 @@ class expansion_policy
             double cost_;
         };
 
-        warthog::node_pool* nodepool_;
+        warthog::mem::node_pool* nodepool_;
         //std::vector<neighbour_record>* neis_;
         arraylist<neighbour_record>* neis_;
         uint32_t current_;

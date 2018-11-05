@@ -3,7 +3,18 @@
 
 // gridmap_expansion_policy.h
 //
-// An ExpansionPolicy for square uniform-cost grids 
+// An ExpansionPolicy for square uniform-cost grids.
+// Supports octile movement and manhattan movement.
+//
+// In the case where diagonal moves are allowed
+// corner-cutting is forbidden.
+// i.e. 
+//
+// ab
+// cd
+//
+// the move c -> b is only permitted if both 'a' and 'd'
+// are traversable.
 //
 // @author: dharabor
 // @created: 28/10/2010
@@ -22,7 +33,7 @@ class problem_instance;
 class gridmap_expansion_policy : public expansion_policy
 {
 	public:
-		gridmap_expansion_policy(warthog::gridmap* map);
+		gridmap_expansion_policy(warthog::gridmap* map, bool manhattan = false);
 		virtual ~gridmap_expansion_policy() { }
 
 		virtual void 
@@ -42,6 +53,7 @@ class gridmap_expansion_policy : public expansion_policy
 	
 	private:
 		warthog::gridmap* map_;
+        bool manhattan_;
 };
 
 }

@@ -6,17 +6,17 @@
 #include <algorithm>
 
 warthog::manhattan_time_expansion_policy::manhattan_time_expansion_policy(
-		warthog::gridmap* map) : map_(map)
+		warthog::gridmap* map, warthog::cbs_sa_heuristic* h) : map_(map), h_(h)
 {
     neis_ = new warthog::arraylist<neighbour_record>(32);
 
     uint32_t map_sz = map->height() * map->width();
     assert(map_sz > 0);
 
-    time_map_ = new std::vector<warthog::node_pool*>();
+    time_map_ = new std::vector<warthog::mem::node_pool*>();
     for(uint32_t i = 0; i < 256; i++)
     {
-        time_map_->push_back(new warthog::node_pool(map_sz));
+        time_map_->push_back(new warthog::mem::node_pool(map_sz));
     }
 
     // setup some constants to quickly compute the current timestep 
@@ -135,6 +135,8 @@ warthog::manhattan_time_expansion_policy::generate_target_node(
     uint32_t max_id = map_->header_width() * map_->header_height();
     if(pi->target_id_ >= max_id) { return 0; }
     uint32_t padded_id = map_->to_padded_id(pi->target_id_);
+    h_->set_current_target(padded_id);
+
     return __generate(padded_id, 0);
 }
 
@@ -142,7 +144,8 @@ size_t
 warthog::manhattan_time_expansion_policy::mem()
 {
    size_t total = sizeof(*this) + map_->mem();
-   for(uint32_t i = 0; i < time_map_->size(); i++)
+   uint32_t tm_sz = time_map_->size();
+   for(uint32_t i = 0; i < tm_sz; i++)
    {
        total += time_map_->at(i)->mem();
    }

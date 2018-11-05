@@ -7,6 +7,7 @@
 // @created: 2016-11-23
 //
 
+#include "cbs_sa_heuristic.h"
 #include "cfg.h"
 #include "constants.h"
 #include "corner_point_graph.h"
@@ -223,13 +224,12 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 void
 run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
-    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
-	warthog::manhattan_time_expansion_policy expander(&map);
-	warthog::manhattan_heuristic heuristic(map.width(), map.height());
-    warthog::time_constraints cons(&map);
-
+    warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
+	warthog::cbs_sa_heuristic heuristic(&gm);
+	warthog::manhattan_time_expansion_policy expander(&gm, &heuristic);
+    warthog::time_constraints cons(&gm);
 	warthog::flexible_astar<
-		warthog::manhattan_heuristic,
+		warthog::cbs_sa_heuristic,
 	   	warthog::manhattan_time_expansion_policy> astar(&heuristic, &expander);
 
 //    run_experiments(&astar, alg_name, scenmgr, 
@@ -243,9 +243,17 @@ run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
         warthog::problem_instance pi(startid, goalid, verbose);
+
+        // add path constraints 
         pi.extra_params_ = &cons;
         warthog::solution sol;
 
+        // precompute heuristic values for each target location
+        std::vector<uint32_t> target_locations;
+        target_locations.push_back(goalid);
+        heuristic.compute_h_values(target_locations);
+
+        // search
         astar.get_path(pi, sol);
 
         std::cout
@@ -263,7 +271,7 @@ run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 
         if(checkopt) { check_optimality(sol, exp); }
 
-        uint32_t padded_startid = map.to_padded_id(startid);
+        uint32_t padded_startid = gm.to_padded_id(startid);
         warthog::cell_constraints s_con;
         s_con.timestep_ = 0;
         s_con.e_ |= warthog::grid::WEST;

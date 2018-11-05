@@ -16,6 +16,7 @@
 // @created: 2018-11-01
 //
 
+#include "cbs_sa_heuristic.h"
 #include "expansion_policy.h"
 #include "gridmap.h"
 #include "search_node.h"
@@ -121,7 +122,10 @@ class time_constraints
 class manhattan_time_expansion_policy 
 {
 	public:
-		manhattan_time_expansion_policy(warthog::gridmap* map);
+		manhattan_time_expansion_policy(
+                warthog::gridmap* map, 
+                warthog::cbs_sa_heuristic* h);
+
 		~manhattan_time_expansion_policy();
 
 		inline void
@@ -194,7 +198,8 @@ class manhattan_time_expansion_policy
 		warthog::gridmap* map_;
         uint32_t id_mask_;
         uint32_t bitwidth_map_;
-        std::vector<warthog::node_pool*>* time_map_;
+        std::vector<warthog::mem::node_pool*>* time_map_;
+        warthog::cbs_sa_heuristic* h_;
 
         struct neighbour_record
         {
@@ -216,7 +221,7 @@ class manhattan_time_expansion_policy
             while(timestep >= time_map_->size())
             {
                 time_map_->push_back(
-                            new warthog::node_pool(
+                            new warthog::mem::node_pool(
                                 map_->height() * map_->width()));
             }
             warthog::search_node* nei = time_map_->at(timestep)->generate(xy_id);
