@@ -1,11 +1,11 @@
-#ifndef WARTHOG_CBS_SA_HEURISTIC_H
-#define WARTHOG_CBS_SA_HEURISTIC_H
+#ifndef WARTHOG_CBS_LL_HEURISTIC_H
+#define WARTHOG_CBS_LL_HEURISTIC_H
 
-// mapf/cbs_sa_heuristic.h
+// mapf/cbs_ll_heuristic.h
 //
-// The single-agent heuristic function used in Conflict-based Search.
-// Pre-computes all distances, from every target node to every other
-// node in the input graph. 
+// The low-level (i.e. single-agent) heuristic function used in 
+// Conflict-based Search. Pre-computes all distances, from every 
+// target node to every other node in the input graph. 
 //
 // This implementation assumes the input graph is a 4-connected 
 // uniform-cost grid. 
@@ -13,7 +13,6 @@
 // For more details see: 
 // Sharon, Guni, et al. "Conflict-based search for optimal multi-agent pathfinding." 
 // Artificial Intelligence 219 (2015): 40-66.
-//
 //
 // @author: dharabor
 // @created: 2018-11-04
@@ -25,11 +24,11 @@
 namespace warthog
 {
 
-class cbs_sa_heuristic
+class cbs_ll_heuristic
 {
     public:
-        cbs_sa_heuristic(warthog::gridmap* gm);
-        ~cbs_sa_heuristic() { } 
+        cbs_ll_heuristic(warthog::gridmap* gm);
+        ~cbs_ll_heuristic() { } 
 
         inline double
         h(int32_t x, int32_t y, int32_t x2, int32_t y2)

@@ -1,4 +1,4 @@
-#include "cbs_sa_heuristic.h"
+#include "cbs_ll_heuristic.h"
 #include "flexible_astar.h"
 #include "gridmap_expansion_policy.h"
 #include "zero_heuristic.h"
@@ -7,7 +7,7 @@
 #include <stdint.h>
 
 
-warthog::cbs_sa_heuristic::cbs_sa_heuristic(warthog::gridmap* gm)
+warthog::cbs_ll_heuristic::cbs_ll_heuristic(warthog::gridmap* gm)
     : gm_(gm)
 {
     t_index_ = 0;
@@ -17,7 +17,7 @@ warthog::cbs_sa_heuristic::cbs_sa_heuristic(warthog::gridmap* gm)
 }
 
 void
-warthog::cbs_sa_heuristic::compute_h_values(
+warthog::cbs_ll_heuristic::compute_h_values(
         std::vector<uint32_t>& targets)
 {
     t_map_.clear();

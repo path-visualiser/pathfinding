@@ -45,56 +45,57 @@ class reservation_table
         }
 
         inline bool
-        is_reserved(uint32_t map_id, uint32_t timestep)
+        is_reserved(uint32_t xy_id, uint32_t timestep)
         {
-            return 
-                !!(table_[timestep][map_id >> LOG2_QWORD_SZ] & (1 << (map_id & 63)));
+            if(timestep >= table_.size()) { return false; }
+            return table_[timestep][xy_id >> LOG2_QWORD_SZ] & 
+                   (1 << (xy_id & 63));
         }
 
         inline bool
-        is_reserved(uint32_t map_id)
+        is_reserved(uint32_t time_indexed_map_id)
         {
-            return 
-                !!(table_[map_id & id_mask_]
-                         [map_id >> (map_bitwidth_ + LOG2_QWORD_SZ)]);
+            uint32_t timestep = time_indexed_map_id >> map_bitwidth_;
+            uint32_t xy_id = time_indexed_map_id & id_mask_;
+            return is_reserved(xy_id, timestep);
         }
 
         inline void
-        reserve(uint32_t map_id, uint32_t timestep)
+        reserve(uint32_t xy_id, uint32_t timestep)
         {
-            assert(map_id < map_sz_);
-            while(table_.size() < timestep)
+            assert(xy_id < map_sz_);
+            while(table_.size() <= timestep)
             {
                 uint64_t* map = (uint64_t*)pool_->allocate();
                 for(uint32_t i = 0; i < map_sz_in_qwords_; i++)
                 { map[i] = 0; }
                 table_.push_back(map);
             }
-
-            table_[timestep][map_id >> LOG2_QWORD_SZ] |= (1 << (map_id & 63));
+            table_[timestep][xy_id >> LOG2_QWORD_SZ] |= (1 << (xy_id & 63));
         }
 
         inline void
         reserve(uint32_t time_indexed_map_id)
         {
-            reserve(time_indexed_map_id & id_mask_, 
-                    time_indexed_map_id >> map_bitwidth_);
+            uint32_t timestep = time_indexed_map_id >> map_bitwidth_;
+            uint32_t xy_id = time_indexed_map_id & id_mask_;
+            reserve(xy_id, timestep);
         }
 
         inline void
-        unreserve(uint32_t map_id, uint32_t timestep)
+        unreserve(uint32_t xy_id, uint32_t timestep)
         {
             assert(timestep < table_.size());
-            assert(map_id < map_sz_);
-            table_[timestep][map_id >> LOG2_QWORD_SZ] &= ~(1 << (map_id & 63));
+            assert(xy_id < map_sz_);
+            table_[timestep][xy_id >> LOG2_QWORD_SZ] &= ~(1 << (xy_id & 63));
         }
 
         inline void
         unreserve(uint32_t time_indexed_map_id)
         {
-            unreserve(
-                    time_indexed_map_id & id_mask_, 
-                    time_indexed_map_id >> map_bitwidth_);
+            uint32_t timestep = time_indexed_map_id >> map_bitwidth_;
+            uint32_t xy_id = time_indexed_map_id & id_mask_;
+            unreserve(xy_id, timestep);
         }
 
         inline void

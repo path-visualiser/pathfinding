@@ -6,12 +6,12 @@
 #include <algorithm>
 
 warthog::manhattan_time_expansion_policy::manhattan_time_expansion_policy(
-		warthog::gridmap* map, warthog::cbs_sa_heuristic* h) : map_(map), h_(h)
+		warthog::gridmap* map, warthog::cbs_ll_heuristic* h) : map_(map), h_(h)
 {
     neis_ = new warthog::arraylist<neighbour_record>(32);
 
-    uint32_t map_sz = map->height() * map->width();
-    assert(map_sz > 0);
+    map_xy_sz_ = map->height() * map->width();
+    assert(map_xy_sz_ > 0);
 
     // preallocate memory for up to some number of timesteps 
     // in advance. for subsequent timesteps memory is allocated
@@ -19,7 +19,7 @@ warthog::manhattan_time_expansion_policy::manhattan_time_expansion_policy(
     time_map_ = new std::vector<warthog::mem::node_pool*>();
     for(uint32_t i = 0; i < 128; i++)
     {
-        time_map_->push_back(new warthog::mem::node_pool(map_sz));
+        time_map_->push_back(new warthog::mem::node_pool(map_xy_sz_));
     }
 
     // setup some constants to quickly compute the current timestep 
