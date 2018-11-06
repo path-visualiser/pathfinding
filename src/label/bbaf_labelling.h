@@ -157,11 +157,16 @@ class bbaf_labelling
                     (warthog::helpers::thread_params*) args_in;
                 bbaf_shared_data* shared = (bbaf_shared_data*)par->shared_;
 
+                warthog::pqueue_min open;
                 warthog::zero_heuristic heuristic;
                 std::shared_ptr<t_expander> 
                     expander(shared->fn_new_expander_());
-                warthog::flexible_astar<warthog::zero_heuristic, t_expander> 
-                        dijkstra(&heuristic, expander.get());
+
+                warthog::flexible_astar<
+                    warthog::zero_heuristic, 
+                    t_expander,
+                    warthog::pqueue_min>
+                        dijkstra(&heuristic, expander.get(), &open);
 
                 // need to keep track of the first edge on the way to the 
                 // current node(the solution is a bit hacky as we break the 

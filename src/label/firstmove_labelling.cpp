@@ -327,9 +327,13 @@ warthog::label::compute_fm_fch_dijkstra_dfs_preorder(
     std::cerr << "warthog::label::compute_fm_fch_dijkstra_dfs_preorder\n";
     warthog::zero_heuristic heur;
     warthog::fch_expansion_policy exp(&g, &fch_order);
-    warthog::flexible_astar
-        <warthog::zero_heuristic, warthog::fch_expansion_policy>
-        dijk(&heur, &exp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar<
+        warthog::zero_heuristic, 
+        warthog::fch_expansion_policy,
+        warthog::pqueue_min>
+            dijk(&heur, &exp, &open);
 
     uint32_t source_id;
     std::vector<uint32_t> s_row(g.get_num_nodes(), INT32_MAX);

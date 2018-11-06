@@ -30,17 +30,33 @@ namespace warthog
 
 class reservation_table
 {
+    static const uint32_t LOG2_QWORD_SZ = 6;
     public:
         reservation_table(uint32_t map_sz) : map_sz_(map_sz) 
         {
             map_bitwidth_ = 32 - __builtin_clz(map_sz);
             id_mask_ = (1 << map_bitwidth_) - 1;
-            map_sz_in_qwords_ = (map_sz_ >> 6)+1;
+            map_sz_in_qwords_ = (map_sz_ >> LOG2_QWORD_SZ)+1;
             pool_ = new warthog::mem::cpool(map_sz_in_qwords_);
         }
         ~reservation_table() 
         {
             delete pool_;
+        }
+
+        inline bool
+        is_reserved(uint32_t map_id, uint32_t timestep)
+        {
+            return 
+                !!(table_[timestep][map_id >> LOG2_QWORD_SZ] & (1 << (map_id & 63)));
+        }
+
+        inline bool
+        is_reserved(uint32_t map_id)
+        {
+            return 
+                !!(table_[map_id & id_mask_]
+                         [map_id >> (map_bitwidth_ + LOG2_QWORD_SZ)]);
         }
 
         inline void
@@ -55,14 +71,14 @@ class reservation_table
                 table_.push_back(map);
             }
 
-            table_[timestep][map_id >> 6] |= (1 << (map_id & 63));
+            table_[timestep][map_id >> LOG2_QWORD_SZ] |= (1 << (map_id & 63));
         }
 
         inline void
-        reserve(uint32_t time_indexed_id)
+        reserve(uint32_t time_indexed_map_id)
         {
-            reserve(time_indexed_id & id_mask_, 
-                    time_indexed_id >> map_bitwidth_);
+            reserve(time_indexed_map_id & id_mask_, 
+                    time_indexed_map_id >> map_bitwidth_);
         }
 
         inline void
@@ -70,15 +86,15 @@ class reservation_table
         {
             assert(timestep < table_.size());
             assert(map_id < map_sz_);
-            table_[timestep][map_id >> 6] &= ~(1 << (map_id & 63));
+            table_[timestep][map_id >> LOG2_QWORD_SZ] &= ~(1 << (map_id & 63));
         }
 
         inline void
-        unreserve(uint32_t time_indexed_id)
+        unreserve(uint32_t time_indexed_map_id)
         {
             unreserve(
-                    time_indexed_id & id_mask_, 
-                    time_indexed_id >> map_bitwidth_);
+                    time_indexed_map_id & id_mask_, 
+                    time_indexed_map_id >> map_bitwidth_);
         }
 
         inline void

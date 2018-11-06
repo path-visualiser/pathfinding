@@ -7,6 +7,7 @@
 // @created: 2016-11-23
 //
 
+#include "cbs.h"
 #include "cbs_sa_heuristic.h"
 #include "cfg.h"
 #include "constants.h"
@@ -134,10 +135,13 @@ run_jpsplus(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::jpsplus_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::jpsplus_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::jpsplus_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -151,10 +155,12 @@ run_jps2plus(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::jps2plus_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::jps2plus_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::jps2plus_expansion_policy,
+        warthog::pqueue_min> astar(&heuristic, &expander, &open);
 
     std::function<void(warthog::search_node*)> relax_fn = 
             [&](warthog::search_node* n)
@@ -172,10 +178,13 @@ run_jps2(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::jps2_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::jps2_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::jps2_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     std::function<void(warthog::search_node*)> relax_fn = 
             [&](warthog::search_node* n)
@@ -195,10 +204,13 @@ run_jps(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::jps_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::jps_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::jps_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -211,10 +223,13 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::gridmap_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::gridmap_expansion_policy, 
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -228,9 +243,16 @@ run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::cbs_sa_heuristic heuristic(&gm);
 	warthog::manhattan_time_expansion_policy expander(&gm, &heuristic);
     warthog::time_constraints cons(&gm);
+
+    warthog::reservation_table restab(gm.width()*gm.height());
+    warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
+    warthog::cbs::pqueue_cbs_ll open(&lessthan);
+
 	warthog::flexible_astar<
 		warthog::cbs_sa_heuristic,
-	   	warthog::manhattan_time_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::manhattan_time_expansion_policy,
+        warthog::cbs::pqueue_cbs_ll>
+            astar(&heuristic, &expander, &open);
 
 //    run_experiments(&astar, alg_name, scenmgr, 
 //            verbose, checkopt, std::cout);
@@ -272,15 +294,21 @@ run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
         if(checkopt) { check_optimality(sol, exp); }
 
         uint32_t padded_startid = gm.to_padded_id(startid);
-        warthog::cell_constraints s_con;
-        s_con.timestep_ = 0;
-        s_con.e_ |= warthog::grid::WEST;
+
+        // edge constraint: block one edge for node padded_startid@0
         cons.add_constraint(padded_startid, 
                 warthog::cell_constraints(0, 0, warthog::grid::WEST));
+        // edge constraint: block all edges for node (padded_startid-1)@2
         cons.add_constraint(padded_startid-1, 
                 warthog::cell_constraints(2, 0, warthog::grid::ALL));
+        // vertex contraint: block the node (padded_startid-6)@6
         cons.add_constraint(padded_startid-6, 
                 warthog::cell_constraints(8, 1, warthog::grid::NONE));
+
+        // reserve a node along the alternative path that reaches the
+        // target from below. we reserve the second node on this
+        // path which is reached at timestep 1 
+        restab.reserve((padded_startid+gm.width())*2);
         
         pi.instance_id_++;
         sol.reset();
@@ -309,10 +337,13 @@ run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::gridmap_expansion_policy expander(&map);
 	warthog::zero_heuristic heuristic;
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
-	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::gridmap_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -325,6 +356,7 @@ run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::wgridmap_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
     
     // cheapest terrain (movingai benchmarks) has ascii value '.'; we scale
     // all heuristic values accordingly (otherwise the heuristic doesn't 
@@ -333,7 +365,9 @@ run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::wgridmap_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::wgridmap_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -346,10 +380,13 @@ run_wgm_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::wgridmap_expansion_policy expander(&map);
 	warthog::zero_heuristic heuristic;
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
-	   	warthog::wgridmap_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::wgridmap_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -362,10 +399,13 @@ run_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::gridmap_expansion_policy expander(&map);
 	warthog::zero_heuristic heuristic;
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
-	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::gridmap_expansion_policy, 
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -378,6 +418,7 @@ run_jps_wgm(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::jps_expansion_policy_wgm expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
     // cheapest terrain (movingai benchmarks) has ascii value '.'; we scale
     // all heuristic values accordingly (otherwise the heuristic doesn't 
     // impact f-values much and search starts to behave like dijkstra)
@@ -385,7 +426,8 @@ run_jps_wgm(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::jps_expansion_policy_wgm> astar(&heuristic, &expander);
+	   	warthog::jps_expansion_policy_wgm,
+        warthog::pqueue_min> astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -399,13 +441,15 @@ run_jpg(warthog::scenario_manager& scenmgr, std::string alg_name)
             new warthog::gridmap(scenmgr.get_experiment(0)->map().c_str()));
     std::shared_ptr<warthog::graph::corner_point_graph> cpg(
             new warthog::graph::corner_point_graph(map));
-	warthog::jps::jpg_expansion_policy expander(cpg.get());
-
 	warthog::octile_heuristic heuristic(map->width(), map->height());
+	warthog::jps::jpg_expansion_policy expander(cpg.get());
+    warthog::pqueue_min open;
+
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::jps::jpg_expansion_policy> 
-            astar(&heuristic, &expander);
+	   	warthog::jps::jpg_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -420,12 +464,14 @@ run_cpg(warthog::scenario_manager& scenmgr, std::string alg_name)
     std::shared_ptr<warthog::graph::corner_point_graph> cpg(
             new warthog::graph::corner_point_graph(map));
 	warthog::cpg_expansion_policy expander(cpg.get());
-
 	warthog::octile_heuristic heuristic(map->width(), map->height());
+    warthog::pqueue_min open;
+
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::cpg_expansion_policy> 
-            astar(&heuristic, &expander);
+	   	warthog::cpg_expansion_policy,
+        warthog::pqueue_min>
+            astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);

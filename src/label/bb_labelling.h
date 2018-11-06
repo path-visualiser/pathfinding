@@ -95,8 +95,13 @@ class bb_labelling
                 std::shared_ptr<t_expander> 
                     expander(shared->fn_new_expander_());
                 warthog::zero_heuristic heuristic;
-                warthog::flexible_astar<warthog::zero_heuristic, t_expander>
-                     dijkstra(&heuristic, expander.get());
+                warthog::pqueue_min open;
+
+                warthog::flexible_astar<
+                    warthog::zero_heuristic, 
+                    t_expander, 
+                    warthog::pqueue_min>
+                         dijkstra(&heuristic, expander.get(), &open);
 
                 // need to keep track of the first edge on the way to the 
                 // current node (the solution is a bit hacky as we break the 

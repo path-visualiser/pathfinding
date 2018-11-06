@@ -102,10 +102,13 @@ void online_jps_test()
 
 	warthog::jps_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::jps_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::jps_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
 	//astar.set_verbose(true);
 
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
@@ -163,10 +166,13 @@ void flexible_astar_test()
 	//map.print(std::cerr << "\n");
 	warthog::gridmap_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::gridmap_expansion_policy> astar(&heuristic, &expander);
+	   	warthog::gridmap_expansion_policy, 
+        warthog::pqueue_min>
+            astar(&heuristic, &expander, &open);
 	//astar.set_verbose(true);
 
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)

@@ -142,8 +142,13 @@ class af_labelling
                 std::shared_ptr<t_expander> 
                     expander(shared->fn_new_expander_());
                 warthog::zero_heuristic heuristic;
-                warthog::flexible_astar< warthog::zero_heuristic, t_expander >
-                    dijkstra(&heuristic, expander.get());
+                warthog::pqueue_min open;
+
+                warthog::flexible_astar< 
+                    warthog::zero_heuristic, 
+                    t_expander, 
+                    warthog::pqueue_min>
+                        dijkstra(&heuristic, expander.get(), &open);
             
                 // helper function to track the first edge on the path from 
                 // the source node to each node in the graph. we apply this 

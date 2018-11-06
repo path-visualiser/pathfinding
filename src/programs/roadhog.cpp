@@ -208,11 +208,14 @@ run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
-
     warthog::euclidean_heuristic h(&g);
+    warthog::pqueue_min open;
+
     warthog::flexible_astar<
         warthog::euclidean_heuristic, 
-        warthog::simple_graph_expansion_policy> alg(&h, &expander);
+        warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -285,12 +288,14 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
-
     warthog::zero_heuristic h;
-    warthog::flexible_astar<warthog::zero_heuristic, 
+    warthog::pqueue<warthog::cmp_less_search_node_f_only, warthog::min_q> open;
+
+    warthog::flexible_astar<
+        warthog::zero_heuristic, 
         warthog::simple_graph_expansion_policy,
         warthog::pqueue<warthog::cmp_less_search_node_f_only, warthog::min_q>> 
-        alg(&h, &expander);
+            alg(&h, &expander, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -372,9 +377,13 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy bexp (g.get(), &order, true);
     warthog::zero_heuristic h;
+    warthog::pqueue_min open;
+
     warthog::flexible_astar<
         warthog::zero_heuristic, 
-        warthog::bch_expansion_policy> alg(&h, &bexp);
+        warthog::bch_expansion_policy,
+        warthog::pqueue_min> 
+            alg(&h, &bexp, &open);
 
     std::cerr << "running experiments\n";
     std::cerr << "(averaging over " << nruns << " runs per instance)\n";
@@ -848,9 +857,13 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     std::cerr << "preparing to search\n";
     warthog::fch_expansion_policy fexp(&g, &order); 
     warthog::euclidean_heuristic h(&g);
+    warthog::pqueue_min open;
 
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_expansion_policy> alg(&h, &fexp);
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_expansion_policy,
+        warthog::pqueue_min> 
+            alg(&h, &fexp, &open);
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
@@ -957,8 +970,13 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::fch_dfs_expansion_policy fexp(&g, &order, lab, false);
     warthog::euclidean_heuristic h(&g);
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_dfs_expansion_policy> alg(&h, &fexp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar<
+        warthog::euclidean_heuristic, 
+        warthog::fch_dfs_expansion_policy,
+        warthog::pqueue_min> 
+            alg(&h, &fexp, &open);
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
@@ -1065,8 +1083,13 @@ run_fch_fm(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::fch_fm_expansion_policy fexp(&g, &order, lab, false);
     warthog::euclidean_heuristic h(&g);
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_fm_expansion_policy> alg(&h, &fexp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_fm_expansion_policy,
+        warthog::pqueue_min>
+            alg(&h, &fexp, &open);
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
@@ -1134,12 +1157,20 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
 
     // reference algo
     warthog::fch_expansion_policy fch_exp(&g, &order);
-    warthog::flexible_astar<warthog::euclidean_heuristic, 
-        warthog::fch_expansion_policy> fch(&h, &fch_exp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar<
+        warthog::euclidean_heuristic, 
+        warthog::fch_expansion_policy,
+        warthog::pqueue_min> 
+            fch(&h, &fch_exp, &open);
 
     // fchx
-    warthog::flexible_astar<warthog::euclidean_heuristic, 
-        warthog::fch_x_expansion_policy> fchx(&h, &fexp);
+    warthog::pqueue_min open_fchx;
+    warthog::flexible_astar<
+        warthog::euclidean_heuristic, 
+        warthog::fch_x_expansion_policy> 
+            fchx(&h, &fexp, &open_fchx);
 
     std::cerr << "running fch apex experiment\n";
     if(!suppress_header)
@@ -1251,10 +1282,13 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::af_filter filter(afl.get());
     warthog::euclidean_heuristic h(g.get());
     warthog::fch_af_expansion_policy fexp(g.get(), &order, &filter);
+    warthog::pqueue_min open;
 
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_af_expansion_policy>
-    alg(&h, &fexp);
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_af_expansion_policy,
+        warthog::pqueue_min>
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1304,10 +1338,13 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::euclidean_heuristic h(g.get());
     warthog::fch_bb_expansion_policy fexp(g.get(), &order, &filter);
+    warthog::pqueue_min open;
 
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_bb_expansion_policy>
-    alg(&h, &fexp);
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_bb_expansion_policy,
+        warthog::pqueue_min>
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 
@@ -1372,10 +1409,13 @@ run_fch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(g.get());
     warthog::fch_bbaf_expansion_policy fexp(g.get(), &order, lab.get());
+    warthog::pqueue_min open;
 
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_bbaf_expansion_policy>
-    alg(&h, &fexp);
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_bbaf_expansion_policy,
+        warthog::pqueue_min>
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1449,9 +1489,13 @@ run_fch_bbaf_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // search algo
     warthog::euclidean_heuristic h(pg.get());
     warthog::fch_bbaf_cpg_expansion_policy fexp(&cpg, &order, lab.get());
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_bbaf_cpg_expansion_policy>
-    alg(&h, &fexp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_bbaf_cpg_expansion_policy, 
+        warthog::pqueue_min>
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1497,8 +1541,14 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // heuristic 
     warthog::euclidean_heuristic h(pg.get());
 
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_cpg_expansion_policy> alg(&h, &fexp);
+    // open list
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_cpg_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1544,8 +1594,14 @@ run_fch_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // heuristic 
     warthog::euclidean_heuristic h(pg.get());
 
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_jpg_expansion_policy> alg(&h, &fexp);
+    // open list
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_jpg_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1620,8 +1676,12 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // search algo
     warthog::euclidean_heuristic h(pg.get());
     warthog::fch_af_cpg_expansion_policy fexp(&cpg, &order, afl.get());
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_af_cpg_expansion_policy> alg(&h, &fexp);
+    warthog::pqueue_min open; 
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_af_cpg_expansion_policy,
+        warthog::pqueue_min> alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1695,8 +1755,13 @@ run_fch_af_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // search algo
     warthog::euclidean_heuristic h(pg.get());
     warthog::fch_af_jpg_expansion_policy fexp(&cpg, &order, afl.get());
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-        warthog::fch_af_jpg_expansion_policy> alg(&h, &fexp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_af_jpg_expansion_policy,
+        warthog::pqueue_min> 
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1752,9 +1817,13 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // create a search algo
     warthog::euclidean_heuristic h(pg.get());
     warthog::fch_bb_cpg_expansion_policy fexp(&cpg, &order, bbl.get());
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_bb_cpg_expansion_policy>
-    alg(&h, &fexp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_bb_cpg_expansion_policy,
+        warthog::pqueue_min>
+            alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -1810,9 +1879,13 @@ run_fch_bb_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // create a search algo
     warthog::euclidean_heuristic h(pg.get());
     warthog::fch_bb_jpg_expansion_policy fexp(&jpg, &order, bbl.get());
-    warthog::flexible_astar< warthog::euclidean_heuristic, 
-       warthog::fch_bb_jpg_expansion_policy>
-    alg(&h, &fexp);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar< 
+        warthog::euclidean_heuristic, 
+        warthog::fch_bb_jpg_expansion_policy,
+        warthog::pqueue_min> 
+           alg(&h, &fexp, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }

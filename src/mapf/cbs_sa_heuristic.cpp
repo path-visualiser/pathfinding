@@ -24,9 +24,15 @@ warthog::cbs_sa_heuristic::compute_h_values(
     h_.clear();
     h_.resize(targets.size());
 
+    warthog::pqueue_min open;
     warthog::zero_heuristic h;
     warthog::gridmap_expansion_policy expander(gm_, true);
-    warthog::flexible_astar<warthog::zero_heuristic, warthog::gridmap_expansion_policy> alg(&h, &expander);
+
+    warthog::flexible_astar<
+        warthog::zero_heuristic, 
+        warthog::gridmap_expansion_policy,
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
 
     std::function<void(warthog::search_node*)> on_expand_fn = 
         [&] (warthog::search_node* current) -> void

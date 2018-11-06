@@ -32,7 +32,13 @@ template <class Comparator = warthog::cmp_less_search_node,
 class pqueue 
 {
 	public:
-		pqueue(unsigned int size)
+        pqueue(Comparator* cmp, unsigned int size=1024)
+            : pqueue(size)
+        { 
+            cmp_ = cmp;
+        }
+
+		pqueue(unsigned int size=1024)
             : maxsize_(size), minqueue_(QType().is_min_), queuesize_(0), 
             elts_(0)
         {
@@ -169,7 +175,7 @@ class pqueue
 		bool minqueue_;
 		unsigned int queuesize_;
 		warthog::search_node** elts_;
-        Comparator cmp_;
+        Comparator* cmp_;
 
 		// reorders the subpqueue containing elts_[index]
         void 
@@ -179,7 +185,7 @@ class pqueue
             while(index > 0)
             {
                 unsigned int parent = (index-1) >> 1;
-                if(cmp_(*elts_[index], *elts_[parent]))
+                if((*cmp_)(*elts_[index], *elts_[parent]))
                 //if(*elts_[index] < *elts_[parent])
                 {
                     swap(parent, index);
@@ -201,12 +207,12 @@ class pqueue
                 unsigned int child2 = (index<<1)+2;
                 unsigned int which = child1;
                 if((child2 < queuesize_) && 
-                    cmp_(*elts_[child2], *elts_[child1])) 
+                    (*cmp_)(*elts_[child2], *elts_[child1])) 
                    //*elts_[child2] < *elts_[child1])
                 { which = child2; }
 
                 // swap child with parent if necessary
-                if(cmp_(*elts_[which], *elts_[index]))
+                if((*cmp_)(*elts_[which], *elts_[index]))
                 //if(*elts_[which] < *elts_[index])
                 {
                     swap(index, which);

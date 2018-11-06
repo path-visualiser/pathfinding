@@ -481,11 +481,15 @@ class firstmove_labelling
                 std::shared_ptr<t_expander> 
                     expander(shared->fn_new_expander_());
 
-
-
                 warthog::zero_heuristic h;
-                warthog::flexible_astar <warthog::zero_heuristic, t_expander> 
-                        dijk(&h, expander.get());
+                warthog::pqueue_min open;
+
+                warthog::flexible_astar <
+                    warthog::zero_heuristic, 
+                    t_expander, 
+                    warthog::pqueue_min>
+                        dijk(&h, expander.get(), &open);
+
                 dijk.apply_on_generate(on_generate_fn);
 
                 for(uint32_t i = 0; i < lab->g_->get_num_nodes(); i++)

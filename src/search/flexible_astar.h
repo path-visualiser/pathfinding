@@ -40,10 +40,10 @@ template< class H,
 class flexible_astar : public warthog::search
 {
 	public:
-		flexible_astar(H* heuristic, E* expander) :
+		flexible_astar(H* heuristic, E* expander, Q* queue) :
             heuristic_(heuristic), expander_(expander)
 		{
-			open_ = new Q(1024);
+			open_ = queue;
             cost_cutoff_ = warthog::INF;
             exp_cutoff_ = warthog::INF;
             on_relax_fn_ = 0;
@@ -52,10 +52,7 @@ class flexible_astar : public warthog::search
             pi_.instance_id_ = UINT32_MAX;
 		}
 
-		virtual ~flexible_astar()
-		{
-			delete open_;
-		}
+		virtual ~flexible_astar() { }
 
         virtual void
 		get_distance(

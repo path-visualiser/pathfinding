@@ -100,6 +100,7 @@ class fixed_graph_contraction
         warthog::zero_heuristic* heuristic_;
         warthog::apriori_filter* filter_;
         warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
+        warthog::pqueue_min* open_;
         warthog::flexible_astar<
            warthog::zero_heuristic,
            warthog::graph_expansion_policy<warthog::apriori_filter>,

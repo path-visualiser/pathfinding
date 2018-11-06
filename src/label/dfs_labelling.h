@@ -349,9 +349,12 @@ class dfs_labelling
                 warthog::zero_heuristic h;
                 std::shared_ptr<warthog::fch_expansion_policy> 
                     expander(shared->fn_new_expander_());
+                warthog::pqueue_min open;
                 warthog::flexible_astar 
-                    <warthog::zero_heuristic, warthog::fch_expansion_policy>
-                        dijk(&h, expander.get());
+                    <warthog::zero_heuristic, 
+                    warthog::fch_expansion_policy,
+                    warthog::pqueue_min>
+                        dijk(&h, expander.get(), &open);
                 dijk.apply_on_generate(on_generate_fn);
                 dijk.apply_on_expand(on_expand_fn);
 

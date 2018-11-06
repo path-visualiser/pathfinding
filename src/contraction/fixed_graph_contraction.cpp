@@ -31,6 +31,7 @@ warthog::ch::fixed_graph_contraction::~fixed_graph_contraction()
     delete filter_;
     delete heuristic_;
     delete expander_;
+    delete open_;
 }
 
 
@@ -45,12 +46,14 @@ warthog::ch::fixed_graph_contraction::init()
     filter_ = new warthog::apriori_filter(get_graph()->get_num_nodes());
     expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
         (get_graph(), filter_);
+    open_ = new warthog::pqueue_min();
 
     heuristic_ = new warthog::zero_heuristic();
     alg_ = new flexible_astar<
                     warthog::zero_heuristic,
-                    warthog::graph_expansion_policy<warthog::apriori_filter>>
-                        (heuristic_, expander_);
+                    warthog::graph_expansion_policy<warthog::apriori_filter>,
+                    warthog::pqueue_min>
+                        (heuristic_, expander_, open_);
 }
 
 void
