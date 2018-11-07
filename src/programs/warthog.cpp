@@ -99,7 +99,7 @@ run_experiments(warthog::search* algo, std::string alg_name,
 {
 	std::cout 
         << "id\talg\texpanded\tinserted\tupdated\ttouched"
-        << "\tmicros\tpcost\tplen\tmap\n";
+        << "\tnanos\tpcost\tplen\tmap\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
@@ -118,7 +118,7 @@ run_experiments(warthog::search* algo, std::string alg_name,
             << sol.nodes_inserted_ << "\t"
             << sol.nodes_updated_ << "\t"
             << sol.nodes_touched_ << "\t"
-            << sol.time_elapsed_micro_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << (sol.path_.size()-1) << "\t" 
             << scenmgr.last_file_loaded() 
@@ -256,7 +256,7 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	std::cout 
         << "id\talg\texpanded\tinserted\tupdated\ttouched"
-        << "\tmicros\tpcost\tplen\tmap\n";
+        << "\tnanos\tpcost\tplen\tmap\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
@@ -283,7 +283,7 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
             << sol.nodes_inserted_ << "\t"
             << sol.nodes_updated_ << "\t"
             << sol.nodes_touched_ << "\t"
-            << sol.time_elapsed_micro_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << (sol.path_.size()-1) << "\t" 
             << scenmgr.last_file_loaded() 
@@ -297,88 +297,88 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 //////////////////////////////////////////////////////////////////////////
 // EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE 
 //////////////////////////////////////////////////////////////////////////
-//void
-//run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
-//{
-//    warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
-//	warthog::cbs_ll_heuristic heuristic(&gm);
-//	warthog::manhattan_time_expansion_policy expander(&gm, &heuristic);
-//    warthog::time_constraints cons(&gm);
-//
-//    warthog::reservation_table restab(gm.width()*gm.height());
-//    warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
-//    warthog::cbs::pqueue_cbs_ll open(&lessthan);
-//
-//	warthog::flexible_astar<
-//		warthog::cbs_ll_heuristic,
-//	   	warthog::manhattan_time_expansion_policy,
-//        warthog::cbs::pqueue_cbs_ll>
-//            astar(&heuristic, &expander, &open);
-//
-////    run_experiments(&astar, alg_name, scenmgr, 
-////            verbose, checkopt, std::cout);
-//	std::cout 
-//        << "id\talg\texpanded\tinserted\tupdated\ttouched"
-//        << "\tmicros\tpcost\tplen\tmap\n";
-//	//for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-//	for(unsigned int i=0; i < 1; i++)
-//	{
-//		warthog::experiment* exp = scenmgr.get_experiment(i);
-//		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-//		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-//        warthog::problem_instance pi(startid, goalid, verbose);
-//
-//        // add path constraints 
-//        pi.extra_params_ = &cons;
-//        warthog::solution sol;
-//
-//        // precompute heuristic values for each target location
-//        std::vector<uint32_t> target_locations;
-//        target_locations.push_back(goalid);
-//        heuristic.compute_h_values(target_locations);
-//
-//        uint32_t padded_startid = gm.to_padded_id(startid);
-//
-//        // edge constraint: block one edge for node padded_startid@0
-//        cons.add_constraint(padded_startid, 
-//                warthog::cell_constraints(0, 0, warthog::grid::WEST));
-//        // edge constraint: block all edges for node (padded_startid-1)@2
-//        cons.add_constraint(padded_startid-1, 
-//                warthog::cell_constraints(2, 0, warthog::grid::ALL));
-//        // vertex contraint: block the node (padded_startid-6)@6
-//        cons.add_constraint(padded_startid-6, 
-//                warthog::cell_constraints(8, 1, warthog::grid::NONE));
-//
-//        // reserve a node along the alternative path that reaches the
-//        // target from below. we reserve the second node on this
-//        // path which is reached at timestep 1 
-//        uint32_t xy_loc = (padded_startid+gm.width()) - 6;
-//        uint32_t timestep = 8;
-//        restab.reserve(xy_loc, timestep);
-//
-//        // can also reserve using the time-indexed node id
-//        restab.reserve(17897185);  
-//
-//        pi.instance_id_++;
-//        sol.reset();
-//        astar.get_path(pi, sol);
-//
-//        std::cout
-//            << i<<"\t" 
-//            << alg_name << "\t" 
-//            << sol.nodes_expanded_ << "\t" 
-//            << sol.nodes_inserted_ << "\t"
-//            << sol.nodes_updated_ << "\t"
-//            << sol.nodes_touched_ << "\t"
-//            << sol.time_elapsed_micro_ << "\t"
-//            << sol.sum_of_edge_costs_ << "\t" 
-//            << (sol.path_.size()-1) << "\t" 
-//            << scenmgr.last_file_loaded() 
-//            << std::endl;
-//
-//	}
-//	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
-//}
+void
+run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
+	warthog::cbs_ll_heuristic heuristic(&gm);
+	warthog::manhattan_time_expansion_policy expander(&gm, &heuristic);
+    warthog::time_constraints cons(&gm);
+
+    warthog::reservation_table restab(gm.width()*gm.height());
+    warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
+    warthog::cbs::pqueue_cbs_ll open(&lessthan);
+
+	warthog::flexible_astar<
+		warthog::cbs_ll_heuristic,
+	   	warthog::manhattan_time_expansion_policy,
+        warthog::cbs::pqueue_cbs_ll>
+            astar(&heuristic, &expander, &open);
+
+//    run_experiments(&astar, alg_name, scenmgr, 
+//            verbose, checkopt, std::cout);
+	std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tnanos\tpcost\tplen\tmap\n";
+	//for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	for(unsigned int i=0; i < 1; i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+		int startid = exp->starty() * exp->mapwidth() + exp->startx();
+		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+        warthog::problem_instance pi(startid, goalid, verbose);
+
+        // add path constraints 
+        pi.extra_params_ = &cons;
+        warthog::solution sol;
+
+        // precompute heuristic values for each target location
+        std::vector<uint32_t> target_locations;
+        target_locations.push_back(goalid);
+        heuristic.compute_h_values(target_locations);
+
+        uint32_t padded_startid = gm.to_padded_id(startid);
+
+        // edge constraint: block one edge for node padded_startid@0
+        cons.add_constraint(padded_startid, 
+                warthog::cell_constraints(0, 0, warthog::grid::WEST));
+        // edge constraint: block all edges for node (padded_startid-1)@2
+        cons.add_constraint(padded_startid-1, 
+                warthog::cell_constraints(2, 0, warthog::grid::ALL));
+        // vertex contraint: block the node (padded_startid-6)@6
+        cons.add_constraint(padded_startid-6, 
+                warthog::cell_constraints(8, 1, warthog::grid::NONE));
+
+        // reserve a node along the alternative path that reaches the
+        // target from below. we reserve the second node on this
+        // path which is reached at timestep 1 
+        uint32_t xy_loc = (padded_startid+gm.width()) - 6;
+        uint32_t timestep = 8;
+        restab.reserve(xy_loc, timestep);
+
+        // can also reserve using the time-indexed node id
+        restab.reserve(17897185);  
+
+        pi.instance_id_++;
+        sol.reset();
+        astar.get_path(pi, sol);
+
+        std::cout
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (sol.path_.size()-1) << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
+
+	}
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
 
 void
 run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)

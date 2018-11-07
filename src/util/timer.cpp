@@ -22,6 +22,7 @@ warthog::timer::get_time_nano()
 {
 #ifdef OS_MAC
 	uint64_t raw_time = mach_absolute_time();
+    //return (double)((raw_time * timebase.numer) / timebase.denom);
     return (double)(raw_time * timebase.numer / timebase.denom);
 #else
 	timespec raw_time;

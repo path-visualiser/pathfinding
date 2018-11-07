@@ -18,7 +18,7 @@ class solution
     public:
         solution() : 
             sum_of_edge_costs_(warthog::INF), 
-            time_elapsed_micro_(0),
+            time_elapsed_nano_(0),
             nodes_expanded_(0), 
             nodes_inserted_(0), 
             nodes_updated_(0),
@@ -27,7 +27,7 @@ class solution
 
         solution(const solution& other) :   
             sum_of_edge_costs_(other.sum_of_edge_costs_), 
-            time_elapsed_micro_(other.time_elapsed_micro_), 
+            time_elapsed_nano_(other.time_elapsed_nano_), 
             nodes_expanded_(other.nodes_expanded_),
             nodes_inserted_(other.nodes_inserted_),
             nodes_updated_(other.nodes_updated_), 
@@ -49,7 +49,7 @@ class solution
         {
             out 
                 << "sum_of_edge_costs=" << sum_of_edge_costs_ 
-                << "time_elapsed_micro=" << time_elapsed_micro_ 
+                << "time_elapsed_nano=" << time_elapsed_nano_ 
                 << std::endl
                 << "nodes expanded=" << nodes_expanded_ 
                 << "inserted=" << nodes_inserted_ 
@@ -68,7 +68,7 @@ class solution
         reset()
         {
             sum_of_edge_costs_ = warthog::INF;
-            time_elapsed_micro_ = 0;
+            time_elapsed_nano_ = 0;
             nodes_expanded_ = 0; 
             nodes_inserted_ = 0; 
             nodes_updated_ = 0;
@@ -78,7 +78,7 @@ class solution
 
         // metrics
         double sum_of_edge_costs_;
-        double time_elapsed_micro_;
+        double time_elapsed_nano_;
         uint32_t nodes_expanded_;
         uint32_t nodes_inserted_;
         uint32_t nodes_updated_;

@@ -154,7 +154,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
     {
         std::cout 
             << "id\talg\texpanded\tinserted\tupdated\ttouched"
-            << "\tmicros\tpcost\tplen\tmap\n";
+            << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
     for(auto it = parser.experiments_begin(); 
@@ -166,7 +166,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         warthog::problem_instance pi(
                 exp.source, (exp.p2p ? exp.target : warthog::INF), verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0;
-        double micro_time = DBL_MAX;
+        double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
         {
             sol.reset();
@@ -176,8 +176,8 @@ run_experiments( warthog::search* algo, std::string alg_name,
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
-            micro_time = micro_time < sol.time_elapsed_micro_ 
-                            ?  micro_time : sol.time_elapsed_micro_;
+            nano_time = nano_time < sol.time_elapsed_nano_ 
+                            ?  nano_time : sol.time_elapsed_nano_;
         }
 
         out
@@ -187,7 +187,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
-            << micro_time << "\t" /// (double)nruns << "\t"
+            << nano_time << "\t" /// (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << (sol.path_.size()-1) << "\t" 
             << parser.get_problemfile() 
@@ -392,7 +392,7 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     {
         std::cout 
             << "id\talg\texpanded\tinserted\tupdated\ttouched"
-            << "\tmicros\tpcost\tplen\tmap\n";
+            << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
     for(auto it = parser.experiments_begin(); 
@@ -403,7 +403,7 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         warthog::solution sol;
         warthog::problem_instance pi(exp.source, warthog::INF, verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0;
-        double micro_time = DBL_MAX;
+        double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
         {
             sol.reset();
@@ -413,8 +413,8 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
-            micro_time = micro_time < sol.time_elapsed_micro_ 
-                            ?  micro_time : sol.time_elapsed_micro_;
+            nano_time = nano_time < sol.time_elapsed_nano_ 
+                            ?  nano_time : sol.time_elapsed_nano_;
         }
 
         std::cout
@@ -424,7 +424,7 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
-            << micro_time << "\t" /// (double)nruns << "\t"
+            << nano_time << "\t" /// (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << sol.path_.size() << "\t" 
             << parser.get_problemfile() 
@@ -1177,7 +1177,7 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
     {
         std::cout 
             << "id\talg\texpanded\tinserted\tupdated\ttouched"
-            << "\tmicros\tpcost\tplen\tmap\n";
+            << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
     for(auto it = parser.experiments_begin(); 
@@ -1215,7 +1215,7 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
             << sol.nodes_inserted_ << "\t"
             << sol.nodes_updated_ << "\t"
             << sol.nodes_touched_ << "\t"
-            << sol.time_elapsed_micro_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << sol.path_.size() << "\t" 
             << parser.get_problemfile() 

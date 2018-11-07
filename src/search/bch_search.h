@@ -336,7 +336,7 @@ class bch_search : public warthog::search
             assert(best_cost_ != warthog::INF || (v_ == 0 && w_ == 0));
 
 			mytimer.stop();
-			sol.time_elapsed_micro_ = mytimer.elapsed_time_micro();
+			sol.time_elapsed_nano_ = mytimer.elapsed_time_nano();
         }
 
         void

@@ -381,7 +381,7 @@ class chase_search : public warthog::search
             }
 
 			mytimer.stop();
-			sol.time_elapsed_micro_= mytimer.elapsed_time_micro();
+			sol.time_elapsed_nano_= mytimer.elapsed_time_nano();
             assert(best_cost_ != warthog::INF || (v_ == 0 && w_ == 0));
         }
 

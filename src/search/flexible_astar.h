@@ -413,7 +413,7 @@ class flexible_astar : public warthog::search
 			}
 
 			mytimer.stop();
-			sol.time_elapsed_micro_ = mytimer.elapsed_time_micro();
+			sol.time_elapsed_nano_ = mytimer.elapsed_time_nano();
 
             #ifndef NDEBUG
             if(pi_.verbose_)
