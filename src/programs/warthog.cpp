@@ -16,7 +16,7 @@
 #include "flexible_astar.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
-#include "manhattan_time_expansion_policy.h"
+#include "cbs_ll_expansion_policy.h"
 #include "jpg_expansion_policy.h"
 #include "jps_expansion_policy.h"
 #include "jps_expansion_policy_wgm.h"
@@ -241,8 +241,8 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
 	warthog::cbs_ll_heuristic heuristic(&gm);
-	warthog::manhattan_time_expansion_policy expander(&gm, &heuristic);
-    warthog::time_constraints cons(&gm);
+	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
+    warthog::cbs::time_constraints cons(&gm);
 
     warthog::reservation_table restab(gm.width()*gm.height());
     warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
@@ -250,7 +250,7 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	warthog::flexible_astar<
 		warthog::cbs_ll_heuristic,
-	   	warthog::manhattan_time_expansion_policy,
+	   	warthog::cbs_ll_expansion_policy,
         warthog::cbs::pqueue_cbs_ll>
             astar(&heuristic, &expander, &open);
 
@@ -298,12 +298,12 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 // EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE EXAMPLE 
 //////////////////////////////////////////////////////////////////////////
 void
-run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
+run_example(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
 	warthog::cbs_ll_heuristic heuristic(&gm);
-	warthog::manhattan_time_expansion_policy expander(&gm, &heuristic);
-    warthog::time_constraints cons(&gm);
+	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
+    warthog::cbs::time_constraints cons(&gm);
 
     warthog::reservation_table restab(gm.width()*gm.height());
     warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
@@ -311,7 +311,7 @@ run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	warthog::flexible_astar<
 		warthog::cbs_ll_heuristic,
-	   	warthog::manhattan_time_expansion_policy,
+	   	warthog::cbs_ll_expansion_policy,
         warthog::cbs::pqueue_cbs_ll>
             astar(&heuristic, &expander, &open);
 
@@ -341,13 +341,13 @@ run_astar_timex(warthog::scenario_manager& scenmgr, std::string alg_name)
 
         // edge constraint: block one edge for node padded_startid@0
         cons.add_constraint(padded_startid, 
-                warthog::cell_constraints(0, 0, warthog::grid::WEST));
+                warthog::cbs::cell_constraints(0, 0, warthog::grid::WEST));
         // edge constraint: block all edges for node (padded_startid-1)@2
         cons.add_constraint(padded_startid-1, 
-                warthog::cell_constraints(2, 0, warthog::grid::ALL));
+                warthog::cbs::cell_constraints(2, 0, warthog::grid::ALL));
         // vertex contraint: block the node (padded_startid-6)@6
         cons.add_constraint(padded_startid-6, 
-                warthog::cell_constraints(8, 1, warthog::grid::NONE));
+                warthog::cbs::cell_constraints(8, 1, warthog::grid::NONE));
 
         // reserve a node along the alternative path that reaches the
         // target from below. we reserve the second node on this

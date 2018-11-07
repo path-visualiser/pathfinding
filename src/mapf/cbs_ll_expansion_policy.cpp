@@ -1,11 +1,14 @@
+#include "cbs.h"
 #include "grid.h"
 #include "helpers.h"
-#include "manhattan_time_expansion_policy.h"
+#include "cbs_ll_expansion_policy.h"
 #include "problem_instance.h"
 
 #include <algorithm>
 
-warthog::manhattan_time_expansion_policy::manhattan_time_expansion_policy(
+using namespace warthog::cbs;
+
+warthog::cbs_ll_expansion_policy::cbs_ll_expansion_policy(
 		warthog::gridmap* map, warthog::cbs_ll_heuristic* h) : map_(map), h_(h)
 {
     neis_ = new warthog::arraylist<neighbour_record>(32);
@@ -28,7 +31,7 @@ warthog::manhattan_time_expansion_policy::manhattan_time_expansion_policy(
     id_mask_ = (1 << bitwidth_map_)-1;
 }
 
-warthog::manhattan_time_expansion_policy::~manhattan_time_expansion_policy()
+warthog::cbs_ll_expansion_policy::~cbs_ll_expansion_policy()
 {
     for(uint32_t i = 0; i < time_map_->size(); i++)
     {
@@ -41,7 +44,7 @@ warthog::manhattan_time_expansion_policy::~manhattan_time_expansion_policy()
 
 
 void 
-warthog::manhattan_time_expansion_policy::expand(warthog::search_node* current,
+warthog::cbs_ll_expansion_policy::expand(warthog::search_node* current,
 		warthog::problem_instance* problem)
 {
 	reset();
@@ -61,8 +64,8 @@ warthog::manhattan_time_expansion_policy::expand(warthog::search_node* current,
     auto get_constraints = [problem] (uint32_t padded_id, uint32_t timestep)
         -> cell_constraints
     {
-        warthog::time_constraints* cons = 
-            (warthog::time_constraints*)problem->extra_params_;
+        warthog::cbs::time_constraints* cons = 
+            (warthog::cbs::time_constraints*)problem->extra_params_;
         if(cons)
         {
             return cons->get_constraints(padded_id, timestep);
@@ -116,13 +119,13 @@ warthog::manhattan_time_expansion_policy::expand(warthog::search_node* current,
 }
 
 void
-warthog::manhattan_time_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
+warthog::cbs_ll_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
 {
     map_->to_unpadded_xy(nid & id_mask_, (uint32_t&)x, (uint32_t&)y);
 }
 
 warthog::search_node* 
-warthog::manhattan_time_expansion_policy::generate_start_node(
+warthog::cbs_ll_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 { 
     uint32_t max_id = map_->header_width() * map_->header_height();
@@ -132,7 +135,7 @@ warthog::manhattan_time_expansion_policy::generate_start_node(
 }
 
 warthog::search_node*
-warthog::manhattan_time_expansion_policy::generate_target_node(
+warthog::cbs_ll_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
     uint32_t max_id = map_->header_width() * map_->header_height();
@@ -144,7 +147,7 @@ warthog::manhattan_time_expansion_policy::generate_target_node(
 }
 
 size_t
-warthog::manhattan_time_expansion_policy::mem()
+warthog::cbs_ll_expansion_policy::mem()
 {
    size_t total = sizeof(*this) + map_->mem();
    uint32_t tm_sz = time_map_->size();

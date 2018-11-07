@@ -475,6 +475,29 @@ class node
 };
 typedef node* node_iter;
 
+// a node having a weight label
+class w_node : warthog::graph::node
+{
+    w_node() : warthog::graph::node()
+    {
+        wt_ = 0;
+    }
+    virtual ~w_node() { }
+
+    w_node(const w_node& other) : warthog::graph::node(other)
+    {
+        wt_ = other.wt_;
+    }
+
+    w_node(w_node&& other) : node(other)
+    {
+        wt_ = other.wt_;
+    }
+
+    double wt_;
+};
+typedef w_node* w_node_iter;
+
 inline bool
 operator==(const warthog::graph::node& n1, const warthog::graph::node& n2)
 {
