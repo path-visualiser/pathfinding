@@ -21,7 +21,6 @@ namespace graph
 {
 
 class corner_point_graph;
-class xy_graph;
 
 }
    

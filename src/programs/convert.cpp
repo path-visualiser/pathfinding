@@ -18,15 +18,15 @@ main_dimacs_to_binary(int argc, char** argv)
     }
 
     warthog::graph::xy_graph g;
-    g.load_dimacs(argv[1], argv[2]);
+    g.load_from_dimacs(argv[1], argv[2]);
 
     std::ofstream ofs(argv[3], std::ofstream::binary);
-    g.save(ofs);
+    g.save(ofs),
     ofs.close();
 
     warthog::graph::xy_graph g2;
     std::ifstream ifs(argv[3], std::ifstream::binary);
-    g2.load(ifs, true, true);
+    g2.load_from_blob(ifs, true, true);
     ifs.close();
 
 //    if(g == g2)
@@ -73,7 +73,7 @@ main_af(int argc, char** argv)
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return EINVAL;
@@ -156,7 +156,7 @@ main_bb_convert(int argc, char** argv)
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return EINVAL;
@@ -291,7 +291,7 @@ main_bbaf_convert(int argc, char** argv)
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return EINVAL;

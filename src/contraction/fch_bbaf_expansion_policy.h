@@ -12,23 +12,13 @@
 //
 
 #include "expansion_policy.h"
+#include "forward.h"
+
 #include <vector>
 
 namespace warthog
 {
 
-namespace graph
-{
-class xy_graph;
-}
-
-namespace label
-{
-class bbaf_labelling;
-}
-
-class problem_instance;
-class search_node;
 class fch_bbaf_expansion_policy : public expansion_policy
 {
     public:

@@ -13,19 +13,15 @@
 //
 
 #include "dfs_labelling.h"
-#include "xy_graph.h"
 #include "expansion_policy.h"
+#include "forward.h"
+#include "xy_graph.h"
+
 #include <vector>
 
 namespace warthog
 {
 
-namespace graph
-{
-class xy_graph;
-}
-
-class dfs_labelling;
 class fch_dfs_expansion_policy : public expansion_policy
 {
     public:

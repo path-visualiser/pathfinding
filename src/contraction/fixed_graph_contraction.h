@@ -20,19 +20,6 @@ using namespace warthog::ch;
 namespace warthog
 {
 
-class apriori_filter;
-class zero_heuristic;
-
-template<class FILTER>
-class graph_expansion_policy;
-
-namespace graph
-{
-
-class xy_graph;
-
-}
-
 namespace ch
 {
 

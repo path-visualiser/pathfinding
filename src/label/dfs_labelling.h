@@ -25,6 +25,7 @@
 #include "geom.h"
 #include "solution.h"
 #include "timer.h"
+#include "forward.h"
 
 #include <fstream>
 #include <vector>
@@ -32,14 +33,6 @@
 
 namespace warthog
 {
-
-namespace graph
-{
-
-class xy_graph;
-class edge;
-
-} 
 
 namespace label
 {

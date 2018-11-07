@@ -16,11 +16,6 @@
 namespace warthog
 {
 
-namespace graph
-{
-class xy_graph;
-}
-
 class af_filter;
 class problem_instance;
 class search_node;

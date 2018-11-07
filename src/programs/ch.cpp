@@ -65,7 +65,7 @@ contract_graph()
             return;
         }
 
-        if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+        if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
         {
             std::cerr 
                 << "err; could not load gr or co input files (one or both)\n";
@@ -103,7 +103,7 @@ contract_graph()
     else if(order_type == "lazy")
     {
         // create a new contraction hierarchy with dynamic node ordering
-        if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+        if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
         {
             std::cerr 
                 << "err; could not load gr or co input files (one or both)\n";

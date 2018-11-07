@@ -13,7 +13,7 @@ main(int argv, char** argc)
     }
 
     warthog::graph::xy_graph g;
-    g.load_dimacs(argc[1], argc[2]);
+    g.load_from_dimacs(argc[1], argc[2]);
 
     std::set<uint32_t> closure;
     uint32_t node_id = atoi(argc[3]);

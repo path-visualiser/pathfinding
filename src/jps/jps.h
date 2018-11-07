@@ -15,21 +15,13 @@
 // @created: 04/09/2012
 //
 
-#include "stdint.h"
+#include "forward.h"
+
+#include <stdint.h>
 #include <unordered_map>
 
 namespace warthog
 {
-
-class gridmap;
-
-namespace graph
-{
-
-class xy_graph;
-class corner_graph;
-
-}
 
 namespace jps
 {

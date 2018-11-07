@@ -30,11 +30,6 @@
 namespace warthog
 {
 
-namespace graph
-{
-    class xy_graph;
-}
-
 class expansion_policy;
 class search_node;
 

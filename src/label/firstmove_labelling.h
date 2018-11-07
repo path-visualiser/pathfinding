@@ -32,14 +32,6 @@
 namespace warthog
 {
 
-namespace graph
-{
-
-class xy_graph;
-class edge;
-
-} 
-
 namespace label
 {
 

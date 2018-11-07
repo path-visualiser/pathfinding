@@ -350,7 +350,7 @@ warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
         bool enforce_euclidean)
 {
     warthog::graph::xy_graph* g = new warthog::graph::xy_graph();
-    if(!g->load_dimacs(gr_file, co_file, reverse_arcs, 
+    if(!g->load_from_dimacs(gr_file, co_file, reverse_arcs, 
                 store_incoming_edges, enforce_euclidean))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";

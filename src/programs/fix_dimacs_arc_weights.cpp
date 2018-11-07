@@ -25,6 +25,6 @@ main(int argc, char** argv)
     }
     
     warthog::graph::xy_graph g;
-    g.load_dimacs(argv[1], argv[2]);
+    g.load_from_dimacs(argv[1], argv[2]);
     g.print_dimacs_gr(std::cout, 0, g.get_num_nodes());
 }

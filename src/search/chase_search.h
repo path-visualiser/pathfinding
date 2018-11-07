@@ -43,16 +43,6 @@
 namespace warthog
 {
 
-namespace graph
-{
-    class xy_graph;
-}
-
-class search_node;
-
-typedef double (* heuristicFn)
-(uint32_t nodeid, uint32_t targetid);
-
 //template<class E, class H>
 template<class H>
 class chase_search : public warthog::search

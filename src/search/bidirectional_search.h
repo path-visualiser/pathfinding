@@ -21,6 +21,7 @@
 #include "zero_heuristic.h"
 
 #include "constants.h"
+
 #include <cstdlib>
 #include <stack>
 #include <cstdint>
@@ -28,14 +29,6 @@
 
 namespace warthog
 {
-
-namespace graph
-{
-    class xy_graph;
-}
-
-class expansion_policy;
-class search_node;
 
 typedef double (* heuristicFn)
 (uint32_t nodeid, uint32_t targetid);
@@ -431,6 +424,12 @@ class bidirectional_search : public warthog::search
             fexpander_->reclaim();
             bexpander_->reclaim();
         }
+    
+        inline double
+        h(uint32_t id1, uint32_t id2)
+        {
+        }
+
 
 };
 

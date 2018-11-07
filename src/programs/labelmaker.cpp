@@ -57,7 +57,7 @@ compute_fch_bb_labels()
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -175,7 +175,7 @@ compute_fch_bb_jpg_labels()
     // load up the graph 
     std::shared_ptr<warthog::graph::xy_graph> pg(
             new warthog::graph::xy_graph());
-    if(!pg->load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!pg->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files " 
                   << "(one or both)\n";
@@ -287,7 +287,7 @@ compute_bb_labels()
 
     // load up (or create) the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -385,7 +385,7 @@ compute_fch_af_labels()
 
     // load up the graph
     warthog::graph::xy_graph g;
-    g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
+    g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true);
 
     // load up the partition info
     std::vector<uint32_t> part;
@@ -507,7 +507,7 @@ compute_fch_af_jpg_labels()
     // load up the graph
     std::shared_ptr<warthog::graph::xy_graph> pg(
             new warthog::graph::xy_graph());
-    if(!pg->load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!pg->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files " 
                   << "(one or both)\n";
@@ -625,7 +625,7 @@ compute_af_labels()
 
     // load up (or create) the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -728,7 +728,7 @@ compute_bbaf_labels()
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -833,7 +833,7 @@ compute_fch_bbaf_labels()
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -955,7 +955,7 @@ compute_fch_dfs_labels(std::string alg_name)
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -1038,7 +1038,7 @@ compute_fch_fm_labels(std::string alg_name)
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;
@@ -1128,7 +1128,7 @@ compute_fm_labels(std::string alg_name)
 
     // load up the graph
     warthog::graph::xy_graph g;
-    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+    if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
         return;

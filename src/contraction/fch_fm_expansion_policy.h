@@ -11,20 +11,15 @@
 // @created: 2017-12-02
 //
 
-#include "firstmove_labelling.h"
 #include "xy_graph.h"
+#include "firstmove_labelling.h"
 #include "expansion_policy.h"
+
 #include <vector>
 
 namespace warthog
 {
 
-namespace graph
-{
-class xy_graph;
-}
-
-class firstmove_labelling;
 class fch_fm_expansion_policy : public expansion_policy
 {
     public:

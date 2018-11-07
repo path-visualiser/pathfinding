@@ -15,19 +15,12 @@
 //
 
 #include "expansion_policy.h"
+
 #include <vector>
 
 namespace warthog
 {
 
-namespace graph
-{
-class xy_graph;
-}
-
-class apex_filter;
-class problem_instance;
-class search_node;
 class fch_x_expansion_policy : public expansion_policy
 {
     public:

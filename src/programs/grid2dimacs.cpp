@@ -36,7 +36,8 @@ main(int argc, char** argv)
     if(strcmp(argv[1], "map") == 0)
     {
         warthog::graph::xy_graph g;
-        g.load_grid(argv[2]);
+        warthog::gridmap gm(argv[2]);
+        g.load_from_grid(&gm);
         g.print_dimacs_gr(std::cout, 0, g.get_num_nodes());
         g.print_dimacs_co(std::cout, 0, g.get_num_nodes());
     }

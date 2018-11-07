@@ -29,13 +29,6 @@
 namespace warthog
 {
 
-namespace graph
-{
-class xy_graph;
-}
-
-class problem_instance;
-class search_node;
 class fch_expansion_policy : public expansion_policy
 {
     public:

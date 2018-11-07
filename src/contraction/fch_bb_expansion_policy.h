@@ -12,20 +12,11 @@
 //
 
 #include "expansion_policy.h"
+#include "forward.h"
 #include <vector>
 
 namespace warthog
 {
-
-namespace graph
-{
-class xy_graph;
-}
-
-class problem_instance;
-class search_node;
-class euclidean_heuristic;
-class bb_filter;
 
 class fch_bb_expansion_policy : public expansion_policy
 {
