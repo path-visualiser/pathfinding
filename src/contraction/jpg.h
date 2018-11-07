@@ -11,19 +11,12 @@
 //
 
 
+#include "forward.h"
 #include "graph.h"
 #include "jps.h"
 
 namespace warthog
 {
-
-namespace graph
-{
-
-class corner_point_graph;
-
-}
-   
 
 namespace jpg
 {

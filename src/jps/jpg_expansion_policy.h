@@ -12,19 +12,11 @@
 //
 
 #include "expansion_policy.h"
+#include "forward.h"
 #include <unordered_map>
 
 namespace warthog
 {
-
-class search_node;
-
-namespace graph
-{
-
-class corner_point_graph;
-
-}
 
 namespace jps
 {

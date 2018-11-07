@@ -14,20 +14,14 @@
 //
 
 #include "expansion_policy.h"
+#include "forward.h"
 #include "gridmap.h"
 #include "xy_graph.h"
 #include <unordered_map>
 
 namespace warthog
 {
-class search_node;
 
-namespace graph
-{
-class corner_point_graph;
-}
-
-class corner_point_locator;
 class cpg_expansion_policy : public expansion_policy
 {
     public:

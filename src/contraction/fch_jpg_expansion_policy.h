@@ -11,18 +11,11 @@
 //
 
 #include "expansion_policy.h"
+#include "graph.h"
 #include <vector>
 
 namespace warthog
 {
-
-namespace graph
-{
-class corner_point_graph;
-}
-
-class problem_instance;
-class search_node;
 
 class fch_jpg_expansion_policy : public expansion_policy
 {

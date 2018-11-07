@@ -20,6 +20,7 @@
 
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
+#include "forward.h"
 #include "graph.h"
 #include "gridmap_expansion_policy.h"
 #include "constants.h"
@@ -30,7 +31,6 @@
 
 namespace warthog
 {
-class gridmap;
 
 namespace graph
 {

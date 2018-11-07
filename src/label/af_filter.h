@@ -22,6 +22,7 @@
 //
 
 #include "af_labelling.h"
+#include "forward.h"
 
 #include <vector>
 #include <cassert>
@@ -30,16 +31,6 @@
 
 namespace warthog
 {
-
-class problem_instance;
-class search_node;
-
-namespace graph
-{
-
-class planar_graph;
-
-}
 
 class af_filter
 {

@@ -30,13 +30,6 @@
 namespace warthog
 {
 
-namespace jps
-{
-
-class corner_point_locator;
-
-}
-
 namespace graph
 {
 

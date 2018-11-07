@@ -15,21 +15,11 @@
 #include <iostream>
 
 #include "bbaf_labelling.h"
+#include "forward.h"
 #include "geom.h"
 
 namespace warthog
 {
-
-namespace graph
-{
-
-class planar_graph;
-
-}
-
-class problem_instance;
-class search_node;
-
 
 class bbaf_filter
 {

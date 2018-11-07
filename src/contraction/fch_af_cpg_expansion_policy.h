@@ -11,24 +11,13 @@
 // @created: 2016-12-13
 //
 
+#include "forward.h"
 #include "expansion_policy.h"
 #include <vector>
 
 namespace warthog
 {
 
-namespace graph
-{
-class corner_point_graph;
-}
-
-namespace label
-{
-class af_labelling;
-}
-
-class problem_instance;
-class search_node;
 class fch_af_cpg_expansion_policy : public expansion_policy
 {
     public:

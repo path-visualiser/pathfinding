@@ -12,21 +12,12 @@
 // @created: 2017-02-02
 //
 
+#include "forward.h"
 #include "expansion_policy.h"
 #include <vector>
 
 namespace warthog
 {
-
-namespace graph
-{
-class corner_point_graph;
-}
-
-namespace label
-{
-class af_labelling;
-}
 
 class af_filter;
 class problem_instance;

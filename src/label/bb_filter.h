@@ -17,21 +17,13 @@
 //
 
 #include "bb_labelling.h"
+#include "forward.h"
 #include "geom.h"
 #include <vector>
 
 namespace warthog
 {
 
-namespace graph
-{
-
-class planar_graph;
-
-} 
-
-class search_node;
-class problem_instance;
 class bb_filter
 {
 

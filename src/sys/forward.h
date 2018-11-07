@@ -34,7 +34,7 @@ namespace graph
 
 class node;
 class edge;
-class corner_graph;
+class corner_point_graph;
 
 template<class T_NODE, class T_EDGE>
 class xy_graph_base;
@@ -55,6 +55,9 @@ class firstmove_labelling;
 
 namespace jps
 {
+
+class corner_point_locator;
+
 }
 
 namespace mem
