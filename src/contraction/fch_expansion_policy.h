@@ -31,7 +31,7 @@ namespace warthog
 
 namespace graph
 {
-class planar_graph;
+class xy_graph;
 }
 
 class problem_instance;
@@ -40,7 +40,7 @@ class fch_expansion_policy : public expansion_policy
 {
     public:
         fch_expansion_policy(
-                warthog::graph::planar_graph* graph,
+                warthog::graph::xy_graph* graph,
                 std::vector<uint32_t>* rank,  
                 warthog::ch::search_direction = warthog::ch::ANY,
                 bool sort_successors = false);
@@ -76,7 +76,7 @@ class fch_expansion_policy : public expansion_policy
         uint32_t
         get_first_down_index(uint32_t n_id) { return down_heads_[n_id] ; }
 
-        warthog::graph::planar_graph*
+        warthog::graph::xy_graph*
         get_graph() { return g_; } 
 
         std::vector<uint32_t>*
@@ -85,7 +85,7 @@ class fch_expansion_policy : public expansion_policy
 
     private:
         std::vector<uint32_t>* rank_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         uint8_t* down_heads_;
 
         warthog::ch::search_direction dir_;

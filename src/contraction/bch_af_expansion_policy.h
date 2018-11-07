@@ -11,7 +11,7 @@
 
 #include "contraction.h"
 #include "expansion_policy.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <vector>
 
@@ -29,7 +29,7 @@ class bch_af_expansion_policy : public  expansion_policy
         //
         // @param filter: the arc-flags filter used to prune arcs
         //
-        bch_af_expansion_policy(warthog::graph::planar_graph* g, 
+        bch_af_expansion_policy(warthog::graph::xy_graph* g, 
                 warthog::af_filter* filter,
                 bool backward=false);
 
@@ -56,7 +56,7 @@ class bch_af_expansion_policy : public  expansion_policy
 
     private:
         bool backward_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         warthog::af_filter* filter_;
 
         typedef warthog::graph::edge_iter

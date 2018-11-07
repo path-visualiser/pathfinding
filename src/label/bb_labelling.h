@@ -20,7 +20,7 @@
 #include "flexible_astar.h"
 #include "helpers.h"
 #include "geom.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "search_node.h"
 #include "solution.h"
 #include "workload_manager.h"
@@ -60,18 +60,18 @@ class bb_labelling
         }
 
         static warthog::label::bb_labelling*
-        load(const char* filename, warthog::graph::planar_graph* g);
+        load(const char* filename, warthog::graph::xy_graph* g);
 
         static bool
         load_bch_labels( const char* filename, 
-                        warthog::graph::planar_graph* g,
+                        warthog::graph::xy_graph* g,
                         std::vector<uint32_t>* lex_order, 
                         warthog::label::bb_labelling*& out_lab_fwd,
                         warthog::label::bb_labelling*& out_lab_bwd );
         
         template <typename t_expander>
         static warthog::label::bb_labelling*
-        compute(warthog::graph::planar_graph* g, 
+        compute(warthog::graph::xy_graph* g, 
                 std::function<t_expander*(void)>& fn_new_expander,
                 warthog::util::workload_manager* workload)
         {
@@ -222,8 +222,8 @@ class bb_labelling
 
     private:
         // creation via ::compute and ::load only, please
-        bb_labelling(warthog::graph::planar_graph* g);
-        warthog::graph::planar_graph* g_;
+        bb_labelling(warthog::graph::xy_graph* g);
+        warthog::graph::xy_graph* g_;
         std::vector<std::vector<warthog::geom::rectangle>>* labels_;
 
 };

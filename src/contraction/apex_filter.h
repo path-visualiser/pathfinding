@@ -11,7 +11,7 @@
 //
 
 #include "constants.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <vector>
 #include <cstdint>
@@ -26,7 +26,7 @@ class apex_filter
 
         apex_filter(
                 std::vector<uint32_t>* order, 
-                warthog::graph::planar_graph* g)
+                warthog::graph::xy_graph* g)
         {
             g_ = g;
             apex_id_ = warthog::INF;
@@ -80,7 +80,7 @@ class apex_filter
         uint32_t apex_id_;
         bool apex_reached_;
         std::vector<uint32_t>* order_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
 };
 }
 

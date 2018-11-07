@@ -1,5 +1,5 @@
 #include "contraction.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include <set>
 
 int
@@ -12,7 +12,7 @@ main(int argv, char** argc)
         return 0;
     }
 
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     g.load_dimacs(argc[1], argc[2]);
 
     std::set<uint32_t> closure;
@@ -55,7 +55,7 @@ main(int argv, char** argc)
 //    }
 //
 //    // load up the graph
-//    warthog::graph::planar_graph g;
+//    warthog::graph::xy_graph g;
 //    if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
 //    {
 //        std::cerr << "err; could not load gr or co input files (one or both)\n";

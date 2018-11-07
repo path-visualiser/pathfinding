@@ -11,7 +11,7 @@
 //
 
 #include "constants.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 namespace warthog
 {
@@ -20,7 +20,7 @@ typedef void (*xyFn)(uint32_t id, int32_t& x, int32_t& y);
 class euclidean_heuristic
 {
     public:
-        euclidean_heuristic(warthog::graph::planar_graph* g) : g_(g) { hscale_ = 1; }
+        euclidean_heuristic(warthog::graph::xy_graph* g) : g_(g) { hscale_ = 1; }
         ~euclidean_heuristic() { }
 
 		inline double
@@ -59,7 +59,7 @@ class euclidean_heuristic
         mem() { return sizeof(this); } 
 
 	private:
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         double hscale_;
 
 };

@@ -1,7 +1,7 @@
 #include "gridmap.h"
 #include "jps.h"
 #include "corner_point_locator.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <cassert>
 #include <climits>

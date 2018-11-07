@@ -7,7 +7,7 @@
 // @author: dharabor
 // @created: 2018-05-04
 
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <iostream>
 
@@ -24,7 +24,7 @@ main(int argc, char** argv)
         return EINVAL;
     }
     
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     g.load_dimacs(argv[1], argv[2]);
     g.print_dimacs_gr(std::cout, 0, g.get_num_nodes());
 }

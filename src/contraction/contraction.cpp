@@ -1,7 +1,7 @@
 #include "contraction.h"
 #include "fch_expansion_policy.h"
 #include "flexible_astar.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "problem_instance.h"
 #include "search_node.h"
 #include "solution.h"
@@ -11,7 +11,7 @@
 #include <vector>
 
 void
-warthog::ch::make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order)
+warthog::ch::make_input_order(warthog::graph::xy_graph& g, std::vector<uint32_t>& order)
 {
     order.clear();
     order.reserve(g.get_num_nodes());
@@ -80,7 +80,7 @@ typedef std::set<uint32_t>::iterator set_iter;
 
 void
 warthog::ch::compute_closure(uint32_t source, 
-        warthog::graph::planar_graph* g, std::set<uint32_t>* closure, 
+        warthog::graph::xy_graph* g, std::set<uint32_t>* closure, 
         uint32_t maxdepth)
 {
     std::stack<std::pair<uint32_t, uint32_t>> stack; // stack of node ids
@@ -117,7 +117,7 @@ warthog::ch::compute_closure(uint32_t source,
 
 void
 warthog::ch::compute_down_closure(uint32_t source, 
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
+        warthog::graph::xy_graph* g, std::vector<uint32_t>* rank,
         std::set<uint32_t>* closure)
 {
     closure->insert(source);
@@ -170,7 +170,7 @@ warthog::ch::value_index_swap_dimacs(
 
 void
 warthog::ch::partition_greedy_bottom_up(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank,
         uint32_t nparts,
         std::vector<uint32_t>* part)
@@ -181,7 +181,7 @@ warthog::ch::partition_greedy_bottom_up(
 void
 warthog::ch::unpack(uint32_t from_id,
         warthog::graph::edge_iter it_e,
-        warthog::graph::planar_graph* g,
+        warthog::graph::xy_graph* g,
         std::set<uint32_t>& intermediate)
 {
     warthog::graph::node* from = g->get_node(from_id);
@@ -223,7 +223,7 @@ warthog::ch::unpack(uint32_t from_id,
 
 void
 warthog::ch::unpack_and_list_edges(warthog::graph::edge* scut,
-        uint32_t scut_tail_id, warthog::graph::planar_graph* g,
+        uint32_t scut_tail_id, warthog::graph::xy_graph* g,
         std::vector<warthog::graph::edge*>& unpacked, bool recurse)
 {
     warthog::graph::node* from = g->get_node(scut_tail_id);
@@ -254,7 +254,7 @@ warthog::ch::unpack_and_list_edges(warthog::graph::edge* scut,
 }
 
 void
-warthog::ch::optimise_graph_for_bch(warthog::graph::planar_graph* g,
+warthog::ch::optimise_graph_for_bch(warthog::graph::xy_graph* g,
         std::vector<uint32_t>* rank)
 {
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
@@ -295,12 +295,12 @@ warthog::ch::optimise_graph_for_bch(warthog::graph::planar_graph* g,
 
 void
 warthog::ch::optimise_graph_for_bch_v2(
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank)
+        warthog::graph::xy_graph* g, std::vector<uint32_t>* rank)
 {
     //fch_sort_successors(g, rank);
 
     // create an new graph with all the same nodes but no edges
-    warthog::graph::planar_graph bch_g;
+    warthog::graph::xy_graph bch_g;
     bch_g.capacity(g->get_num_nodes());
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {
@@ -340,7 +340,7 @@ warthog::ch::optimise_graph_for_bch_v2(
     *g = std::move(bch_g);
 }
 
-warthog::graph::planar_graph* 
+warthog::graph::xy_graph* 
 warthog::ch::load_contraction_hierarchy_and_optimise_for_fch( 
         const char* gr_file, 
         const char* co_file, 
@@ -349,7 +349,7 @@ warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
         bool store_incoming_edges, 
         bool enforce_euclidean)
 {
-    warthog::graph::planar_graph* g = new warthog::graph::planar_graph();
+    warthog::graph::xy_graph* g = new warthog::graph::xy_graph();
     if(!g->load_dimacs(gr_file, co_file, reverse_arcs, 
                 store_incoming_edges, enforce_euclidean))
     {
@@ -366,7 +366,7 @@ warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
 
 void
 warthog::ch::fch_sort_successors(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank)
 {
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
@@ -390,7 +390,7 @@ warthog::ch::fch_sort_successors(
 // up-down < down: seldom works; up usually goes far away and down is local
 void
 warthog::ch::sod_pruning(
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank)
+        warthog::graph::xy_graph* g, std::vector<uint32_t>* rank)
 {   
     //std::vector<double> cost(g->get_num_nodes(), DBL_MAX);
     //std::vector<double> from(g->get_num_nodes(), g->get_num_nodes());

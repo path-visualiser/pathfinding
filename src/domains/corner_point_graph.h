@@ -22,7 +22,7 @@
 
 #include "corner_point_locator.h"
 #include "gridmap.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <unordered_map>
 #include <memory>
@@ -62,7 +62,7 @@ class corner_point_graph
         corner_point_graph(std::shared_ptr<warthog::gridmap> gm );
         corner_point_graph(
                 std::shared_ptr<warthog::gridmap> gm, 
-                std::shared_ptr<warthog::graph::planar_graph> g);
+                std::shared_ptr<warthog::graph::xy_graph> g);
 
         virtual ~corner_point_graph();
 
@@ -181,8 +181,8 @@ class corner_point_graph
         uint32_t 
         get_dummy_start_id() { return S_DUMMY_ID; }
 
-        warthog::graph::planar_graph*
-        get_planar_graph() { return g_.get(); }
+        warthog::graph::xy_graph*
+        get_xy_graph() { return g_.get(); }
 
         // post-hoc edge indexing
         // (essentially, index the edges of each node by their direction 
@@ -192,7 +192,7 @@ class corner_point_graph
 
     private:
         bool verbose_;
-        std::shared_ptr<warthog::graph::planar_graph> g_;
+        std::shared_ptr<warthog::graph::xy_graph> g_;
         warthog::corner_point_locator* cpl_;
         
         // no copy ctor

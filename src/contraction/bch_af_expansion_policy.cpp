@@ -5,7 +5,7 @@
 #include "search_node.h"
 
 warthog::bch_af_expansion_policy::bch_af_expansion_policy(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         warthog::af_filter* filter,
         bool backward) : expansion_policy(g->get_num_nodes())
 {

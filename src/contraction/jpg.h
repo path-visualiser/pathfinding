@@ -21,7 +21,7 @@ namespace graph
 {
 
 class corner_point_graph;
-class planar_graph;
+class xy_graph;
 
 }
    
@@ -52,12 +52,12 @@ compute_direction_labels(warthog::graph::corner_point_graph* g);
 void
 label_edge(
         warthog::graph::edge* e, uint32_t e_tail_id, 
-        warthog::graph::planar_graph* pg);
+        warthog::graph::xy_graph* pg);
 
 // see warthog::jpg::compute_direction_labels
 void
 process_edge(warthog::graph::edge* e, uint32_t e_tail_id,
-             warthog::graph::planar_graph* g);
+             warthog::graph::xy_graph* g);
 
 // see warthog::jpg::compute_direction_labels
 inline warthog::jps::direction

@@ -37,7 +37,7 @@
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
 #include "lazy_graph_contraction.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "solution.h"
 #include "timer.h"
 #include "zero_heuristic.h"
@@ -199,7 +199,7 @@ void
 run_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str()))
     {
         std::cerr << "err; could not load gr or co input files " 
@@ -224,7 +224,7 @@ void
 run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files " 
@@ -234,7 +234,7 @@ run_bi_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     warthog::simple_graph_expansion_policy fexp(&g);
 
-    warthog::graph::planar_graph backward_g;
+    warthog::graph::xy_graph backward_g;
     if(!backward_g.load_dimacs(gr.c_str(), co.c_str(), true, true))
     {
         std::cerr << "err; could not load gr or co input files " 
@@ -256,7 +256,7 @@ void
 run_bi_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str()))
     {
         std::cerr << "err; could not load gr or co input files " 
@@ -278,7 +278,7 @@ void
 run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name, std::string gr, std::string co)
 {
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
 
     if(!g.load_dimacs(gr.c_str(), co.c_str()))
     {
@@ -320,8 +320,8 @@ run_bch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph
-    std::shared_ptr<warthog::graph::planar_graph> g(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> g(
+            new warthog::graph::xy_graph());
     if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
@@ -363,8 +363,8 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph
-    std::shared_ptr<warthog::graph::planar_graph> g(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> g(
+            new warthog::graph::xy_graph());
     if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
@@ -452,7 +452,7 @@ run_bch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
@@ -500,8 +500,8 @@ run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
             
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     if(!pg->load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files " 
@@ -570,8 +570,8 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> g(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> g(
+            new warthog::graph::xy_graph());
     if(!g->load_dimacs( gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
@@ -633,7 +633,7 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> g(
+    std::shared_ptr<warthog::graph::xy_graph> g(
             warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
                 gr.c_str(), co.c_str(), &order, false, true));
     if(!g.get())
@@ -708,7 +708,7 @@ run_bch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> g(
+    std::shared_ptr<warthog::graph::xy_graph> g(
             warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
                 gr.c_str(), co.c_str(), &order, false, true));
     if(!g.get())
@@ -783,7 +783,7 @@ run_bch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> g(
+    std::shared_ptr<warthog::graph::xy_graph> g(
             warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
                 gr.c_str(), co.c_str(), &order, false, true));
     if(!g.get())
@@ -838,7 +838,7 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
@@ -900,7 +900,7 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
@@ -1014,7 +1014,7 @@ run_fch_fm(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(gr.c_str(), co.c_str(), false, true))
     {
         std::cerr 
@@ -1126,7 +1126,7 @@ run_fch_apex_experiment(warthog::util::cfg& cfg,
     }
 
     // load up the graph 
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     g.load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // load up the node order
@@ -1260,7 +1260,7 @@ run_fch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> g(
+    std::shared_ptr<warthog::graph::xy_graph> g(
             warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
                 gr.c_str(), co.c_str(), &order, false, true));
     if(!g.get())
@@ -1318,7 +1318,7 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> g(
+    std::shared_ptr<warthog::graph::xy_graph> g(
             warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
                 gr.c_str(), co.c_str(), &order, false, true));
     if(!g.get())
@@ -1386,7 +1386,7 @@ run_fch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> g(
+    std::shared_ptr<warthog::graph::xy_graph> g(
             warthog::ch::load_contraction_hierarchy_and_optimise_for_fch(
                 gr.c_str(), co.c_str(), &order, false, true));
     if(!g.get())
@@ -1469,8 +1469,8 @@ run_fch_bbaf_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
             
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // graph wrapper
@@ -1528,8 +1528,8 @@ run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
             
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // wrapper
@@ -1581,8 +1581,8 @@ run_fch_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
             
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // wrapper
@@ -1655,8 +1655,8 @@ run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
             
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // graph wrapper
@@ -1735,8 +1735,8 @@ run_fch_af_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
             
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // graph wrapper
@@ -1797,8 +1797,8 @@ run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // wrapper
@@ -1859,8 +1859,8 @@ run_fch_bb_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             new warthog::gridmap(gridmapfile.c_str()));
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     pg->load_dimacs(gr.c_str(), co.c_str(), false, true);
 
     // wrapper

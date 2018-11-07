@@ -19,7 +19,7 @@ namespace warthog
 
 namespace graph
 {
-class planar_graph;
+class xy_graph;
 }
 
 class problem_instance;
@@ -31,7 +31,7 @@ class fch_bb_expansion_policy : public expansion_policy
 {
     public:
         fch_bb_expansion_policy(
-                warthog::graph::planar_graph* graph,
+                warthog::graph::xy_graph* graph,
                 std::vector<uint32_t>* rank, 
                 warthog::bb_filter* nf);
 
@@ -65,7 +65,7 @@ class fch_bb_expansion_policy : public expansion_policy
 
     private:
         std::vector<uint32_t>* rank_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         warthog::bb_filter* nf_;
         uint32_t apex_;
         bool apex_reached_;

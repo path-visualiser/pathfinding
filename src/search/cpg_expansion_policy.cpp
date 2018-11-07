@@ -2,7 +2,7 @@
 #include "cpg_expansion_policy.h"
 #include "corner_point_locator.h"
 #include "online_jump_point_locator2.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 warthog::cpg_expansion_policy::cpg_expansion_policy(
         warthog::graph::corner_point_graph* g) 

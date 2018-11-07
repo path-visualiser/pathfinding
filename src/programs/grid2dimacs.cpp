@@ -1,6 +1,6 @@
 #include "corner_point_graph.h"
 #include "gridmap.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "scenario_manager.h"
 
 #include <cstring>
@@ -35,7 +35,7 @@ main(int argc, char** argv)
 
     if(strcmp(argv[1], "map") == 0)
     {
-        warthog::graph::planar_graph g;
+        warthog::graph::xy_graph g;
         g.load_grid(argv[2]);
         g.print_dimacs_gr(std::cout, 0, g.get_num_nodes());
         g.print_dimacs_co(std::cout, 0, g.get_num_nodes());

@@ -94,11 +94,11 @@ class fch_jpg_expansion_policy : public expansion_policy
         void
         label_edge(
                 warthog::graph::edge* e, uint32_t e_tail_id, 
-                warthog::graph::planar_graph* pg);
+                warthog::graph::xy_graph* pg);
 
         void
         process_edge(warthog::graph::edge* e, uint32_t e_tail_id,
-                     warthog::graph::planar_graph* g);
+                     warthog::graph::xy_graph* g);
 
         inline warthog::jps::direction
         get_dir(warthog::graph::edge* e, step_type which)

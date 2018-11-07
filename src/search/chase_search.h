@@ -28,7 +28,7 @@
 //
 
 #include "constants.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "pqueue.h"
 #include "search.h"
 #include "search_node.h"
@@ -45,7 +45,7 @@ namespace warthog
 
 namespace graph
 {
-    class planar_graph;
+    class xy_graph;
 }
 
 class search_node;

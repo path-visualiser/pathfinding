@@ -33,7 +33,7 @@ class flexible_astar;
 namespace graph
 {
 
-class planar_graph;
+class xy_graph;
 
 }
 
@@ -57,7 +57,7 @@ bool
 load_node_order(const char* filename, 
         std::vector<uint32_t>& order, bool lex_order=false);
 
-// load a new planar_graph from file in the format of the 9th DIMACS
+// load a new xy_graph from file in the format of the 9th DIMACS
 // Implementation Challenge. 
 // In this format graphs are specified
 // using two files: (i) a gr file which defines edge
@@ -71,7 +71,7 @@ load_node_order(const char* filename,
 // @param duplicate_edges: store edges with both head and tail node
 // @param enforce_euclidean: arc lengths must be >= euclidean distance
 // @return: the optimised graph, or 0 if load failed
-warthog::graph::planar_graph* 
+warthog::graph::xy_graph* 
 load_contraction_hierarchy_and_optimise_for_fch( 
         const char* gr_file, 
         const char* co_file, 
@@ -94,7 +94,7 @@ load_contraction_hierarchy_and_optimise_for_fch(
 // @return: the optimised graph, or 0 if load failed
 void
 optimise_graph_for_bch(
-        warthog::graph::planar_graph* g,
+        warthog::graph::xy_graph* g,
         std::vector<uint32_t>* rank);
 
 // Load an input graph and optimise edges for use with the bi-directional
@@ -111,14 +111,14 @@ optimise_graph_for_bch(
 // @return: the optimised graph, or 0 if load failed
 void
 optimise_graph_for_bch_v2(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank);
 
 void
 write_node_order(const char* filename, std::vector<uint32_t>& order);
 
 void
-make_input_order(warthog::graph::planar_graph& g, std::vector<uint32_t>& order);
+make_input_order(warthog::graph::xy_graph& g, std::vector<uint32_t>& order);
 
 // An order-of-contraction is a sequential list of node-ids that indicates
 // the order in which nodes should be contracted. e.g. 
@@ -134,12 +134,12 @@ value_index_swap_dimacs(std::vector<uint32_t>& vec);
 
 // compute the out-arc closure of @param source 
 void
-compute_closure(uint32_t source, warthog::graph::planar_graph* g, 
+compute_closure(uint32_t source, warthog::graph::xy_graph* g, 
         std::set<uint32_t>* closure, uint32_t maxdepth=warthog::INF);
 
 void
 compute_down_closure(uint32_t source, 
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
+        warthog::graph::xy_graph* g, std::vector<uint32_t>* rank,
         std::set<uint32_t>* closure);
 
 // given an existing contraction hierarchy, create a partition
@@ -149,7 +149,7 @@ compute_down_closure(uint32_t source,
 // the labeling is stored in @param part
 void
 partition_greedy_bottom_up(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank,
         uint32_t nparts, 
         std::vector<uint32_t>* part);
@@ -158,7 +158,7 @@ partition_greedy_bottom_up(
 // that are being bypassed
 void
 unpack_and_list_edges(warthog::graph::edge* scut,
-        uint32_t scut_tail_id, warthog::graph::planar_graph* g,
+        uint32_t scut_tail_id, warthog::graph::xy_graph* g,
         std::vector<warthog::graph::edge*>& unpacked, bool recurse=true);
 
 // recursively unpack a shortcut edge and
@@ -166,14 +166,14 @@ unpack_and_list_edges(warthog::graph::edge* scut,
 void
 unpack(uint32_t from_id,
         warthog::graph::edge_iter it_e,
-        warthog::graph::planar_graph* g,
+        warthog::graph::xy_graph* g,
         std::set<uint32_t>& intermediate);
 
 // sorts the list of successors in descending contraction order
 // (the highest successor appears first)
 void
 fch_sort_successors(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank);
 
 // stall-on-demand as preprocessing
@@ -181,7 +181,7 @@ fch_sort_successors(
 // in the graph and prunes any outgoing down edges of the source if they
 // are better reached by going up first
 void
-sod_pruning(warthog::graph::planar_graph* g, std::vector<uint32_t>* rank);
+sod_pruning(warthog::graph::xy_graph* g, std::vector<uint32_t>* rank);
 
 } // ch
 

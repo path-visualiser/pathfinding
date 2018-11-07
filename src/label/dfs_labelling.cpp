@@ -1,5 +1,5 @@
 #include "dfs_labelling.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include "search_node.h"
 #include "zero_heuristic.h"
@@ -106,7 +106,7 @@ warthog::label::operator<<(std::ostream& out,
 }
 
 warthog::label::dfs_labelling::dfs_labelling(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank,
         std::vector<uint32_t>* partitioning)
     : g_(g), rank_(rank), part_(partitioning)

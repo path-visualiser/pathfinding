@@ -26,7 +26,7 @@ class gridmap;
 namespace graph
 {
 
-class planar_graph;
+class xy_graph;
 class corner_graph;
 
 }
@@ -86,7 +86,7 @@ compute_successors(warthog::jps::direction d, uint32_t tiles)
 }
 
 
-// creates a warthog::graph::planar_graph which contains only 
+// creates a warthog::graph::xy_graph which contains only 
 // nodes that are jump points and edges which represent valid jumps,
 // from one jump point to another.
 //
@@ -96,7 +96,7 @@ compute_successors(warthog::jps::direction d, uint32_t tiles)
 //
 //
 // @return the jump point graph
-warthog::graph::planar_graph*
+warthog::graph::xy_graph*
 create_jump_point_graph(warthog::gridmap* gm);
 
 // given an input grid, create a new map where every (x, y) location

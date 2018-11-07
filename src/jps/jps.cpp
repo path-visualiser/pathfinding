@@ -3,7 +3,7 @@
 #include "gridmap.h"
 #include "jps.h"
 #include "online_jump_point_locator2.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 // computes the forced neighbours of a node.
 // for a neighbour to be forced we must check that 
@@ -156,10 +156,10 @@ warthog::jps::compute_natural(warthog::jps::direction d, uint32_t tiles)
 	return ret;
 }
 
-warthog::graph::planar_graph*
+warthog::graph::xy_graph*
 warthog::jps::create_jump_point_graph(warthog::gridmap* gm) 
 {
-    warthog::graph::planar_graph* graph = new warthog::graph::planar_graph();
+    warthog::graph::xy_graph* graph = new warthog::graph::xy_graph();
     warthog::jps::online_jump_point_locator2 jpl(gm);
     uint32_t mapwidth = gm->header_width();
     uint32_t mapheight = gm->header_height();

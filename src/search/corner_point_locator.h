@@ -25,6 +25,7 @@
 
 #include "jps.h"
 #include "gridmap.h"
+#include "xy_graph.h"
 #include <vector>
 
 namespace warthog
@@ -174,7 +175,7 @@ class corner_point_locator
 
         // create a grid 
         warthog::gridmap* 
-        create_cnr_map(warthog::graph::planar_graph* g);
+        create_cnr_map(warthog::graph::xy_graph* g);
 
 		warthog::gridmap* map_;
 		warthog::gridmap* rmap_;

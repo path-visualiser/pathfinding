@@ -4,10 +4,10 @@
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 warthog::ch::fixed_graph_contraction::fixed_graph_contraction(
-                warthog::graph::planar_graph* g)
+                warthog::graph::xy_graph* g)
     : g_(g)
 {
     order_ = new std::vector<uint32_t>(get_graph()->get_num_nodes());
@@ -16,7 +16,7 @@ warthog::ch::fixed_graph_contraction::fixed_graph_contraction(
 }
 
 warthog::ch::fixed_graph_contraction::fixed_graph_contraction(
-                warthog::graph::planar_graph* g,
+                warthog::graph::xy_graph* g,
                 std::vector<uint32_t>* order)
     : g_(g)
 {
@@ -188,7 +188,7 @@ warthog::ch::fixed_graph_contraction::witness_search(
 {
     // pathfinding queries must specify an external start and target id
     // (i.e. as they appear in the input file)
-    warthog::graph::planar_graph* g = this->get_graph();
+    warthog::graph::xy_graph* g = this->get_graph();
     uint32_t ext_from_id = g->to_external_id(from_id);
     uint32_t ext_to_id = g->to_external_id(to_id);
 

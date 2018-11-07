@@ -1,10 +1,10 @@
 #include "contraction.h"
 #include "fch_fm_expansion_policy.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "search_node.h"
 
 warthog::fch_fm_expansion_policy::fch_fm_expansion_policy(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank,
         warthog::label::firstmove_labelling* lab,
         bool sort_successors)

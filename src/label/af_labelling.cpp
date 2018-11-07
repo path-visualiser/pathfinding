@@ -2,7 +2,7 @@
 #include <fstream>
 
 warthog::label::af_labelling::af_labelling(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* partitioning)
 {
     g_ = g;
@@ -82,7 +82,7 @@ warthog::label::af_labelling::print(
 
 warthog::label::af_labelling*
 warthog::label::af_labelling::load(
-        const char* filename, warthog::graph::planar_graph* g,
+        const char* filename, warthog::graph::xy_graph* g,
         std::vector<uint32_t>* partitioning)
 {
     std::cerr << "loading arcflags labelling file\n";
@@ -145,7 +145,7 @@ warthog::label::af_labelling::load(
 
 bool
 warthog::label::af_labelling::load_bch_labels(
-        const char* filename, warthog::graph::planar_graph* g,
+        const char* filename, warthog::graph::xy_graph* g,
         std::vector<uint32_t>* partitioning,
         std::vector<uint32_t>* lex_order, 
         warthog::label::af_labelling*& out_afl_fwd,

@@ -29,7 +29,7 @@ class graph_expansion_policy;
 namespace graph
 {
 
-class planar_graph;
+class xy_graph;
 
 }
 
@@ -41,10 +41,10 @@ class fixed_graph_contraction
     public:
         // default order is input order (i.e. crap)
         fixed_graph_contraction(
-                warthog::graph::planar_graph* g);
+                warthog::graph::xy_graph* g);
 
         fixed_graph_contraction(
-                warthog::graph::planar_graph* g,
+                warthog::graph::xy_graph* g,
                 std::vector<uint32_t>* order);
 
         ~fixed_graph_contraction();
@@ -58,7 +58,7 @@ class fixed_graph_contraction
             order = *order_;
         }
 
-        inline warthog::graph::planar_graph*
+        inline warthog::graph::xy_graph*
         get_graph() { return g_; }
 
         void
@@ -88,7 +88,7 @@ class fixed_graph_contraction
 
         uint32_t order_index_;
         std::vector<uint32_t>* order_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         
         bool verbose_;
         bool done_;

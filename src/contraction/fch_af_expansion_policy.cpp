@@ -1,11 +1,11 @@
 #include "af_filter.h"
 #include "contraction.h"
 #include "fch_af_expansion_policy.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "search_node.h"
 
 warthog::fch_af_expansion_policy::fch_af_expansion_policy(
-        warthog::graph::planar_graph* g, std::vector<uint32_t>* rank,
+        warthog::graph::xy_graph* g, std::vector<uint32_t>* rank,
         warthog::af_filter* filter)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {

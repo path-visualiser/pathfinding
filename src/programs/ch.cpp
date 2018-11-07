@@ -4,7 +4,7 @@
 #include "fixed_graph_contraction.h"
 #include "graph.h"
 #include "lazy_graph_contraction.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <iostream>
 #include <string>
@@ -42,7 +42,7 @@ contract_graph()
     }
 
     // contract a graph and create a hierarchy
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     std::vector<uint32_t> order;
 
     std::string partial = cfg.get_param_value("partial");

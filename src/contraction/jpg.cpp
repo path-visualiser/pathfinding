@@ -5,7 +5,7 @@
 void
 warthog::jpg::compute_direction_labels(warthog::graph::corner_point_graph* g_)
 {
-    warthog::graph::planar_graph* pg = g_->get_planar_graph();
+    warthog::graph::xy_graph* pg = g_->get_xy_graph();
     for(uint32_t node_id = 0; node_id < g_->get_num_nodes(); node_id++)
     {
         warthog::graph::node* n = g_->get_node(node_id);
@@ -19,7 +19,7 @@ warthog::jpg::compute_direction_labels(warthog::graph::corner_point_graph* g_)
 
 void
 warthog::jpg::process_edge(warthog::graph::edge* e, uint32_t e_tail_id,
-             warthog::graph::planar_graph* pg)
+             warthog::graph::xy_graph* pg)
 {
     if(e->label_ != UINTPTR_MAX) { return; } // already labeled
 
@@ -56,7 +56,7 @@ warthog::jpg::process_edge(warthog::graph::edge* e, uint32_t e_tail_id,
 
 void
 warthog::jpg::label_edge(warthog::graph::edge* e, uint32_t e_tail_id, 
-        warthog::graph::planar_graph* pg)
+        warthog::graph::xy_graph* pg)
 {
     // edge is part of the original corner point graph
     // we label it directly by analysing its endpoints

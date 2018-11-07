@@ -54,7 +54,7 @@ class graph_expansion_policy;
 
 namespace graph
 {
-class planar_graph;
+class xy_graph;
 }
 
 namespace ch
@@ -84,7 +84,7 @@ operator<(const ch_pair& first, const ch_pair& second);
 class lazy_graph_contraction 
 {
     public:
-        lazy_graph_contraction(warthog::graph::planar_graph* g);
+        lazy_graph_contraction(warthog::graph::xy_graph* g);
 
         virtual ~lazy_graph_contraction();
 
@@ -114,7 +114,7 @@ class lazy_graph_contraction
         mem();
 
     private:
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         bool verbose_;
 
         // node order stuff

@@ -36,7 +36,7 @@ namespace warthog
 namespace graph
 {
 
-class planar_graph;
+class xy_graph;
 class edge;
 
 } 
@@ -164,7 +164,7 @@ class dfs_labelling
             return part_;
         }
 
-        inline warthog::graph::planar_graph*
+        inline warthog::graph::xy_graph*
         get_graph() 
         { 
             return g_;
@@ -194,7 +194,7 @@ class dfs_labelling
         }
 
         static warthog::label::dfs_labelling*
-        load(const char* filename, warthog::graph::planar_graph* g, 
+        load(const char* filename, warthog::graph::xy_graph* g, 
             std::vector<uint32_t>* rank, std::vector<uint32_t>* part)
         {
             std::cerr << "loading dfs_labelling from file " 
@@ -244,7 +244,7 @@ class dfs_labelling
 
         // compute labels for all nodes specified by the given workload
         static warthog::label::dfs_labelling*
-        compute(warthog::graph::planar_graph* g, 
+        compute(warthog::graph::xy_graph* g, 
                 std::vector<uint32_t>* part, 
                 std::vector<uint32_t>* rank,
                 warthog::util::workload_manager* workload)
@@ -413,7 +413,7 @@ class dfs_labelling
         // @param id of the highest node in the contraction hierarchy
         static uint32_t
         compute_dfs_ids(
-                warthog::graph::planar_graph* g, 
+                warthog::graph::xy_graph* g, 
                 std::vector<uint32_t>* rank, 
                 std::vector<uint32_t>* dfs_ids)
         {
@@ -457,7 +457,7 @@ class dfs_labelling
     private:
         // only via ::compute or ::load please
         dfs_labelling(
-            warthog::graph::planar_graph* g, 
+            warthog::graph::xy_graph* g, 
             std::vector<uint32_t>* rank,
             std::vector<uint32_t>* partitioning);
 
@@ -466,7 +466,7 @@ class dfs_labelling
         void 
         compute_dfs_labels(warthog::util::workload_manager* workload);
 
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         std::vector<uint32_t>* rank_;
         std::vector<uint32_t>* part_;
         size_t bytes_per_af_label_;

@@ -3,7 +3,7 @@
 #include <fstream>
 #include <pthread.h>
 warthog::label::bbaf_labelling::bbaf_labelling(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* partitioning)
 {
     g_ = g;
@@ -93,7 +93,7 @@ warthog::label::bbaf_labelling::print(std::ostream& out,
 
 warthog::label::bbaf_labelling*
 warthog::label::bbaf_labelling::load(const char* filename, 
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* partitioning)
 {
     std::cerr << "loading bbaf file\n";
@@ -180,7 +180,7 @@ warthog::label::bbaf_labelling::load(const char* filename,
 
 bool
 warthog::label::bbaf_labelling::load_bch_labels(
-        const char* filename, warthog::graph::planar_graph* g,
+        const char* filename, warthog::graph::xy_graph* g,
         std::vector<uint32_t>* partitioning,
         std::vector<uint32_t>* lex_order, 
         warthog::label::bbaf_labelling*& out_lab_fwd,

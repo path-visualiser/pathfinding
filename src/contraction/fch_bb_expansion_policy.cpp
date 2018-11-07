@@ -2,11 +2,11 @@
 #include "bb_filter.h"
 #include "euclidean_heuristic.h"
 #include "fch_bb_expansion_policy.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "search_node.h"
 
 warthog::fch_bb_expansion_policy::fch_bb_expansion_policy(
-        warthog::graph::planar_graph* g, 
+        warthog::graph::xy_graph* g, 
         std::vector<uint32_t>* rank,
         warthog::bb_filter* nf)
     : expansion_policy(g->get_num_nodes()), g_(g) 

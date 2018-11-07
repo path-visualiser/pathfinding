@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <fstream>
 
-warthog::label::bb_labelling::bb_labelling(warthog::graph::planar_graph* g)
+warthog::label::bb_labelling::bb_labelling(warthog::graph::xy_graph* g)
 {
     g_ = g;
 
@@ -48,7 +48,7 @@ warthog::label::bb_labelling::print(
 
 warthog::label::bb_labelling*
 warthog::label::bb_labelling::load(
-        const char* filename, warthog::graph::planar_graph* g)
+        const char* filename, warthog::graph::xy_graph* g)
 {
     std::ifstream ifs(filename, std::ios_base::in);
     if(!ifs.good())
@@ -108,7 +108,7 @@ warthog::label::bb_labelling::load(
 
 bool
 warthog::label::bb_labelling::load_bch_labels(
-        const char* filename, warthog::graph::planar_graph* g,
+        const char* filename, warthog::graph::xy_graph* g,
         std::vector<uint32_t>* lex_order, 
         warthog::label::bb_labelling*& out_lab_fwd,
         warthog::label::bb_labelling*& out_lab_bwd)

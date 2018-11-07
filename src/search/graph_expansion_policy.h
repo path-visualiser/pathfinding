@@ -16,7 +16,7 @@
 
 #include "dummy_filter.h"
 #include "arraylist.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "problem_instance.h"
 #include "search_node.h"
 
@@ -28,7 +28,7 @@ class graph_expansion_policy
 {
     public:
         graph_expansion_policy(
-                warthog::graph::planar_graph* g, FILTER* filter = 0)
+                warthog::graph::xy_graph* g, FILTER* filter = 0)
             :  filter_(filter), g_(g)
         {
             assert(g);
@@ -174,7 +174,7 @@ class graph_expansion_policy
 
 	private:
         FILTER* filter_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
 
         uint32_t edge_index_;
         warthog::graph::node* current_graph_node_;

@@ -35,7 +35,7 @@ namespace warthog
 namespace graph
 {
 
-class planar_graph;
+class xy_graph;
 class edge;
 
 } 
@@ -240,17 +240,17 @@ struct fm_coll
 // start node
 void
 compute_fm_dfs_preorder(
-        warthog::graph::planar_graph& g, 
+        warthog::graph::xy_graph& g, 
         std::vector<uint32_t>& column_order);
 
 void
 compute_fm_fch_dfs_preorder(
-        warthog::graph::planar_graph& g, 
+        warthog::graph::xy_graph& g, 
         std::vector<uint32_t>& contraction_order,
         std::vector<uint32_t>& column_order);
 void
 compute_fm_fch_dijkstra_dfs_preorder(
-        warthog::graph::planar_graph& g, 
+        warthog::graph::xy_graph& g, 
         std::vector<uint32_t>& contraction_order,
         std::vector<uint32_t>& column_order);
 
@@ -266,7 +266,7 @@ class firstmove_labelling
 
         ~firstmove_labelling();
 
-        inline warthog::graph::planar_graph*
+        inline warthog::graph::xy_graph*
         get_graph() 
         { 
             return g_;
@@ -309,7 +309,7 @@ class firstmove_labelling
         }
 
         static warthog::label::firstmove_labelling*
-        load(const char* filename, warthog::graph::planar_graph* g, 
+        load(const char* filename, warthog::graph::xy_graph* g, 
             std::vector<uint32_t>* rank)
         {
             std::cerr << "loading firstmove_labelling from file " 
@@ -360,7 +360,7 @@ class firstmove_labelling
         // compute labels for all nodes specified by the given workload
         template <typename t_expander>
         static warthog::label::firstmove_labelling*
-        compute(warthog::graph::planar_graph* g, 
+        compute(warthog::graph::xy_graph* g, 
                 std::vector<uint32_t>* column_order,
                 std::function<t_expander*(void)>& fn_new_expander,
                 warthog::util::workload_manager* workload)
@@ -548,7 +548,7 @@ class firstmove_labelling
 
     private:
         // only via ::compute or ::load please
-        firstmove_labelling(warthog::graph::planar_graph* g);
+        firstmove_labelling(warthog::graph::xy_graph* g);
 
         // CPD-based preprocessing computes labels for every edge 
         // @param contraction order of every node in the graph
@@ -564,7 +564,7 @@ class firstmove_labelling
         void
         compress(std::vector< std::vector < uint32_t >>& fm);
 
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         std::vector< std::vector< fm_run >>* lab_;
 };
 

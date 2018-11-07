@@ -13,7 +13,7 @@
 //
 
 #include "dfs_labelling.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "expansion_policy.h"
 #include <vector>
 
@@ -22,7 +22,7 @@ namespace warthog
 
 namespace graph
 {
-class planar_graph;
+class xy_graph;
 }
 
 class dfs_labelling;
@@ -30,7 +30,7 @@ class fch_dfs_expansion_policy : public expansion_policy
 {
     public:
         fch_dfs_expansion_policy(
-                warthog::graph::planar_graph* graph,
+                warthog::graph::xy_graph* graph,
                 std::vector<uint32_t>* rank, 
                 warthog::label::dfs_labelling* lab,
                 bool sort_successors=true);
@@ -60,7 +60,7 @@ class fch_dfs_expansion_policy : public expansion_policy
 
     private:
         std::vector<uint32_t>* rank_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         uint8_t* heads_;
 
         warthog::label::dfs_labelling* lab_;

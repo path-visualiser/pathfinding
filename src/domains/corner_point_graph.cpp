@@ -11,8 +11,8 @@ typedef std::unordered_map<uint32_t, uint32_t>::iterator id_map_iter;
 warthog::graph::corner_point_graph::corner_point_graph(
         std::shared_ptr<warthog::gridmap> gm)
 {
-    g_ = std::shared_ptr<warthog::graph::planar_graph>(
-            new warthog::graph::planar_graph());
+    g_ = std::shared_ptr<warthog::graph::xy_graph>(
+            new warthog::graph::xy_graph());
     cpl_ = new warthog::corner_point_locator(gm.get());
 
     e_lab_index_ = new std::vector<label_index>(g_->get_num_nodes());
@@ -32,7 +32,7 @@ warthog::graph::corner_point_graph::corner_point_graph(
 
 warthog::graph::corner_point_graph::corner_point_graph(
         std::shared_ptr<warthog::gridmap> gm, 
-        std::shared_ptr<warthog::graph::planar_graph> g)
+        std::shared_ptr<warthog::graph::xy_graph> g)
 {
     g_ = g;
     cpl_ = new warthog::corner_point_locator(gm.get());

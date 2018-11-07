@@ -1,11 +1,11 @@
 #include "fch_expansion_policy.h"
 #include "firstmove_labelling.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <algorithm>
 
 warthog::label::firstmove_labelling::firstmove_labelling(
-        warthog::graph::planar_graph* g)
+        warthog::graph::xy_graph* g)
     : g_(g)
 {
     lab_ = new std::vector< std::vector < warthog::label::fm_run > > ();
@@ -135,7 +135,7 @@ warthog::label::operator<<(std::ostream& out,
 
 void
 warthog::label::compute_fm_dfs_preorder(
-        warthog::graph::planar_graph& g, 
+        warthog::graph::xy_graph& g, 
         std::vector<uint32_t>& column_order)
 {
     std::cerr << "warthog::label::compute_fm_dfs_preorder\n";
@@ -211,7 +211,7 @@ warthog::label::compute_fm_dfs_preorder(
 
 void
 warthog::label::compute_fm_fch_dfs_preorder(
-        warthog::graph::planar_graph& g, 
+        warthog::graph::xy_graph& g, 
         std::vector<uint32_t>& fch_order,
         std::vector<uint32_t>& column_order)
 {
@@ -320,7 +320,7 @@ warthog::label::compute_fm_fch_dfs_preorder(
 
 void
 warthog::label::compute_fm_fch_dijkstra_dfs_preorder(
-        warthog::graph::planar_graph& g, 
+        warthog::graph::xy_graph& g, 
         std::vector<uint32_t>& fch_order,
         std::vector<uint32_t>& column_order) 
 {

@@ -3,7 +3,7 @@
 #include "euclidean_heuristic.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <algorithm>
 #include <cassert>
@@ -11,14 +11,14 @@
 #include <iostream>
 #include <string>
 
-warthog::graph::planar_graph::planar_graph(uint32_t num_nodes)
+warthog::graph::xy_graph::xy_graph(uint32_t num_nodes)
 {
     verbose_ = false;
     grow(num_nodes);
 
 }
 
-warthog::graph::planar_graph::planar_graph(
+warthog::graph::xy_graph::xy_graph(
         warthog::gridmap* map, bool store_incoming)
 {
     verbose_ = false;
@@ -26,8 +26,8 @@ warthog::graph::planar_graph::planar_graph(
     grid2graph(map, store_incoming);
 }
 
-warthog::graph::planar_graph&
-warthog::graph::planar_graph::operator=(const warthog::graph::planar_graph&& other)
+warthog::graph::xy_graph&
+warthog::graph::xy_graph::operator=(const warthog::graph::xy_graph&& other)
 {
     // my memory, not want
     clear();
@@ -44,8 +44,8 @@ warthog::graph::planar_graph::operator=(const warthog::graph::planar_graph&& oth
 }
 
 bool
-warthog::graph::planar_graph::operator==(
-        const warthog::graph::planar_graph& other)
+warthog::graph::xy_graph::operator==(
+        const warthog::graph::xy_graph& other)
 {
     if(xy_.size() == other.xy_.size())
     {
@@ -78,7 +78,7 @@ warthog::graph::planar_graph::operator==(
 }
 
 bool
-warthog::graph::planar_graph::load_dimacs(
+warthog::graph::xy_graph::load_dimacs(
         const char* gr_file, const char* co_file, 
         bool reverse_arcs, 
         bool store_incoming_edges, 
@@ -218,7 +218,7 @@ warthog::graph::planar_graph::load_dimacs(
 // creates a graph from a gridmap input file. edge transition
 // costs are fixed to 1 for straight moves and sqrt(2) for diagonal.
 bool
-warthog::graph::planar_graph::load_grid(
+warthog::graph::xy_graph::load_grid(
         const char* file, bool store_incoming)
 {
     clear();
@@ -227,7 +227,7 @@ warthog::graph::planar_graph::load_grid(
 }
 
 bool
-warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incoming)
+warthog::graph::xy_graph::grid2graph(warthog::gridmap* gm, bool store_incoming)
 {
     // enumerate the traversable nodes with degree > 0
     struct edge_tuple 
@@ -309,7 +309,7 @@ warthog::graph::planar_graph::grid2graph(warthog::gridmap* gm, bool store_incomi
 }
 
 void
-warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss,
+warthog::graph::xy_graph::print_dimacs_gr(std::ostream& oss,
                 uint32_t first_id, uint32_t last_id)
 {
     if(first_id > last_id || last_id > get_num_nodes())
@@ -334,7 +334,7 @@ warthog::graph::planar_graph::print_dimacs_gr(std::ostream& oss,
 }
 
 void
-warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss,
+warthog::graph::xy_graph::print_dimacs_co(std::ostream& oss,
                 uint32_t first_id, uint32_t last_id)
 {
     if(first_id > last_id || last_id > get_num_nodes())
@@ -352,19 +352,19 @@ warthog::graph::planar_graph::print_dimacs_co(std::ostream& oss,
 }
 
 uint32_t
-warthog::graph::planar_graph::add_node()
+warthog::graph::xy_graph::add_node()
 {
     return add_node(warthog::INF, warthog::INF, warthog::INF);
 }
 
 uint32_t
-warthog::graph::planar_graph::add_node(int32_t x, int32_t y)
+warthog::graph::xy_graph::add_node(int32_t x, int32_t y)
 {
     return add_node(x, y, warthog::INF);
 }
 
 uint32_t
-warthog::graph::planar_graph::add_node(int32_t x, int32_t y, uint32_t ext_id)
+warthog::graph::xy_graph::add_node(int32_t x, int32_t y, uint32_t ext_id)
 {
     // check if a node with the same external id already exists; if so 
     // return the id of the existing node. otherwise, add a new node
@@ -385,7 +385,7 @@ warthog::graph::planar_graph::add_node(int32_t x, int32_t y, uint32_t ext_id)
 }
 
 void
-warthog::graph::planar_graph::save(std::ostream& oss)
+warthog::graph::xy_graph::save(std::ostream& oss)
 {
     // write number of nodes
     uint32_t nodes_sz = get_num_nodes();
@@ -426,7 +426,7 @@ warthog::graph::planar_graph::save(std::ostream& oss)
 }
 
 void
-warthog::graph::planar_graph::load(
+warthog::graph::xy_graph::load(
         std::istream& oss,
         bool store_incoming_edges, 
         bool enforce_euclidean)
@@ -538,7 +538,7 @@ warthog::graph::planar_graph::load(
 }
 
 bool
-warthog::graph::planar_graph::is_euclidean(bool fix_if_not)
+warthog::graph::xy_graph::is_euclidean(bool fix_if_not)
 {
     warthog::euclidean_heuristic h_euc(this);
     for(uint32_t t_id= 0; t_id < get_num_nodes(); t_id++)
@@ -566,7 +566,7 @@ warthog::graph::planar_graph::is_euclidean(bool fix_if_not)
 }
 
 void
-warthog::graph::planar_graph::clear()
+warthog::graph::xy_graph::clear()
 {
     nodes_.clear();
     xy_.clear();
@@ -575,7 +575,7 @@ warthog::graph::planar_graph::clear()
 }
 
 void
-warthog::graph::planar_graph::grow(uint32_t num_nodes)
+warthog::graph::xy_graph::grow(uint32_t num_nodes)
 {
     nodes_.resize(num_nodes);
     xy_.resize(num_nodes*2);
@@ -587,7 +587,7 @@ warthog::graph::planar_graph::grow(uint32_t num_nodes)
 // when @param num_nodes <= the number of nodes in the graph, this
 // function does nothing
 void
-warthog::graph::planar_graph::capacity(uint32_t num_nodes)
+warthog::graph::xy_graph::capacity(uint32_t num_nodes)
 {
     nodes_.reserve(num_nodes);
     xy_.reserve(num_nodes*2);

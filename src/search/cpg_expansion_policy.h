@@ -15,7 +15,7 @@
 
 #include "expansion_policy.h"
 #include "gridmap.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include <unordered_map>
 
 namespace warthog

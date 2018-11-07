@@ -14,7 +14,7 @@
 #include "graph.h"
 #include "gridmap.h"
 #include "helpers.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <iostream>
 #include <memory>
@@ -56,7 +56,7 @@ compute_fch_bb_labels()
     std::cerr << "computing labels" << std::endl;
 
     // load up the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
@@ -173,8 +173,8 @@ compute_fch_bb_jpg_labels()
             new warthog::gridmap(gridmapfile.c_str()));
 
     // load up the graph 
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     if(!pg->load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files " 
@@ -286,7 +286,7 @@ compute_bb_labels()
     }
 
     // load up (or create) the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
@@ -384,7 +384,7 @@ compute_fch_af_labels()
     std::cerr << "computing labels" << std::endl;
 
     // load up the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true);
 
     // load up the partition info
@@ -505,8 +505,8 @@ compute_fch_af_jpg_labels()
             new warthog::gridmap(gridmapfile.c_str()));
 
     // load up the graph
-    std::shared_ptr<warthog::graph::planar_graph> pg(
-            new warthog::graph::planar_graph());
+    std::shared_ptr<warthog::graph::xy_graph> pg(
+            new warthog::graph::xy_graph());
     if(!pg->load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files " 
@@ -624,7 +624,7 @@ compute_af_labels()
     std::cerr << "computing labels" << std::endl;
 
     // load up (or create) the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
@@ -727,7 +727,7 @@ compute_bbaf_labels()
     std::cerr << "computing labels" << std::endl;
 
     // load up the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
@@ -832,7 +832,7 @@ compute_fch_bbaf_labels()
     std::cerr << "computing labels" << std::endl;
 
     // load up the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
@@ -954,7 +954,7 @@ compute_fch_dfs_labels(std::string alg_name)
     std::cerr << "computing labels" << std::endl;
 
     // load up the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
@@ -1037,7 +1037,7 @@ compute_fch_fm_labels(std::string alg_name)
     std::cerr << "computing labels" << std::endl;
 
     // load up the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";
@@ -1127,7 +1127,7 @@ compute_fm_labels(std::string alg_name)
     std::cerr << "computing labels" << std::endl;
 
     // load up the graph
-    warthog::graph::planar_graph g;
+    warthog::graph::xy_graph g;
     if(!g.load_dimacs(grfile.c_str(), cofile.c_str(), false, true))
     {
         std::cerr << "err; could not load gr or co input files (one or both)\n";

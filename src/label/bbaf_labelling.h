@@ -12,7 +12,7 @@
 #include "flexible_astar.h"
 #include "geom.h"
 #include "helpers.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "search_node.h"
 #include "workload_manager.h"
 #include "zero_heuristic.h"
@@ -71,7 +71,7 @@ class bbaf_labelling
             return &labels_;
         }
 
-        inline warthog::graph::planar_graph*
+        inline warthog::graph::xy_graph*
         get_graph() 
         { 
             return g_; 
@@ -103,7 +103,7 @@ class bbaf_labelling
                 uint32_t lastid=UINT32_MAX);
 
         static warthog::label::bbaf_labelling*
-        load(const char* filename, warthog::graph::planar_graph* g, 
+        load(const char* filename, warthog::graph::xy_graph* g, 
             std::vector<uint32_t>* partitioning);
 
         // load up a BBAF labelling for use with BCH
@@ -126,7 +126,7 @@ class bbaf_labelling
         // @return: true if the function succeeds, false if it fails
         static bool
         load_bch_labels(
-                const char* filename, warthog::graph::planar_graph* g,
+                const char* filename, warthog::graph::xy_graph* g,
                 std::vector<uint32_t>* partitioning,
                 std::vector<uint32_t>* lex_order, 
                 warthog::label::bbaf_labelling*& out_lab_fwd,
@@ -136,7 +136,7 @@ class bbaf_labelling
         // compute labels for all nodes specified by the given workload
         template <typename t_expander>
         static warthog::label::bbaf_labelling*
-        compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part, 
+        compute(warthog::graph::xy_graph* g, std::vector<uint32_t>* part, 
                 std::function<t_expander*(void)>& fn_new_expander,
                 warthog::util::workload_manager* workload)
         {
@@ -193,7 +193,7 @@ class bbaf_labelling
                 dijkstra.apply_on_relax(relax_fn);
 
                 // run a dijkstra search from each node
-                warthog::graph::planar_graph* g_ = shared->lab_->g_;
+                warthog::graph::xy_graph* g_ = shared->lab_->g_;
                 for(uint32_t i = 0;
                         i < shared->workload_->num_flags_set(); i++)
                 {
@@ -304,10 +304,10 @@ class bbaf_labelling
 
     private:
         bbaf_labelling(
-            warthog::graph::planar_graph* g, 
+            warthog::graph::xy_graph* g, 
             std::vector<uint32_t>* partitioning);
 
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         std::vector<uint32_t>* part_;
 
         std::vector<std::vector<bbaf_label>> labels_;

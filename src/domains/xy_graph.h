@@ -1,10 +1,11 @@
-#ifndef WARTHOG_PLANAR_GRAPH_H
-#define WARTHOG_PLANAR_GRAPH_H
+#ifndef WARTHOG_XY_GRAPH_H
+#define WARTHOG_XY_GRAPH_H
 
-// planar_graph.h
+// xy_graph.h
 // 
-// A simple general purpose data structure for directed 
-// weighted planar graphs. Supported input types are:
+// A simple general purpose data structure for directed weighted xy graphs 
+// (i.e. spatial networks embedded in two dimensions). 
+// Supported input types are:
 //  - warthog::gridmap objects
 //  - road network graphs in the format of the 9th DIMACS competition
 //
@@ -29,18 +30,18 @@ class gridmap;
 
 namespace graph
 {
-class planar_graph
+class xy_graph
 {
     public:
-        planar_graph(uint32_t num_nodes=0);
-        planar_graph(warthog::gridmap* gm, bool store_incoming=true);
-        ~planar_graph() { }
+        xy_graph(uint32_t num_nodes=0);
+        xy_graph(warthog::gridmap* gm, bool store_incoming=true);
+        ~xy_graph() { }
 
-        warthog::graph::planar_graph&
-        operator=(const warthog::graph::planar_graph&& other);
+        warthog::graph::xy_graph&
+        operator=(const warthog::graph::xy_graph&& other);
         
         bool
-        operator==(const warthog::graph::planar_graph& other);
+        operator==(const warthog::graph::xy_graph& other);
 
         // read in a grid map in the format used at the 
         // international Grid-based Path Planning Competition
@@ -51,7 +52,7 @@ class planar_graph
         // competition. In this format graphs are specified
         // using two files: (i) a gr file which defines edge
         // weights and endpoints and; (ii) a co file which defines 
-        // node ids and planar coordinates
+        // node ids and xy coordinates
         //
         // @param reverse_arcs: reverses the direction of each edge
         // @param duplicate_edges: store edges with both head and tail node
@@ -138,7 +139,7 @@ class planar_graph
             return num_edges;
         }
 
-        // Fetch the planar coordinates of a node
+        // Fetch the xy coordinates of a node
         //
         // @param id: an internal graph id
         // @return x: the x coordinate of node @param id
@@ -157,7 +158,7 @@ class planar_graph
             }
         }
 
-        // Set the planar coordinates of a node
+        // Set the xy coordinates of a node
         //
         // @param id: an internal graph id
         // @param x: the x coordinate of node @param id
@@ -325,7 +326,7 @@ class planar_graph
         // the set of nodes that comprise the graph
         std::vector<warthog::graph::node> nodes_;
         
-        // planar coordinates stored as adjacent pairs (x, then y)
+        // xy coordinates stored as adjacent pairs (x, then y)
         std::vector<int32_t> xy_;
 
         // these containers serve to map from external graph ids to 

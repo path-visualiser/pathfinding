@@ -25,7 +25,7 @@
 
 #include "contraction.h"
 #include "expansion_policy.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 
 #include <vector>
 
@@ -43,7 +43,7 @@ class chase_expansion_policy : public  expansion_policy
         //
         // @param filter: the arc-flags filter used to prune arcs
         //
-        chase_expansion_policy(warthog::graph::planar_graph* g, 
+        chase_expansion_policy(warthog::graph::xy_graph* g, 
                 warthog::af_filter* filter,
                 bool backward=false);
 
@@ -77,7 +77,7 @@ class chase_expansion_policy : public  expansion_policy
 
     private:
         bool backward_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         warthog::af_filter* filter_;
 
         // we use dynamically assigned function pointers to 

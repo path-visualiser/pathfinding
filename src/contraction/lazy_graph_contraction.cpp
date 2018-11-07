@@ -17,7 +17,7 @@ warthog::ch::operator<(const ch_pair& first, const ch_pair& second)
 }
 
 warthog::ch::lazy_graph_contraction::lazy_graph_contraction(
-        warthog::graph::planar_graph* g) : g_(g)
+        warthog::graph::xy_graph* g) : g_(g)
 {
     heuristic_ = new warthog::euclidean_heuristic(g_);
     c_filter_ = new warthog::apriori_filter(g_->get_num_nodes());
@@ -271,7 +271,7 @@ warthog::ch::lazy_graph_contraction::witness_search(
 
     alg_->set_cost_cutoff(via_len);
     alg_->set_max_expansions_cutoff(ws_max_expansions_);
-    warthog::graph::planar_graph* g = this->g_;
+    warthog::graph::xy_graph* g = this->g_;
 
     // need to specify start + target ids using the identifier
     // that appears in the input file

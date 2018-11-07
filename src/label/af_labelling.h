@@ -24,7 +24,7 @@
 
 #include "flexible_astar.h"
 #include "helpers.h"
-#include "planar_graph.h"
+#include "xy_graph.h"
 #include "search_node.h"
 #include "workload_manager.h"
 #include "zero_heuristic.h"
@@ -77,7 +77,7 @@ class af_labelling
         // @param partitioning: a disjoint partition of the nodes in @param g
         // @return: a pointer to a newly created af_labelling for @param g
         static warthog::label::af_labelling*
-        load(const char* filename, warthog::graph::planar_graph* g,
+        load(const char* filename, warthog::graph::xy_graph* g,
                 std::vector<uint32_t>* partitioning);
 
         // load up an arcflag labelling for use with BCH
@@ -102,7 +102,7 @@ class af_labelling
         // @return: true if the function succeeds, false if it fails
         static bool
         load_bch_labels(
-                const char* filename, warthog::graph::planar_graph* g,
+                const char* filename, warthog::graph::xy_graph* g,
                 std::vector<uint32_t>* partitioning,
                 std::vector<uint32_t>* lex_order, 
                 warthog::label::af_labelling*& out_afl_fwd,
@@ -117,7 +117,7 @@ class af_labelling
         // @return: a pointer to a newly created af_labelling for @param g
         template <typename t_expander>
         static warthog::label::af_labelling*
-        compute(warthog::graph::planar_graph* g, std::vector<uint32_t>* part, 
+        compute(warthog::graph::xy_graph* g, std::vector<uint32_t>* part, 
                 std::function<t_expander*(void)>& fn_new_expander,
                 warthog::util::workload_manager* workload)
         {
@@ -272,11 +272,11 @@ class af_labelling
         // @param g: the graph to be labelled
         // @param partitioning: a disjoint partitioning of nodes in @param g
         af_labelling(
-                warthog::graph::planar_graph* g, 
+                warthog::graph::xy_graph* g, 
                 std::vector<uint32_t>* partitioning);
 
         std::vector<std::vector<uint8_t*>>* flags_;
-        warthog::graph::planar_graph* g_;
+        warthog::graph::xy_graph* g_;
         std::vector<uint32_t>* part_;
         uint32_t bytes_per_label_;
 
