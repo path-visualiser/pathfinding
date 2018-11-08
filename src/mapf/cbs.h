@@ -44,10 +44,9 @@ class time_constraints
 {
     public:
 
-       time_constraints(warthog::gridmap* map)
+       time_constraints(uint32_t map_xy_sz) : map_xy_sz_(map_xy_sz)
        {
-           uint32_t map_sz = map->height() * map->width();
-           cons_ = new std::vector< std::vector<cell_constraints> >(map_sz);
+           cons_ = new std::vector< std::vector<cell_constraints> >(map_xy_sz_);
        } 
 
        ~time_constraints()
@@ -72,10 +71,10 @@ class time_constraints
 
        // return any constraints associated with the xy location
        // @param padded_id at time @param timestep
-       inline cell_constraints
+       inline cell_constraints*
        get_constraints(uint32_t padded_id, uint32_t timestep)
        {
-            cell_constraints retval;
+            cell_constraints* retval = &dummy_;
             std::vector<cell_constraints>::iterator con_iter = 
                 std::find_if(
                         cons_->at(padded_id).begin(), 
@@ -87,7 +86,7 @@ class time_constraints
                     });
             if(con_iter != cons_->at(padded_id).end())
             {
-                retval = *con_iter;
+                retval = &*con_iter;
             }
             return retval;
        }
@@ -109,6 +108,8 @@ class time_constraints
 
     private:
         std::vector< std::vector<cell_constraints> >* cons_;
+        warthog::cbs::cell_constraints dummy_;
+        uint32_t map_xy_sz_;
 };
 
 

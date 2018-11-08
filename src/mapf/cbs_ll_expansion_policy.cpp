@@ -16,6 +16,8 @@ warthog::cbs_ll_expansion_policy::cbs_ll_expansion_policy(
     map_xy_sz_ = map->height() * map->width();
     assert(map_xy_sz_ > 0);
 
+    cons_ = new warthog::cbs::time_constraints(map_xy_sz_);
+
     // preallocate memory for up to some number of timesteps 
     // in advance. for subsequent timesteps memory is allocated
     // dynamically
@@ -39,6 +41,7 @@ warthog::cbs_ll_expansion_policy::~cbs_ll_expansion_policy()
     }
     time_map_->clear();
     delete time_map_;
+    delete cons_;
     delete neis_;
 }
 
@@ -61,58 +64,46 @@ warthog::cbs_ll_expansion_policy::expand(warthog::search_node* current,
 	uint32_t nid_m_w = nodeid - map_->width();
 	uint32_t nid_p_w = nodeid + map_->width();
 
-    auto get_constraints = [problem] (uint32_t padded_id, uint32_t timestep)
-        -> cell_constraints
-    {
-        warthog::cbs::time_constraints* cons = 
-            (warthog::cbs::time_constraints*)problem->extra_params_;
-        if(cons)
-        {
-            return cons->get_constraints(padded_id, timestep);
-        }
-        return cell_constraints();
-    };
-
     // edge constraints for the current node
-    cell_constraints cur_cc = get_constraints(nodeid, timestep);
+    cell_constraints* cur_cc = cons_->get_constraints(nodeid, timestep);
 
     // cardinal successors
-    cell_constraints succ_cc = get_constraints(nid_m_w, timestep+1);
+    cell_constraints* succ_cc = cons_->get_constraints(nid_m_w, timestep+1);
     if( ((tiles & 514) == 514) && // N
-        !(cur_cc.e_ & warthog::grid::NORTH) &&  
-        !succ_cc.v_ ) 
+        !(cur_cc->e_ & warthog::grid::NORTH) &&  
+        !succ_cc->v_ ) 
 	{  
 		add_neighbour(__generate(nid_m_w, timestep+1), 1);
 	} 
 
-    succ_cc = get_constraints(nodeid + 1, timestep+1);
+    succ_cc = cons_->get_constraints(nodeid + 1, timestep+1);
 	if( ((tiles & 1536) == 1536) && // E
-        !(cur_cc.e_ & warthog::grid::EAST) && 
-        !succ_cc.v_ )
+        !(cur_cc->e_ & warthog::grid::EAST) && 
+        !succ_cc->v_ )
 	{
 		add_neighbour(__generate(nodeid + 1, timestep+1), 1);
 	}
 
-    succ_cc = get_constraints(nid_p_w, timestep+1);
+    succ_cc = cons_->get_constraints(nid_p_w, timestep+1);
 	if( ((tiles & 131584) == 131584) && // S
-        !(cur_cc.e_ & warthog::grid::SOUTH) && 
-        !succ_cc.v_ )
+        !(cur_cc->e_ & warthog::grid::SOUTH) && 
+        !succ_cc->v_ )
 	{ 
 
 		add_neighbour(__generate(nid_p_w, timestep+1), 1);
 	}
 
-    succ_cc = get_constraints(nodeid - 1, timestep+1);
+    succ_cc = cons_->get_constraints(nodeid - 1, timestep+1);
 	if( ((tiles & 768) == 768) && // W
-        !(cur_cc.e_ & warthog::grid::WEST) && 
-        !succ_cc.v_ )
+        !(cur_cc->e_ & warthog::grid::WEST) && 
+        !succ_cc->v_ )
 	{ 
 		add_neighbour(__generate(nodeid - 1, timestep+1), 1);
 	}
 
     // wait successor
-    succ_cc = get_constraints(nodeid, timestep+1);
-    if(!succ_cc.v_)
+    succ_cc = cons_->get_constraints(nodeid, timestep+1);
+    if(!succ_cc->v_)
     {
         add_neighbour(__generate(nodeid, timestep+1), 1);
     }

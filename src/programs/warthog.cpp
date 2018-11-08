@@ -242,7 +242,6 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
 	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
-    warthog::cbs::time_constraints cons(&gm);
 
     warthog::reservation_table restab(gm.width()*gm.height());
     warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
@@ -263,9 +262,6 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 		int startid = exp->starty() * exp->mapwidth() + exp->startx();
 		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
         warthog::problem_instance pi(startid, goalid, verbose);
-
-        // add path constraints 
-        pi.extra_params_ = &cons;
         warthog::solution sol;
 
         // precompute heuristic values for each target location
@@ -303,7 +299,6 @@ run_example(warthog::scenario_manager& scenmgr, std::string alg_name)
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
 	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
-    warthog::cbs::time_constraints cons(&gm);
 
     warthog::reservation_table restab(gm.width()*gm.height());
     warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
@@ -329,7 +324,6 @@ run_example(warthog::scenario_manager& scenmgr, std::string alg_name)
         warthog::problem_instance pi(startid, goalid, verbose);
 
         // add path constraints 
-        pi.extra_params_ = &cons;
         warthog::solution sol;
 
         // precompute heuristic values for each target location
@@ -340,6 +334,7 @@ run_example(warthog::scenario_manager& scenmgr, std::string alg_name)
         uint32_t padded_startid = gm.to_padded_id(startid);
 
         // edge constraint: block one edge for node padded_startid@0
+        warthog::cbs::time_constraints& cons = *expander.get_time_constraints();
         cons.add_constraint(padded_startid, 
                 warthog::cbs::cell_constraints(0, 0, warthog::grid::WEST));
         // edge constraint: block all edges for node (padded_startid-1)@2

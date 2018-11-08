@@ -98,6 +98,9 @@ class cbs_ll_expansion_policy
             return ((n->get_id() & id_mask_) == pi->target_id_);
         }
 
+        warthog::cbs::time_constraints*
+        get_time_constraints() { return cons_; }
+
 		size_t 
         mem();
 
@@ -109,6 +112,7 @@ class cbs_ll_expansion_policy
         uint32_t map_xy_sz_;
         std::vector<warthog::mem::node_pool*>* time_map_;
         warthog::cbs_ll_heuristic* h_;
+        warthog::cbs::time_constraints* cons_;
 
         struct neighbour_record
         {
