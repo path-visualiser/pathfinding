@@ -58,7 +58,7 @@ help()
 	<< "\t--checkopt (optional)\n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tcbs_ll, dijkstra, astar, astar_wgm, tx_astar, sssp\n"
+    << "\tcbs_ll, dijkstra, astar, astar_wgm, fc_astar, tx_astar, sssp\n"
     << "\tjps, jps2, jps+, jps2+, jps, jps_wgm\n"
     << "\tcpg, jpg\n";
 }
@@ -228,6 +228,25 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
+	   	warthog::gridmap_expansion_policy, 
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
+
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
+run_fc_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::gridmap_expansion_policy expander(&map, true);
+	warthog::manhattan_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
+
+	warthog::flexible_astar<
+		warthog::manhattan_heuristic,
 	   	warthog::gridmap_expansion_policy, 
         warthog::pqueue_min> 
             astar(&heuristic, &expander, &open);
@@ -654,6 +673,10 @@ main(int argc, char** argv)
     else if(alg == "astar")
     {
         run_astar(scenmgr, alg); 
+    }
+    else if(alg == "fc_astar")
+    {
+        run_fc_astar(scenmgr, alg); 
     }
 
     else if(alg == "cbs_ll")
