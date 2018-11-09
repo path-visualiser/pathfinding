@@ -52,6 +52,25 @@ struct labelled_cell
         return *this;
     }
 
+    labelled_cell&
+    operator=(const char raw_input_tile)
+    {
+        if(raw_input_tile == '.')
+        {
+            v_lab_ = 0;
+        }
+        else
+        {
+            v_lab_ = UINT32_MAX;
+        }
+        e_lab_[0] = 1;
+        e_lab_[1] = 1;
+        e_lab_[2] = 1;
+        e_lab_[3] = 1;
+        e_lab_[4] = 1;
+        return *this;
+    }
+
     bool
     operator==(const labelled_cell& other)
     {
@@ -222,7 +241,6 @@ class labelled_gridmap
 
 		labelled_gridmap(const warthog::labelled_gridmap<CELL>& other) {}
 		labelled_gridmap& operator=(const warthog::labelled_gridmap<CELL>& other) { return *this; }
-        labelled_gridmap() {  }
 
         void
         init_db()
