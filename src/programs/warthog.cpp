@@ -28,6 +28,7 @@
 #include "scenario_manager.h"
 #include "timer.h"
 #include "labelled_gridmap.h"
+#include "txevl_gridmap_expansion_policy.h"
 #include "vl_gridmap_expansion_policy.h"
 #include "zero_heuristic.h"
 
@@ -57,7 +58,7 @@ help()
 	<< "\t--checkopt (optional)\n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tdijkstra, astar, cbs_ll, astar_wgm, sssp\n"
+    << "\tcbs_ll, dijkstra, astar, astar_wgm, tx_astar, sssp\n"
     << "\tjps, jps2, jps+, jps2+, jps, jps_wgm\n"
     << "\tcpg, jpg\n";
 }
@@ -251,6 +252,58 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 		warthog::cbs_ll_heuristic,
 	   	warthog::cbs_ll_expansion_policy,
         warthog::cbs::pqueue_cbs_ll>
+            astar(&heuristic, &expander, &open);
+
+	std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tnanos\tpcost\tplen\tmap\n";
+	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+		int startid = exp->starty() * exp->mapwidth() + exp->startx();
+		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+        warthog::problem_instance pi(startid, goalid, verbose);
+        warthog::solution sol;
+
+        // precompute heuristic values for each target location
+        std::vector<uint32_t> target_locations;
+        target_locations.push_back(goalid);
+        heuristic.compute_h_values(target_locations);
+
+        // solve
+        astar.get_path(pi, sol);
+
+        std::cout
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (sol.path_.size()-1) << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
+
+	}
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
+run_tx_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::evl_gridmap gm(scenmgr.get_experiment(0)->map().c_str());
+    warthog::gridmap gm_2d(scenmgr.get_experiment(0)->map().c_str());
+	warthog::cbs_ll_heuristic heuristic(&gm_2d);
+	warthog::txevl_gridmap_expansion_policy expander(&gm, &heuristic);
+    warthog::pqueue_min open;
+
+
+	warthog::flexible_astar<
+		warthog::cbs_ll_heuristic,
+	   	warthog::txevl_gridmap_expansion_policy,
+        warthog::pqueue_min>
             astar(&heuristic, &expander, &open);
 
 	std::cout 
@@ -604,6 +657,10 @@ main(int argc, char** argv)
     }
 
     else if(alg == "cbs_ll")
+    {
+        run_cbs_ll(scenmgr, alg); 
+    }
+    else if(alg == "tx_astar")
     {
         run_cbs_ll(scenmgr, alg); 
     }
