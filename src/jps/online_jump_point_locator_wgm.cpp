@@ -1,4 +1,4 @@
-#include "weighted_gridmap.h"
+#include "labelled_gridmap.h"
 #include "jps.h"
 #include "jps_wgm.h"
 #include "online_jump_point_locator_wgm.h"
@@ -7,7 +7,7 @@
 #include <climits>
 
 warthog::online_jump_point_locator_wgm::online_jump_point_locator_wgm(
-        warthog::weighted_gridmap* map) : map_(map)//, jumplimit_(UINT32_MAX)
+        warthog::vl_gridmap* map) : map_(map)//, jumplimit_(UINT32_MAX)
 {
 	rmap_ = create_rmap();
 }
@@ -19,14 +19,14 @@ warthog::online_jump_point_locator_wgm::~online_jump_point_locator_wgm()
 
 // create a copy of the grid map which is rotated by 90 degrees clockwise.
 // this version will be used when jumping North or South. 
-warthog::weighted_gridmap*
+warthog::vl_gridmap*
 warthog::online_jump_point_locator_wgm::create_rmap()
 {
 	uint32_t maph = map_->header_height();
 	uint32_t mapw = map_->header_width();
 	uint32_t rmaph = mapw;
 	uint32_t rmapw = maph;
-	warthog::weighted_gridmap* rmap = new warthog::weighted_gridmap(rmaph, rmapw);
+	warthog::vl_gridmap* rmap = new warthog::vl_gridmap(rmaph, rmapw);
 
 	for(uint32_t x = 0; x < mapw; x++) 
 	{
@@ -99,7 +99,7 @@ warthog::online_jump_point_locator_wgm::jump_north(uint32_t node_id,
 void
 warthog::online_jump_point_locator_wgm::__jump_north(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost,
-		warthog::weighted_gridmap* mymap)
+		warthog::vl_gridmap* mymap)
 {
 	// jumping north in the original map is the same as jumping
 	// east when we use a version of the map rotated 90 degrees.
@@ -119,7 +119,7 @@ warthog::online_jump_point_locator_wgm::jump_south(uint32_t node_id,
 void
 warthog::online_jump_point_locator_wgm::__jump_south(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost,
-		warthog::weighted_gridmap* mymap)
+		warthog::vl_gridmap* mymap)
 {
 	// jumping north in the original map is the same as jumping
 	// west when we use a version of the map rotated 90 degrees.
@@ -137,14 +137,14 @@ warthog::online_jump_point_locator_wgm::jump_east(uint32_t node_id,
 void
 warthog::online_jump_point_locator_wgm::__jump_east(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost, 
-		warthog::weighted_gridmap* mymap)
+		warthog::vl_gridmap* mymap)
 {
     uint32_t rawjumpcost = 0;
 
     // scan ahead for obstacles or changes in terrain
-    warthog::dbword* next_label = mymap->get_label_ptr(node_id);
-    warthog::dbword* dn_label = mymap->get_label_ptr(node_id + mymap->width());
-    warthog::dbword* up_label = mymap->get_label_ptr(node_id - mymap->width());
+    warthog::dbword* next_label = &mymap->get_label(node_id);
+    warthog::dbword* dn_label = &mymap->get_label(node_id + mymap->width());
+    warthog::dbword* up_label = &mymap->get_label(node_id - mymap->width());
     
     // early termination; obstacle ahead
     if(*(next_label+1) == 0)
@@ -208,14 +208,14 @@ warthog::online_jump_point_locator_wgm::jump_west(uint32_t node_id,
 void
 warthog::online_jump_point_locator_wgm::__jump_west(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost, 
-		warthog::weighted_gridmap* mymap)
+		warthog::vl_gridmap* mymap)
 {
     uint32_t rawjumpcost = 0;
 
     // scan ahead for obstacles or changes in terrain
-    warthog::dbword* next_label = mymap->get_label_ptr(node_id);
-    warthog::dbword* dn_label = mymap->get_label_ptr(node_id + mymap->width());
-    warthog::dbword* up_label = mymap->get_label_ptr(node_id - mymap->width());
+    warthog::dbword* next_label = &mymap->get_label(node_id);
+    warthog::dbword* dn_label = &mymap->get_label(node_id + mymap->width());
+    warthog::dbword* up_label = &mymap->get_label(node_id - mymap->width());
     
     // early termination; obstacle ahead
     if(*(next_label-1) == 0)

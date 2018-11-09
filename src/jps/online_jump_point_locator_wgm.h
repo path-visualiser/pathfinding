@@ -12,7 +12,7 @@
 
 #include "jps.h"
 #include "jps_wgm.h"
-#include "weighted_gridmap.h"
+#include "labelled_gridmap.h"
 
 namespace warthog
 {
@@ -20,7 +20,7 @@ namespace warthog
 class online_jump_point_locator_wgm
 {
 	public: 
-		online_jump_point_locator_wgm(warthog::weighted_gridmap* map);
+		online_jump_point_locator_wgm(warthog::vl_gridmap* map);
 		~online_jump_point_locator_wgm();
 
 		void
@@ -65,19 +65,19 @@ class online_jump_point_locator_wgm
 		void
 		__jump_east(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost, 
-				warthog::weighted_gridmap* mymap);
+				warthog::vl_gridmap* mymap);
 		void
 		__jump_west(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost, 
-				warthog::weighted_gridmap* mymap);
+				warthog::vl_gridmap* mymap);
 		void
 		__jump_north(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost,
-				warthog::weighted_gridmap* mymap);
+				warthog::vl_gridmap* mymap);
 		void
 		__jump_south(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost, 
-				warthog::weighted_gridmap* mymap);
+				warthog::vl_gridmap* mymap);
 
 		inline uint32_t
 		map_id_to_rmap_id(uint32_t mapid)
@@ -105,11 +105,11 @@ class online_jump_point_locator_wgm
 			return map_->to_padded_id(x, y);
 		}
 
-		warthog::weighted_gridmap*
+		warthog::vl_gridmap*
 		create_rmap();
 
-		warthog::weighted_gridmap* map_;
-		warthog::weighted_gridmap* rmap_;
+		warthog::vl_gridmap* map_;
+		warthog::vl_gridmap* rmap_;
 		//uint32_t jumplimit_;
 };
 

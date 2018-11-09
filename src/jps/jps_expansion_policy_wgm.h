@@ -31,7 +31,7 @@
 #include "online_jump_point_locator_wgm.h"
 #include "problem_instance.h"
 #include "search_node.h"
-#include "weighted_gridmap.h"
+#include "labelled_gridmap.h"
 
 #include "stdint.h"
 
@@ -40,7 +40,7 @@ namespace warthog
 class jps_expansion_policy_wgm : public expansion_policy
 {
 	public:
-		jps_expansion_policy_wgm(warthog::weighted_gridmap* map);
+		jps_expansion_policy_wgm(warthog::vl_gridmap* map);
 		virtual ~jps_expansion_policy_wgm();
 
 		virtual void 
@@ -63,7 +63,7 @@ class jps_expansion_policy_wgm : public expansion_policy
         generate_target_node(warthog::problem_instance* pi);
 
 	private:
-		warthog::weighted_gridmap* map_;
+		warthog::vl_gridmap* map_;
 		warthog::online_jump_point_locator_wgm* jpl_;
 
 		// computes the direction of travel; from a node n1

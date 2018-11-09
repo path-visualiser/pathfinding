@@ -27,8 +27,8 @@
 #include "octile_heuristic.h"
 #include "scenario_manager.h"
 #include "timer.h"
-#include "weighted_gridmap.h"
-#include "wgridmap_expansion_policy.h"
+#include "labelled_gridmap.h"
+#include "vl_gridmap_expansion_policy.h"
 #include "zero_heuristic.h"
 
 #include "getopt.h"
@@ -397,8 +397,8 @@ run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)
 void
 run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
-    warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
-	warthog::wgridmap_expansion_policy expander(&map);
+    warthog::vl_gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::vl_gridmap_expansion_policy expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
     warthog::pqueue_min open;
     
@@ -409,7 +409,7 @@ run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
-	   	warthog::wgridmap_expansion_policy,
+	   	warthog::vl_gridmap_expansion_policy,
         warthog::pqueue_min> 
             astar(&heuristic, &expander, &open);
 
@@ -421,14 +421,14 @@ run_wgm_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 void
 run_wgm_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
-    warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
-	warthog::wgridmap_expansion_policy expander(&map);
+    warthog::vl_gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::vl_gridmap_expansion_policy expander(&map);
 	warthog::zero_heuristic heuristic;
     warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::zero_heuristic,
-	   	warthog::wgridmap_expansion_policy,
+	   	warthog::vl_gridmap_expansion_policy,
         warthog::pqueue_min> 
             astar(&heuristic, &expander, &open);
 
@@ -459,7 +459,7 @@ run_sssp(warthog::scenario_manager& scenmgr, std::string alg_name)
 void
 run_jps_wgm(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
-    warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
+    warthog::vl_gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::jps_expansion_policy_wgm expander(&map);
 	warthog::octile_heuristic heuristic(map.width(), map.height());
     warthog::pqueue_min open;

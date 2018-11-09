@@ -1,7 +1,7 @@
 #include "jps_expansion_policy_wgm.h"
 
 warthog::jps_expansion_policy_wgm::jps_expansion_policy_wgm(
-        warthog::weighted_gridmap* map) 
+        warthog::vl_gridmap* map) 
     : expansion_policy(map->height() * map->width())
 {
 	map_ = map;
@@ -24,11 +24,12 @@ warthog::jps_expansion_policy_wgm::expand(
 	   	this->compute_direction(current->get_parent(), current->get_id());
 
 	// get the tiles around the current node c
+    
     warthog::dbword c_tiles[9];
 	uint32_t c_ids[9];
 	uint32_t current_id = current->get_id();
 
-	map_->get_neighbours(current_id, c_ids, c_tiles);
+    map_->get_neighbours(current_id, c_ids, c_tiles);
     assert(current_id == c_ids[4]);
 
 	// look for jump points in the direction of each natural 
