@@ -18,7 +18,8 @@
 // @created: 2018-11-04
 //
 
-#include "gridmap.h"
+#include "forward.h"
+#include "labelled_gridmap.h"
 #include <map>
 
 namespace warthog
@@ -27,13 +28,13 @@ namespace warthog
 class cbs_ll_heuristic
 {
     public:
-        cbs_ll_heuristic(warthog::gridmap* gm);
-        ~cbs_ll_heuristic() { } 
-
-        inline double
-        h(int32_t x, int32_t y, int32_t x2, int32_t y2)
+        cbs_ll_heuristic() 
         {
-            return h(y * gm_->width() + x, y2 * gm_->width() + x2);
+            id_mask_ = UINT64_MAX;
+        }
+
+        ~cbs_ll_heuristic() 
+        {
         }
 
         inline double
@@ -48,7 +49,17 @@ class cbs_ll_heuristic
         // These precomputed g-values are a lower-bound on the
         // distance from any location@time to each target.
         void
-        compute_h_values(std::vector<uint32_t>& target_nodes);
+        compute_h_values(
+                std::vector<uint32_t>& target_nodes,
+                warthog::gridmap* gm);
+        void
+        compute_h_values(
+                std::vector<uint32_t>& target_nodes,
+                warthog::vl_gridmap*);
+        void
+        compute_h_values(
+                std::vector<uint32_t>& target_nodes,
+                warthog::evl_gridmap*);
 
         // the current target specifies which set of g-values to
         // refer to when answering ::h queries
@@ -56,10 +67,12 @@ class cbs_ll_heuristic
         // corresponds to one of the nodes for which a set
         // of pre-computed g-values exist. 
         // Otherwise the function returns false.
+        //
+        // @param target_id: unpadded xy index specifying the current target
         bool
-        set_current_target(uint32_t padded_id)
+        set_current_target(uint32_t target_id)
         {
-            std::map<uint32_t, uint32_t>::iterator it = t_map_.find(padded_id);
+            std::map<uint32_t, uint32_t>::iterator it = t_map_.find(target_id);
             if(it == t_map_.end()) { return false; }
             t_index_ = it->second;
             return true;
@@ -80,11 +93,10 @@ class cbs_ll_heuristic
         }
 
     private:
-        warthog::gridmap* gm_;
         std::vector<std::vector<double>> h_;
         std::map<uint32_t, uint32_t> t_map_;
         uint32_t t_index_;
-        uint32_t id_mask_;
+        uint64_t id_mask_;
 };
 
 }

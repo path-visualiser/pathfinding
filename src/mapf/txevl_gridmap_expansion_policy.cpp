@@ -64,7 +64,7 @@ warthog::txevl_gridmap_expansion_policy::expand(warthog::search_node* current,
 	{  
 		add_neighbour(
             __generate(nid_m_w, timestep+1), 
-            nei->e_lab_[__builtin_ffs(warthog::grid::EAST)-1]);
+            nei->e_lab_[__builtin_ffs(warthog::grid::NORTH)-1]);
 	} 
 
     nei = &map_->get_label(nid_p_w);
@@ -117,9 +117,9 @@ warthog::txevl_gridmap_expansion_policy::generate_target_node(
 {
     uint32_t max_id = map_->header_width() * map_->header_height();
     if(pi->target_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->target_id_);
-    h_->set_current_target(padded_id);
+    h_->set_current_target(pi->target_id_);
 
+    uint32_t padded_id = map_->to_padded_id(pi->target_id_);
     return __generate(padded_id, 0);
 }
 

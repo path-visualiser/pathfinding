@@ -222,10 +222,10 @@ class search_node
 		}
 
 	private:
-		uint32_t id_and_status_; // bit 0 is expansion status; 1-31 are id
+		uint64_t id_and_status_; // bit 0 is expansion status; 1-63 are id
 		double f_;
 		double g_;
-        uint32_t parent_id_;
+        uint64_t parent_id_;
 		uint32_t priority_; // expansion priority
 		uint32_t searchid_;
         uint8_t jps_parent_direction_; // hack

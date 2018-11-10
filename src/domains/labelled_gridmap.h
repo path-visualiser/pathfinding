@@ -84,7 +84,7 @@ struct labelled_cell
     }
 
     uint64_t v_lab_;
-    uint32_t e_lab_[5];
+    double e_lab_[5];
 
 };
 
@@ -248,8 +248,8 @@ class labelled_gridmap
             // when storing the grid we pad the edges of the map.
             // this eliminates the need for bounds checking when
             // fetching the neighbours of a node. 
-            this->padded_rows_before_first_row_ = 2;
-            this->padded_rows_after_last_row_ = 2;
+            this->padded_rows_before_first_row_ = 3;
+            this->padded_rows_after_last_row_ = 3;
             this->padding_per_row_ = 1;
 
             this->padded_width_ = this->header_.width_ + this->padding_per_row_;
@@ -304,6 +304,7 @@ warthog::labelled_gridmap<warthog::labelled_cell>::labelled_gridmap(
         const char* filename)
 {
     warthog::gm_parser parser(filename);
+	header_ = parser.get_header();
     strcpy(filename_, filename);
     init_db();
 

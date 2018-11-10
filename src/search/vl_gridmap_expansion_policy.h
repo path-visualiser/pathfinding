@@ -1,7 +1,7 @@
-#ifndef WARTHOG_WGRIDMAP_EXPANSION_POLICY_H
-#define WARTHOG_WGRIDMAP_EXPANSION_POLICY_H
+#ifndef WARTHOG_VL_GRIDMAP_EXPANSION_POLICY_H
+#define WARTHOG_VL_GRIDMAP_EXPANSION_POLICY_H
 
-// vl_gridmap_expansion_policy.h
+// search/vl_gridmap_expansion_policy.h
 //
 // An expansion policy for square gridmaps with
 // vertex costs. There are eight possible move
