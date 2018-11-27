@@ -106,7 +106,7 @@ class xy_graph_base
                     }
                 }
             }
-            assert(get_num_nodes() <= gm.height() * gm.width());
+            assert(get_num_nodes() <= gm->height() * gm->width());
             return true;
         }
 

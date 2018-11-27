@@ -99,6 +99,7 @@ class node
 
         node(const node& other)
         {
+            init(0, 0);
             *this = other;
         }
 
