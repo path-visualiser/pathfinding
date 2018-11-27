@@ -52,80 +52,61 @@ class xy_graph_base
         bool
         load_from_grid(warthog::gridmap* gm, bool store_incoming=true)
         {
-            // enumerate the traversable nodes with degree > 0
-            struct edge_tuple 
-            {
-                uint32_t from;
-                uint32_t to;
-                uint32_t wt;
-            };
-
+            // iterate over the grid and add each traversable node
+            // as a node in the graph
             warthog::gridmap_expansion_policy exp(gm);
-            std::vector<uint32_t> nodes;
-            std::vector<edge_tuple> edges;
             for(uint32_t y = 0; y < gm->header_height(); y++)
             {
                 for(uint32_t x = 0; x < gm->header_width(); x++)
                 {
-                    uint32_t node_id = y * gm->header_width() + x;
-                    uint32_t gm_id = gm->to_padded_id(node_id);
+                    // we differentiate between external grid ids
+                    // (unpadded) and internal grid ids (with padding)
+                    uint32_t from_gm_id = y * gm->header_width() + x;
+                    uint32_t from_gm_id_p = gm->to_padded_id(from_gm_id);
 
                     // skip obstacles
-                    if(!gm->get_label(gm_id)) { continue; }
+                    if(!gm->get_label(from_gm_id_p)) { continue; }
 
-                    // each traversable node appears in the graph
-                    add_node(x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
-                             y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
-                             node_id);
+                    // add graph node (we scale up all costs and coordinates)
+                    uint32_t from_id = add_node(
+                        x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
+                        y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
+                        from_gm_id);
 
-                    warthog::search_node* n = exp.generate(gm_id);
+                    // generate the successors and add edges
+                    // we use a grid-expansion policy here which enforces
+                    // standard constraints on grid moves re; e.g. corner cutting
+                    warthog::search_node* n = exp.generate(from_gm_id_p);
                     warthog::search_node* nei = 0;
                     double edge_cost = 0;
                     exp.expand(n, 0);
                     for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
                     {
-                        //// each traversable node with degree > 0 
-                        //// appears in the graph
-                        //if(id_map_.size() == 0 || id_map_.back() != node_id) 
-                        //{ 
-                        //    add_node(x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
-                        //             y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
-                        //             node_id);
-                        //}
-
-                        // track the list of traversable edges
                         uint32_t nei_x, nei_y;
                         gm->to_unpadded_xy(nei->get_id(), nei_x, nei_y);
-                        uint32_t nei_id = nei_y * gm->header_width() + nei_x;
+                        uint32_t to_gm_id = nei_y * gm->header_width() + nei_x;
+
+                        // add graph node (we scale up all costs and coordinates)
+                        uint32_t to_id = add_node(
+                                        nei_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
+                                        nei_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
+                                        to_gm_id);
 
                         assert(edge_cost > 0);
 
-                        edge_tuple e;
-                        e.from = node_id, 
-                        e.to = nei_id, 
-                        e.wt = edge_cost * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-                        edges.push_back(e);
+                        warthog::graph::node* gr_from = get_node(from_id);
+                        warthog::graph::node* gr_to = get_node(to_id);
+                        double gr_weight = edge_cost * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+
+                        gr_from->add_outgoing(warthog::graph::edge(to_id, gr_weight));
+                        if(store_incoming)
+                        {
+                            gr_to->add_incoming(warthog::graph::edge(from_id, gr_weight));
+                        }
                     }
                 }
             }
-
-            for(uint32_t i = 0; i < edges.size(); i++)
-            {
-                edge_tuple tuple = edges.at(i);    
-                uint32_t from_id = to_graph_id(tuple.from);
-                uint32_t to_id = to_graph_id(tuple.to);
-                assert(from_id != warthog::INF && to_id != INF);
-
-                warthog::graph::node* from = get_node(from_id);
-                warthog::graph::node* to = get_node(to_id);
-                assert(from && to);
-
-                from->add_outgoing(warthog::graph::edge(to_id, tuple.wt));
-                if(store_incoming)
-                {
-                    to->add_incoming(warthog::graph::edge(from_id, tuple.wt));
-                }
-            }
+            assert(get_num_nodes() <= gm.height() * gm.width());
             return true;
         }
 
