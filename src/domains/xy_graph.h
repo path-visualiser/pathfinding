@@ -94,14 +94,14 @@ class xy_graph_base
 
                         assert(edge_cost > 0);
 
-                        warthog::graph::node* gr_from = get_node(from_id);
-                        warthog::graph::node* gr_to = get_node(to_id);
+                        T_NODE* gr_from = get_node(from_id);
+                        T_NODE* gr_to = get_node(to_id);
                         double gr_weight = edge_cost * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
 
-                        gr_from->add_outgoing(warthog::graph::edge(to_id, gr_weight));
+                        gr_from->add_outgoing(T_EDGE(to_id, gr_weight));
                         if(store_incoming)
                         {
-                            gr_to->add_incoming(warthog::graph::edge(from_id, gr_weight));
+                            gr_to->add_incoming(T_EDGE(from_id, gr_weight));
                         }
                     }
                 }
