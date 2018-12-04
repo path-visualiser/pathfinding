@@ -24,10 +24,8 @@ class problem_instance
             instance_id_(instance_counter_++),
             verbose_(0),
             extra_params_(0)
-
         { }
 
-		~problem_instance() { } 
 
 		problem_instance(const warthog::problem_instance& other) 
         { 
@@ -36,6 +34,14 @@ class problem_instance
             this->instance_id_ = other.instance_id_;
             this->verbose_ = other.verbose_;
             this->extra_params_ = other.extra_params_;
+        }
+
+		~problem_instance() { } 
+
+        void
+        reset() 
+        { 
+            instance_id_ = instance_counter_++; 
         }
 
 		warthog::problem_instance& 
