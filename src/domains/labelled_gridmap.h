@@ -136,13 +136,6 @@ class labelled_gridmap
 			x = padded_id % padded_width_;
 		}
 
-		// get the label associated with the padded coordinate pair (x, y)
-		inline CELL&
-		get_label(uint32_t x, unsigned int y)
-		{
-			return this->get_label(y*padded_width_+x);
-		}
-
 		inline CELL&
 		get_label(uint32_t padded_id)
 		{

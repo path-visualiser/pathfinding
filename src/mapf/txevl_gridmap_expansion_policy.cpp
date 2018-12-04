@@ -50,45 +50,42 @@ warthog::txevl_gridmap_expansion_policy::expand(warthog::search_node* current,
 {
 	reset();
 
-    // get the xy id of the current node and extract current timestep
+    // extract the current timestep and get the grid cell of the current node
 	uint32_t nodeid = current->get_id() & id_mask_;
     uint32_t timestep = current->get_id() >> bitwidth_map_;
+    warthog::labelled_cell* c_cell = &map_->get_label(nodeid);
 
     // neighbour ids are calculated using nodeid offsets
 	uint32_t nid_m_w = nodeid - map_->width();
 	uint32_t nid_p_w = nodeid + map_->width();
 
     // cardinal successors
-    warthog::labelled_cell* nei = &map_->get_label(nid_m_w);
-    if(nei->v_lab_ != UINT32_MAX)
+    if(map_->get_label(nid_m_w).v_lab_ != UINT32_MAX)
 	{  
 		add_neighbour(
             __generate(nid_m_w, timestep+1), 
-            nei->e_lab_[__builtin_ffs(warthog::grid::NORTH)-1]);
+            c_cell->e_lab_[__builtin_ffs(warthog::grid::NORTH)-1]);
 	} 
 
-    nei = &map_->get_label(nid_p_w);
-    if(nei->v_lab_ != UINT32_MAX)
+    if(map_->get_label(nid_p_w).v_lab_ != UINT32_MAX)
 	{  
 		add_neighbour(
             __generate(nid_p_w, timestep+1), 
-            nei->e_lab_[__builtin_ffs(warthog::grid::SOUTH)-1]);
+            c_cell->e_lab_[__builtin_ffs(warthog::grid::SOUTH)-1]);
 	} 
 
-    nei = &map_->get_label(nodeid+1);
-    if(nei->v_lab_ != UINT32_MAX)
+    if(map_->get_label(nodeid+1).v_lab_ != UINT32_MAX)
 	{  
 		add_neighbour(
             __generate(nodeid+1, timestep+1), 
-            nei->e_lab_[__builtin_ffs(warthog::grid::EAST)-1]);
+            c_cell->e_lab_[__builtin_ffs(warthog::grid::EAST)-1]);
 	} 
 
-    nei = &map_->get_label(nodeid-1);
-    if(nei->v_lab_ != UINT32_MAX)
+    if(map_->get_label(nodeid-1).v_lab_ != UINT32_MAX)
 	{  
 		add_neighbour(
             __generate(nodeid-1, timestep+1), 
-            nei->e_lab_[__builtin_ffs(warthog::grid::WEST)-1]);
+            c_cell->e_lab_[__builtin_ffs(warthog::grid::WEST)-1]);
 	} 
 
     // wait successor
