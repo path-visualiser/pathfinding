@@ -52,10 +52,10 @@ class scenario_manager
 			experiments_.push_back(newexp); 
 		}
 
-		inline unsigned int 
+		inline uint32_t 
 		num_experiments() 
 		{ 
-			return experiments_.size(); 
+			return (uint32_t)experiments_.size(); 
 		}
 
 		inline size_t 

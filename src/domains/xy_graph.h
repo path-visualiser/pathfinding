@@ -69,8 +69,8 @@ class xy_graph_base
 
                     // add graph node (we scale up all costs and coordinates)
                     uint32_t from_id = add_node(
-                        x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
-                        y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
+                        (int32_t)(x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR),
+                        (int32_t)(y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR),
                         from_gm_id);
 
                     // generate the successors and add edges
@@ -78,25 +78,25 @@ class xy_graph_base
                     // standard constraints on grid moves re; e.g. corner cutting
                     warthog::search_node* n = exp.generate(from_gm_id_p);
                     warthog::search_node* nei = 0;
-                    double edge_cost = 0;
+                    edge_cost_t edge_cost = 0;
                     exp.expand(n, 0);
                     for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
                     {
                         uint32_t nei_x, nei_y;
-                        gm->to_unpadded_xy(nei->get_id(), nei_x, nei_y);
+                        gm->to_unpadded_xy((uint32_t)nei->get_id(), nei_x, nei_y);
                         uint32_t to_gm_id = nei_y * gm->header_width() + nei_x;
 
                         // add graph node (we scale up all costs and coordinates)
                         uint32_t to_id = add_node(
-                                        nei_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR, 
-                                        nei_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR,
+                                        (int32_t)(nei_x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR),
+                                        (int32_t)(nei_y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR),
                                         to_gm_id);
 
                         assert(edge_cost > 0);
 
                         T_NODE* gr_from = get_node(from_id);
                         T_NODE* gr_to = get_node(to_id);
-                        double gr_weight = edge_cost * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
+                        edge_cost_t gr_weight = edge_cost * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
 
                         gr_from->add_outgoing(T_EDGE(to_id, gr_weight));
                         if(store_incoming)
@@ -159,8 +159,8 @@ class xy_graph_base
             if(verbose_) { std::cerr << "nodes, converted" << std::endl; }
 
             // scan the list of edges so as to know the in and out degree of each node
-            std::vector<uint32_t> in_deg(dimacs.get_num_nodes(), 0);
-            std::vector<uint32_t> out_deg(dimacs.get_num_nodes(), 0);
+            std::vector<warthog::graph::ECAP_T> in_deg(dimacs.get_num_nodes(), 0);
+            std::vector<warthog::graph::ECAP_T> out_deg(dimacs.get_num_nodes(), 0);
             for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
                     it != dimacs.edges_end(); it++)
             {
@@ -174,10 +174,9 @@ class xy_graph_base
             for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
                     it != dimacs.nodes_end(); it++)
             {
-                uint32_t nid = it - dimacs.nodes_begin();
-                nodes_[nid].capacity(
-                        store_incoming_edges ? in_deg[nid] : 0, 
-                        out_deg[nid]);
+                uint32_t nid = (uint32_t)(it - dimacs.nodes_begin());
+                nodes_[nid].capacity( 
+                    store_incoming_edges ? in_deg[nid] : 0, out_deg[nid]);
             }
 
             // convert edges to graph format
@@ -200,13 +199,13 @@ class xy_graph_base
                 e.wt_ = (*it).weight_;
 
 #ifndef NDEBUG
-                uint32_t deg_before = nodes_[tid].out_degree();
+                warthog::graph::ECAP_T deg_before = nodes_[tid].out_degree();
 #endif
 
                 nodes_[tid].add_outgoing(e);
 
 #ifndef NDEBUG
-                uint32_t deg_after = nodes_[tid].out_degree();
+                warthog::graph::ECAP_T deg_after = nodes_[tid].out_degree();
 #endif
 
                 // edges can be stored twice: once as an incoming edge 
@@ -280,7 +279,7 @@ class xy_graph_base
                 { std::cerr << "err; reading external id data\n"; return false;}
 
                 // build hashtable for reverse lookups
-                ext_id_map_.reserve(get_num_nodes()*0.8);
+                ext_id_map_.reserve((size_t)get_num_nodes());
                 for(uint32_t i = 0; i < id_map_.size(); i++)
                 {
                     ext_id_map_.insert(std::pair<uint32_t, uint32_t>(id_map_[i], i));
@@ -319,10 +318,10 @@ class xy_graph_base
                 std::cerr << "#outgoing " << this->get_num_edges_out() << std::endl;
 
                 // collect all edges and compute in degree of every node
-                std::vector<uint32_t> in_deg_all(get_num_nodes(), 0);
+                std::vector<warthog::graph::ECAP_T> in_deg_all(get_num_nodes(), 0);
                 std::vector<uint32_t> from_id;
                 std::vector<uint32_t> to_id;
-                std::vector<double> weight;
+                std::vector<edge_cost_t> weight;
 
                 for( nid = 0; nid < num_nodes; nid++)
                 {
@@ -330,6 +329,7 @@ class xy_graph_base
                             it != nodes_[nid].outgoing_end(); 
                             it++ ) 
                     { 
+                        assert(in_deg_all[it->node_id_] < warthog::graph::ECAP_MAX);
                         in_deg_all[it->node_id_]++;
                         from_id.push_back(nid);
                         to_id.push_back(it->node_id_);
@@ -421,28 +421,29 @@ class xy_graph_base
         // @param num_nodes. if @param num_nodes is less thna the current
         // number of nodes, this function does nothing.
         void
-        grow(uint32_t num_nodes)
+        grow(size_t num_nodes)
         {
+            assert(num_nodes > nodes_.size());
             nodes_.resize(num_nodes);
             xy_.resize(num_nodes*2);
             id_map_.resize(num_nodes);
-            ext_id_map_.reserve(num_nodes*0.8);
+            ext_id_map_.reserve(num_nodes);
         }
 
         // allocate capacity for at least @param num_nodes
         // when @param num_nodes <= the number of nodes in the graph, this
         // function does nothing
         void
-        capacity(uint32_t num_nodes)
+        capacity(size_t num_nodes)
         {
             nodes_.reserve(num_nodes);
             xy_.reserve(num_nodes*2);
             id_map_.reserve(num_nodes);
-            ext_id_map_.reserve(num_nodes*0.8);
+            ext_id_map_.reserve(num_nodes);
         }
 
 
-        inline uint32_t
+        inline size_t
         get_num_nodes() const
         {
             return nodes_.size();
@@ -478,15 +479,9 @@ class xy_graph_base
         inline void
         get_xy(uint32_t id, int32_t& x, int32_t& y) const
         {
-            if(id < get_num_nodes())
-            {
-                x = xy_[id*2];
-                y = xy_[id*2+1];
-            }
-            else
-            {
-                x = y = warthog::INF;
-            }
+            assert(id < (xy_.size()>>1) );
+            x = xy_[id*2];
+            y = xy_[id*2+1];
         }
 
         // Set the xy coordinates of a node
@@ -536,15 +531,14 @@ class xy_graph_base
             // check if a node with the same external id already exists; if so 
             // return the id of the existing node. otherwise, add a new node
             uint32_t graph_id = to_graph_id(ext_id);
-            if(graph_id != warthog::INF) { return graph_id; } 
+            if(graph_id != warthog::INF32) { return graph_id; } 
 
-            graph_id = get_num_nodes();
-
+            graph_id = (uint32_t)get_num_nodes();
             nodes_.push_back(warthog::graph::node());
             xy_.push_back(x);
             xy_.push_back(y);
             id_map_.push_back(ext_id);
-            if(ext_id != warthog::INF)
+            if(ext_id != warthog::INF32)
             {
                 ext_id_map_.insert(std::pair<uint32_t, uint32_t>(ext_id, graph_id));
             }
@@ -554,13 +548,13 @@ class xy_graph_base
         uint32_t
         add_node(int32_t x, int32_t y)
         {
-            return add_node(x, y, warthog::INF);
+            return add_node(x, y, warthog::INF32);
         }
 
         uint32_t
         add_node()
         {
-            return add_node(warthog::INF, warthog::INF, warthog::INF);
+            return add_node(warthog::INF32, warthog::INF32, warthog::INF32);
         }
 
         // print extra stuff to std::err 
@@ -596,16 +590,16 @@ class xy_graph_base
         // @return: the corresponding internal id for @param ex_id
         // if ex_id did not appear in the input file (or if the graph
         // was not created from an input file) the function returns
-        // the value warthog::INF
+        // the value warthog::INF32
         inline uint32_t 
         to_graph_id(uint32_t ext_id) 
         { 
-            if(id_map_.size() == 0) { return warthog::INF; }
+            if(id_map_.size() == 0) { return warthog::INF32; }
 
             std::unordered_map<uint32_t, uint32_t>::iterator it 
                     = ext_id_map_.find(ext_id);
 
-            if(it == ext_id_map_.end()) { return warthog::INF; }
+            if(it == ext_id_map_.end()) { return warthog::INF32; }
             return (*it).second;
         }
 
@@ -616,11 +610,11 @@ class xy_graph_base
         // @return: the corresponding internal id for @param ex_id
         // if ex_id did not appear in the input file (or if the graph
         // was not created from an input file) the function returns
-        // the value warthog::INF
+        // the value warthog::INF32
         inline uint32_t 
         to_external_id(uint32_t in_id)  const
         { 
-            if(in_id > get_num_nodes()) { return warthog::INF; }
+            if(in_id > get_num_nodes()) { return warthog::INF32; }
             return id_map_.at(in_id);
         }
 
@@ -656,10 +650,10 @@ class xy_graph_base
                             max_addr;
             }
             
-            uint64_t mem_lb = sizeof(warthog::graph::edge) *
+            size_t mem_lb = sizeof(warthog::graph::edge) *
                 (this->get_num_edges_out() + this->get_num_edges_in());
-            uint64_t mem_actual =
-                (max_addr-min_addr) * sizeof(warthog::graph::edge);
+            size_t mem_actual =
+                ((size_t)(max_addr-min_addr)) * sizeof(warthog::graph::edge);
             return mem_actual / (double)mem_lb;
         }
 
@@ -668,31 +662,31 @@ class xy_graph_base
         save(std::ostream& oss)
         {
             // write number of nodes
-            uint32_t nodes_sz = get_num_nodes();
+            size_t nodes_sz = get_num_nodes();
             oss.write((char*)(&nodes_sz), sizeof(nodes_sz));
             if(!oss.good()) 
             { std::cerr << "err writing #nodes\n"; return; }
 
             // write xy values
-            uint32_t xy_sz = xy_.size();
+            size_t xy_sz = xy_.size();
             oss.write((char*)&xy_sz, sizeof(xy_sz));
             if(!oss.good()) 
             { std::cerr << "err writing #xy\n"; return; }
-            oss.write((char*)&xy_[0], sizeof(int32_t)*xy_sz);
+            oss.write((char*)&xy_[0], (long)(sizeof(int32_t)*xy_sz));
             if(!oss.good()) 
             { std::cerr << "err writing xy coordinates data\n"; return; }
 
             // write external ids
-            uint32_t id_map_sz = id_map_.size();
+            size_t id_map_sz = id_map_.size();
             oss.write((char*)&id_map_sz, sizeof(int32_t));
             if(!oss.good()) 
             { std::cerr << "err writing #external ids\n"; return; }
-            oss.write((char*)&id_map_[0], sizeof(int32_t)*id_map_sz);
+            oss.write((char*)&id_map_[0], (long)(sizeof(int32_t)*id_map_sz));
             if(!oss.good()) 
             { std::cerr << "err writing external ids\n"; return; }
             
             // write edge data
-            uint32_t nid = 0;
+            size_t nid = 0;
             for( ; nid < get_num_nodes(); nid++)
             {
                 nodes_[nid].save(oss);
@@ -766,7 +760,6 @@ class xy_graph_base
             {
                 int32_t tx, ty, hx, hy;
                 get_xy(t_id, tx, ty);
-                if(tx == warthog::INF || ty == warthog::INF) { continue; }
 
                 for(warthog::graph::edge_iter it = nodes_[t_id].outgoing_begin();
                     it != nodes_[t_id].outgoing_end();
@@ -775,11 +768,11 @@ class xy_graph_base
                     uint32_t h_id = (*it).node_id_;
                     get_xy(h_id, hx, hy);
 
-                    double hdist = h_euc.h(tx, ty, hx, hy);
+                    warthog::cost_t hdist = h_euc.h(tx, ty, hx, hy);
                     if((*it).wt_ < hdist)
                     {
                         if(!fix_if_not) { return false; }
-                        (*it).wt_ = ceil(hdist);
+                        (*it).wt_ = static_cast<uint32_t>(ceil(hdist));
                     } 
                 }
             }
@@ -818,12 +811,6 @@ class xy_graph_base
         bool verbose_;
 };
 typedef xy_graph_base<warthog::graph::node, warthog::graph::edge> xy_graph;
-
-
-
-
-
-
 
 }
 }

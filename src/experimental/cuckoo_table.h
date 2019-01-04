@@ -28,7 +28,7 @@ namespace hash
 {
 
 const unsigned int BUCKET_SIZE=2;
-const unsigned int LOG2_BUCKET_SIZE =
+const unsigned int LOG2_BUCKET_SIZE = (unsigned int)
    	ceil(log10(warthog::hash::BUCKET_SIZE) / log(2));
 
 }

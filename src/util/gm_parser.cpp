@@ -59,14 +59,14 @@ warthog::gm_parser::parse_header(std::fstream& mapfs)
 		exit(1);
 	}
 
-	this->header_.height_ = atoi(contents[std::string("height")].c_str());
+	this->header_.height_ = (uint32_t)atoi(contents[std::string("height")].c_str());
 	if(this->header_.height_ == 0)
 	{
 		std::cerr << "err; map file specifies invalid height. " << std::endl;
 		exit(1);
 	}
 
-	this->header_.width_ = atoi(contents[std::string("width")].c_str());
+	this->header_.width_ = (uint32_t)atoi(contents[std::string("width")].c_str());
 	if(this->header_.width_ == 0)
 	{
 		std::cerr << "err; map file specifies invalid width. " << std::endl;
@@ -89,10 +89,10 @@ warthog::gm_parser::parse_map(std::fstream& mapfs)
 
 	// read map data
 	int index = 0;
-	int max_tiles = this->header_.height_*this->header_.width_;
+	uint32_t max_tiles = this->header_.height_*this->header_.width_;
 	while(true)
 	{
-		char c = mapfs.get();	
+		unsigned char c = (unsigned char)mapfs.get();	
 		if( !mapfs.good() )
 		{
 			// eof

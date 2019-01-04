@@ -27,19 +27,20 @@ typedef uint16_t ECAP_T;
 const uint16_t ECAP_MAX = UINT16_MAX;
 typedef uintptr_t ELABEL_T;
 
+typedef double edge_cost_t;
 class edge
 {
     public:
         edge() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = UINTPTR_MAX;}
 
-        edge(uint32_t node_id, uint32_t wt, uintptr_t label)
+        edge(uint32_t node_id, edge_cost_t wt, uintptr_t label)
         {
             node_id_ = node_id;
             wt_ = wt;
             label_ = label;
         }
 
-        edge(uint32_t node_id, uint32_t wt)
+        edge(uint32_t node_id, edge_cost_t wt)
         {
             node_id_ = node_id;
             wt_ = wt;
@@ -66,7 +67,7 @@ class edge
         // we store only one id, typically the head node
         // the id of the other node is derived contextually
         uint32_t node_id_;
-        uint32_t wt_;
+        edge_cost_t wt_;
         ELABEL_T label_;
 };
 typedef edge* edge_iter;
@@ -332,7 +333,8 @@ class node
         }
 
         inline void
-        capacity(uint32_t new_in_cap, uint32_t new_out_cap)
+        capacity(warthog::graph::ECAP_T new_in_cap, 
+                 warthog::graph::ECAP_T new_out_cap)
         {
             if(new_in_cap > in_cap_)
             {
@@ -408,7 +410,7 @@ class node
         ECAP_T
         increase_capacity(ECAP_T newcap, ECAP_T oldcap, edge*& collection)
         {
-            newcap = std::max<int>(1, newcap);
+            newcap = std::max<ECAP_T>(1, newcap);
             if(newcap <= oldcap) { return oldcap; }
 
             edge* newcollection = new edge[newcap];
@@ -427,7 +429,7 @@ class node
         inline void
         del_edge(warthog::graph::edge_iter elt, ECAP_T& deg, edge*& elts)
         {
-            uint32_t index = &*elt - elts;
+            size_t index = (size_t)(&*elt - elts);
             if(index < deg)
             {
                 deg--;

@@ -66,7 +66,7 @@ class chase_search : public warthog::search
             }
             
             rank_ = rank;
-            max_phase1_rank_ = fexpander_->get_num_nodes()*(1-core_pct);
+            max_phase1_rank_ = (uint32_t)(fexpander_->get_num_nodes()*(1-core_pct));
         }
 
         ~chase_search()
@@ -84,7 +84,7 @@ class chase_search : public warthog::search
         {
             pi_ = pi;
             this->search(sol);
-            if(best_cost_ != warthog::INF) 
+            if(best_cost_ != warthog::INF32) 
             { 
                 sol.sum_of_edge_costs_ = best_cost_;
                 reconstruct_path(sol);
@@ -94,7 +94,7 @@ class chase_search : public warthog::search
             if(pi_.verbose_)
             {
                 std::cerr << "path: \n";
-                for(uint32_t i = 0; i < sol.path_.size(); i++)
+                for(size_t i = 0; i < sol.path_.size(); i++)
                 {
                     std::cerr << sol.path_.at(i) << std::endl;
                 }
@@ -107,7 +107,7 @@ class chase_search : public warthog::search
         {
             pi_ = pi;
             this->search(sol);
-            if(best_cost_ != warthog::INF) 
+            if(best_cost_ != warthog::INF32) 
             { 
                 sol.sum_of_edge_costs_ = best_cost_;
             }
@@ -145,7 +145,7 @@ class chase_search : public warthog::search
         // of both to extract the actual path
         warthog::search_node* v_;
         warthog::search_node* w_;
-        double best_cost_;
+        warthog::cost_t best_cost_;
         warthog::problem_instance pi_;
 
         void
@@ -192,7 +192,7 @@ class chase_search : public warthog::search
 
             // init search parameters
             forward_next_ = true;
-            best_cost_ = warthog::INF;
+            best_cost_ = warthog::INF32;
             v_ = w_ = 0;
 
             warthog::search_node *start, *target;
@@ -211,17 +211,17 @@ class chase_search : public warthog::search
             #endif
 
             // initialise the start and target
-            start->init(pi_.instance_id_, warthog::NODE_NONE, 
+            start->init(pi_.instance_id_, warthog::SN_ID_MAX, 
                     0, heuristic_->h(pi_.start_id_, pi_.target_id_));
-            target->init(pi_.instance_id_, warthog::NODE_NONE, 
+            target->init(pi_.instance_id_, warthog::SN_ID_MAX, 
                     0, heuristic_->h(pi_.start_id_, pi_.target_id_));
 
             // these variables help interleave the search, decide when to
             // switch phases and when to terminate
             phase_ = 1;
             bool cannot_improve = false;
-            double fwd_core_lb = DBL_MAX;
-            double bwd_core_lb = DBL_MAX;
+            warthog::cost_t fwd_core_lb = DBL_MAX;
+            warthog::cost_t bwd_core_lb = DBL_MAX;
             uint32_t search_direction = 1;
 
             // search begin
@@ -287,15 +287,15 @@ class chase_search : public warthog::search
                 {
                     if(phase_ == 1)
                     {
-                        uint32_t fwd_lower_bound = 
+                        warthog::cost_t fwd_lower_bound = 
                             std::min(fwd_core_lb, fopen_->size() > 0 ?  
                                         fopen_->peek()->get_f() : DBL_MAX);
 
-                        uint32_t bwd_lower_bound = 
+                        warthog::cost_t bwd_lower_bound = 
                             std::min(bwd_core_lb, bopen_->size() > 0 ?  
                                         bopen_->peek()->get_f() : DBL_MAX);
 
-                        uint32_t best_bound = 
+                        warthog::cost_t best_bound = 
                             std::min(fwd_lower_bound, bwd_lower_bound);
                         
                         // early terminate; optimal path does not involve
@@ -322,11 +322,11 @@ class chase_search : public warthog::search
                         // both directions can reach the core; time for phase2
                         fopen_->clear();
                         bopen_->clear();
-                        for(uint32_t i = 0; i < fwd_norelax_.size(); i++)
+                        for(size_t i = 0; i < fwd_norelax_.size(); i++)
                         {
                             fopen_->push(fwd_norelax_.at(i));
                         }
-                        for(uint32_t i = 0; i < bwd_norelax_.size(); i++)
+                        for(size_t i = 0; i < bwd_norelax_.size(); i++)
                         {
                             bopen_->push(bwd_norelax_.at(i));
                         }
@@ -352,7 +352,7 @@ class chase_search : public warthog::search
                         #ifndef NDEBUG
                         if(pi_.verbose_)
                         {
-                            if(best_cost_ != warthog::INF)
+                            if(best_cost_ != warthog::INF32)
                             {
                                 std::cerr 
                                     << "provably-best solution found; "
@@ -372,7 +372,7 @@ class chase_search : public warthog::search
 
 			mytimer.stop();
 			sol.time_elapsed_nano_= mytimer.elapsed_time_nano();
-            assert(best_cost_ != warthog::INF || (v_ == 0 && w_ == 0));
+            assert(best_cost_ != warthog::INF32 || (v_ == 0 && w_ == 0));
         }
 
         void
@@ -380,9 +380,9 @@ class chase_search : public warthog::search
                 warthog::pqueue_min* open,
                 warthog::chase_expansion_policy* expander,
                 warthog::chase_expansion_policy* reverse_expander, 
-                uint32_t tmp_targetid,
+                warthog::sn_id_t tmp_targetid,
                 std::vector<warthog::search_node*>& norelax, 
-                double&  norelax_distance_min,
+                warthog::cost_t&  norelax_distance_min,
                 warthog::solution& sol)
         {
             // target not found yet; expand as normal
@@ -407,16 +407,16 @@ class chase_search : public warthog::search
             
             // generate all neighbours
             warthog::search_node* n = 0;
-            double cost_to_n = warthog::INF;
+            warthog::cost_t cost_to_n = warthog::INF32;
             for(expander->first(n, cost_to_n); n != 0; expander->next(n, cost_to_n))
             {
                 sol.nodes_touched_++;
 
                 // add new nodes to the fringe
-                if(n->get_search_id() != current->get_search_id())
+                if(n->get_search_number() != current->get_search_number())
                 {
-                    double gval = current->get_g() + cost_to_n;
-                    n->init(current->get_search_id(), current->get_id(), gval,
+                    warthog::cost_t gval = current->get_g() + cost_to_n;
+                    n->init(current->get_search_number(), current->get_id(), gval,
                             gval + 
                             heuristic_->h(n->get_id(), tmp_targetid));
 
@@ -483,7 +483,7 @@ class chase_search : public warthog::search
                     }
 
                     // relax (or generate) each neighbour
-                    double gval = current->get_g() + cost_to_n;
+                    warthog::cost_t gval = current->get_g() + cost_to_n;
                     if(open->contains(n))
                     {
                         // update a node from the fringe
@@ -541,7 +541,7 @@ class chase_search : public warthog::search
                 // update the best solution if possible
                 warthog::search_node* reverse_n = 
                     reverse_expander->generate(n->get_id());
-                if(reverse_n->get_search_id() == n->get_search_id())
+                if(reverse_n->get_search_number() == n->get_search_number())
 //                        && reverse_n->get_expanded())
                 {
                     if((current->get_g() + cost_to_n + reverse_n->get_g()) < best_cost_)

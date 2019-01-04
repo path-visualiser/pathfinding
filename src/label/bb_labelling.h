@@ -113,13 +113,13 @@ class bb_labelling
                         // the start node and its children don't need their 
                         // parent pointers updated. for all other nodes the
                         // grandparent becomes the parent
-                        uint32_t gp_id = 
+                        uint32_t gp_id = (uint32_t)
                             expander->generate(n->get_parent())->get_parent();
 
-                        if(gp_id != warthog::NODE_NONE)
+                        if(gp_id != warthog::INF32)
                         {
-                            if(expander->generate(gp_id)->get_parent()
-                                    != warthog::NODE_NONE)
+                            if((uint32_t)expander->generate(gp_id)->get_parent() !=  
+                                warthog::INF32)
                             {
                                 n->set_parent(gp_id);
                             }
@@ -145,7 +145,7 @@ class bb_labelling
                     warthog::graph::node* source = 
                         shared->lab_->g_->get_node(source_id);
 
-                    warthog::problem_instance pi(ext_source_id, warthog::INF);
+                    warthog::problem_instance pi(ext_source_id, warthog::INF32);
                     warthog::solution sol;
                     dijkstra.get_path(pi, sol);
                     
@@ -180,12 +180,12 @@ class bb_labelling
                         std::unordered_map<uint32_t, uint32_t>::iterator it;
 
                         // successors of the source are special
-                        if(expander->generate(n->get_parent())->get_parent() 
-                                == warthog::NODE_NONE)
-                        { it = idmap.find(n->get_id()); }
-                        else
+                        if((uint32_t)expander->generate(n->get_parent())->get_parent() == 
+                            warthog::INF32)
+                        { it = idmap.find((uint32_t)n->get_id()); }
                         // all the other nodes
-                        { it = idmap.find(n->get_parent()); }
+                        else
+                        { it = idmap.find((uint32_t)n->get_parent()); }
 
                         if(it == idmap.end())
                         {
@@ -198,8 +198,8 @@ class bb_labelling
 
                         // grow the rectangle
                         int32_t x, y;
-                        shared->lab_->g_->get_xy(n->get_id(), x, y);
-                        assert(x != warthog::INF && y != warthog::INF);
+                        shared->lab_->g_->get_xy((uint32_t)n->get_id(), x, y);
+                        assert(x != warthog::INF32 && y != warthog::INF32);
                         shared->lab_->labels_->at(source_id).at(
                                 (*it).second).grow(x, y);
                         assert(shared->lab_->labels_->at(source_id).at(

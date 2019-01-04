@@ -16,14 +16,14 @@ main(int argv, char** argc)
     g.load_from_dimacs(argc[1], argc[2]);
 
     std::set<uint32_t> closure;
-    uint32_t node_id = atoi(argc[3]);
+    uint32_t node_id = (uint32_t)atoi(argc[3]);
 
     if(argv > 4)
     {
         for(int i = 4; i < argv; i++)
         {
             std::cout << "ignore " << (atoi(argc[i])) << std::endl;
-            closure.insert(atoi(argc[i]));
+            closure.insert((uint32_t)atoi(argc[i]));
         }
     }
     warthog::ch::compute_closure(node_id, &g, &closure, 1);

@@ -5,11 +5,9 @@
 #include "firstmove_labelling.h"
 #include "cfg.h"
 #include "contraction.h"
-#include "corner_point_graph.h"
 #include "dimacs_parser.h"
 #include "dummy_filter.h"
 #include "fch_expansion_policy.h"
-#include "fch_jpg_expansion_policy.h"
 #include "graph_expansion_policy.h"
 #include "graph.h"
 #include "gridmap.h"
@@ -33,7 +31,7 @@ help()
     //<< "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
 	//<< "\t--order [order-of-contraction file]\n"
     << "\t--type [ af | bb | bbaf | fm | fch-af | fch-bb "
-    << "| fch-bbaf | fch-bb-jpg | fch-dfs | fch-fm ] \n"
+    << "| fch-bbaf | fch-dfs | fch-fm ] \n"
     << "\t--input [ algorithm-specific input files (omit to show options) ]\n" 
 	<< "\t--verbose (optional)\n";
 }
@@ -83,18 +81,18 @@ compute_fch_bb_labels()
 
     // users can limit the preprocessing to a specified id range
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
+    uint32_t lastid = (uint32_t)g.get_num_nodes();
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
         std::string last = cfg.get_param_value("type");
         if(strtol(first.c_str(), 0, 10) != 0)
         {
-            firstid = strtol(first.c_str(), 0, 10);
+            firstid = (uint32_t)strtol(first.c_str(), 0, 10);
         }
         if(strtol(last.c_str(), 0, 10) != 0)
         {
-            lastid = strtol(last.c_str(), 0, 10);
+            lastid = (uint32_t)strtol(last.c_str(), 0, 10);
         }
     }
 
@@ -151,128 +149,6 @@ compute_fch_bb_labels()
 }
 
 void
-compute_fch_bb_jpg_labels()
-{
-    std::string grfile = cfg.get_param_value("input");
-    std::string cofile = cfg.get_param_value("input");
-    std::string orderfile = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-
-    if( grfile == "" || cofile == "" || orderfile == "" || gridmapfile == "")
-    {
-        std::cerr << "err; insufficient input parameters."
-                  << " required, in order:\n"
-                  << " --input [gr file] [co file]"
-                  << " [node ordering file] [gridmap]\n";
-        return;
-    }
-    std::cerr << "computing labels" << std::endl;
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    if(!pg->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
-    {
-        std::cerr << "err; could not load gr or co input files " 
-                  << "(one or both)\n";
-        return;
-    }
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // load up the node ordering
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, false))
-    {
-        std::cerr << "err; could not load node order input file\n";
-        return;
-    }
-
-    if(order.size() != cpg.get_num_nodes())
-    {
-        std::cerr 
-            << "warn; partial contraction order. computing labels only"
-            << "for contracted nodes\n";
-    }
-
-    // define the preprocessing workload 
-    warthog::util::workload_manager workload(cpg.get_num_nodes());
-
-    // users can limit the preprocessing to a specified id range
-    uint32_t firstid = 0;
-    uint32_t lastid = cpg.get_num_nodes();
-    if(cfg.get_num_values("type") == 2)
-    {
-        std::string first = cfg.get_param_value("type");
-        std::string last = cfg.get_param_value("type");
-        if(strtol(first.c_str(), 0, 10) != 0)
-        {
-            firstid = strtol(first.c_str(), 0, 10);
-        }
-        if(strtol(last.c_str(), 0, 10) != 0)
-        {
-            lastid = strtol(last.c_str(), 0, 10);
-        }
-    }
-
-    // we only target nodes in the range which also appear in the order
-    for(uint32_t i = 0; i < order.size(); i++)
-    {
-        if(order.at(i) < firstid || order.at(i) >= lastid) { continue; }
-        workload.set_flag(order.at(i), true);
-    }
-
-    // node order becomes a lex order for the purposes of search
-    warthog::ch::value_index_swap_dimacs(order);
-    
-    // gogogo
-    std::cerr << "creating fch-jpg-bb labelling\n";
-    std::function<warthog::fch_jpg_expansion_policy*(void)> 
-        fn_new_expander = [&cpg, &order] () 
-            -> warthog::fch_jpg_expansion_policy*
-        {
-            return new warthog::fch_jpg_expansion_policy(&cpg, &order);
-        };
-
-    warthog::label::bb_labelling* labelling = 
-    warthog::label::bb_labelling::compute<warthog::fch_jpg_expansion_policy>(
-            pg.get(), fn_new_expander, &workload);
-
-    std::cerr << "labelling done\n";
-
-    // save the result
-    std::string outfile(grfile);
-    outfile.append(".fch-bb-jpg.arclabel");
-    if(firstid != 0 || lastid != cpg.get_num_nodes())
-    {
-        outfile.append(".");
-        outfile.append(std::to_string(firstid));
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
-    }
-
-    std::fstream fs_out(outfile.c_str(), 
-                        std::ios_base::out | std::ios_base::trunc);
-
-    std::cerr << "saving to" << outfile << "\n";
-    if(!fs_out.good())
-    {
-        std::cerr << "\nerror opening output file " << outfile << std::endl;
-    }
-    else
-    {
-        labelling->print(fs_out, firstid, lastid);
-    }
-
-    fs_out.close();
-    delete labelling;
-    std::cerr << "all done!\n";
-}
-
-void
 compute_bb_labels()
 {
     std::string grfile = cfg.get_param_value("input");
@@ -297,18 +173,18 @@ compute_bb_labels()
     warthog::util::workload_manager workload(g.get_num_nodes());
 
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
+    uint32_t lastid = (uint32_t)g.get_num_nodes();
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
         std::string last = cfg.get_param_value("type");
         if(strtol(first.c_str(), 0, 10) != 0)
         {
-            firstid = strtol(first.c_str(), 0, 10);
+            firstid = (uint32_t)strtol(first.c_str(), 0, 10);
         }
         if(strtol(last.c_str(), 0, 10) != 0)
         {
-            lastid = strtol(last.c_str(), 0, 10);
+            lastid = (uint32_t)strtol(last.c_str(), 0, 10);
         }
     }
         
@@ -410,18 +286,18 @@ compute_fch_af_labels()
     warthog::util::workload_manager workload(g.get_num_nodes());
 
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
+    uint32_t lastid = (uint32_t)g.get_num_nodes();
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
         std::string last = cfg.get_param_value("type");
         if(strtol(first.c_str(), 0, 10) != 0)
         {
-            firstid = strtol(first.c_str(), 0, 10);
+            firstid = (uint32_t)strtol(first.c_str(), 0, 10);
         }
         if(strtol(last.c_str(), 0, 10) != 0)
         {
-            lastid = strtol(last.c_str(), 0, 10);
+            lastid = (uint32_t)strtol(last.c_str(), 0, 10);
         }
     }
 
@@ -479,134 +355,6 @@ compute_fch_af_labels()
 }
 
 void
-compute_fch_af_jpg_labels()
-{
-    std::string grfile = cfg.get_param_value("input");
-    std::string cofile = cfg.get_param_value("input");
-    std::string orderfile = cfg.get_param_value("input");
-    std::string partfile = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-
-    if( grfile == "" || cofile == "" || partfile == "" ||
-            orderfile == "" || gridmapfile == "")
-    {
-        std::cerr << "err; insufficient input parameters."
-                  << " required, in order:\n"
-                  << " --input [gr file] [co file]"
-                  << " [node ordering file]"
-                  << " [graph partition file]"
-                  << " [gridmap]\n";
-        return;
-    }
-    std::cerr << "computing labels" << std::endl;
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-
-    // load up the graph
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    if(!pg->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
-    {
-        std::cerr << "err; could not load gr or co input files " 
-                  << "(one or both)\n";
-        return;
-    }
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // load up the partition info
-    std::vector<uint32_t> part;
-    warthog::helpers::load_integer_labels_dimacs(partfile.c_str(), part);
-
-    // load up the node ordering
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, false))
-    {
-        std::cerr << "err; could not load node order input file\n";
-        return;
-    }
-
-    if(order.size() != cpg.get_num_nodes())
-    {
-        std::cerr 
-            << "warn; partial contraction order. computing labels only"
-            << "for contracted nodes\n";
-    }
-
-    // define the preprocessing workload 
-    warthog::util::workload_manager workload(cpg.get_num_nodes());
-
-    // users can limit the preprocessing to a specified id range
-    uint32_t firstid = 0;
-    uint32_t lastid = pg->get_num_nodes();
-    if(cfg.get_num_values("type") == 2)
-    {
-        std::string first = cfg.get_param_value("type");
-        std::string last = cfg.get_param_value("type");
-        if(strtol(first.c_str(), 0, 10) != 0)
-        {
-            firstid = strtol(first.c_str(), 0, 10);
-        }
-        if(strtol(last.c_str(), 0, 10) != 0)
-        {
-            lastid = strtol(last.c_str(), 0, 10);
-        }
-    }
-
-    // we only target nodes in the range which also appear in the order
-    for(uint32_t i = 0; i < order.size(); i++)
-    {
-        if(order.at(i) < firstid || order.at(i) >= lastid) { continue; }
-        workload.set_flag(order.at(i), true);
-    }
-
-    // node order becomes a lex order for the purposes of search
-    warthog::ch::value_index_swap_dimacs(order);
-
-    // gogogo
-    std::cerr << "computing fch-af labelling... \n";
-    std::function<warthog::fch_jpg_expansion_policy*(void)> fn_new_expander = 
-        [&cpg, &order]() -> warthog::fch_jpg_expansion_policy*
-        {
-            return new warthog::fch_jpg_expansion_policy(&cpg, &order);
-        };
-    warthog::label::af_labelling* labelling = 
-        warthog::label::af_labelling::compute
-            <warthog::fch_jpg_expansion_policy>
-                (pg.get(), &part, fn_new_expander, &workload);
-
-    // save the result
-    std::string outfile(grfile);
-    outfile.append(".fch-af-jpg.arclabel");
-    if(firstid != 0 || lastid != cpg.get_num_nodes())
-    {
-        outfile.append(".");
-        outfile.append(std::to_string(firstid));
-        outfile.append(".");
-        outfile.append(std::to_string(lastid));
-    }
-
-    std::cerr << "saving arclabels file " << outfile << std::endl;
-    std::fstream out(outfile.c_str(), 
-            std::ios_base::out | std::ios_base::trunc);
-    if(!out.good())
-    {
-        std::cerr << "\nerror saving arclabels file " << grfile << std::endl;
-    }
-    else
-    {
-        labelling->print(out, firstid, lastid);
-    }
-    out.close();
-
-    // cleanup
-    delete labelling;
-    std::cerr << "all done!\n";
-    
-}
-
-void
 compute_af_labels()
 {
     std::string grfile = cfg.get_param_value("input");
@@ -643,18 +391,18 @@ compute_af_labels()
     warthog::util::workload_manager workload(g.get_num_nodes());
 
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
+    uint32_t lastid = (uint32_t)g.get_num_nodes();
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
         std::string last = cfg.get_param_value("type");
         if(strtol(first.c_str(), 0, 10) != 0)
         {
-            firstid = strtol(first.c_str(), 0, 10);
+            firstid = (uint32_t)strtol(first.c_str(), 0, 10);
         }
         if(strtol(last.c_str(), 0, 10) != 0)
         {
-            lastid = strtol(last.c_str(), 0, 10);
+            lastid = (uint32_t)strtol(last.c_str(), 0, 10);
         }
     }
 
@@ -746,18 +494,18 @@ compute_bbaf_labels()
     warthog::util::workload_manager workload(g.get_num_nodes());
 
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
+    uint32_t lastid = (uint32_t)g.get_num_nodes();
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
         std::string last = cfg.get_param_value("type");
         if(strtol(first.c_str(), 0, 10) != 0)
         {
-            firstid = strtol(first.c_str(), 0, 10);
+            firstid = (uint32_t)strtol(first.c_str(), 0, 10);
         }
         if(strtol(last.c_str(), 0, 10) != 0)
         {
-            lastid = strtol(last.c_str(), 0, 10);
+            lastid = (uint32_t)strtol(last.c_str(), 0, 10);
         }
     }
 
@@ -866,18 +614,18 @@ compute_fch_bbaf_labels()
     warthog::util::workload_manager workload(g.get_num_nodes());
 
     uint32_t firstid = 0;
-    uint32_t lastid = g.get_num_nodes();
+    uint32_t lastid = (uint32_t)g.get_num_nodes();
     if(cfg.get_num_values("type") == 2)
     {
         std::string first = cfg.get_param_value("type");
         std::string last = cfg.get_param_value("type");
         if(strtol(first.c_str(), 0, 10) != 0)
         {
-            firstid = strtol(first.c_str(), 0, 10);
+            firstid = (uint32_t)strtol(first.c_str(), 0, 10);
         }
         if(strtol(last.c_str(), 0, 10) != 0)
         {
-            lastid = strtol(last.c_str(), 0, 10);
+            lastid = (uint32_t)strtol(last.c_str(), 0, 10);
         }
     }
 
@@ -990,7 +738,7 @@ compute_fch_dfs_labels(std::string alg_name)
     double cutoff = 1;
     if(alg_params != "")
     {
-        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        int32_t pct_dijkstra = std::stoi(alg_params.c_str());
         if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
         {
             std::cerr << "dijkstra percentage must be in range 0-100\n";
@@ -1066,7 +814,7 @@ compute_fch_fm_labels(std::string alg_name)
     if(alg_params != "")
     {
         std::cerr << "wtf params " << alg_params << std::endl;
-        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        int32_t pct_dijkstra = std::stoi(alg_params.c_str());
         if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
         {
             std::cerr << "dijkstra percentage must be in range 0-100\n";
@@ -1222,14 +970,6 @@ int main(int argc, char** argv)
     else if(arclabel.compare("fch-bbaf") == 0)
     {
         compute_fch_bbaf_labels();
-    }
-    else if(arclabel.compare("fch-bb-jpg") == 0)
-    {
-        compute_fch_bb_jpg_labels();
-    }
-    else if(arclabel.compare("fch-af-jpg") == 0)
-    {
-        compute_fch_af_jpg_labels();
     }
     else if(arclabel.compare("fch-dfs") == 0)
     {

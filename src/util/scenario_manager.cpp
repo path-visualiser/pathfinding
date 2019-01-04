@@ -80,21 +80,23 @@ warthog::scenario_manager::generate_single_experiment(warthog::gridmap* map)
 	warthog::experiment* newexp;
 	uint32_t raw_mapsize = map->header_height() * map->header_width();
 
-	uint32_t window_size = raw_mapsize * 0.01;
+	uint32_t window_size = (uint32_t)(raw_mapsize * 0.01);
 	if(head_offset + window_size >= raw_mapsize)
 		head_offset = 0;
 	if(tail_offset + window_size >= raw_mapsize)
 		tail_offset = 0;
 
-	int id1_ = ((rand() % window_size) + head_offset) % raw_mapsize;
-	int id2_ = (raw_mapsize - ((rand() % window_size) + tail_offset)) % raw_mapsize;
-	int id1 = map->to_padded_id(id1_);
-	int id2 = map->to_padded_id(id2_);
-    warthog::problem_instance pi(map->to_padded_id(id1), map->to_padded_id(id2));
+	uint32_t id1 = 
+        map->to_padded_id(
+            (((uint32_t)rand() % window_size) + head_offset) % raw_mapsize);
+	uint32_t id2 = 
+        map->to_padded_id(
+            (raw_mapsize - (((uint32_t)rand() % window_size) + tail_offset)) % raw_mapsize);
+    warthog::problem_instance pi(id1, id2);
     warthog::solution sol;
 	astar.get_path(pi, sol);
 
-	if(sol.sum_of_edge_costs_ == warthog::INF)
+	if(sol.sum_of_edge_costs_ == warthog::INF32)
 	{
 	//	std::cout << " no path;" <<std::endl;
 		return 0;
@@ -147,10 +149,10 @@ warthog::scenario_manager::load_scenario(const char* filelocation)
 void 
 warthog::scenario_manager::load_gppc_scenario(std::ifstream& infile)
 {
-	int sizeX = 0, sizeY = 0; 
-	int bucket;
+	uint32_t sizeX = 0, sizeY = 0; 
+	uint32_t bucket;
 	std::string map;  
-	int xs, ys, xg, yg;
+	uint32_t xs, ys, xg, yg;
 	std::string dist;
 
 	while(infile>>bucket>>map>>sizeX>>sizeY>>xs>>ys>>xg>>yg>>dist)
@@ -159,10 +161,10 @@ warthog::scenario_manager::load_gppc_scenario(std::ifstream& infile)
 		experiments_.push_back(
 				new experiment(xs,ys,xg,yg,sizeX,sizeY,dbl_dist,map));
 
-		int precision = 0;
+		int32_t precision = 0;
 		if(dist.find(".") != std::string::npos)
 		{
-			precision = dist.size() - (dist.find(".")+1);
+			precision = ((int32_t)dist.size() - (int32_t)(dist.find(".")+1));
 		}
 		experiments_.back()->set_precision(precision);
 	}

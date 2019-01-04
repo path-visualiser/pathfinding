@@ -60,7 +60,7 @@ class graph_expansion_policy
 		expand(warthog::search_node* current, warthog::problem_instance* pi)
         {
             edge_index_ = 0;
-            current_graph_node_ = g_->get_node(current->get_id()) ;
+            current_graph_node_ = g_->get_node((uint32_t)current->get_id()) ;
         }
 
 		inline void
@@ -93,7 +93,7 @@ class graph_expansion_policy
 		{
             assert(current_graph_node_);
             ret = 0;
-            cost = warthog::INF;
+            cost = warthog::INF32;
 
             warthog::graph::edge_iter begin = 
                 current_graph_node_->outgoing_begin();
@@ -117,8 +117,8 @@ class graph_expansion_policy
         warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi)
         {
-            uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
-            if(s_graph_id == warthog::INF) { return 0; }
+            uint32_t s_graph_id = g_->to_graph_id((uint32_t)pi->start_id_);
+            if(s_graph_id == warthog::INF32) { return 0; }
             return &nodepool_[s_graph_id];
         }
 
@@ -126,18 +126,18 @@ class graph_expansion_policy
         generate_target_node(warthog::problem_instance* pi)
         {
             // convert from external id to internal id
-            uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
-            if(t_graph_id == warthog::INF) { return 0; }
+            uint32_t t_graph_id = g_->to_graph_id((uint32_t)pi->target_id_);
+            if(t_graph_id == warthog::INF32) { return 0; }
             
             // also update the filter with the new target location
-            filter_->set_target(pi->target_id_-1);
+            filter_->set_target((uint32_t)pi->target_id_-1);
 
             // generate the search node
             return &nodepool_[t_graph_id];
         }
 
         warthog::search_node*
-        generate(uint32_t nid)
+        generate(warthog::sn_id_t nid)
         {
             return &nodepool_[nid];
         }
@@ -156,12 +156,12 @@ class graph_expansion_policy
         }
 
         void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y)
+        get_xy(warthog::sn_id_t node_id, int32_t& x, int32_t& y)
         {
-            g_->get_xy(node_id, x, y);
+            g_->get_xy((uint32_t)node_id, x, y);
         }
 
-        uint32_t
+        size_t
         get_nodes_pool_size() { return nodes_pool_size_; } 
 
         size_t
@@ -180,7 +180,7 @@ class graph_expansion_policy
         warthog::graph::node* current_graph_node_;
 
         warthog::search_node* nodepool_;
-        uint32_t nodes_pool_size_;
+        size_t nodes_pool_size_;
 
         typedef 
             warthog::search_node*

@@ -31,7 +31,7 @@ class workload_manager
         
         // on construction, the workload manager is empty 
         // (i.e. the "work" flag for every node is set to false)
-        workload_manager(uint32_t num_nodes);
+        workload_manager(size_t num_nodes);
         virtual ~workload_manager();
 
         bool
@@ -67,7 +67,7 @@ class workload_manager
 
     private:
         warthog::dbword* filter_;
-        uint32_t filter_sz_;
+        size_t filter_sz_;
 };
 
 }

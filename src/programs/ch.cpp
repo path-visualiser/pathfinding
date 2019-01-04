@@ -46,7 +46,7 @@ contract_graph()
     std::vector<uint32_t> order;
 
     std::string partial = cfg.get_param_value("partial");
-    uint32_t pct_nodes_to_contract = 100;
+    int32_t pct_nodes_to_contract = 100;
     if(partial != "")
     {
         pct_nodes_to_contract = atoi(partial.c_str());
@@ -79,7 +79,7 @@ contract_graph()
         }
         warthog::ch::fixed_graph_contraction contractor(&g, &order);
         contractor.set_verbose(verbose);
-        contractor.set_partial_contraction_percentage(pct_nodes_to_contract);
+        contractor.set_partial_contraction_percentage((uint32_t)pct_nodes_to_contract);
         contractor.contract();
 
         // save the result
@@ -97,7 +97,7 @@ contract_graph()
         {
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
-        g.print_dimacs_gr(ch_out, 0, g.get_num_nodes());
+        g.print_dimacs_gr(ch_out, 0, (uint32_t)g.get_num_nodes());
         ch_out.close();
     }
     else if(order_type == "lazy")
@@ -111,7 +111,7 @@ contract_graph()
         }
         warthog::ch::lazy_graph_contraction contractor(&g);
         contractor.set_verbose(verbose);
-        contractor.contract(verify, pct_nodes_to_contract);
+        contractor.contract(verify, (uint32_t)pct_nodes_to_contract);
 
 
         // save the result
@@ -129,7 +129,7 @@ contract_graph()
         {
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
-        g.print_dimacs_gr(ch_out, 0, g.get_num_nodes());
+        g.print_dimacs_gr(ch_out, 0, (uint32_t)g.get_num_nodes());
         ch_out.close();
 
         // save the order of contraction

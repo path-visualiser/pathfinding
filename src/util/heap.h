@@ -25,8 +25,8 @@ template<class T>
 struct heap_node
 {
     public:
-        heap_node() : heap_index_(warthog::INF) { } 
-        heap_node(T elt) : elt_(elt), heap_index_(warthog::INF) { }
+        heap_node() : heap_index_(warthog::INF32) { } 
+        heap_node(T elt) : elt_(elt), heap_index_(warthog::INF32) { }
         heap_node(const heap_node& other) 
         {
             elt_ = other.elt_;

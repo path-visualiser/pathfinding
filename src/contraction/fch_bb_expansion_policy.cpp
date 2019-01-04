@@ -13,7 +13,7 @@ warthog::fch_bb_expansion_policy::fch_bb_expansion_policy(
 {
     rank_ = rank;
     nf_ = nf;
-    apex_ = warthog::INF;
+    apex_ = warthog::INF32;
     apex_reached_ = false;
 }
 
@@ -28,7 +28,7 @@ warthog::fch_bb_expansion_policy::expand(
     reset();
 
     warthog::search_node* pn = generate(current->get_parent());
-    uint32_t current_id = current->get_id();
+    uint32_t current_id = (uint32_t)current->get_id();
     uint32_t current_rank = get_rank(current_id);
 
     if(rank_->at(current_id) == apex_)
@@ -42,7 +42,7 @@ warthog::fch_bb_expansion_policy::expand(
     end = n->outgoing_end();
 
     // determine whether current was reached via an up edge or a down edge
-    bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
+    bool up_travel = !pn || (current_rank > get_rank((uint32_t)pn->get_id()));
     //std::cerr << (up_travel ? "(UPTRAVEL) " : "(DNTRAVEL) ");
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
@@ -53,10 +53,10 @@ warthog::fch_bb_expansion_policy::expand(
         // wheter the parent was reached by an up edge or a
         // down edge
         bool down_succ = get_rank(e.node_id_) < current_rank;
-        if(down_succ && !nf_->filter(current_id, (it - begin)))
+        if(down_succ && !nf_->filter(current_id, (uint32_t)(it - begin)))
         {
             // prune down successors before the apex is reached
-            if(apex_ != warthog::INF && !apex_reached_) { continue; }
+            if(apex_ != warthog::INF32 && !apex_reached_) { continue; }
             
             // prune down successors below the goal
             if(rank_->at(e.node_id_) < rank_->at(instance->target_id_)) 
@@ -74,7 +74,7 @@ warthog::fch_bb_expansion_policy::expand(
         else if(up_travel && !down_succ)
         {
             // prune up successors after the apex is reached
-            if(apex_ != warthog::INF && apex_reached_) { continue; }
+            if(apex_ != warthog::INF32 && apex_reached_) { continue; }
             // prune up successors above the apex
             if(rank_->at(e.node_id_) > apex_) { continue; }
 
@@ -89,17 +89,17 @@ warthog::fch_bb_expansion_policy::expand(
 
 void
 warthog::fch_bb_expansion_policy::get_xy(
-        uint32_t id, int32_t& x, int32_t& y)
+        warthog::sn_id_t id, int32_t& x, int32_t& y)
 {
-    g_->get_xy(id, x, y);
+    g_->get_xy((uint32_t)id, x, y);
 }
 
 warthog::search_node* 
 warthog::fch_bb_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
-    if(s_graph_id == warthog::INF) { return 0; }
+    uint32_t s_graph_id = g_->to_graph_id((uint32_t)pi->start_id_);
+    if(s_graph_id == warthog::INF32) { return 0; }
     return generate(s_graph_id);
 }
 
@@ -107,8 +107,8 @@ warthog::search_node*
 warthog::fch_bb_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
-    if(t_graph_id == warthog::INF) { return 0; }
+    uint32_t t_graph_id = g_->to_graph_id((uint32_t)pi->target_id_);
+    if(t_graph_id == warthog::INF32) { return 0; }
 
     // update the filter with the new target location
     {

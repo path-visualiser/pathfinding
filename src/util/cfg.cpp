@@ -60,7 +60,7 @@ warthog::util::cfg::get_num_values(std::string param_name)
 		params_.find(param_name);
 	if(it != params_.end())
 	{
-        ret = (*it).second.size();
+        ret = (uint32_t)(*it).second.size();
     }
     return ret;
 }

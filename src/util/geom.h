@@ -69,14 +69,14 @@ struct rectangle
     }
 
 
-    uint32_t
-    get_width() { return x2 - x1; }
+    int32_t
+    get_width() { return abs(x2 - x1); }
 
-    uint32_t
-    get_height() { return y2 - y1; }
+    int32_t
+    get_height() { return abs(y2 - y1); }
 
     uint64_t
-    get_area() { return (uint64_t)(x2 - x1) * (uint64_t)(y2 - y1); }
+    get_area() { return ((uint64_t)abs(x2 - x1)) * ((uint64_t)abs(y2 - y1)); }
 
     void
     grow(int32_t x, int32_t y)
@@ -129,8 +129,8 @@ struct rectangle
         rectangle r4;
         r4.x1 = r3.x1;
         r4.y1 = r3.y1;
-        r4.y2 = r4.y1 + (this->get_height() + r.get_height());
-        r4.x2 = r4.x1 + (this->get_width() + r.get_width());
+        r4.y2 = r4.y1 + ((int32_t)this->get_height() + (int32_t)r.get_height());
+        r4.x2 = r4.x1 + ((int32_t)this->get_width() + (int32_t)r.get_width());
 
         uint64_t r3_area = r3.get_area();
         uint64_t r4_area = r4.get_area();

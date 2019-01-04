@@ -29,7 +29,7 @@ class apex_filter
                 warthog::graph::xy_graph* g)
         {
             g_ = g;
-            apex_id_ = warthog::INF;
+            apex_id_ = warthog::INF32;
             apex_reached_ = false;
             order_ = order;
             prune_after_apex_ = true;

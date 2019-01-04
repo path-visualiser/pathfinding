@@ -1,5 +1,4 @@
 #include "constants.h"
-#include "corner_point_locator.h"
 #include "gridmap.h"
 #include "jps.h"
 #include "online_jump_point_locator2.h"
@@ -111,46 +110,46 @@ warthog::jps::compute_natural(warthog::jps::direction d, uint32_t tiles)
 	switch(d)
 	{
 		case warthog::jps::NORTH:
-			ret |= ((tiles & 2) == 2) << 0;
+			ret |= (uint32_t)((tiles & 2) == 2) << 0;
 			break;
 		case warthog::jps::SOUTH:
-			ret |= ((tiles & 131072) == 131072) << 1;
+			ret |= (uint32_t)((tiles & 131072) == 131072) << 1;
 			break;
 		case warthog::jps::EAST: 
-			ret |= ((tiles & 1024) == 1024) << 2;
+			ret |= (uint32_t)((tiles & 1024) == 1024) << 2;
 			break;
 		case warthog::jps::WEST:
-			ret |= ((tiles & 256) == 256) << 3;
+			ret |= (uint32_t)((tiles & 256) == 256) << 3;
 			break;
 		case warthog::jps::NORTHWEST:
-			ret |= ((tiles & 2) == 2) << 0;
-			ret |= ((tiles & 256) == 256) << 3;
-			ret |= ((tiles & 259) == 259) << 5;
+			ret |= (uint32_t)((tiles & 2) == 2) << 0;
+			ret |= (uint32_t)((tiles & 256) == 256) << 3;
+			ret |= (uint32_t)((tiles & 259) == 259) << 5;
 			break;
 		case warthog::jps::NORTHEAST:
-			ret |= ((tiles & 2) == 2) << 0;
-			ret |= ((tiles & 1024) == 1024) << 2;
-			ret |= ((tiles & 1030) == 1030) << 4;
+			ret |= (uint32_t)((tiles & 2) == 2) << 0;
+			ret |= (uint32_t)((tiles & 1024) == 1024) << 2;
+			ret |= (uint32_t)((tiles & 1030) == 1030) << 4;
 			break;
 		case warthog::jps::SOUTHWEST:
-			ret |= ((tiles & 131072) == 131072) << 1;
-			ret |= ((tiles & 256) == 256) << 3;
-			ret |= ((tiles & 196864) == 196864) << 7;
+			ret |= (uint32_t)((tiles & 131072) == 131072) << 1;
+			ret |= (uint32_t)((tiles & 256) == 256) << 3;
+			ret |= (uint32_t)((tiles & 196864) == 196864) << 7;
 			break;
 		case warthog::jps::SOUTHEAST:
-			ret |= ((tiles & 131072) == 131072) << 1;
-			ret |= ((tiles & 1024) == 1024) << 2;
-			ret |= ((tiles & 394240) == 394240) << 6;
+			ret |= (uint32_t)((tiles & 131072) == 131072) << 1;
+			ret |= (uint32_t)((tiles & 1024) == 1024) << 2;
+			ret |= (uint32_t)((tiles & 394240) == 394240) << 6;
 			break;
 		default:
-			ret |= ((tiles & 2) == 2) << 0;
-			ret |= ((tiles & 131072) == 131072) << 1;
-			ret |= ((tiles & 1024) == 1024) << 2;
-			ret |= ((tiles & 256) == 256) << 3;
-			ret |= ((tiles & 259) == 259) << 5;
-			ret |= ((tiles & 1030) == 1030) << 4;
-			ret |= ((tiles & 196864) == 196864) << 7;
-			ret |= ((tiles & 394240) == 394240) << 6;
+			ret |= (uint32_t)((tiles & 2) == 2) << 0;
+			ret |= (uint32_t)((tiles & 131072) == 131072) << 1;
+			ret |= (uint32_t)((tiles & 1024) == 1024) << 2;
+			ret |= (uint32_t)((tiles & 256) == 256) << 3;
+			ret |= (uint32_t)((tiles & 259) == 259) << 5;
+			ret |= (uint32_t)((tiles & 1030) == 1030) << 4;
+			ret |= (uint32_t)((tiles & 196864) == 196864) << 7;
+			ret |= (uint32_t)((tiles & 394240) == 394240) << 6;
 			break;
 	}
 	return ret;
@@ -195,7 +194,7 @@ warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
                 (!gm->get_label(sw_id) && 
                     gm->get_label(w_id) && gm->get_label(s_id)) )
             {
-                uint32_t graph_id = graph->add_node(x, y);
+                uint32_t graph_id = graph->add_node((int32_t)x, (int32_t)y);
                 id_map.insert(
                         std::pair<uint32_t, uint32_t>(from_id, graph_id));
             }
@@ -207,7 +206,7 @@ warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
     {
         int32_t x, y;
         graph->get_xy(from_id, x, y);
-        uint32_t gm_id = gm->to_padded_id(y*mapwidth+x);
+        uint32_t gm_id = gm->to_padded_id((uint32_t)y*mapwidth+(uint32_t)x);
         warthog::graph::node* from = graph->get_node(from_id);
 
         for(uint32_t i = 0; i < 8; i++)
@@ -215,7 +214,7 @@ warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
             warthog::jps::direction d = (warthog::jps::direction)(1 << i);
             std::vector<uint32_t> jpoints;
             std::vector<double> jcosts;
-            jpl.jump(d, gm_id, warthog::INF, jpoints, jcosts);
+            jpl.jump(d, gm_id, warthog::INF32, jpoints, jcosts);
             for(uint32_t idx = 0; idx < jpoints.size(); idx++)
             {
                 uint32_t jp_id = jpoints[idx] & ((1 << 24) - 1);
@@ -225,8 +224,8 @@ warthog::jps::create_jump_point_graph(warthog::gridmap* gm)
                 assert(it_to_id != id_map.end());
                 uint32_t to_id = it_to_id->second;
                 warthog::graph::node* to = graph->get_node(to_id);
-                from->add_outgoing(warthog::graph::edge(to_id, jcosts[idx]));
-                to->add_outgoing(warthog::graph::edge(from_id, jcosts[idx]));
+                from->add_outgoing(warthog::graph::edge(to_id, (uint32_t)jcosts[idx]));
+                to->add_outgoing(warthog::graph::edge(from_id, (uint32_t)jcosts[idx]));
             }
         }
     }

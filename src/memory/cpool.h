@@ -45,7 +45,7 @@ class cchunk
 			next_ = mem_;
 			max_ = mem_ + pool_size_;
 
-			freed_stack_ = new int[(pool_size_/obj_size)];
+			freed_stack_ = new size_t[(pool_size_/obj_size)];
 			stack_size_ = 0;
 		}
 
@@ -86,14 +86,14 @@ class cchunk
 		{
 			#ifndef NDEBUG
 			assert(mem_ >= addr);
-			if((unsigned)(addr-mem_) >= pool_size_)
+			if((size_t)(addr-mem_) >= pool_size_)
 			{
 				std::cerr << "err; warthog::mem::cchunk; freeing memory outside"
 					" range of the chunk at addr: "<<&mem_ << "\n";
 			}
 			#endif
 
-			freed_stack_[stack_size_] = addr - mem_;
+			freed_stack_[stack_size_] = (size_t)(addr - mem_);
 			stack_size_++;
 		}
 
@@ -147,7 +147,7 @@ class cchunk
 		size_t pool_size_; 
 
 		// keep a stack of freed objects
-		int* freed_stack_;
+		size_t* freed_stack_;
 		size_t stack_size_;
 };
 
@@ -273,7 +273,7 @@ class cpool
 		init()
 		{
             // chunk size needs to be at least as big as one object
-            CHUNK_SIZE_ = std::max<uint32_t>(obj_size_, 
+            CHUNK_SIZE_ = std::max<size_t>(obj_size_, 
                     warthog::mem::DEFAULT_CHUNK_SIZE);
 
 			chunks_ = new cchunk*[max_chunks_];

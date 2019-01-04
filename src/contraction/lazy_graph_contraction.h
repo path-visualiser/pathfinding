@@ -52,7 +52,7 @@ class ch_pair
 {
     public:
         ch_pair() 
-            : node_id_(0), cval_(warthog::INF) { } 
+            : node_id_(0), cval_(INT32_MAX) { } 
 
         ch_pair(uint32_t node_id, int32_t cval)
             : node_id_(node_id), cval_(cval) { }

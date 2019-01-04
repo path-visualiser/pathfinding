@@ -33,9 +33,6 @@ namespace warthog
 class expansion_policy;
 class search_node;
 
-typedef double (* heuristicFn)
-(uint32_t nodeid, uint32_t targetid);
-
 template<class H, class E>
 class bch_search : public warthog::search
 {
@@ -52,8 +49,8 @@ class bch_search : public warthog::search
                 dijkstra_ = true;
             }
 
-            exp_cutoff_ = warthog::INF;
-            cost_cutoff_ = warthog::INF;
+            exp_cutoff_ = warthog::INF32;
+            cost_cutoff_ = warthog::INF32;
         }
 
         ~bch_search()
@@ -67,7 +64,7 @@ class bch_search : public warthog::search
         {
             pi_ = pi;
             this->search(sol);
-            if(best_cost_ != warthog::INF) 
+            if(best_cost_ != warthog::INF32) 
             { 
                 sol.sum_of_edge_costs_ = best_cost_;
                 reconstruct_path(sol);
@@ -77,7 +74,7 @@ class bch_search : public warthog::search
             if(pi_.verbose_)
             {
                 std::cerr << "path: \n";
-                for(uint32_t i = 0; i < sol.path_.size(); i++)
+                for(size_t i = 0; i < sol.path_.size(); i++)
                 {
                     std::cerr << sol.path_.at(i) << std::endl;
                 }
@@ -91,7 +88,7 @@ class bch_search : public warthog::search
             pi_ = pi;
             this->search(sol);
             if(sol.nodes_expanded_ > exp_cutoff_ ) { std::cerr << "wtf!"; exit(1); }
-            if(best_cost_ != warthog::INF) 
+            if(best_cost_ != warthog::INF32) 
             { sol.sum_of_edge_costs_ = best_cost_; }
         }
         
@@ -99,9 +96,9 @@ class bch_search : public warthog::search
         // the search terminates when the target is found or the f-cost 
         // limit is reached.
         inline void
-        set_cost_cutoff(double cutoff) { cost_cutoff_ = cutoff; }
+        set_cost_cutoff(warthog::cost_t cutoff) { cost_cutoff_ = cutoff; }
 
-        inline double
+        inline warthog::cost_t
         get_cost_cutoff() { return cost_cutoff_; }
 
         // set a cutoff on the maximum number of node expansions.
@@ -146,7 +143,7 @@ class bch_search : public warthog::search
         bool dijkstra_;
 
         // early termination limits
-        double cost_cutoff_; 
+        warthog::cost_t cost_cutoff_; 
         uint32_t exp_cutoff_;
 
         // v is the section of the path in the forward
@@ -172,13 +169,13 @@ class bch_search : public warthog::search
             while(true)
             {
                sol.path_.push_back(current->get_id());
-               if(current->get_parent() == warthog::NODE_NONE) break;
+               if(current->get_parent() == warthog::SN_ID_MAX) break;
                current = fexpander_->generate(current->get_parent());
             }
             std::reverse(sol.path_.begin(), sol.path_.end());
 
             current = w_;
-            while(current->get_parent() != warthog::NODE_NONE)
+            while(current->get_parent() != warthog::SN_ID_MAX)
             {  
                sol.path_.push_back(current->get_parent());
                current = bexpander_->generate(current->get_parent());
@@ -192,10 +189,10 @@ class bch_search : public warthog::search
         bool
         forward_next()
         {
-            double fwd_min = warthog::INF;
-            double bwd_min = warthog::INF;
-            bwd_min = bopen_->size() ? bopen_->peek()->get_f() : warthog::INF;
-            fwd_min = fopen_->size() ? fopen_->peek()->get_f() : warthog::INF;
+            warthog::cost_t fwd_min = warthog::INF32;
+            warthog::cost_t bwd_min = warthog::INF32;
+            bwd_min = bopen_->size() ? bopen_->peek()->get_f() : warthog::INF32;
+            fwd_min = fopen_->size() ? fopen_->peek()->get_f() : warthog::INF32;
             return fwd_min < bwd_min;
         }
 
@@ -209,7 +206,7 @@ class bch_search : public warthog::search
             bopen_->clear();
 
             // init
-            best_cost_ = warthog::INF;
+            best_cost_ = warthog::INF32;
             v_ = w_ = 0;
 
             #ifndef NDEBUG
@@ -225,9 +222,9 @@ class bch_search : public warthog::search
             warthog::search_node *start, *target;
             start = fexpander_->generate_start_node(&pi_);
             target = bexpander_->generate_target_node(&pi_);
-            start->init(pi_.instance_id_, warthog::NODE_NONE, 0, 
+            start->init(pi_.instance_id_, warthog::SN_ID_MAX, 0, 
                         heuristic_->h(start->get_id(), target->get_id()));
-            target->init(pi_.instance_id_, warthog::NODE_NONE, 0, 
+            target->init(pi_.instance_id_, warthog::SN_ID_MAX, 0, 
                          heuristic_->h(start->get_id(), target->get_id()));
             fopen_->push(start);
             bopen_->push(target);
@@ -255,7 +252,7 @@ class bch_search : public warthog::search
 
                 // the code below computes the bound more simply and works
                 // on directed planar graphs with asymmetric costs
-                uint32_t best_bound = std::min( 
+                warthog::cost_t best_bound = std::min( 
                     ftop->get_f(), btop->get_f());
 
                 if(best_bound > cost_cutoff_) { break; } 
@@ -328,7 +325,7 @@ class bch_search : public warthog::search
                 }
             }
 
-            assert(best_cost_ != warthog::INF || (v_ == 0 && w_ == 0));
+            assert(best_cost_ != warthog::INF32 || (v_ == 0 && w_ == 0));
 
 			mytimer.stop();
 			sol.time_elapsed_nano_ = mytimer.elapsed_time_nano();
@@ -337,7 +334,7 @@ class bch_search : public warthog::search
         void
         expand( warthog::search_node* current, warthog::pqueue_min* open, 
                 E* expander, E* reverse_expander, 
-                uint32_t tmp_targetid, warthog::solution& sol)
+                warthog::sn_id_t tmp_targetid, warthog::solution& sol)
         {
             current->set_expanded(true);
             expander->expand(current, &pi_);
@@ -361,7 +358,7 @@ class bch_search : public warthog::search
             // update the best solution if possible
             warthog::search_node* rev_current = 
                 reverse_expander->generate(current->get_id());
-            if(rev_current->get_search_id() == current->get_search_id())
+            if(rev_current->get_search_number() == current->get_search_number())
             {
                 if((current->get_g() + rev_current->get_g()) < best_cost_)
                 {
@@ -382,7 +379,7 @@ class bch_search : public warthog::search
             
             // generate all neighbours
             warthog::search_node* n = 0;
-            double cost_to_n = warthog::INF;
+            warthog::cost_t cost_to_n = warthog::INF32;
             for(expander->first(n, cost_to_n); 
                     n != 0; 
                     expander->next(n, cost_to_n))
@@ -390,10 +387,10 @@ class bch_search : public warthog::search
                 sol.nodes_touched_++;
 
                 // add new nodes to the fringe
-                if(n->get_search_id() != current->get_search_id())
+                if(n->get_search_number() != current->get_search_number())
                 {
-                    double gval = current->get_g() + cost_to_n;
-                    n->init(current->get_search_id(), 
+                    warthog::cost_t gval = current->get_g() + cost_to_n;
+                    n->init(current->get_search_number(), 
                             current->get_id(), 
                             gval,
                             gval + heuristic_->h(n->get_id(), tmp_targetid));
@@ -437,7 +434,7 @@ class bch_search : public warthog::search
                     // relax nodes on the fringe
                     if(open->contains(n))
                     {
-                        double gval = current->get_g() + cost_to_n;
+                        warthog::cost_t gval = current->get_g() + cost_to_n;
                         if(gval < n->get_g())
                         {
                             n->relax(gval, current->get_parent());

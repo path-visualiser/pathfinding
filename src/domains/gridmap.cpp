@@ -19,7 +19,7 @@ warthog::gridmap::gridmap(const char* filename)
 	// populate matrix
 	for(unsigned int i = 0; i < parser.get_num_tiles(); i++)
 	{
-		char c = parser.get_tile_at(i);
+		unsigned char c = parser.get_tile_at(i);
 		switch(c)
 		{
 			case 'S':
@@ -86,7 +86,7 @@ warthog::gridmap::print(std::ostream& out)
 	{
 		for(unsigned int x=0; x < this->width(); x++)
 		{
-			char c = this->get_label(y*this->width()+x);
+			warthog::dbword c = this->get_label(y*this->width()+x);
 			out << (c ? '.' : '@');
 		}
 		out << std::endl;

@@ -1,6 +1,6 @@
 #include "workload_manager.h"
 
-warthog::util::workload_manager::workload_manager(uint32_t num_elements) 
+warthog::util::workload_manager::workload_manager(size_t num_elements) 
 {
     filter_sz_ = (num_elements >> warthog::LOG2_DBWORD_BITS)+1;
     filter_ = new warthog::dbword[filter_sz_];
@@ -15,8 +15,8 @@ warthog::util::workload_manager::~workload_manager()
 void
 warthog::util::workload_manager::set_all_flags(bool val)
 {
-    warthog::dbword w_val = val ? ~0 : 0;
-    for(uint32_t i = 0; i < filter_sz_; i++)
+    warthog::dbword w_val = (warthog::dbword)(val ? ~0 : 0);
+    for(size_t i = 0; i < filter_sz_; i++)
     {
         filter_[i] = w_val;
     }
@@ -53,9 +53,9 @@ uint32_t
 warthog::util::workload_manager::num_flags_set()
 {
     uint32_t count = 0;
-    for(uint32_t i = 0; i < filter_sz_*sizeof(warthog::dbword); i++)
+    for(size_t i = 0; i < filter_sz_*sizeof(warthog::dbword); i++)
     {
-        count += __builtin_popcount(filter_[i]);
+        count += (uint32_t)__builtin_popcount(filter_[i]);
     }
     return count;
 }
@@ -63,7 +63,7 @@ warthog::util::workload_manager::num_flags_set()
 void
 warthog::util::workload_manager::set_all_flags_complement()
 {
-    for(uint32_t i = 0; i < filter_sz_; i++)
+    for(size_t i = 0; i < filter_sz_; i++)
     {
         filter_[i] = ~filter_[i];
     }

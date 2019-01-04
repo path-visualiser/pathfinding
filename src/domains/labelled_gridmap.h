@@ -1,7 +1,7 @@
 #ifndef WARTHOG_LABELLED_GRIDMAP_H
 #define WARTHOG_LABELLED_GRIDMAP_H
 
-// domains/weighted_gridmap.h
+// domains/labelled_gridmap.h
 //
 // A gridmap with weights/labels. This data structure supports
 // labels on grid edges as well as vertices. 
@@ -26,69 +26,6 @@
 namespace warthog
 {
 
-// we store labels for each vertex and each of its up to 5 applicable actions
-struct labelled_cell
-{
-    labelled_cell()
-    {
-        // everything is blocked by default
-        v_lab_ = UINT32_MAX;
-        e_lab_[0] = 1;
-        e_lab_[1] = 1;
-        e_lab_[2] = 1;
-        e_lab_[3] = 1;
-        e_lab_[4] = 1;
-    }
-
-    labelled_cell&
-    operator=(const labelled_cell& other)
-    {
-        v_lab_ = other.v_lab_;
-        e_lab_[0] = other.e_lab_[0];
-        e_lab_[1] = other.e_lab_[1];
-        e_lab_[2] = other.e_lab_[2];
-        e_lab_[3] = other.e_lab_[3];
-        e_lab_[4] = other.e_lab_[4];
-        return *this;
-    }
-
-    labelled_cell&
-    operator=(const char raw_input_tile)
-    {
-        if(raw_input_tile == '.')
-        {
-            v_lab_ = 0;
-        }
-        else
-        {
-            v_lab_ = UINT32_MAX;
-        }
-        e_lab_[0] = 1;
-        e_lab_[1] = 1;
-        e_lab_[2] = 1;
-        e_lab_[3] = 1;
-        e_lab_[4] = 1;
-        return *this;
-    }
-
-    bool
-    operator==(const labelled_cell& other)
-    {
-        return 
-            v_lab_ == other.v_lab_ &&
-            e_lab_[0] == other.e_lab_[0] && 
-            e_lab_[1] == other.e_lab_[1] && 
-            e_lab_[2] == other.e_lab_[2] && 
-            e_lab_[3] == other.e_lab_[3] && 
-            e_lab_[4] == other.e_lab_[4];
-    }
-
-    uint64_t v_lab_;
-    double e_lab_[5];
-
-};
-
-
 template<class CELL>
 class labelled_gridmap
 {
@@ -101,7 +38,17 @@ class labelled_gridmap
 
         labelled_gridmap(const char* filename)
         {
-            // SPECIALISE ME
+            warthog::gm_parser parser(filename);
+            header_ = parser.get_header();
+            strcpy(filename_, filename);
+            init_db();
+
+            for(unsigned int i = 0; i < parser.get_num_tiles(); i++)
+            {
+                CELL cell = parser.get_tile_at(i);;
+                set_label(to_padded_id(i), cell);
+                assert(get_label(to_padded_id(i)) == cell);
+            }
         }
 
         ~labelled_gridmap()
@@ -140,32 +87,6 @@ class labelled_gridmap
 		get_label(uint32_t padded_id)
 		{
             return db_[padded_id];
-		}
-
-        inline void
-		get_neighbours(uint32_t db_id, uint32_t ids[9], CELL labels[9])
-		{
-            // calculate ids of all adjacent neighbours
-            ids[4] = db_id;
-            ids[3] = db_id-1; // west
-            ids[5] = db_id+1; // east
-            ids[1] = db_id - this->padded_width_; // north
-            ids[7] = db_id + this->padded_width_; // south
-            ids[0] = ids[3] - this->padded_width_; // northwest
-            ids[2] = ids[5] - this->padded_width_; // northeast
-            ids[6] = ids[3] + this->padded_width_; // southwest
-            ids[8] = ids[5] + this->padded_width_; // southeast
-
-            // read terrain costs
-            labels[0] = db_[ids[0]];
-            labels[1] = db_[ids[1]];
-            labels[2] = db_[ids[2]];
-            labels[3] = db_[ids[3]];
-            labels[4] = db_[ids[4]];
-            labels[5] = db_[ids[5]];
-            labels[6] = db_[ids[6]];
-            labels[7] = db_[ids[7]];
-            labels[8] = db_[ids[8]];
 		}
 
 		// set the label associated with the padded coordinate pair (x, y)
@@ -259,69 +180,6 @@ class labelled_gridmap
 
 // vertex-labelled gridmap
 typedef warthog::labelled_gridmap<warthog::dbword> vl_gridmap;
-
-// edge-and-vertex-labelled gridmap 
-typedef warthog::labelled_gridmap<warthog::labelled_cell> evl_gridmap;
-
-template<>
-inline
-warthog::labelled_gridmap<warthog::dbword>::labelled_gridmap(const char* filename)
-{
-    warthog::gm_parser parser(filename);
-    strcpy(filename_, filename);
-    init_db();
-
-    // populate matrix
-    for(unsigned int i = 0; i < parser.get_num_tiles(); i++)
-    {
-        char c = parser.get_tile_at(i);
-        switch(c)
-        {
-            // explicit obstacle
-            case '@':  
-                set_label(to_padded_id(i), c);
-                assert(get_label(to_padded_id(i)) == c);
-                break;
-            // other tiles have terrain cost equal to their ascii value
-            default: 
-                set_label(to_padded_id(i), c);
-                assert(get_label(to_padded_id(i)) == c);
-                break;
-        }
-    }
-}
-
-template<>
-inline
-warthog::labelled_gridmap<warthog::labelled_cell>::labelled_gridmap(
-        const char* filename)
-{
-    warthog::gm_parser parser(filename);
-	header_ = parser.get_header();
-    strcpy(filename_, filename);
-    init_db();
-
-    // populate matrix
-    for(unsigned int i = 0; i < parser.get_num_tiles(); i++)
-    {
-        char c = parser.get_tile_at(i);
-        warthog::labelled_cell cell;
-        switch(c)
-        {
-            // these tiles are traversable
-            case '.':
-                cell.v_lab_ = 0;
-                set_label(to_padded_id(i), cell);
-                assert(get_label(to_padded_id(i)) == cell);
-                break;
-            // everything else is an obstacle
-            default:
-                cell.v_lab_ = UINT32_MAX;
-                assert(get_label(to_padded_id(i)).v_lab_ == UINT32_MAX);
-                break;
-        }
-    }
-}
 
 }
 

@@ -9,8 +9,8 @@ warthog::jps::online_jump_point_locator2::online_jump_point_locator2(
         warthog::gridmap* map) : map_(map)//, jumplimit_(UINT32_MAX)
 {
 	rmap_ = create_rmap();
-	current_node_id_ = current_rnode_id_ = warthog::INF;
-	current_goal_id_ = current_rgoal_id_ = warthog::INF;
+	current_node_id_ = current_rnode_id_ = warthog::INF32;
+	current_goal_id_ = current_rgoal_id_ = warthog::INF32;
 }
 
 warthog::jps::online_jump_point_locator2::~online_jump_point_locator2()
@@ -173,9 +173,9 @@ warthog::jps::online_jump_point_locator2::jump_north(
 
 	__jump_north(rnode_id, rgoal_id, jumpnode_id, jumpcost, rmap_);
 
-	if(jumpnode_id != warthog::INF)
+	if(jumpnode_id != warthog::INF32)
 	{
-		jumpnode_id = current_node_id_ - (jumpcost) * map_->width();
+		jumpnode_id = current_node_id_ - (uint32_t)(jumpcost) * map_->width();
 		*(((uint8_t*)&jumpnode_id)+3) = warthog::jps::NORTH;
 		jpoints.push_back(jumpnode_id);
 		costs.push_back(jumpcost);
@@ -204,9 +204,9 @@ warthog::jps::online_jump_point_locator2::jump_south(
 
 	__jump_south(rnode_id, rgoal_id, jumpnode_id, jumpcost, rmap_);
 
-	if(jumpnode_id != warthog::INF)
+	if(jumpnode_id != warthog::INF32)
 	{
-		jumpnode_id = current_node_id_ + (jumpcost ) * map_->width();
+		jumpnode_id = current_node_id_ + (uint32_t)(jumpcost ) * map_->width();
 		*(((uint8_t*)&jumpnode_id)+3) = warthog::jps::SOUTH;
 		jpoints.push_back(jumpnode_id);
 		costs.push_back(jumpcost);
@@ -235,7 +235,7 @@ warthog::jps::online_jump_point_locator2::jump_east(
 
 	(this->*(__jump_east_fp))(node_id, goal_id, jumpnode_id, jumpcost, map_);
 
-	if(jumpnode_id != warthog::INF)
+	if(jumpnode_id != warthog::INF32)
 	{
 		*(((uint8_t*)&jumpnode_id)+3) = warthog::jps::EAST;
 		jpoints.push_back(jumpnode_id);
@@ -273,11 +273,11 @@ warthog::jps::online_jump_point_locator2::__jump_east(uint32_t node_id,
 		deadend_bits = ~neis[1];
 
 		// stop if we found any forced or dead-end tiles
-		int stop_bits = (forced_bits | deadend_bits);
+		int stop_bits = (int)(forced_bits | deadend_bits);
 		if(stop_bits)
 		{
-			uint32_t stop_pos = __builtin_ffs(stop_bits)-1; // returns idx+1
-			jumpnode_id += stop_pos; 
+			int stop_pos = __builtin_ffs(stop_bits)-1; // returns idx+1
+			jumpnode_id += (uint32_t)stop_pos; 
 			deadend = deadend_bits & (1 << stop_pos);
 			break;
 		}
@@ -304,7 +304,7 @@ warthog::jps::online_jump_point_locator2::__jump_east(uint32_t node_id,
 		// correct here since we just inverted neis[1] and then
 		// looked for the first set bit. need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = warthog::INF;
+		jumpnode_id = warthog::INF32;
 	}
 	jumpcost = num_steps ;
 	
@@ -343,11 +343,11 @@ warthog::jps::online_jump_point_locator2::__rjump_east(uint32_t node_id,
         deadend_bits = deadend_bits >> 1;
 
 		// stop if we found any forced or dead-end tiles
-		int stop_bits = (forced_bits | deadend_bits);
+		int stop_bits = (int)(forced_bits | deadend_bits);
 		if(stop_bits)
 		{
-			uint32_t stop_pos = __builtin_ffs(stop_bits)-1; // returns idx+1
-			jumpnode_id += stop_pos; 
+			int stop_pos = __builtin_ffs(stop_bits)-1; // returns idx+1
+			jumpnode_id += (uint32_t)stop_pos; 
 			deadend = deadend_bits & (1 << stop_pos);
 			break;
 		}
@@ -375,7 +375,7 @@ warthog::jps::online_jump_point_locator2::__rjump_east(uint32_t node_id,
 		// looked for the first set bit. need -1 to fix it.
 		num_steps -= (1 && num_steps);
         //num_steps++; // fix sideeffect of previous hacky fix
-		jumpnode_id = warthog::INF;
+		jumpnode_id = warthog::INF32;
 	}
 	jumpcost = num_steps ;
 	
@@ -394,7 +394,7 @@ warthog::jps::online_jump_point_locator2::jump_west(
 
 	(this->*(__jump_west_fp))(node_id, goal_id, jumpnode_id, jumpcost, map_);
 
-	if(jumpnode_id != warthog::INF)
+	if(jumpnode_id != warthog::INF32)
 	{
 		*(((uint8_t*)&jumpnode_id)+3) = warthog::jps::WEST;
 		jpoints.push_back(jumpnode_id);
@@ -428,7 +428,7 @@ warthog::jps::online_jump_point_locator2::__jump_west(uint32_t node_id,
 		uint32_t stop_bits = (forced_bits | deadend_bits);
 		if(stop_bits)
 		{
-			uint32_t stop_pos = __builtin_clz(stop_bits);
+			uint32_t stop_pos = (uint32_t)__builtin_clz(stop_bits);
 			jumpnode_id -= stop_pos;
 			deadend = deadend_bits & (0x80000000 >> stop_pos);
 			break;
@@ -454,7 +454,7 @@ warthog::jps::online_jump_point_locator2::__jump_west(uint32_t node_id,
 		// correct here since we just inverted neis[1] and then
 		// counted leading zeroes. need -1 to fix it.
 		num_steps -= (1 && num_steps);
-		jumpnode_id = warthog::INF;
+		jumpnode_id = warthog::INF32;
 	}
 	jumpcost = num_steps ;
 }
@@ -488,7 +488,7 @@ warthog::jps::online_jump_point_locator2::__rjump_west(uint32_t node_id,
 		uint32_t stop_bits = (forced_bits | deadend_bits);
 		if(stop_bits)
 		{
-			uint32_t stop_pos = __builtin_clz(stop_bits);
+			uint32_t stop_pos = (uint32_t)__builtin_clz(stop_bits);
 			jumpnode_id -= stop_pos;
 			deadend = deadend_bits & (0x80000000 >> stop_pos);
 			break;
@@ -514,7 +514,7 @@ warthog::jps::online_jump_point_locator2::__rjump_west(uint32_t node_id,
 		// counted leading zeroes. need -1 to fix it.
 		num_steps -= (1 && num_steps);
         //num_steps++;  // fix sideeffect of hacky fix
-		jumpnode_id = warthog::INF;
+		jumpnode_id = warthog::INF32;
 	}
 	jumpcost = num_steps ;
 }
@@ -543,7 +543,7 @@ warthog::jps::online_jump_point_locator2::jump_northeast(
 	// (validity of subsequent steps is checked by straight jump functions)
 	if((neis & 1542) != 1542) { return; }
 
-	while(node_id != warthog::INF)
+	while(node_id != warthog::INF32)
 	{
 		__jump_northeast(
 				node_id, rnode_id,
@@ -551,16 +551,16 @@ warthog::jps::online_jump_point_locator2::jump_northeast(
 				jumpnode_id, jumpcost, jp1_id, jp1_cost, 
 				jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF)
+		if(jp1_id != warthog::INF32)
 		{
-			jp1_id = node_id - (jp1_cost ) * map_->width();
+			jp1_id = node_id - (uint32_t)(jp1_cost ) * map_->width();
 			*(((uint8_t*)&jp1_id)+3) = warthog::jps::NORTH;
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
 		}
 
-		if(jp2_id != warthog::INF)
+		if(jp2_id != warthog::INF32)
 		{
 			*(((uint8_t*)&jp2_id)+3) = warthog::jps::EAST;
 			jpoints.push_back(jp2_id);
@@ -595,12 +595,12 @@ warthog::jps::online_jump_point_locator2::__jump_northeast(
 		// (ensures we do not miss any optimal turning points)
 		__jump_north(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
 		(this->*(__jump_east_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF) { break; }
+		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
-		if(!(cost1 && cost2)) 
+		if(!((uint64_t)cost1 && (uint64_t)cost2)) 
 		{ 
-			node_id = jp_id1 = jp_id2 = warthog::INF; 
+			node_id = jp_id1 = jp_id2 = warthog::INF32; 
 			break; 
 		}
 
@@ -633,7 +633,7 @@ warthog::jps::online_jump_point_locator2::jump_northwest(
 	// (validity of subsequent steps is checked by straight jump functions)
 	if((neis & 771) != 771) { return; }
 
-	while(node_id != warthog::INF)
+	while(node_id != warthog::INF32)
 	{
 		__jump_northwest(
 				node_id, rnode_id,
@@ -641,16 +641,16 @@ warthog::jps::online_jump_point_locator2::jump_northwest(
 				jumpnode_id, jumpcost, jp1_id, jp1_cost, 
 				jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF)
+		if(jp1_id != warthog::INF32)
 		{
-			jp1_id = node_id - (jp1_cost ) * map_->width();
+			jp1_id = node_id - (uint32_t)(jp1_cost ) * map_->width();
 			*(((uint8_t*)&jp1_id)+3) = warthog::jps::NORTH;
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
 		}
 
-		if(jp2_id != warthog::INF)
+		if(jp2_id != warthog::INF32)
 		{
 			*(((uint8_t*)&jp2_id)+3) = warthog::jps::WEST;
 			jpoints.push_back(jp2_id);
@@ -686,12 +686,12 @@ warthog::jps::online_jump_point_locator2::__jump_northwest(
 		// (ensures we do not miss any optimal turning points)
 		__jump_north(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
 		(this->*(__jump_west_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF) { break; }
+		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
-		if(!(cost1 && cost2)) 
+		if(!((uint64_t)cost1 && (uint64_t)cost2)) 
 		{ 
-			node_id = jp_id1 = jp_id2 = warthog::INF;
+			node_id = jp_id1 = jp_id2 = warthog::INF32;
 		   	break; 
 		}
 	}
@@ -723,7 +723,7 @@ warthog::jps::online_jump_point_locator2::jump_southeast(
 	// (validity of subsequent steps is checked by straight jump functions)
 	if((neis & 394752) != 394752) { return; }
 
-	while(node_id != warthog::INF)
+	while(node_id != warthog::INF32)
 	{
 		__jump_southeast(
 				node_id, rnode_id,
@@ -731,16 +731,16 @@ warthog::jps::online_jump_point_locator2::jump_southeast(
 				jumpnode_id, jumpcost, jp1_id, jp1_cost, 
 				jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF)
+		if(jp1_id != warthog::INF32)
 		{
-			jp1_id = node_id + (jp1_cost ) * map_->width();
+			jp1_id = node_id + (uint32_t)(jp1_cost ) * map_->width();
 			*(((uint8_t*)&jp1_id)+3) = warthog::jps::SOUTH;
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; } // no corner cutting
 		}
 
-		if(jp2_id != warthog::INF)
+		if(jp2_id != warthog::INF32)
 		{
 			*(((uint8_t*)&jp2_id)+3) = warthog::jps::EAST;
 			jpoints.push_back(jp2_id);
@@ -776,12 +776,12 @@ warthog::jps::online_jump_point_locator2::__jump_southeast(
 		// (ensures we do not miss any optimal turning points)
 		__jump_south(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
 		(this->*(__jump_east_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF) { break; }
+		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
-		if(!(cost1 && cost2)) 
+		if(!((uint64_t)cost1 && (uint64_t)cost2)) 
 		{ 
-			node_id = jp_id1 = jp_id2 = warthog::INF; 
+			node_id = jp_id1 = jp_id2 = warthog::INF32; 
 			break; 
 		}
 	}
@@ -812,7 +812,7 @@ warthog::jps::online_jump_point_locator2::jump_southwest(
 	// early termination (first step is invalid)
 	if((neis & 197376) != 197376) { return; }
 
-	while(node_id != warthog::INF)
+	while(node_id != warthog::INF32)
 	{
 		__jump_southwest(
 				node_id, rnode_id,
@@ -820,16 +820,16 @@ warthog::jps::online_jump_point_locator2::jump_southwest(
 				jumpnode_id, jumpcost, 
 				jp1_id, jp1_cost, jp2_id, jp2_cost);
 
-		if(jp1_id != warthog::INF)
+		if(jp1_id != warthog::INF32)
 		{
-			jp1_id = node_id + (jp1_cost ) * map_->width();
+			jp1_id = node_id + (uint32_t)(jp1_cost ) * map_->width();
 			*(((uint8_t*)&jp1_id)+3) = warthog::jps::SOUTH;
 			jpoints.push_back(jp1_id);
 			costs.push_back(cost_to_nodeid + jumpcost + jp1_cost);
 			if(jp2_cost == 0) { break; }
 		}
 
-		if(jp2_id != warthog::INF)
+		if(jp2_id != warthog::INF32)
 		{
 			*(((uint8_t*)&jp2_id)+3) = warthog::jps::WEST;
 			jpoints.push_back(jp2_id);
@@ -863,12 +863,12 @@ warthog::jps::online_jump_point_locator2::__jump_southwest(
 		// (ensures we do not miss any optimal turning points)
 		__jump_south(rnode_id, rgoal_id, jp_id1, cost1, rmap_);
 		(this->*(__jump_west_fp))(node_id, goal_id, jp_id2, cost2, map_);
-		if((jp_id1 & jp_id2) != warthog::INF) { break; }
+		if((jp_id1 & jp_id2) != warthog::INF32) { break; }
 
 		// couldn't move in a straight dir; next step is an obstacle
-		if(!(cost1 && cost2)) 
+		if(!((uint64_t)cost1 && (uint64_t)cost2)) 
 		{ 
-			node_id = jp_id1 = jp_id2 = warthog::INF;
+			node_id = jp_id1 = jp_id2 = warthog::INF32;
 		   	break; 
 		}
 	}

@@ -34,7 +34,7 @@ warthog::offline_jump_point_locator::preproc()
 		{
 			uint32_t mapid = map_->to_padded_id(x, y);
 //			std::cout << mapid << " ";
-			for(int i = 0; i < 8; i++)
+			for(uint32_t i = 0; i < 8; i++)
 			{
 				warthog::jps::direction dir = 
 					(warthog::jps::direction)(1 << i);
@@ -42,7 +42,7 @@ warthog::offline_jump_point_locator::preproc()
 				uint32_t jumpnode_id;
 				double jumpcost;
 				jpl.jump(dir, mapid,
-						warthog::INF, jumpnode_id, jumpcost);
+						warthog::INF32, jumpnode_id, jumpcost);
 				
 				// convert from cost to number of steps
 				if(dir > 8)
@@ -53,7 +53,7 @@ warthog::offline_jump_point_locator::preproc()
 //				std::cout << (jumpnode_id == warthog::INF ? 0 : num_steps) << " ";
 
 				// set the leading bit if the jump leads to a dead-end
-				if(jumpnode_id == warthog::INF)
+				if(jumpnode_id == warthog::INF32)
 				{
 					db_[mapid*8 + i] |= 32768;
 				}
@@ -183,7 +183,7 @@ warthog::offline_jump_point_locator::jump_northwest(uint32_t node_id,
 		uint32_t xdelta = (nx - gx); 
 		if(xdelta < mapw && ydelta < map_->height())
 		{
-			jumpnode_id = warthog::INF;
+			jumpnode_id = warthog::INF32;
 			uint32_t nid, steps_to_nid;
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
@@ -215,7 +215,7 @@ warthog::offline_jump_point_locator::jump_northwest(uint32_t node_id,
 	// return the jump point; but only if it isn't sterile
 	jumpnode_id = node_id - id_delta;
 	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
-	if(label & 32768) { jumpnode_id = warthog::INF; }
+	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 
 void
@@ -238,7 +238,7 @@ warthog::offline_jump_point_locator::jump_northeast(uint32_t node_id,
 		uint32_t xdelta = (gx - nx); 
 		if(xdelta < mapw && ydelta < map_->height())
 		{
-			jumpnode_id = warthog::INF;
+			jumpnode_id = warthog::INF32;
 			uint32_t nid, steps_to_nid;
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
@@ -270,7 +270,7 @@ warthog::offline_jump_point_locator::jump_northeast(uint32_t node_id,
 	// return the jump point; but only if it isn't sterile
 	jumpnode_id = node_id - id_delta;
 	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
-	if(label & 32768) { jumpnode_id = warthog::INF; }
+	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 
 void
@@ -293,7 +293,7 @@ warthog::offline_jump_point_locator::jump_southwest(uint32_t node_id,
 		uint32_t xdelta = (nx - gx); 
 		if(xdelta < mapw && ydelta < map_->height())
 		{
-			jumpnode_id = warthog::INF;
+			jumpnode_id = warthog::INF32;
 			uint32_t nid, steps_to_nid;
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
@@ -326,7 +326,7 @@ warthog::offline_jump_point_locator::jump_southwest(uint32_t node_id,
 	// return the jump point; but only if it isn't sterile
 	jumpnode_id = node_id + (mapw - 1) * num_steps;
 	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
-	if(label & 32768) { jumpnode_id = warthog::INF; }
+	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 
 void
@@ -349,7 +349,7 @@ warthog::offline_jump_point_locator::jump_southeast(uint32_t node_id,
 		if(xdelta < mapw && ydelta < map_->height())
 		{
 			uint32_t nid, steps_to_nid;
-			jumpnode_id = warthog::INF;
+			jumpnode_id = warthog::INF32;
 			if(ydelta < xdelta && ydelta <= num_steps)
 			{
 				steps_to_nid = ydelta;
@@ -380,7 +380,7 @@ warthog::offline_jump_point_locator::jump_southeast(uint32_t node_id,
 
 	jumpnode_id = node_id + (mapw + 1) * num_steps;
 	jumpcost = num_steps * warthog::DBL_ROOT_TWO;
-	if(label & 32768) { jumpnode_id = warthog::INF; }
+	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 
 void
@@ -408,7 +408,7 @@ warthog::offline_jump_point_locator::jump_north(uint32_t node_id,
 	// return the jump point at hand
 	jumpnode_id = node_id - id_delta;
 	jumpcost = num_steps;
-	if(label & 32768) { jumpnode_id = warthog::INF; }
+	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 
 void
@@ -436,7 +436,7 @@ warthog::offline_jump_point_locator::jump_south(uint32_t node_id,
 	// return the jump point at hand
 	jumpnode_id = node_id + id_delta;
 	jumpcost = num_steps;
- 	if(label & 32768) { jumpnode_id = warthog::INF; }
+ 	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 
 void
@@ -458,7 +458,7 @@ warthog::offline_jump_point_locator::jump_east(uint32_t node_id,
 	// return the jump point at hand
 	jumpnode_id = node_id + id_delta;
 	jumpcost = id_delta;
-	if(label & 32768) { jumpnode_id = warthog::INF; }
+	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 
 void
@@ -480,6 +480,6 @@ warthog::offline_jump_point_locator::jump_west(uint32_t node_id,
 	// return the jump point at hand
 	jumpnode_id = node_id - id_delta;
 	jumpcost = id_delta;
-	if(label & 32768) { jumpnode_id = warthog::INF; }
+	if(label & 32768) { jumpnode_id = warthog::INF32; }
 }
 

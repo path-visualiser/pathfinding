@@ -16,14 +16,8 @@ namespace warthog
 class solution
 {
     public:
-        solution() : 
-            sum_of_edge_costs_(warthog::INF), 
-            time_elapsed_nano_(0),
-            nodes_expanded_(0), 
-            nodes_inserted_(0), 
-            nodes_updated_(0),
-            nodes_touched_(0)
-        { }
+        solution()
+        { reset (); } 
 
         solution(const solution& other) :   
             sum_of_edge_costs_(other.sum_of_edge_costs_), 
@@ -67,7 +61,7 @@ class solution
         void
         reset()
         {
-            sum_of_edge_costs_ = warthog::INF;
+            sum_of_edge_costs_ = warthog::INF32;
             time_elapsed_nano_ = 0;
             nodes_expanded_ = 0; 
             nodes_inserted_ = 0; 
@@ -85,7 +79,7 @@ class solution
         uint32_t nodes_touched_;
 
         // the actual solution
-        std::vector<uint32_t> path_;
+        std::vector<warthog::sn_id_t> path_;
 
 };
 

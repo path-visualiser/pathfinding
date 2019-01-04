@@ -21,6 +21,7 @@
 #include "forward.h"
 #include "gridmap.h"
 #include "search_node.h"
+#include "time_constraints.h"
 
 #include <memory>
 
@@ -76,7 +77,7 @@ class cbs_ll_expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
+        get_xy(warthog::sn_id_t nid, int32_t& x, int32_t& y);
 
         warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi);
@@ -85,20 +86,21 @@ class cbs_ll_expansion_policy
         generate_target_node(warthog::problem_instance* pi);
         
         warthog::search_node*
-        generate(uint32_t node_id)
+        generate(warthog::sn_id_t node_id)
         {
-            uint32_t xy_id = node_id & id_mask_;
-            uint32_t timestep = node_id >> bitwidth_map_;
+            uint32_t xy_id = (uint32_t)(node_id & UINT32_MAX);
+            uint32_t timestep = (uint32_t)(node_id >> 32);
             return __generate(xy_id, timestep);
         }
 
         inline bool
         is_target(warthog::search_node* n, warthog::problem_instance* pi)
         {
-            return ((n->get_id() & id_mask_) == pi->target_id_);
+            return ((uint32_t)(n->get_id() & UINT32_MAX) == 
+                    (uint32_t)pi->target_id_);
         }
 
-        warthog::cbs::time_constraints*
+        warthog::mapf::time_constraints<warthog::cbs::cbs_constraint>*
         get_time_constraints() { return cons_; }
 
 		size_t 
@@ -107,12 +109,10 @@ class cbs_ll_expansion_policy
 	
 	private:
 		warthog::gridmap* map_;
-        uint32_t id_mask_;
-        uint32_t bitwidth_map_;
         uint32_t map_xy_sz_;
         std::vector<warthog::mem::node_pool*>* time_map_;
         warthog::cbs_ll_heuristic* h_;
-        warthog::cbs::time_constraints* cons_;
+        warthog::mapf::time_constraints<warthog::cbs::cbs_constraint>* cons_;
 
         struct neighbour_record
         {
@@ -138,7 +138,8 @@ class cbs_ll_expansion_policy
                                 map_->height() * map_->width()));
             }
             warthog::search_node* nei = time_map_->at(timestep)->generate(xy_id);
-            nei->set_id((timestep << bitwidth_map_) | xy_id);
+            warthog::sn_id_t node_id = ((uint64_t)timestep << 32) | xy_id;
+            nei->set_id(node_id);
             return nei;
         }
 

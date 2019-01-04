@@ -83,7 +83,6 @@ operator>>(std::istream& in, warthog::label::id_range_label& label);
 std::ostream& 
 operator<<(std::ostream& out, warthog::label::id_range_label& label);
 
-
 struct dfs_label
 {
     typedef uint8_t T_FLAG;
@@ -170,7 +169,7 @@ class dfs_labelling
             return lab_->at(node_id).at(edge_idx);
         }
 
-        inline int32_t
+        inline uint32_t
         get_dfs_index(uint32_t graph_id) { return dfs_order_->at(graph_id); }
 
         inline size_t
@@ -288,20 +287,20 @@ class dfs_labelling
                 {
                     if(from == 0) { return; } // start node 
 
-                    if(from->get_id() == source_id) // start node successors
+                    if((uint32_t)from->get_id() == source_id) // start node successors
                     { 
                         assert(edge_id < 
                         lab->g_->get_node(source_id)->out_degree());
-                        first_move.at(succ->get_id()) = edge_id; 
+                        first_move.at((uint32_t)succ->get_id()) = edge_id; 
                     }
                     else // all other nodes
                     {
-                        uint32_t s_id = succ->get_id();
-                        uint32_t f_id = from->get_id();
+                        uint32_t s_id = (uint32_t)succ->get_id();
+                        uint32_t f_id = (uint32_t)from->get_id();
                         double alt_g = from->get_g() + edge_cost;
                         double g_val = 
-                            succ->get_search_id() == from->get_search_id() ? 
-                            succ->get_g() : warthog::INF; 
+                            succ->get_search_number() == from->get_search_number() ? 
+                            succ->get_g() : warthog::INF32; 
 
                         assert(first_move.at(f_id) < 
                         lab->g_->get_node(source_id)->out_degree());
@@ -317,9 +316,9 @@ class dfs_labelling
                 [&source_id, &first_move, lab]
                 (warthog::search_node* current) -> void
                 {
-                    if(current->get_id() == source_id) { return; }
+                    if((uint32_t)current->get_id() == source_id) { return; }
 
-                    uint32_t node_id = current->get_id();
+                    uint32_t node_id = (uint32_t)current->get_id();
                     assert(node_id < first_move.size());
 
                     uint32_t edge_idx = first_move.at(node_id);
@@ -327,8 +326,8 @@ class dfs_labelling
                     dfs_label& s_lab = 
                         lab->lab_->at(source_id).at(edge_idx);
 
-                    s_lab.rank_.grow(lab->rank_->at(node_id));
-                    s_lab.ids_.grow(lab->dfs_order_->at(node_id));
+                    s_lab.rank_.grow((int32_t)lab->rank_->at(node_id));
+                    s_lab.ids_.grow((int32_t)lab->dfs_order_->at(node_id));
 
                     int32_t x, y;
                     lab->g_->get_xy(node_id, x, y);
@@ -366,7 +365,7 @@ class dfs_labelling
                     uint32_t ext_source_id = 
                         lab->g_->to_external_id(source_id);
                     warthog::problem_instance problem(ext_source_id, 
-                            warthog::INF);
+                            warthog::INF32);
                     //problem.verbose_ = true;
                     warthog::solution sol;
                     dijk.get_path(problem, sol);
@@ -474,7 +473,6 @@ operator>>(std::istream& in, warthog::label::dfs_labelling& lab);
 
 std::ostream&
 operator<<(std::ostream& in, warthog::label::dfs_labelling& lab);
-
 
 }
 

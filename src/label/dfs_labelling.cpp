@@ -64,7 +64,7 @@ warthog::label::operator>>(std::istream& in,
         warthog::graph::edge_iter end = n->outgoing_end();
         for(warthog::graph::edge_iter it = begin; it != end; it++)
         {
-            in >> lab.lab_->at(n_id).at(it - begin);
+            in >> lab.lab_->at(n_id).at((size_t)(it - begin));
             assert(in.good());
 
             if(!in.good())
@@ -91,7 +91,7 @@ warthog::label::operator<<(std::ostream& out,
         warthog::graph::edge_iter end = n->outgoing_end();
         for(warthog::graph::edge_iter it = begin; it != end; it++)
         {
-            out << lab.lab_->at(n_id).at(it - begin);
+            out << lab.lab_->at(n_id).at((size_t)(it - begin));
             if(!out.good())
             {
                 std::cerr << "unexpected error while writing labels\n";
@@ -170,15 +170,15 @@ warthog::label::dfs_labelling::compute_dfs_labels(
                 // grow the label of the down edge at hand
                 if(workload->get_flag(source_id))
                 {
-                    lab_->at(source_id).at(it - begin) = 
+                    lab_->at(source_id).at((size_t)(it - begin)) = 
                         closure.at(it->node_id_);
                 }
-                s_lab.merge(lab_->at(source_id).at(it - begin));
+                s_lab.merge(lab_->at(source_id).at((size_t)(it - begin)));
             }
             recurse.at(source_id) = 0;
 
-            s_lab.rank_.grow(this->rank_->at(source_id));
-            s_lab.ids_.grow(this->dfs_order_->at(source_id));
+            s_lab.rank_.grow((int32_t)this->rank_->at(source_id));
+            s_lab.ids_.grow((int32_t)this->dfs_order_->at(source_id));
 
             int32_t x, y;
             this->g_->get_xy(source_id, x, y);
@@ -220,12 +220,12 @@ warthog::label::dfs_labelling::compute_dfs_labels(
                 // grow the label for the up edge at hand
                 if(workload->get_flag(source_id))
                 {
-                    dfs_label& e_lab = lab_->at(source_id).at(it-begin);
+                    dfs_label& e_lab = lab_->at(source_id).at((size_t)(it-begin));
                     e_lab.merge(up_closure.at(it->node_id_)); 
                 }
 
                 // grow the up-reachable closure for the source node
-                s_lab.merge(lab_->at(source_id).at(it-begin));
+                s_lab.merge(lab_->at(source_id).at((size_t)(it-begin)));
             }
 
             recurse.at(source_id) = 0;

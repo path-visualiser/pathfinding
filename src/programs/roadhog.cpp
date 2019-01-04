@@ -22,7 +22,6 @@
 #include "chase_search.h"
 #include "constants.h"
 #include "contraction.h"
-#include "corner_point_graph.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "fch_af_expansion_policy.h"
@@ -31,7 +30,6 @@
 #include "fch_dfs_expansion_policy.h"
 #include "fch_fm_expansion_policy.h"
 #include "fch_expansion_policy.h"
-#include "fch_x_expansion_policy.h"
 #include "firstmove_labelling.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
@@ -41,17 +39,6 @@
 #include "solution.h"
 #include "timer.h"
 #include "zero_heuristic.h"
-
-// stuff for searching corner point graphs
-#include "ch_cpg_expansion_policy.h"
-#include "fch_af_cpg_expansion_policy.h"
-#include "fch_bb_cpg_expansion_policy.h"
-#include "fch_bbaf_cpg_expansion_policy.h"
-#include "fch_cpg_expansion_policy.h"
-
-#include "fch_jpg_expansion_policy.h"
-#include "fch_bb_jpg_expansion_policy.h"
-#include "fch_af_jpg_expansion_policy.h"
 
 #include "getopt.h"
 
@@ -72,7 +59,7 @@ int print_help = 0;
 // suppress the header row when printing results? (default: no)
 int suppress_header = 0;
 
-uint32_t nruns = 1;
+long nruns = 1;
 
 void
 help()
@@ -85,10 +72,8 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf, chase, ch-cpg\n"
-    << "\tfch, fchx, fch-af, fch-bb, fch-bbaf, fch-dfs\n"
-    << "\tfch-cpg, fch-af-cpg, fch-bb-cpg, fch-bbaf-cpg\n"
-    << "\tfch-jpg, fch-bb-jpg, fch-af-jpg\n"
+    << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf, chase\n"
+    << "\tfch, fch-af, fch-bb, fch-bbaf, fch-dfs\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at runtime\n";
 }
@@ -164,7 +149,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         warthog::dimacs_parser::experiment exp = (*it);
         warthog::solution sol;
         warthog::problem_instance pi(
-                exp.source, (exp.p2p ? exp.target : warthog::INF), verbose);
+                exp.source, (exp.p2p ? exp.target : warthog::INF32), verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0;
         double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
@@ -401,7 +386,7 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     {
         warthog::dimacs_parser::experiment exp = (*it);
         warthog::solution sol;
-        warthog::problem_instance pi(exp.source, warthog::INF, verbose);
+        warthog::problem_instance pi(exp.source, warthog::INF32, verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0;
         double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
@@ -468,58 +453,6 @@ run_bch_astar(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         warthog::euclidean_heuristic,
         warthog::bch_expansion_policy>
             alg(&fexp, &bexp, &h);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_ch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if(!orderfile.compare("") || !gridmapfile.compare(""))
-    {
-        std::cerr << "err; insufficient input params for alg " << alg_name 
-                  << ". required (in, order) "
-                  << "--input [ gr file ] [co file]"
-                  << " [contraction order file] [gridmap file]\n";
-        return;
-    }
-    
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-            
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    if(!pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true))
-    {
-        std::cerr << "err; could not load gr or co input files " 
-                  << "(one or both)\n";
-        return;
-    }
-
-    // wrapper
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // expander
-	warthog::zero_heuristic h;
-	warthog::ch::ch_cpg_expansion_policy fexp(&cpg, &order);
-	warthog::ch::ch_cpg_expansion_policy bexp(&cpg, &order, true);
-    warthog::bch_search<
-        warthog::zero_heuristic,
-        warthog::ch::ch_cpg_expansion_policy>
-        alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
@@ -934,7 +867,7 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     double cutoff = 1;
     if(alg_params != "")
     {
-        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        int32_t pct_dijkstra = std::stoi(alg_params.c_str());
         if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
         {
             std::cerr << "dijkstra percentage must be in range 0-100\n";
@@ -946,10 +879,10 @@ run_fch_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     warthog::util::workload_manager workload(g.get_num_nodes());
-    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    for(size_t i = 0; i < g.get_num_nodes(); i++)
     {
         if(order.at(i) >= (uint32_t)(order.size()*cutoff))
-        { workload.set_flag(i, true); }
+        { workload.set_flag((uint32_t)i, true); }
     }
 
     // load up the labelling
@@ -1039,7 +972,7 @@ run_fch_fm(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     double cutoff = 1;
     if(alg_params != "")
     {
-        uint32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        int32_t pct_dijkstra = std::stoi(alg_params.c_str());
         if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
         {
             std::cerr << "dijkstra percentage must be in range 0-100\n";
@@ -1108,120 +1041,6 @@ run_fch_fm(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     run_experiments(&alg, alg_name, parser, std::cout);
 
     delete lab;
-}
-
-void
-run_fch_apex_experiment(warthog::util::cfg& cfg, 
-        warthog::dimacs_parser& parser, std::string alg_name, 
-        std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    if(orderfile == "")
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] \n";
-        return;
-    }
-
-    // load up the graph 
-    warthog::graph::xy_graph g;
-    g.load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    warthog::ch::load_node_order(orderfile.c_str(), order);
-    warthog::ch::value_index_swap_dimacs(order);
-
-    std::cerr << "preparing to search\n";
-    warthog::euclidean_heuristic h(&g);
-    warthog::apex_filter filter(&order, &g);
-    warthog::fch_x_expansion_policy fexp(&g, &order, &filter);
-
-    std::string apex_filter_type = cfg.get_param_value("alg");
-    if(apex_filter_type == "no_paa")
-    {
-        // don't prune up nodes after the apex is reached
-        // (weaker filter)
-        filter.prune_after_apex_ = false;
-        alg_name = alg_name + "_" + apex_filter_type;
-    }
-    if(apex_filter_type == "no_pba")
-    {
-        // don't prune down nodes before the apex is reached
-        // (weaker filter)
-        filter.prune_before_apex_ = false;
-        alg_name = alg_name + "_" + apex_filter_type;
-    }
-
-    // reference algo
-    warthog::fch_expansion_policy fch_exp(&g, &order);
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar<
-        warthog::euclidean_heuristic, 
-        warthog::fch_expansion_policy,
-        warthog::pqueue_min> 
-            fch(&h, &fch_exp, &open);
-
-    // fchx
-    warthog::pqueue_min open_fchx;
-    warthog::flexible_astar<
-        warthog::euclidean_heuristic, 
-        warthog::fch_x_expansion_policy> 
-            fchx(&h, &fexp, &open_fchx);
-
-    std::cerr << "running fch apex experiment\n";
-    if(!suppress_header)
-    {
-        std::cout 
-            << "id\talg\texpanded\tinserted\tupdated\ttouched"
-            << "\tnanos\tpcost\tplen\tmap\n";
-    }
-    uint32_t exp_id = 0;
-    for(auto it = parser.experiments_begin(); 
-            it != parser.experiments_end(); 
-            it++)
-    {
-        warthog::dimacs_parser::experiment exp = (*it);
-		warthog::solution sol;
-        warthog::problem_instance pi(
-                exp.source, (exp.p2p ? exp.target : warthog::INF), verbose);
-        // run once
-        fch.get_path(pi, sol);
-
-        // identify the apex of the path
-        if(sol.path_.size() > 0)
-        {
-            filter.set_apex(sol.path_.at(0));
-            for(uint32_t i = 1; i < sol.path_.size(); i++)
-            {
-                if(order.at(filter.get_apex()) < order.at(sol.path_.at(i)))
-                {
-                    filter.set_apex(sol.path_.at(i));
-                }
-            }
-        }
-
-        // run the experiment again, using the apex to prune
-        sol.reset();
-        fchx.get_path(pi, sol);
-
-        std::cout
-            << exp_id++ <<"\t" 
-            << alg_name << "\t" 
-            << sol.nodes_expanded_ << "\t" 
-            << sol.nodes_inserted_ << "\t"
-            << sol.nodes_updated_ << "\t"
-            << sol.nodes_touched_ << "\t"
-            << sol.time_elapsed_nano_ << "\t"
-            << sol.sum_of_edge_costs_ << "\t" 
-            << sol.path_.size() << "\t" 
-            << parser.get_problemfile() 
-            << std::endl;
-    }
-
 }
 
 void
@@ -1421,476 +1240,6 @@ run_fch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_fch_bbaf_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    std::string partition_file = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if( orderfile == "" || arclabels_file == "" || 
-        partition_file == "" || gridmapfile == "" )
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] [arclabels file] "
-                  << " [graph partition file] [gridmap file]\n";
-        return;
-    }
-    
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
-
-    // we insert two extra elements in the event that we
-    // need to insert the start or target. both have the lowest
-    // possible rank in the hierarchy (0 and 1)
-    // NB: along the way we need to increase all ranks by 2 
-    for(uint32_t i = 0; i < order.size(); i++) order.at(i)+=2;
-    order.push_back(0);
-    order.push_back(1);
-
-    // load up the node partition info
-    std::vector<uint32_t> part;
-    if(!warthog::helpers::load_integer_labels_dimacs(
-            partition_file.c_str(), part))
-    {
-        std::cerr << "err; could not load graph partition input file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-            
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // graph wrapper
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::bbaf_labelling> lab(
-            warthog::label::bbaf_labelling::load(
-                arclabels_file.c_str(), pg.get(), &part));
-    if(!lab.get())
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-
-    // search algo
-    warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_bbaf_cpg_expansion_policy fexp(&cpg, &order, lab.get());
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_bbaf_cpg_expansion_policy, 
-        warthog::pqueue_min>
-            alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if(co == "" || gr == "" || orderfile == "" || gridmapfile == "")
-    {
-        std::cerr << "err; insufficient input params for alg " << alg_name 
-                  << ". required (in, order) "
-                  << "--input [ gr file ] [co file]"
-                  << " [contraction order file] [gridmap file]\n";
-        return;
-    }
-    
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-            
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // wrapper
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // expander
-    warthog::fch_cpg_expansion_policy fexp(&cpg, &order); 
-
-    // heuristic 
-    warthog::euclidean_heuristic h(pg.get());
-
-    // open list
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_cpg_expansion_policy, 
-        warthog::pqueue_min> 
-            alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if(co == "" || gr == "" || orderfile == "" || gridmapfile == "")
-    {
-        std::cerr << "err; insufficient input params for alg " << alg_name 
-                  << ". required (in, order) "
-                  << "--input [ gr file ] [co file]"
-                  << " [contraction order file] [gridmap file]\n";
-        return;
-    }
-    
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-            
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // wrapper
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // expander
-    warthog::fch_jpg_expansion_policy fexp(&cpg, &order); 
-
-    // heuristic 
-    warthog::euclidean_heuristic h(pg.get());
-
-    // open list
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_jpg_expansion_policy, 
-        warthog::pqueue_min> 
-            alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_af_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    std::string partition_file = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if( orderfile == "" || arclabels_file == "" || 
-        partition_file == "" || gridmapfile == "" )
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] [arclabels file] "
-                  << " [graph partition file] [gridmap file]\n";
-        return;
-    }
-    
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
-
-    // we insert two extra elements in the event that we
-    // need to insert the start or target. both have the lowest
-    // possible rank in the hierarchy (0 and 1)
-    // NB: along the way we need to increase all ranks by 2 
-    for(uint32_t i = 0; i < order.size(); i++) order.at(i)+=2;
-    order.push_back(0);
-    order.push_back(1);
-
-    // load up the node partition info
-    std::vector<uint32_t> part;
-    if(!warthog::helpers::load_integer_labels_dimacs(
-            partition_file.c_str(), part))
-    {
-        std::cerr << "err; could not load graph partition input file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-            
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // graph wrapper
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::af_labelling> afl(
-        warthog::label::af_labelling::load(
-            arclabels_file.c_str(), pg.get(), &part));
-    if(!afl.get())
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-    warthog::af_filter filter(afl.get());
-
-    // search algo
-    warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_af_cpg_expansion_policy fexp(&cpg, &order, afl.get());
-    warthog::pqueue_min open; 
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_af_cpg_expansion_policy,
-        warthog::pqueue_min> alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_af_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    std::string partition_file = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if( orderfile == "" || arclabels_file == "" || 
-        partition_file == "" || gridmapfile == "" )
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] [arclabels file] "
-                  << " [graph partition file] [gridmap file]\n";
-        return;
-    }
-    
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
-
-    // we insert two extra elements in the event that we
-    // need to insert the start or target. both have the lowest
-    // possible rank in the hierarchy (0 and 1)
-    // NB: along the way we need to increase all ranks by 2 
-    for(uint32_t i = 0; i < order.size(); i++) order.at(i)+=2;
-    order.push_back(0);
-    order.push_back(1);
-
-    // load up the node partition info
-    std::vector<uint32_t> part;
-    if(!warthog::helpers::load_integer_labels_dimacs(
-            partition_file.c_str(), part))
-    {
-        std::cerr << "err; could not load graph partition input file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-            
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // graph wrapper
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::af_labelling> afl(
-            warthog::label::af_labelling::load(
-                arclabels_file.c_str(), pg.get(), &part));
-    if(!afl.get())
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-
-    // search algo
-    warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_af_jpg_expansion_policy fexp(&cpg, &order, afl.get());
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_af_jpg_expansion_policy,
-        warthog::pqueue_min> 
-            alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_bb_cpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if(orderfile == "" || arclabels_file == "" || gridmapfile == "")
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] [arclabels file]"
-                  << " [gridmap file]\n";
-        return;
-    }
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
-    {
-        std::cerr << "err; could not load node order input file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // wrapper
-    warthog::graph::corner_point_graph cpg(map, pg);
-
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::bb_labelling> bbl(
-            warthog::label::bb_labelling::load(
-                arclabels_file.c_str(), pg.get()));
-    if(!bbl.get())
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-
-    // create a search algo
-    warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_bb_cpg_expansion_policy fexp(&cpg, &order, bbl.get());
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_bb_cpg_expansion_policy,
-        warthog::pqueue_min>
-            alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_bb_jpg(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
-{
-    std::string orderfile = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    std::string gridmapfile = cfg.get_param_value("input");
-    if(orderfile == "" || arclabels_file == "" || gridmapfile == "")
-    {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] [arclabels file]"
-                  << " [gridmap file]\n";
-        return;
-    }
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    bool sort_by_id = true;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, sort_by_id))
-    {
-        std::cerr << "err; could not load node order input file\n";
-        return;
-    }
-
-    // load up the grid
-    std::shared_ptr<warthog::gridmap> map(
-            new warthog::gridmap(gridmapfile.c_str()));
-
-    // load up the graph 
-    std::shared_ptr<warthog::graph::xy_graph> pg(
-            new warthog::graph::xy_graph());
-    pg->load_from_dimacs(gr.c_str(), co.c_str(), false, true);
-
-    // wrapper
-    warthog::graph::corner_point_graph jpg(map, pg);
-
-    // load up the arc-flags
-    std::shared_ptr<warthog::label::bb_labelling> bbl
-        (warthog::label::bb_labelling::load(
-            arclabels_file.c_str(), pg.get()));
-    if(!bbl.get())
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-
-    // create a search algo
-    warthog::euclidean_heuristic h(pg.get());
-    warthog::fch_bb_jpg_expansion_policy fexp(&jpg, &order, bbl.get());
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_bb_jpg_expansion_policy,
-        warthog::pqueue_min> 
-           alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
 run_dimacs(warthog::util::cfg& cfg)
 {
     std::string gr = cfg.get_param_value("input");
@@ -1974,17 +1323,9 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_bch_bbaf(cfg, parser, alg_name, gr, co);
     }
-    else if(alg_name == "ch-cpg")
-    {
-        run_ch_cpg(cfg, parser, alg_name, gr, co);
-    }
     else if(alg_name == "fch")
     {
         run_fch(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fchx")
-    {
-        run_fch_apex_experiment(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-af")
     {
@@ -2005,34 +1346,6 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch-fm")
     {
         run_fch_fm(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-cpg")
-    {
-        run_fch_cpg(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-af-cpg")
-    {
-        run_fch_af_cpg(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-bb-cpg")
-    {
-        run_fch_bb_cpg(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-bbaf-cpg")
-    {
-        run_fch_bbaf_cpg(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-jpg")
-    {
-        run_fch_jpg(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-bb-jpg")
-    {
-        run_fch_bb_jpg(cfg, parser, alg_name, gr, co);
-    }
-    else if(alg_name == "fch-af-jpg")
-    {
-        run_fch_af_jpg(cfg, parser, alg_name, gr, co);
     }
     else
     {

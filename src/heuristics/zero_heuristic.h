@@ -28,7 +28,7 @@ class zero_heuristic
 		}
 
 		inline double
-		h(unsigned int id, unsigned int id2)
+		h(warthog::sn_id_t id, warthog::sn_id_t id2)
 		{
             return 0;
 		}

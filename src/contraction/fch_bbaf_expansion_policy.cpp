@@ -28,7 +28,7 @@ warthog::fch_bbaf_expansion_policy::expand(
     reset();
 
     warthog::search_node* pn = generate(current->get_parent());
-    uint32_t current_id = current->get_id();
+    uint32_t current_id = (uint32_t)current->get_id();
     uint32_t current_rank = get_rank(current_id);
 
     warthog::graph::node* n = g_->get_node(current_id);
@@ -38,7 +38,7 @@ warthog::fch_bbaf_expansion_policy::expand(
 
     // traveling up the hierarchy we generate all neighbours;
     // traveling down, we generate only "down" neighbours
-    bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
+    bool up_travel = !pn || (current_rank > get_rank((uint32_t)pn->get_id()));
     for(warthog::graph::edge_iter it = begin; it != end; it++)
     {
         warthog::graph::edge& e = *it;
@@ -47,11 +47,11 @@ warthog::fch_bbaf_expansion_policy::expand(
         bool dn_succ = (get_rank(e.node_id_) < current_rank);
         if(up_travel || dn_succ)
         {
-            if(!filter(current_id, it - begin, dn_succ))
+            if(!filter(current_id, (uint32_t)(it - begin), dn_succ))
             {
                 // prune down successors below the goal
                 if(dn_succ && rank_->at(e.node_id_) < 
-                        rank_->at(instance->target_id_)) 
+                        rank_->at((uint32_t)instance->target_id_)) 
                 { continue; }
                 this->add_neighbour(this->generate(e.node_id_), e.wt_);
             }
@@ -61,17 +61,17 @@ warthog::fch_bbaf_expansion_policy::expand(
 
 void
 warthog::fch_bbaf_expansion_policy::get_xy(
-        uint32_t id, int32_t& x, int32_t& y)
+        warthog::sn_id_t id, int32_t& x, int32_t& y)
 {
-    g_->get_xy(id, x, y);
+    g_->get_xy((uint32_t)id, x, y);
 }
 
 warthog::search_node* 
 warthog::fch_bbaf_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
-    if(s_graph_id == warthog::INF) { return 0; }
+    uint32_t s_graph_id = g_->to_graph_id((uint32_t)pi->start_id_);
+    if(s_graph_id == warthog::INF32) { return 0; }
     return generate(s_graph_id);
 }
 
@@ -79,8 +79,8 @@ warthog::search_node*
 warthog::fch_bbaf_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
-    if(t_graph_id == warthog::INF) { return 0; }
+    uint32_t t_graph_id = g_->to_graph_id((uint32_t)pi->target_id_);
+    if(t_graph_id == warthog::INF32) { return 0; }
 
     search_id_ = pi->instance_id_;
 

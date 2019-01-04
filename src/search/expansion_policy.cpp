@@ -1,6 +1,6 @@
 #include "expansion_policy.h"
 
-warthog::expansion_policy::expansion_policy(uint32_t nodes_pool_size)
+warthog::expansion_policy::expansion_policy(size_t nodes_pool_size)
 {
     nodes_pool_size_ = nodes_pool_size;
     nodepool_ = new warthog::mem::node_pool(nodes_pool_size);

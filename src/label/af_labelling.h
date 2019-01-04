@@ -162,12 +162,12 @@ class af_labelling
                         // the start node and its children don't need 
                         // their parent pointers updated. for all other 
                         // nodes the grandparent becomes the parent
-                        uint32_t gp_id = 
+                        uint32_t gp_id = (uint32_t)
                             expander->generate(n->get_parent())->get_parent();
-                        if(gp_id != warthog::NODE_NONE)
+                        if(gp_id != warthog::SN_ID_MAX)
                         {
                             if(expander->generate(gp_id)->get_parent() !=
-                                    warthog::NODE_NONE)
+                                    warthog::SN_ID_MAX)
                             {
                                 n->set_parent(gp_id);
                             }
@@ -198,7 +198,7 @@ class af_labelling
                     // (there's better ways to do this but, bleh)
                     uint32_t ext_source_id = 
                         shared->lab_->g_->to_external_id(source_id);
-                    warthog::problem_instance pi(ext_source_id, warthog::INF);
+                    warthog::problem_instance pi(ext_source_id, warthog::INF32);
                     warthog::solution sol;
                     dijkstra.get_path(pi, sol);
 
@@ -243,8 +243,8 @@ class af_labelling
                             uint32_t e_idx  = 
                                 (*idmap.find(
                                     n->get_parent() == source_id ?  
-                                    n->get_id() : 
-                                    n->get_parent())).second;
+                                    (uint32_t)n->get_id() : 
+                                    (uint32_t)n->get_parent())).second;
                             uint8_t* label = 
                                 shared->lab_->flags_->at(source_id).at(e_idx);
                             label[part_id >> 3] |= (1 << (part_id & 7));

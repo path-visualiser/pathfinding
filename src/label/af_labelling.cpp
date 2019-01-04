@@ -48,8 +48,9 @@ warthog::label::af_labelling::print(
     if((bytes_per_label_ % word_sz) > 0) words_per_label++;
 
     // iterate over the flags for each outgoing arc of each node
-    last_id = last_id > g_->get_num_nodes() ? 
-        g_->get_num_nodes() : last_id;
+    last_id = (last_id > (uint32_t)g_->get_num_nodes()) ?  
+                (uint32_t)g_->get_num_nodes() : last_id;
+
     for(uint32_t i = first_id; i < last_id; i++)
     {
         std::vector<uint8_t*>& node_arcflags_ = flags_->at(i);
@@ -110,7 +111,7 @@ warthog::label::af_labelling::load(
     // and then read the labels from file
     // NB: label range is : [firstid, lastid)
     const uint32_t word_sz = sizeof(uint64_t);
-    uint32_t words_per_label = ceil(afl->bytes_per_label_ / (double)word_sz);
+    uint32_t words_per_label = (uint32_t)ceil(afl->bytes_per_label_ / (double)word_sz);
     for(uint32_t i = 0; i < afl->g_->get_num_nodes(); i++)
     {
         warthog::graph::node* n = afl->g_->get_node(i);
@@ -176,7 +177,7 @@ warthog::label::af_labelling::load_bch_labels(
     // and then read the labels from file
     // NB: label range is : [firstid, lastid)
     const uint32_t word_sz = sizeof(uint64_t);
-    uint32_t words_per_label = 
+    uint32_t words_per_label = (uint32_t)
         ceil(out_afl_fwd->bytes_per_label_ / (double)word_sz);
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {

@@ -18,13 +18,10 @@ namespace warthog
 class manhattan_heuristic
 {
 	public:
-		manhattan_heuristic(unsigned int mapwidth, unsigned int mapheight)
+		manhattan_heuristic(uint32_t mapwidth, uint32_t mapheight)
 		 : mapwidth_(mapwidth) 
-        {
-            uint32_t bitwidth_map = 
-                32 - __builtin_clz(mapwidth*mapheight);
-            id_mask_ = (1 << bitwidth_map)-1;
-        }
+        { }
+
 		~manhattan_heuristic() {}
 
 		inline double
@@ -35,15 +32,12 @@ class manhattan_heuristic
 		}
 
 		inline double
-		h(unsigned int id, unsigned int id2)
+		h(warthog::sn_id_t id, warthog::sn_id_t id2)
 		{
-            id = id & id_mask_;
-            id2 = id2 & id_mask_;
-
 			int32_t x, x2;
 			int32_t y, y2;
-			warthog::helpers::index_to_xy(id, mapwidth_, x, y);
-			warthog::helpers::index_to_xy(id2,mapwidth_, x2, y2);
+			warthog::helpers::index_to_xy((uint32_t)id, mapwidth_, x, y);
+			warthog::helpers::index_to_xy((uint32_t)id2, mapwidth_, x2, y2);
 			return this->h(x, y, x2, y2);
 		}
 
@@ -51,8 +45,7 @@ class manhattan_heuristic
         mem() { return sizeof(this); }
 
 	private:
-		unsigned int mapwidth_;
-        uint32_t id_mask_;
+		uint32_t mapwidth_;
 };
 
 }

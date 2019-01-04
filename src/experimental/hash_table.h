@@ -64,7 +64,7 @@ class hash_table
 			return false;
 		}
 
-		inline int
+		inline unsigned int
 		insert(unsigned int value)
 		{
 			if(size_ == stored_)

@@ -45,7 +45,7 @@ warthog::offline_jump_point_locator2::preproc()
 		{
 			uint32_t mapid = map_->to_padded_id(x, y);
 //			std::cout << mapid << " ";
-			for(int i = 0; i < 8; i++)
+			for(uint32_t i = 0; i < 8; i++)
 			{
 				warthog::jps::direction dir = 
 					(warthog::jps::direction)(1 << i);
@@ -53,7 +53,7 @@ warthog::offline_jump_point_locator2::preproc()
 				uint32_t jumpnode_id;
 				double jumpcost;
 				jpl.jump(dir, mapid,
-						warthog::INF, jumpnode_id, jumpcost);
+						warthog::INF32, jumpnode_id, jumpcost);
 				
 				// convert from cost to number of steps
 				if(dir > 8)
@@ -64,7 +64,7 @@ warthog::offline_jump_point_locator2::preproc()
 //				std::cout << (jumpnode_id == warthog::INF ? 0 : num_steps) << " ";
 
 				// set the leading bit if the jump leads to a dead-end
-				if(jumpnode_id == warthog::INF)
+				if(jumpnode_id == warthog::INF32)
 				{
 					db_[mapid*8 + i] |= 32768;
 				}

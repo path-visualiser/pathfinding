@@ -25,7 +25,7 @@ warthog::fch_dfs_expansion_policy::fch_dfs_expansion_policy(
     if(sort_successors) { warthog::ch::fch_sort_successors(g, rank); }
 
     // store the location of the first down successor 
-    heads_ = new uint8_t[g->get_num_nodes()];
+    heads_ = new warthog::graph::ECAP_T[g->get_num_nodes()];
     for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
     {
         warthog::graph::node* n = g->get_node(i);
@@ -37,7 +37,7 @@ warthog::fch_dfs_expansion_policy::fch_dfs_expansion_policy(
         {
             if(rank_->at(it->node_id_) < i_rank)
             {
-                heads_[i] = it - n->outgoing_begin();
+                heads_[i] = (warthog::graph::ECAP_T)(it - n->outgoing_begin());
                 break;
             }
         }
@@ -56,7 +56,7 @@ warthog::fch_dfs_expansion_policy::expand(
     reset();
 
     warthog::search_node* pn = generate(current->get_parent());
-    uint32_t current_id = current->get_id();
+    uint32_t current_id = (uint32_t)current->get_id();
     uint32_t current_rank = get_rank(current_id);
 
     warthog::graph::node* n = g_->get_node(current_id);
@@ -67,14 +67,14 @@ warthog::fch_dfs_expansion_policy::expand(
         // adjust the successors pointer by an appropriate offset.
         // traveling up the hierarchy we generate all neighbours;
         // traveling down, we generate only "down" neighbours
-        (pn && (current_rank < get_rank(pn->get_id()))) *
+        (pn && (current_rank < get_rank((uint32_t)pn->get_id()))) *
         heads_[current_id];
 
     for( ; succ != end; succ++)
     {
         warthog::graph::edge& e = *succ;
         assert(e.node_id_ < g_->get_num_nodes());
-        if(!(this->*filter)(current_id, (succ - begin)))
+        if(!(this->*filter)(current_id, (uint32_t)(succ - begin)))
         {
             this->add_neighbour(this->generate(e.node_id_), e.wt_);
         }
@@ -83,17 +83,17 @@ warthog::fch_dfs_expansion_policy::expand(
 
 void
 warthog::fch_dfs_expansion_policy::get_xy(
-        uint32_t nid, int32_t& x, int32_t& y)
+        warthog::sn_id_t nid, int32_t& x, int32_t& y)
 {
-    g_->get_xy(nid, x, y);
+    g_->get_xy((uint32_t)nid, x, y);
 }
 
 warthog::search_node* 
 warthog::fch_dfs_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
-    if(s_graph_id == warthog::INF) { return 0; }
+    uint32_t s_graph_id = g_->to_graph_id((uint32_t)pi->start_id_);
+    if(s_graph_id == warthog::INF32) { return 0; }
 
     s_label = lab_->get_dfs_index(s_graph_id);
 
@@ -104,15 +104,16 @@ warthog::search_node*
 warthog::fch_dfs_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    t_graph_id = g_->to_graph_id(pi->target_id_);
-    if(t_graph_id == warthog::INF) { return 0; }
+    t_graph_id = g_->to_graph_id((uint32_t)pi->target_id_);
+    if(t_graph_id == warthog::INF32) { return 0; }
 
     t_rank = get_rank(t_graph_id);
     t_label = lab_->get_dfs_index(t_graph_id);
     
     uint32_t t_part = lab_->get_partitioning()->at(t_graph_id);
     t_byte_ = t_part >> 3; // div8
-    t_bitmask_ = 1 << (t_part & 7); // mod8
+    t_bitmask_ = 1;
+    t_bitmask_ <<= (t_part & 7); // mod8
 
     get_xy(t_graph_id, tx_, ty_);
 

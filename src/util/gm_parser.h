@@ -62,13 +62,13 @@ namespace warthog
 				return this->header_;
 			}
 
-			inline uint32_t
+			inline size_t
 			get_num_tiles() 
 			{ 
 				return this->map_.size(); 
 			}
 
-			inline char
+			inline unsigned char
 			get_tile_at(unsigned int index) 
 			{ 
 				if(index >= this->map_.size())
@@ -87,7 +87,7 @@ namespace warthog
 			void parse_header(std::fstream&);
 			void parse_map(std::fstream&);
 
-			std::vector<char> map_;
+			std::vector<unsigned char> map_;
 			gm_header header_;
 	};
 }

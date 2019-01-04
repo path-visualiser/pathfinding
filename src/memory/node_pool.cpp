@@ -2,18 +2,18 @@
 #include "helpers.h"
 #include "search_node.h"
 
-warthog::mem::node_pool::node_pool(uint32_t num_nodes)
+warthog::mem::node_pool::node_pool(size_t num_nodes)
 	: blocks_(0)
 {
     init(num_nodes);
 }
 
 void
-warthog::mem::node_pool::init(uint32_t num_nodes)
+warthog::mem::node_pool::init(size_t num_nodes)
 {
 	num_blocks_ = ((num_nodes) >> warthog::mem::node_pool_ns::LOG2_NBS)+1;
 	blocks_ = new warthog::search_node*[num_blocks_];
-	for(uint32_t i=0; i < num_blocks_; i++)
+	for(size_t i=0; i < num_blocks_; i++)
 	{
 		blocks_[i] = 0;
 	}
@@ -23,7 +23,7 @@ warthog::mem::node_pool::init(uint32_t num_nodes)
     // warthog::mem::DEFAULT_CHUNK_SIZE and assign addresses
     // from that pool in order to generate blocks of nodes. when the pool is
     // full, cpool pre-allocates more, one chunk at a time. 
-    uint32_t block_sz = 
+    size_t block_sz = 
         warthog::mem::node_pool_ns::NBS * sizeof(warthog::search_node);
     blockspool_ = new warthog::mem::cpool(block_sz, 1);
 }
@@ -35,7 +35,7 @@ warthog::mem::node_pool::~node_pool()
 	blockspool_->reclaim();
 	delete blockspool_;
 
-	for(uint32_t i=0; i < num_blocks_; i++)
+	for(size_t i=0; i < num_blocks_; i++)
 	{
 		if(blocks_[i] != 0)
 		{
@@ -47,10 +47,10 @@ warthog::mem::node_pool::~node_pool()
 }
 
 warthog::search_node*
-warthog::mem::node_pool::generate(uint32_t node_id)
+warthog::mem::node_pool::generate(sn_id_t node_id)
 {
-	uint32_t block_id = node_id >> warthog::mem::node_pool_ns::LOG2_NBS;
-	uint32_t list_id = node_id &  warthog::mem::node_pool_ns::NBS_MASK;
+	sn_id_t block_id = node_id >> warthog::mem::node_pool_ns::LOG2_NBS;
+	sn_id_t list_id = node_id &  warthog::mem::node_pool_ns::NBS_MASK;
 	assert(block_id <= num_blocks_);
 
     // add a new block of nodes if necessary
@@ -61,7 +61,7 @@ warthog::mem::node_pool::generate(uint32_t node_id)
 		   	warthog::search_node[warthog::mem::node_pool_ns::NBS];
 
         // initialise memory 
-        uint32_t current_id = node_id - list_id;
+        sn_id_t current_id = node_id - list_id;
 		for( uint32_t i  = 0; i < warthog::mem::node_pool_ns::NBS; i+=8)
 		{
             new (&blocks_[block_id][i]) warthog::search_node(current_id++);
@@ -80,10 +80,10 @@ warthog::mem::node_pool::generate(uint32_t node_id)
 }
 
 warthog::search_node*
-warthog::mem::node_pool::get_ptr(uint32_t node_id)
+warthog::mem::node_pool::get_ptr(sn_id_t node_id)
 {
-	uint32_t block_id = node_id >> warthog::mem::node_pool_ns::LOG2_NBS;
-	uint32_t list_id = node_id &  warthog::mem::node_pool_ns::NBS_MASK;
+	sn_id_t block_id = node_id >> warthog::mem::node_pool_ns::LOG2_NBS;
+	sn_id_t list_id = node_id &  warthog::mem::node_pool_ns::NBS_MASK;
 	assert(block_id <= num_blocks_);
 
 	if(!blocks_[block_id])
@@ -93,10 +93,10 @@ warthog::mem::node_pool::get_ptr(uint32_t node_id)
     return &(blocks_[block_id][list_id]);
 }
 
-uint32_t
+size_t
 warthog::mem::node_pool::mem()
 {
-	uint32_t bytes = 
+	size_t bytes = 
         sizeof(*this) + 
         blockspool_->mem() +
 		num_blocks_*sizeof(void*);

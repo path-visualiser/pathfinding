@@ -106,7 +106,7 @@ warthog::label::operator<<(std::ostream& out,
         if(lab.lab_->at(row_id).size() == 0) { continue; }
         out.write((char*)(&row_id), 4);
 
-        uint32_t num_runs = lab.lab_->at(row_id).size();
+        uint32_t num_runs = (uint32_t)lab.lab_->at(row_id).size();
         out.write((char*)(&num_runs), 4);
 
         for(uint32_t run = 0; run < num_runs; run++)
@@ -204,7 +204,7 @@ warthog::label::compute_fm_dfs_preorder(
         }
         if(!seeds.size()) { break; }
 
-        uint32_t dfs_seed = seeds.at(rand() % seeds.size());
+        uint32_t dfs_seed = seeds.at((uint32_t)rand() % seeds.size());
         dfs_preorder(dfs_seed);
     }
 }
@@ -312,7 +312,7 @@ warthog::label::compute_fm_fch_dfs_preorder(
         }
         if(!seeds.size()) { break; }
 
-        uint32_t dfs_seed = seeds.at(rand() % seeds.size());
+        uint32_t dfs_seed = seeds.at((uint32_t)rand() % seeds.size());
         dfs_preorder(dfs_seed);
     }
 
@@ -352,12 +352,12 @@ warthog::label::compute_fm_fch_dijkstra_dfs_preorder(
         }
         else // all other nodes
         {
-            uint32_t succ_id = succ->get_id();
-            uint32_t from_id = from->get_id();
+            uint32_t succ_id = (uint32_t)succ->get_id();
+            uint32_t from_id = (uint32_t)from->get_id();
             double alt_g = from->get_g() + edge_cost;
             double g_val = 
-                succ->get_search_id() == from->get_search_id() ? 
-                succ->get_g() : warthog::INF; 
+                succ->get_search_number() == from->get_search_number() ? 
+                succ->get_g() : warthog::INF32; 
 
             //  update first move
             if(alt_g < g_val) 
@@ -368,9 +368,9 @@ warthog::label::compute_fm_fch_dijkstra_dfs_preorder(
     };
 
     dijk.apply_on_generate(on_generate_fn);
-    source_id = rand() % g.get_num_nodes();
+    source_id = (uint32_t)rand() % g.get_num_nodes();
     uint32_t ext_source_id = g.to_external_id(source_id);
-    warthog::problem_instance problem(ext_source_id, warthog::INF);
+    warthog::problem_instance problem(ext_source_id, warthog::INF32);
     warthog::solution sol;
     dijk.get_path(problem, sol);
 

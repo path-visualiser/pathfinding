@@ -149,7 +149,7 @@ struct fm_coll
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { 
-            retval.moves_[i*8] = 
+            *(uint64_t*)(&retval.moves_[i*8]) = 
             *(uint64_t*)(&moves_[i*8]) & *(uint64_t*)(&other.moves_[i*8]); 
         }
 
@@ -192,7 +192,7 @@ struct fm_coll
         const uint32_t NUM_DOUBLE_WORDS = FM_MAX_BYTES >> 2;
         for(uint32_t i = 0; i < NUM_DOUBLE_WORDS; i+=4)
         {
-            uint32_t index = __builtin_ffs(*(uint32_t*)(&moves_[i*4]));
+            uint32_t index = (uint32_t)__builtin_ffs((int)*(uint32_t*)(&moves_[i*4]));
             if(index)
             {
                 return i*32 + index;
@@ -202,7 +202,7 @@ struct fm_coll
         // no more 32bit dwords in the label; scan the rest one byte at a time
         for(uint32_t i = NUM_DOUBLE_WORDS*4; i < FM_MAX_BYTES; i++)
         {
-            uint32_t index = __builtin_ffs(moves_[i]);
+            uint32_t index = (uint32_t)__builtin_ffs((int)moves_[i]);
             if(index)
             {
                 return NUM_DOUBLE_WORDS*32 + i*8 + index;
@@ -274,10 +274,10 @@ class firstmove_labelling
         get_label(uint32_t node_id, uint32_t target_id)
         {
             assert(node_id < g_->get_num_nodes());
-            if(lab_->at(node_id).size() == 0) { return warthog::INF; }
+            if(lab_->at(node_id).size() == 0) { return warthog::INF32; }
 
             std::vector<fm_run>& row = lab_->at(node_id);
-            uint32_t end = row.size();
+            uint32_t end = (uint32_t)row.size();
             uint32_t begin = 0;
             while(begin<(end-1))
             {
@@ -396,7 +396,7 @@ class firstmove_labelling
                 {
                     if(from == 0) { return; } // start node 
 
-                    if(from->get_id() == source_id) // start node successors
+                    if((uint32_t)from->get_id() == source_id) // start node successors
                     { 
                         assert(s_row.at(succ->get_id()).num_set_bits() == 0);
                         assert(edge_id < 
@@ -406,12 +406,12 @@ class firstmove_labelling
                     }
                     else // all other nodes
                     {
-                        uint32_t succ_id = succ->get_id();
-                        uint32_t from_id = from->get_id();
+                        uint32_t succ_id = (uint32_t)succ->get_id();
+                        uint32_t from_id = (uint32_t)from->get_id();
                         double alt_g = from->get_g() + edge_cost;
                         double g_val = 
-                            succ->get_search_id() == from->get_search_id() ? 
-                            succ->get_g() : warthog::INF; 
+                            succ->get_search_number() == from->get_search_number() ? 
+                            succ->get_g() : warthog::INF32; 
 
                         //  update first move
                         if(alt_g < g_val) 
@@ -499,7 +499,7 @@ class firstmove_labelling
                     uint32_t ext_source_id = 
                         lab->g_->to_external_id(source_id);
                     warthog::problem_instance problem(ext_source_id, 
-                            warthog::INF);
+                            warthog::INF32);
                     //problem.verbose_ = true;
                     warthog::solution sol;
 

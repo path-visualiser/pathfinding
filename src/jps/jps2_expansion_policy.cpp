@@ -26,13 +26,13 @@ warthog::jps2_expansion_policy::expand(
 
 	// get the tiles around the current node c
 	uint32_t c_tiles;
-	uint32_t current_id = current->get_id();
+	uint32_t current_id = (uint32_t)current->get_id();
 	map_->get_neighbours(current_id, (uint8_t*)&c_tiles);
 
 	// look for jump points in the direction of each natural 
 	// and forced neighbour
 	uint32_t succ_dirs = warthog::jps::compute_successors(dir_c, c_tiles);
-	uint32_t goal_id = problem->target_id_;
+	uint32_t goal_id = (uint32_t)problem->target_id_;
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
@@ -51,7 +51,7 @@ warthog::jps2_expansion_policy::expand(
 		uint32_t jp_id = jp_ids_.at(i);
         double jp_cost = jp_costs_.at(i);
 
-		warthog::search_node* mynode = generate(jp_id & warthog::jps::ID_MASK);
+		warthog::search_node* mynode = generate(jp_id & warthog::jps::JPS_ID_MASK);
 		add_neighbour(mynode, jp_cost);
 	}
 }
@@ -60,26 +60,27 @@ void
 warthog::jps2_expansion_policy::update_parent_direction(warthog::search_node* n)
 {
     uint32_t jp_id = jp_ids_.at(this->get_current_successor_index());
-    assert(n->get_id() == (jp_id & warthog::jps::ID_MASK));
+    assert(n->get_id() == (jp_id & warthog::jps::JPS_ID_MASK));
     warthog::jps::direction pdir = 
         (warthog::jps::direction)*(((uint8_t*)(&jp_id))+3);
     n->set_pdir(pdir);
 }
 
 void
-warthog::jps2_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
+warthog::jps2_expansion_policy::get_xy(warthog::sn_id_t sn_id, int32_t& x, int32_t& y)
 {
-    
-    map_->to_unpadded_xy(nid, (uint32_t&)x, (uint32_t&)y);
+    map_->to_unpadded_xy((uint32_t)sn_id, (uint32_t&)x, (uint32_t&)y);
 }
 
 warthog::search_node* 
 warthog::jps2_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 { 
+    uint32_t start_id = (uint32_t)pi->start_id_;
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->start_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->start_id_);
+
+    if(start_id >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(start_id);
     return generate(padded_id);
 }
 
@@ -87,8 +88,10 @@ warthog::search_node*
 warthog::jps2_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
+    uint32_t target_id = (uint32_t)pi->target_id_;
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->target_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->target_id_);
+
+    if(target_id  >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(target_id);
     return generate(padded_id);
 }

@@ -96,7 +96,7 @@ namespace warthog
 		private:
 			uint8_t* collection_;
 			size_t next_;
-			uint32_t max_size_;
+			size_t max_size_;
 			const typename warthog::arraylist<T>::iterator terminator_;
 
 			inline void 

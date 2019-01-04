@@ -119,7 +119,7 @@ value_index_swap_dimacs(std::vector<uint32_t>& vec);
 // compute the out-arc closure of @param source 
 void
 compute_closure(uint32_t source, warthog::graph::xy_graph* g, 
-        std::set<uint32_t>* closure, uint32_t maxdepth=warthog::INF);
+        std::set<uint32_t>* closure, uint32_t maxdepth=warthog::INF32);
 
 void
 compute_down_closure(uint32_t source, 

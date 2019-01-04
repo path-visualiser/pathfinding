@@ -115,8 +115,8 @@ void online_jps_test()
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
 
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+		warthog::sn_id_t startid = exp->starty() * exp->mapwidth() + exp->startx();
+		warthog::sn_id_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
         warthog::solution sol;
         warthog::problem_instance pi(startid, goalid);
 		astar.get_path(pi, sol);
@@ -179,8 +179,8 @@ void flexible_astar_test()
 	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
 
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+		warthog::sn_id_t startid = exp->starty() * exp->mapwidth() + exp->startx();
+		warthog::sn_id_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
         warthog::problem_instance pi(startid, goalid);
         warthog::solution sol;
         astar.get_path(pi, sol);
@@ -230,12 +230,12 @@ void gridmap_expansion_policy_test()
 		unsigned int mapwidth = map.width();
 		policy.expand(policy.generate(nodeid[i]), 0);
 		warthog::search_node* n = 0;
-		double cost_to_n = warthog::INF;
+		double cost_to_n = warthog::INF32;
 		for(policy.first(n, cost_to_n);
 				n != 0;
 				policy.next(n, cost_to_n))
 		{
-			uint32_t nid = n->get_id();
+			uint32_t nid = (uint32_t)n->get_id();
 			unsigned int x = UINT_MAX;
 			unsigned int y = UINT_MAX;
 			x = nid % mapwidth;
@@ -249,11 +249,11 @@ void gridmap_expansion_policy_test()
 void hash_table_test()
 {
 	warthog::hash_table mytable;
-	for(int i=0; i < 10000000; i++)
+	for(uint32_t i=0; i < 10000000; i++)
 	{
 		mytable.insert(i);
 	}
-	for(int i=0; i < 10000000; i++)
+	for(uint32_t i=0; i < 10000000; i++)
 	{
 		if(!mytable.contains(i))
 		{
@@ -268,12 +268,12 @@ void unordered_map_test()
 {
 	std::unordered_map<unsigned int, unsigned int> mymap;
 	mymap.rehash(1024);
-	for(int i=0; i < 10000000; i++)
+	for(uint32_t i=0; i < 10000000; i++)
 	{
 		mymap[i] = i;
 	}
 
-	for(int i=0; i < 10000000; i++)
+	for(uint32_t i=0; i < 10000000; i++)
 	{
 		mymap.find(i);
 	}
@@ -285,7 +285,7 @@ void cuckoo_table_test()
 	warthog::cuckoo_table table(1024);
 	//table.set_verbose(true);
 	int errors = 0;
-	for(int i=0; i < 10000000; i++)
+	for(uint32_t i=0; i < 10000000; i++)
 	{
 		table.insert(i);
 		if(!table.contains(i))
@@ -305,13 +305,13 @@ void blockmap_access_test()
 	std::cout << "loading "<<file<<std::endl;
 	warthog::blockmap mymap(file);
 
-	for(int i=0; i < 1<<28; i++)
+	for(uint32_t i=0; i < 1<<28; i++)
 	{
-		int x = (rand()/RAND_MAX)*mymap.width();
-		int y = (rand()/RAND_MAX)*mymap.height();
-		for(int nx = x-1; nx < x+2; nx++)
+		uint32_t x = (uint32_t)((rand()/RAND_MAX)*(int)mymap.width());
+		uint32_t y = (uint32_t)((rand()/RAND_MAX)*(int)mymap.height());
+		for(uint32_t nx = x-1; nx < x+2; nx++)
 		{
-			for(int ny = y-1; ny < y+2; ny++)
+			for(uint32_t ny = y-1; ny < y+2; ny++)
 			{
 				mymap.get_label(nx, ny);
 			}
@@ -326,14 +326,14 @@ void pqueue_insert_test()
 	unsigned int pqueuenodes = 1000000;
 	warthog::pqueue_min mypqueue(pqueuenodes);
 	warthog::search_node** nodes = new warthog::search_node*[pqueuenodes];
-	for(int i=pqueuenodes; i > 0 ; i--)
+	for(uint32_t i=pqueuenodes; i > 0 ; i--)
 	{
 		nodes[i] = new warthog::search_node(i);
 		nodes[i]->set_g(i);
 		mypqueue.push(nodes[i]);
 	}
 	// test duplicate detection
-	for(int i=pqueuenodes; i > 0 ; i--)
+	for(uint32_t i=pqueuenodes; i > 0 ; i--)
 	{
 		mypqueue.push(nodes[i]);
 	}
@@ -359,21 +359,4 @@ void gridmap_access_test()
 	warthog::gridmap mymap(file);
 	std::cout << "map\n";
 	mymap.print(std::cout);
-	std::cout << "done."<<std::endl;
-	return;
-
-	for(int i=0; i < 1<<28; i++)
-	{
-		int x = (rand()/RAND_MAX)*mymap.width();
-		int y = (rand()/RAND_MAX)*mymap.height();
-		for(int nx = x-1; nx < x+2; nx++)
-		{
-			for(int ny = y-1; ny < y+2; ny++)
-			{
-				mymap.get_label(nx, ny);
-			}
-		}
-		//std::cout << i << "\r" << std::flush;
-	}
-	std::cout << "gridmap_access_test..."<<std::endl;
 }

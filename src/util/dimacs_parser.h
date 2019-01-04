@@ -34,7 +34,7 @@ class dimacs_parser
         {
             uint32_t tail_id_;
             uint32_t head_id_;
-            int32_t weight_;
+            uint32_t weight_;
 
             bool 
             operator<(warthog::dimacs_parser::edge& other)
@@ -74,16 +74,16 @@ class dimacs_parser
         bool
         load_instance(const char* dimacs_file);
 
-        inline int
+        inline uint32_t
         get_num_nodes() 
         {
-           return nodes_->size();
+           return (uint32_t)nodes_->size();
         }
 
-        inline int
+        inline uint32_t
         get_num_edges()
         {
-            return edges_->size();
+            return (uint32_t)edges_->size();
         }
 
         inline warthog::dimacs_parser::node_iterator
@@ -117,7 +117,7 @@ class dimacs_parser
         }
 
         inline uint32_t 
-        num_experiments() { return experiments_->size(); }
+        num_experiments() { return (uint32_t)experiments_->size(); }
 
 
 

@@ -16,7 +16,7 @@ warthog::gridmap_expansion_policy::expand(warthog::search_node* current,
 
 	// get terrain type of each tile in the 3x3 square around (x, y)
 	uint32_t tiles = 0;
-	uint32_t nodeid = current->get_id();
+	uint32_t nodeid = (uint32_t)current->get_id();
 	map_->get_neighbours(nodeid, (uint8_t*)&tiles);
 
 //	#ifndef NDEBUG
@@ -78,10 +78,10 @@ warthog::gridmap_expansion_policy::expand(warthog::search_node* current,
 }
 
 void
-warthog::gridmap_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
+warthog::gridmap_expansion_policy::get_xy(warthog::sn_id_t nid, int32_t& x, int32_t& y)
 {
     
-    map_->to_unpadded_xy(nid, (uint32_t&)x, (uint32_t&)y);
+    map_->to_unpadded_xy((uint32_t)nid, (uint32_t&)x, (uint32_t&)y);
 }
 
 warthog::search_node* 
@@ -89,8 +89,8 @@ warthog::gridmap_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 { 
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->start_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->start_id_);
+    if((uint32_t)pi->start_id_ >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id((uint32_t)pi->start_id_);
     return generate(padded_id);
 }
 
@@ -99,8 +99,8 @@ warthog::gridmap_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->target_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->target_id_);
+    if((uint32_t)pi->target_id_ >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id((uint32_t)pi->target_id_);
     return generate(padded_id);
 }
 

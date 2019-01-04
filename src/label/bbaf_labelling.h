@@ -178,12 +178,12 @@ class bbaf_labelling
                     // the start node and its children don't need their 
                     // parent pointers updated. for all other nodes the
                     // grandparent becomes the parent
-                    uint32_t gp_id = 
+                    uint32_t gp_id = (uint32_t)
                         expander->generate(n->get_parent())->get_parent();
-                    if(gp_id != warthog::NODE_NONE)
+                    if(gp_id != warthog::INF32)
                     {
                         if(expander->generate(gp_id)->get_parent() 
-                                != warthog::NODE_NONE)
+                                != warthog::INF32)
                         {
                             n->set_parent(gp_id);
                         }
@@ -208,7 +208,7 @@ class bbaf_labelling
                     // process the source node (i.e. run a dijkstra search)
                     uint32_t source_id = i;
                     uint32_t ext_source_id = g_->to_external_id(source_id);
-                    warthog::problem_instance pi(ext_source_id, warthog::INF);
+                    warthog::problem_instance pi(ext_source_id, warthog::INF32);
                     warthog::solution sol;
                     dijkstra.get_path(pi, sol);
 
@@ -254,18 +254,18 @@ class bbaf_labelling
                         // (TODO: make this stuff faster)
                         uint32_t part_id 
                             = shared->lab_->part_->at(n->get_id());
-                        uint32_t e_idx  
-                            = (*idmap.find(
+                        uint32_t e_idx  = 
+                            (*idmap.find(
                                 n->get_parent() == source_id ? 
-                                n->get_id() : 
-                                n->get_parent())).second;
+                                (uint32_t)n->get_id() : 
+                                (uint32_t)n->get_parent())).second;
                         shared->lab_->labels_.at(source_id).at(
                                 e_idx).flags_[part_id >> 3] |= 
                                     (1 << (part_id & 7));
 
                         int32_t x, y;
-                        shared->lab_->g_->get_xy(n->get_id(), x, y);
-                        assert(x != warthog::INF && y != warthog::INF);
+                        shared->lab_->g_->get_xy((uint32_t)n->get_id(), x, y);
+                        assert(x != warthog::INF32 && y != warthog::INF32);
                         shared->lab_->labels_.at(source_id).at(
                                 e_idx).bbox_.grow(x, y);
                         assert(

@@ -25,10 +25,10 @@ namespace warthog
 class expansion_policy
 {
     public:
-        expansion_policy(uint32_t nodes_pool_size);
+        expansion_policy(size_t nodes_pool_size);
         virtual ~expansion_policy();
 
-        uint32_t
+        size_t
         get_nodes_pool_size() { return nodes_pool_size_; } 
        
         inline void
@@ -80,7 +80,7 @@ class expansion_policy
         //    return (neis_->back()).node_;
         //}
 
-        inline uint32_t 
+        inline size_t 
         get_num_neighbours() { return neis_->size(); } 
 
 		virtual size_t
@@ -127,7 +127,7 @@ class expansion_policy
         generate_target_node(warthog::problem_instance* pi) = 0;
       
         virtual void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y) = 0;
+        get_xy(sn_id_t node_id, int32_t& x, int32_t& y) = 0;
 
         // check if a given search node @param n corresponds to the
         // target. we do this here to decouple the internal 
@@ -142,7 +142,7 @@ class expansion_policy
         // get a search_node memory pointer associated with @param node_id. 
         // (value is null if @param node_id is bigger than nodes_pool_size_)
 		inline warthog::search_node*
-		generate(uint32_t node_id)
+		generate(sn_id_t node_id)
 		{
             return nodepool_->generate(node_id);
 		}
@@ -151,10 +151,10 @@ class expansion_policy
         // value is null if this node has not been previously allocated 
         // or if node_id is bigger than nodes_pool_size_
         warthog::search_node*
-        get_ptr(uint32_t node_id, uint32_t search_id)
+        get_ptr(sn_id_t node_id, uint32_t search_number)
         {
             warthog::search_node* tmp = nodepool_->get_ptr(node_id);
-            if(tmp && tmp->get_search_id() == search_id) 
+            if(tmp && tmp->get_search_number() == search_number) 
             {
                 return tmp;
             }
@@ -190,7 +190,7 @@ class expansion_policy
         //std::vector<neighbour_record>* neis_;
         arraylist<neighbour_record>* neis_;
         uint32_t current_;
-        uint32_t nodes_pool_size_;
+        size_t nodes_pool_size_;
 };
 
 }

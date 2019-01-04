@@ -31,7 +31,7 @@ class bb_filter
         bb_filter(warthog::label::bb_labelling* bbl)
         {
             bbl_ = bbl;
-            tx_ = ty_ = warthog::INF;
+            tx_ = ty_ = (int32_t)warthog::INF32;
         }
 
         ~bb_filter() { }

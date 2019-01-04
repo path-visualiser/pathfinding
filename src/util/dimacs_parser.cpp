@@ -72,10 +72,10 @@ warthog::dimacs_parser::load_graph(const char* filename)
 			{
                 char* end;
                 token = strtok(NULL, delim); 
-                uint32_t tmp_num_nodes = strtol(token, &end, 10);
+                uint32_t tmp_num_nodes = (uint32_t)strtol(token, &end, 10);
                 
                 token = strtok(NULL, delim); 
-                uint32_t tmp_num_edges = strtol(token, &end, 10);
+                uint32_t tmp_num_edges = (uint32_t)strtol(token, &end, 10);
                 if(tmp_num_edges == 0L || tmp_num_nodes == 0L)
                 {
                     std::cerr 
@@ -109,7 +109,7 @@ warthog::dimacs_parser::load_graph(const char* filename)
                     { 
                         token = strtok(NULL, delim);  
                         char* end;
-                        uint32_t tmp_num_nodes = strtol(token, &end, 10);
+                        uint32_t tmp_num_nodes = (uint32_t)strtol(token, &end, 10);
                         if(tmp_num_nodes == 0L) { retval = false; } 
                         nodes_->resize(tmp_num_nodes);
                     }
@@ -154,7 +154,7 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 	bool all_good = true;
 	while(fdimacs.good() && all_good)
 	{
-		char next_char = fdimacs.peek();
+		char next_char = (char)fdimacs.peek();
 		switch(next_char)
 		{
 			case 'v':
@@ -172,7 +172,7 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 					break;
 				}
                 warthog::dimacs_parser::node n;
-                n.id_ = atoi(id);
+                n.id_ = (uint32_t)atoi(id);
                 n.x_ = atoi(x);
                 n.y_ = atoi(y);
                 nodes_->push_back(n);
@@ -207,7 +207,7 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 	bool all_good = true;
 	while(fdimacs.good() && all_good)
 	{
-		char next_char = fdimacs.peek();
+		char next_char = (char)fdimacs.peek();
 		switch(next_char)
 		{
 			case 'a':
@@ -225,9 +225,9 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 					break;
 				}
                 warthog::dimacs_parser::edge e;
-                e.tail_id_ = atoi(from);
-                e.head_id_ = atoi(to);
-                e.weight_ = atoi(cost);
+                e.tail_id_ = (uint32_t)atoi(from);
+                e.head_id_ = (uint32_t)atoi(to);
+                e.weight_ = (uint32_t)atoi(cost);
                 edges_->push_back(e);
 				break;
 			}
@@ -252,7 +252,7 @@ warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 void
 warthog::dimacs_parser::print(std::ostream& oss)
 {
-    uint32_t nnodes = nodes_->size();
+    uint32_t nnodes = (uint32_t)nodes_->size();
     if(nnodes > 0)
     {
         oss << "p aux sp co " << nodes_->size() << std::endl;
@@ -263,7 +263,7 @@ warthog::dimacs_parser::print(std::ostream& oss)
         }
     }
 
-    uint32_t nedges = edges_->size();
+    uint32_t nedges = (uint32_t)edges_->size();
     if(nedges > 0)
     {
         oss << "p sp " << nnodes << " " << nedges << std::endl;
@@ -328,7 +328,7 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
                 continue;
 
             }
-            exp.source = atoi(tok);
+            exp.source = (uint32_t)atoi(tok);
             exp.p2p = p2p;
 
             if(p2p)
@@ -338,11 +338,11 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
                 {
                     std::cerr << "invalid query in problem file:  " << buf << "\n";
                 }
-                exp.target = atoi(tok);
+                exp.target = (uint32_t)atoi(tok);
             }
             else
             {
-                exp.target = warthog::INF;
+                exp.target = warthog::INF32;
             }
             experiments_->push_back(exp);
         } 
@@ -380,19 +380,19 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out,
         if(lex_order)
         {
             // core is the top-k% of nodes; 
-            int32_t min_core_level = lex_order->size() * (1-core_pct_value);
+            uint32_t min_core_level = (uint32_t)(lex_order->size() * (1-core_pct_value));
 
             // metis ids need to be contiguous and start from 1
-            if((int32_t)lex_order->at(id1 - id_offset) >= min_core_level)
+            if(lex_order->at(id1 - id_offset) >= min_core_level)
             { 
-                id1 = abs((int)id1 - min_core_level); 
+                id1 = id1 - min_core_level;
                 assert(id1 < lex_order->size());
             }
             else { include_id1 = false; }
 
-            if((int32_t)lex_order->at(id2 - id_offset) >= min_core_level)
+            if(lex_order->at(id2 - id_offset) >= min_core_level)
             { 
-                id2 = abs((int)id2 - min_core_level); 
+                id2 = id2 - min_core_level;
                 assert(id2 < lex_order->size());
             }
             else { include_id2 = false; }

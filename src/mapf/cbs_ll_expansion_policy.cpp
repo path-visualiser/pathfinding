@@ -16,7 +16,8 @@ warthog::cbs_ll_expansion_policy::cbs_ll_expansion_policy(
     map_xy_sz_ = map->height() * map->width();
     assert(map_xy_sz_ > 0);
 
-    cons_ = new warthog::cbs::time_constraints(map_xy_sz_);
+    cons_ = new warthog::mapf::time_constraints<warthog::cbs::cbs_constraint>
+                (map_xy_sz_);
 
     // preallocate memory for up to some number of timesteps 
     // in advance. for subsequent timesteps memory is allocated
@@ -26,11 +27,6 @@ warthog::cbs_ll_expansion_policy::cbs_ll_expansion_policy(
     {
         time_map_->push_back(new warthog::mem::node_pool(map_xy_sz_));
     }
-
-    // setup some constants to quickly compute the current timestep 
-    // and xy-index
-    bitwidth_map_ = 32 - __builtin_clz(map->height()*map->width());
-    id_mask_ = (1 << bitwidth_map_)-1;
 }
 
 warthog::cbs_ll_expansion_policy::~cbs_ll_expansion_policy()
@@ -53,8 +49,8 @@ warthog::cbs_ll_expansion_policy::expand(warthog::search_node* current,
 	reset();
 
     // get the xy id of the current node and extract current timestep
-	uint32_t nodeid = current->get_id() & id_mask_;
-    uint32_t timestep = current->get_id() >> bitwidth_map_;
+	uint32_t nodeid = (uint32_t)(current->get_id() & UINT32_MAX);
+    uint32_t timestep = (uint32_t)(current->get_id() >> 32);
 
 	// get adjacent grid tiles (bitpacked into one 32bit word)
 	uint32_t tiles = 0;
@@ -65,63 +61,65 @@ warthog::cbs_ll_expansion_policy::expand(warthog::search_node* current,
 	uint32_t nid_p_w = nodeid + map_->width();
 
     // edge constraints for the current node
-    cell_constraints* cur_cc = cons_->get_constraints(nodeid, timestep);
+    cbs_constraint dummy;
+    cbs_constraint* cur_cc = cons_->get_constraint(nodeid, timestep);
 
     // cardinal successors
-    cell_constraints* succ_cc = cons_->get_constraints(nid_m_w, timestep+1);
-    if( ((tiles & 514) == 514) && // N
-        !(cur_cc->e_ & warthog::grid::NORTH) &&  
-        !succ_cc->v_ ) 
+    cbs_constraint* succ_cc = cons_->get_constraint(nid_m_w, timestep+1);
+    if( ((tiles & 514) == 514) && // NORTH is not an obstacle
+        (!cur_cc || !(cur_cc->e_ & warthog::grid::NORTH)) &&  // no edge constraint
+        (!succ_cc || !succ_cc->v_) )  // no vertex constraint
 	{  
 		add_neighbour(__generate(nid_m_w, timestep+1), 1);
 	} 
 
-    succ_cc = cons_->get_constraints(nodeid + 1, timestep+1);
+    succ_cc = cons_->get_constraint(nodeid + 1, timestep+1);
 	if( ((tiles & 1536) == 1536) && // E
-        !(cur_cc->e_ & warthog::grid::EAST) && 
-        !succ_cc->v_ )
+        (!cur_cc || !(cur_cc->e_ & warthog::grid::EAST)) &&
+        (!succ_cc || !succ_cc->v_ ) )
 	{
 		add_neighbour(__generate(nodeid + 1, timestep+1), 1);
 	}
 
-    succ_cc = cons_->get_constraints(nid_p_w, timestep+1);
+    succ_cc = cons_->get_constraint(nid_p_w, timestep+1);
 	if( ((tiles & 131584) == 131584) && // S
-        !(cur_cc->e_ & warthog::grid::SOUTH) && 
-        !succ_cc->v_ )
+        (!cur_cc || !(cur_cc->e_ & warthog::grid::SOUTH)) && 
+        (!succ_cc || !succ_cc->v_) )
 	{ 
 
 		add_neighbour(__generate(nid_p_w, timestep+1), 1);
 	}
 
-    succ_cc = cons_->get_constraints(nodeid - 1, timestep+1);
+    succ_cc = cons_->get_constraint(nodeid - 1, timestep+1);
 	if( ((tiles & 768) == 768) && // W
-        !(cur_cc->e_ & warthog::grid::WEST) && 
-        !succ_cc->v_ )
+        (!cur_cc || !(cur_cc->e_ & warthog::grid::WEST)) && 
+        (!succ_cc || !succ_cc->v_) )
 	{ 
 		add_neighbour(__generate(nodeid - 1, timestep+1), 1);
 	}
 
     // wait successor
-    succ_cc = cons_->get_constraints(nodeid, timestep+1);
-    if(!succ_cc->v_)
+    succ_cc = cons_->get_constraint(nodeid, timestep+1);
+    if( (!cur_cc || !(cur_cc->e_ & warthog::grid::WEST)) && 
+        (!succ_cc || !succ_cc->v_) )
     {
         add_neighbour(__generate(nodeid, timestep+1), 1);
     }
 }
 
 void
-warthog::cbs_ll_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
+warthog::cbs_ll_expansion_policy::get_xy(warthog::sn_id_t nid, int32_t& x, int32_t& y)
 {
-    map_->to_unpadded_xy(nid & id_mask_, (uint32_t&)x, (uint32_t&)y);
+    map_->to_unpadded_xy(nid & UINT32_MAX, (uint32_t&)x, (uint32_t&)y);
 }
 
 warthog::search_node* 
 warthog::cbs_ll_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 { 
-    uint32_t max_id = map_->header_width() * map_->header_height();
+    warthog::sn_id_t max_id = map_->header_width() * map_->header_height();
     if(pi->start_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->start_id_);
+    uint32_t padded_id = map_->to_padded_id((uint32_t)pi->start_id_);
     return __generate(padded_id, 0);
 }
 
@@ -129,11 +127,11 @@ warthog::search_node*
 warthog::cbs_ll_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t max_id = map_->header_width() * map_->header_height();
+    warthog::sn_id_t max_id = map_->header_width() * map_->header_height();
     if(pi->target_id_ >= max_id) { return 0; }
     h_->set_current_target(pi->target_id_);
 
-    uint32_t padded_id = map_->to_padded_id(pi->target_id_);
+    uint32_t padded_id = map_->to_padded_id((uint32_t)pi->target_id_);
     return __generate(padded_id, 0);
 }
 
@@ -141,7 +139,7 @@ size_t
 warthog::cbs_ll_expansion_policy::mem()
 {
    size_t total = sizeof(*this) + map_->mem();
-   uint32_t tm_sz = time_map_->size();
+   size_t tm_sz = time_map_->size();
    for(uint32_t i = 0; i < tm_sz; i++)
    {
        total += time_map_->at(i)->mem();

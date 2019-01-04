@@ -32,7 +32,7 @@ class fch_bb_expansion_policy : public expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
+        get_xy(warthog::sn_id_t node_id, int32_t& x, int32_t& y);
 
         virtual warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi);
@@ -44,7 +44,7 @@ class fch_bb_expansion_policy : public expansion_policy
         set_apex(uint32_t apex) 
         { 
             apex_ = apex; 
-            apex_reached_ = (apex == warthog::INF) ? true : false; 
+            apex_reached_ = (apex == warthog::INF32) ? true : false; 
         }
 
         virtual size_t

@@ -44,7 +44,7 @@ class jpsplus_expansion_policy : public expansion_policy
 		}
 
         virtual void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
+        get_xy(warthog::sn_id_t node_id, int32_t& x, int32_t& y);
 
         virtual warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi);
@@ -61,7 +61,7 @@ class jpsplus_expansion_policy : public expansion_policy
 		inline warthog::jps::direction
 		compute_direction(uint32_t n1_id, uint32_t n2_id)
 		{
-			if(n1_id == warthog::NODE_NONE) { return warthog::jps::NONE; }
+			if(n1_id == warthog::GRID_ID_MAX) { return warthog::jps::NONE; }
 
 			int32_t x, y, x2, y2;
 			warthog::helpers::index_to_xy(n1_id, map_->width(), x, y);

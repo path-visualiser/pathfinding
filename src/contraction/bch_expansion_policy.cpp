@@ -36,7 +36,7 @@ warthog::bch_expansion_policy::expand(warthog::search_node* current,
         warthog::problem_instance* problem)
 {
     reset();
-    uint32_t current_id = current->get_id();
+    uint32_t current_id = (uint32_t)current->get_id();
     warthog::graph::node* n = g_->get_node(current_id);
     warthog::graph::edge_iter begin, end;
 
@@ -48,7 +48,7 @@ warthog::bch_expansion_policy::expand(warthog::search_node* current,
         warthog::graph::edge& e = *it;
         assert(e.node_id_ < g_->get_num_nodes());
         warthog::search_node* next = this->generate(e.node_id_);
-        if(next->get_search_id() == current->get_search_id() &&
+        if(next->get_search_number() == current->get_search_number() &&
                 current->get_g() > (next->get_g() + e.wt_))
         {
             return; // stall
@@ -78,8 +78,8 @@ warthog::search_node*
 warthog::bch_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
-    if(s_graph_id == warthog::INF) { return 0; }
+    uint32_t s_graph_id = g_->to_graph_id((uint32_t)pi->start_id_);
+    if(s_graph_id == warthog::INF32) { return 0; }
     return generate(s_graph_id);
 }
 
@@ -87,7 +87,7 @@ warthog::search_node*
 warthog::bch_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
-    if(t_graph_id == warthog::INF) { return 0; }
+    uint32_t t_graph_id = g_->to_graph_id((uint32_t)pi->target_id_);
+    if(t_graph_id == warthog::INF32) { return 0; }
     return generate(t_graph_id);
 }

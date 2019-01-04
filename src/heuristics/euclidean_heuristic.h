@@ -24,7 +24,7 @@ class euclidean_heuristic
         ~euclidean_heuristic();
 
         double
-        h(uint32_t id, uint32_t id2);
+        h(sn_id_t id, sn_id_t id2);
 
 		double
 		h(int32_t x, int32_t y, int32_t x2, int32_t y2);

@@ -30,17 +30,18 @@ class cbs_ll_heuristic
     public:
         cbs_ll_heuristic() 
         {
-            id_mask_ = UINT64_MAX;
         }
 
         ~cbs_ll_heuristic() 
         {
         }
 
-        inline double
-        h(unsigned int id, unsigned int id2)
+        inline warthog::cost_t
+        h(warthog::sn_id_t id, warthog::sn_id_t id2)
         {
-            return h_[t_index_][id & id_mask_];
+            assert(t_map_.find((uint32_t)id2) != t_map_.end());
+            assert(t_map_.find((uint32_t)id2)->second == t_index_);
+            return h_[t_index_][(uint32_t)id];
         }
 
         // run a Dijkstra grid search (not time expanded!) from each 
@@ -52,27 +53,21 @@ class cbs_ll_heuristic
         compute_h_values(
                 std::vector<uint32_t>& target_nodes,
                 warthog::gridmap* gm);
-        void
-        compute_h_values(
-                std::vector<uint32_t>& target_nodes,
-                warthog::vl_gridmap*);
-        void
-        compute_h_values(
-                std::vector<uint32_t>& target_nodes,
-                warthog::evl_gridmap*);
 
         // the current target specifies which set of g-values to
         // refer to when answering ::h queries
-        // this function returns true if @param padded_id
+        // this function returns true if @param target_id (unpadded)
         // corresponds to one of the nodes for which a set
         // of pre-computed g-values exist. 
         // Otherwise the function returns false.
         //
         // @param target_id: unpadded xy index specifying the current target
+        // @return true indicates success, false indicates failure
         bool
-        set_current_target(uint32_t target_id)
+        set_current_target(warthog::sn_id_t target_id)
         {
-            std::map<uint32_t, uint32_t>::iterator it = t_map_.find(target_id);
+            uint32_t target_xy_id = (uint32_t)target_id;
+            std::map<uint32_t, uint32_t>::iterator it = t_map_.find(target_xy_id);
             if(it == t_map_.end()) { return false; }
             t_index_ = it->second;
             return true;
@@ -84,7 +79,7 @@ class cbs_ll_heuristic
             size_t sz = 0;
             for(uint32_t i = 0; i < h_.size(); i++)
             {
-                sz += sizeof(uint32_t) * h_[i].size();
+                sz += sizeof(warthog::cost_t) * h_[i].size();
             }
             sz += sizeof(void*)*h_.size();
             sz += sizeof(uint32_t)*2*t_map_.size();
@@ -93,10 +88,9 @@ class cbs_ll_heuristic
         }
 
     private:
-        std::vector<std::vector<double>> h_;
+        std::vector<std::vector<warthog::cost_t>> h_;
         std::map<uint32_t, uint32_t> t_map_;
         uint32_t t_index_;
-        uint64_t id_mask_;
 };
 
 }

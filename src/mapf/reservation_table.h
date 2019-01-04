@@ -20,6 +20,7 @@
 // @created: 2018-11-05
 //
 
+#include "constants.h"
 #include "cpool.h"
 
 #include <stdint.h>
@@ -34,8 +35,6 @@ class reservation_table
     public:
         reservation_table(uint32_t map_sz) : map_sz_(map_sz) 
         {
-            map_bitwidth_ = 32 - __builtin_clz(map_sz);
-            id_mask_ = (1 << map_bitwidth_) - 1;
             map_sz_in_qwords_ = (map_sz_ >> LOG2_QWORD_SZ)+1;
             pool_ = new warthog::mem::cpool(map_sz_in_qwords_);
         }
@@ -53,10 +52,10 @@ class reservation_table
         }
 
         inline bool
-        is_reserved(uint32_t time_indexed_map_id)
+        is_reserved(warthog::sn_id_t time_indexed_map_id)
         {
-            uint32_t timestep = time_indexed_map_id >> map_bitwidth_;
-            uint32_t xy_id = time_indexed_map_id & id_mask_;
+            uint32_t timestep = time_indexed_map_id >> 32;
+            uint32_t xy_id = time_indexed_map_id & UINT32_MAX;
             return is_reserved(xy_id, timestep);
         }
 
@@ -75,10 +74,10 @@ class reservation_table
         }
 
         inline void
-        reserve(uint32_t time_indexed_map_id)
+        reserve(warthog::sn_id_t time_indexed_map_id)
         {
-            uint32_t timestep = time_indexed_map_id >> map_bitwidth_;
-            uint32_t xy_id = time_indexed_map_id & id_mask_;
+            uint32_t timestep = time_indexed_map_id >> 32;
+            uint32_t xy_id = time_indexed_map_id & UINT32_MAX;
             reserve(xy_id, timestep);
         }
 
@@ -91,10 +90,10 @@ class reservation_table
         }
 
         inline void
-        unreserve(uint32_t time_indexed_map_id)
+        unreserve(warthog::sn_id_t time_indexed_map_id)
         {
-            uint32_t timestep = time_indexed_map_id >> map_bitwidth_;
-            uint32_t xy_id = time_indexed_map_id & id_mask_;
+            uint32_t timestep = (uint32_t)(time_indexed_map_id >> 32);
+            uint32_t xy_id = (uint32_t)(time_indexed_map_id & UINT32_MAX);
             unreserve(xy_id, timestep);
         }
 
@@ -110,10 +109,8 @@ class reservation_table
 
     private:
         std::vector<uint64_t*> table_;
-        uint32_t id_mask_;
         uint32_t map_sz_;
         uint32_t map_sz_in_qwords_;
-        uint32_t map_bitwidth_;
         warthog::mem::cpool* pool_;
 
 

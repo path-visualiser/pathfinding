@@ -20,8 +20,9 @@ namespace warthog
 {
 	
 // blockmap constants
-static const unsigned int BLOCKSIZE = 256; // NB: must be a power of 2!!
-static const unsigned int LOG_BLOCKSIZE = ceil(log10(BLOCKSIZE) / log10(2));
+static const uint32_t BLOCKSIZE = 256; // NB: must be a power of 2!!
+static const uint32_t LOG_BLOCKSIZE = 
+    static_cast<uint32_t>(ceil(log10(BLOCKSIZE) / log10(2)));
 
 class gm_parser;
 class gridmap;

@@ -37,7 +37,7 @@ class fch_dfs_expansion_policy : public expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
+        get_xy(warthog::sn_id_t node_id, int32_t& x, int32_t& y);
 
         virtual warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi);
@@ -57,13 +57,14 @@ class fch_dfs_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::xy_graph* g_;
-        uint8_t* heads_;
+        warthog::graph::ECAP_T* heads_;
 
         warthog::label::dfs_labelling* lab_;
         uint32_t s_label, t_label;
         int32_t tx_, ty_;
-        int32_t t_byte_, t_bitmask_;
-        int32_t t_graph_id;
+        uint32_t t_byte_;
+        warthog::label::dfs_label::T_FLAG t_bitmask_;
+        uint32_t t_graph_id;
         uint32_t t_rank;
 
         typedef bool
@@ -79,8 +80,8 @@ class fch_dfs_expansion_policy : public expansion_policy
                 lab_->get_label(node_idx, edge_idx);
             bool retval = (label.flags_[t_byte_] & t_bitmask_)
                 && label.bbox_.contains(tx_, ty_)
-                && label.ids_.contains(t_label)
-                && label.rank_.contains(t_rank);
+                && label.ids_.contains((int32_t)t_label)
+                && label.rank_.contains((int32_t)t_rank);
             return !retval; 
         }
 
@@ -90,8 +91,8 @@ class fch_dfs_expansion_policy : public expansion_policy
             warthog::label::dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
             bool retval = 
-                label.ids_.contains(t_label) && 
-                label.rank_.contains(t_rank);
+                label.ids_.contains((int32_t)t_label) && 
+                label.rank_.contains((int32_t)t_rank);
             return !retval; 
         }
 
@@ -129,7 +130,7 @@ class fch_dfs_expansion_policy : public expansion_policy
             warthog::label::dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
             bool retval = label.bbox_.contains(tx_, ty_)
-                && label.ids_.contains(t_label);
+                && label.ids_.contains((int32_t)t_label);
             return !retval; 
         }
 
@@ -139,7 +140,7 @@ class fch_dfs_expansion_policy : public expansion_policy
             warthog::label::dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
             bool retval = (label.flags_[t_byte_] & t_bitmask_)
-                && label.ids_.contains(t_label);
+                && label.ids_.contains((int32_t)t_label);
             return !retval; 
         }
 

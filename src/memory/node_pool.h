@@ -36,35 +36,35 @@ namespace mem
 
 namespace node_pool_ns
 {
-	static const uint32_t NBS = 8; // node block size; set this >= 8
-	static const uint32_t LOG2_NBS = 3;
-	static const uint32_t NBS_MASK = 7;
+	static const uint64_t NBS = 8; // node block size; set this >= 8
+	static const uint64_t LOG2_NBS = 3;
+	static const uint64_t NBS_MASK = 7;
 }
 
 class node_pool
 {
 	public:
-        node_pool(uint32_t num_nodes);
+        node_pool(size_t num_nodes);
 		~node_pool();
 
 		// return a warthog::search_node object corresponding to the given id.
 		// if the node has already been generated, return a pointer to the 
 		// previous instance; otherwise allocate memory for a new object.
 		warthog::search_node*
-		generate(uint32_t node_id);
+		generate(sn_id_t node_id);
 
         // return a pre-allocated pointer. if the corresponding node has not
         // been allocated yet, return null
         warthog::search_node*
-        get_ptr(uint32_t node_id);
+        get_ptr(sn_id_t node_id);
 
-		uint32_t
+		size_t
 		mem();
 
 	private:
-        void init(uint32_t nblocks);
+        void init(size_t nblocks);
 
-		uint32_t num_blocks_;
+		size_t num_blocks_;
 		warthog::search_node** blocks_;
 		warthog::mem::cpool* blockspool_;
 //        uint64_t* node_init_;

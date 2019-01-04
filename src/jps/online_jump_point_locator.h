@@ -85,7 +85,7 @@ class online_jump_point_locator
 		inline uint32_t
 		map_id_to_rmap_id(uint32_t mapid)
 		{
-			if(mapid == warthog::INF) { return mapid; }
+			if(mapid == warthog::INF32) { return mapid; }
 
 			uint32_t x, y;
 			uint32_t rx, ry;
@@ -98,7 +98,7 @@ class online_jump_point_locator
 		inline uint32_t
 		rmap_id_to_map_id(uint32_t rmapid)
 		{
-			if(rmapid == warthog::INF) { return rmapid; }
+			if(rmapid == warthog::INF32) { return rmapid; }
 
 			uint32_t x, y;
 			uint32_t rx, ry;

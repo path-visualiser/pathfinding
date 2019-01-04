@@ -44,7 +44,7 @@ class fch_expansion_policy : public expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y);
+        get_xy(warthog::sn_id_t node_id, int32_t& x, int32_t& y);
 
         virtual warthog::search_node* 
         generate_start_node(warthog::problem_instance* pi);
@@ -79,7 +79,7 @@ class fch_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::xy_graph* g_;
-        uint8_t* down_heads_;
+        warthog::graph::ECAP_T* down_heads_;
 
         warthog::ch::search_direction dir_;
 

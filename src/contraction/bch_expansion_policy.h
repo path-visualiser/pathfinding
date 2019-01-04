@@ -49,9 +49,9 @@ class bch_expansion_policy : public  expansion_policy
 		expand(warthog::search_node*, warthog::problem_instance*);
 
         virtual void
-        get_xy(uint32_t node_id, int32_t& x, int32_t& y)
+        get_xy(warthog::sn_id_t node_id, int32_t& x, int32_t& y)
         {
-            g_->get_xy(node_id, x, y);
+            g_->get_xy((uint32_t)node_id, x, y);
         }
 
         inline uint32_t
@@ -60,7 +60,7 @@ class bch_expansion_policy : public  expansion_policy
             return rank_->at(id);
         }
 
-        inline uint32_t
+        inline size_t
         get_num_nodes() { return g_->get_num_nodes(); }
 
         virtual warthog::search_node* 

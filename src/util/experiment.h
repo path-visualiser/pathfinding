@@ -31,8 +31,8 @@ namespace warthog
 class experiment
 {
 	public:
-		experiment(unsigned int sx, unsigned int sy, unsigned int gx, 
-				unsigned int gy, unsigned int mapwidth, unsigned int mapheight,
+		experiment(uint32_t sx, uint32_t sy, uint32_t gx, 
+				uint32_t gy, uint32_t mapwidth, uint32_t mapheight,
 			   	double d, std::string m) :
 			startx_(sx), starty_(sy), goalx_(gx), goaly_(gy), 
 			mapwidth_(mapwidth), mapheight_(mapheight), distance_(d), map_(m),
@@ -40,16 +40,16 @@ class experiment
 		{}
 		~experiment() {}
 
-		inline unsigned int
+		inline uint32_t
 		startx() { return startx_; }
 
-		inline unsigned int
+		inline uint32_t
 		starty() { return starty_; }
 
-		inline unsigned int
+		inline uint32_t
 		goalx() { return goalx_; } 
 
-		inline unsigned int
+		inline uint32_t
 		goaly()  { return goaly_; }
 
 		inline double
@@ -58,20 +58,17 @@ class experiment
 		inline std::string
 		map() { return map_; } 
 
-		inline unsigned int
+		inline uint32_t
 		mapwidth() { return mapwidth_; }
 
-		inline unsigned int
+		inline uint32_t
 		mapheight() { return mapheight_; }
 
-		inline int 
+		inline int32_t
 		precision() { return precision_; }
 
 		inline void
-		set_precision(unsigned int prec) { precision_ = prec; }
-
-		inline void 
-		set_precision(int prec) { precision_ = prec; }
+		set_precision(int32_t prec) { precision_ = prec; }
 
 		void
 		print(std::ostream& out);
@@ -85,11 +82,11 @@ class experiment
         }
 
 	private:
-		unsigned int startx_, starty_, goalx_, goaly_;
-		unsigned int mapwidth_, mapheight_;
+		uint32_t startx_, starty_, goalx_, goaly_;
+		uint32_t mapwidth_, mapheight_;
 		double distance_;
 		std::string map_;
-		unsigned int precision_;
+		int32_t precision_;
 
 		// no copy
 		experiment(const experiment& other) {} 

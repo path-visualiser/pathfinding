@@ -32,7 +32,7 @@ warthog::blockmap::blockmap(const char* filename)
 	// set terrain type of each tile
 	for(unsigned int i=0; i < parser.get_num_tiles(); i++)
 	{
-		char c = parser.get_tile_at(i);
+		unsigned char c = parser.get_tile_at(i);
 		unsigned int x = i % this->width();
 		unsigned int y = i / this->width();
 

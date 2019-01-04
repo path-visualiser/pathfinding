@@ -19,7 +19,7 @@ warthog::vl_gridmap_expansion_policy::expand(warthog::search_node* current,
     reset();
 
     // ids of current tile and its 8 neighbours
-    uint32_t id_node = current->get_id();
+    uint32_t id_node = (uint32_t)current->get_id();
     uint32_t id_N = id_node - map_->width();
     uint32_t id_S = id_node + map_->width();
     uint32_t id_E = id_node++;
@@ -111,18 +111,19 @@ warthog::vl_gridmap_expansion_policy::expand(warthog::search_node* current,
 }
 
 void
-warthog::vl_gridmap_expansion_policy::get_xy(uint32_t id, int32_t& x, int32_t& y)
+warthog::vl_gridmap_expansion_policy::get_xy(warthog::sn_id_t id, int32_t& x, int32_t& y)
 {
-    map_->to_unpadded_xy(id, (uint32_t&)x, (uint32_t&)y);
+    map_->to_unpadded_xy((uint32_t)id, (uint32_t&)x, (uint32_t&)y);
 }
 
 warthog::search_node* 
 warthog::vl_gridmap_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 { 
+    uint32_t start_id = (uint32_t)pi->start_id_;
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->start_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->start_id_);
+    if(start_id >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(start_id);
     return generate(padded_id);
 }
 
@@ -130,8 +131,10 @@ warthog::search_node*
 warthog::vl_gridmap_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
+    uint32_t target_id = (uint32_t)pi->target_id_;
     uint32_t max_id = map_->header_width() * map_->header_height();
-    if(pi->target_id_ >= max_id) { return 0; }
-    uint32_t padded_id = map_->to_padded_id(pi->target_id_);
+
+    if(target_id >= max_id) { return 0; }
+    uint32_t padded_id = map_->to_padded_id(target_id);
     return generate(padded_id);
 }

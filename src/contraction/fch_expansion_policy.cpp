@@ -20,7 +20,7 @@ warthog::fch_expansion_policy::fch_expansion_policy(
     }
 
     // store the location of the first down successor 
-    down_heads_ = new uint8_t[g->get_num_nodes()];
+    down_heads_ = new warthog::graph::ECAP_T[g->get_num_nodes()];
     for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
     {
         warthog::graph::node* n = g->get_node(i);
@@ -32,7 +32,7 @@ warthog::fch_expansion_policy::fch_expansion_policy(
         {
             if(rank_->at(it->node_id_) < i_rank)
             {
-                down_heads_[i] = it - n->outgoing_begin();
+                down_heads_[i] = (warthog::graph::ECAP_T)(it - n->outgoing_begin());
                 break;
             }
         }
@@ -53,7 +53,7 @@ warthog::fch_expansion_policy::expand(
     reset();
 
     warthog::search_node* pn = generate(current->get_parent());
-    uint32_t current_id = current->get_id();
+    uint32_t current_id = (uint32_t)current->get_id();
     uint32_t current_rank = get_rank(current_id);
     warthog::graph::node* n = g_->get_node(current_id);
 
@@ -62,7 +62,7 @@ warthog::fch_expansion_policy::expand(
     // traveling down, we generate only "down" neighbours
     warthog::graph::edge_iter begin = n->outgoing_begin();
     warthog::graph::edge_iter end = n->outgoing_end();
-    bool up_travel = dir_ & (!pn || (current_rank > get_rank(pn->get_id())));
+    bool up_travel = dir_ & (!pn || (current_rank > get_rank((uint32_t)pn->get_id())));
     if(!up_travel) { begin += down_heads_[current_id]; }
 
     for(warthog::graph::edge_iter it = begin; it != end; it++)
@@ -74,17 +74,17 @@ warthog::fch_expansion_policy::expand(
 }
 
 void
-warthog::fch_expansion_policy::get_xy(uint32_t nid, int32_t& x, int32_t& y)
+warthog::fch_expansion_policy::get_xy(warthog::sn_id_t nid, int32_t& x, int32_t& y)
 {
-    g_->get_xy(nid, x, y);
+    g_->get_xy((uint32_t)nid, x, y);
 }
 
 warthog::search_node* 
 warthog::fch_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id(pi->start_id_);
-    if(s_graph_id == warthog::INF) { return 0; }
+    uint32_t s_graph_id = g_->to_graph_id((uint32_t)pi->start_id_);
+    if(s_graph_id == warthog::INF32) { return 0; }
     return generate(s_graph_id);
 }
 
@@ -92,7 +92,7 @@ warthog::search_node*
 warthog::fch_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id(pi->target_id_);
-    if(t_graph_id == warthog::INF) { return 0; }
+    uint32_t t_graph_id = g_->to_graph_id((uint32_t)pi->target_id_);
+    if(t_graph_id == warthog::INF32) { return 0; }
     return generate(t_graph_id);
 }

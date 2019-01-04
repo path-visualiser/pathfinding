@@ -9,6 +9,7 @@
 // @created: 2018-11-06
 //
 
+#include "grid.h"
 #include "gridmap.h"
 #include "pqueue.h"
 #include "reservation_table.h"
@@ -20,98 +21,33 @@ namespace warthog
 namespace cbs
 {
 
-// this data structure describes the constraints imposed on a single 
-// grid cell. a brief description of the members:
+enum move 
+{
+    NORTH = __builtin_ffs(warthog::grid::NORTH)-1,
+    SOUTH = __builtin_ffs(warthog::grid::SOUTH)-1,
+    EAST = __builtin_ffs(warthog::grid::EAST)-1,
+    WEST = __builtin_ffs(warthog::grid::WEST)-1,
+    WAIT = WEST + 1
+};
+
+// This data structure describes the constraints CBS imposes on 
+// single grid cells. A brief description of the members:
 //
 // timestep_ is the time at which the constraints apply
 // v_ is true if the cell is constrained / blocked
 // e_ indicates which of the 8 outgoing directions are constrained / blocked
-struct cell_constraints
+struct cbs_constraint
 {
-    cell_constraints() 
+    cbs_constraint() 
         : timestep_(0), v_(0), e_(0) { }
 
-    cell_constraints(uint16_t timestep, uint8_t v, uint8_t e) 
+    cbs_constraint(uint16_t timestep, uint8_t v, uint8_t e) 
         : timestep_(timestep), v_(v), e_(e) { }
 
     uint16_t timestep_; 
     uint8_t v_;
     uint8_t e_;
 };
-
-// this data structure describes the all constraints that currently apply
-class time_constraints
-{
-    public:
-
-       time_constraints(uint32_t map_xy_sz) : map_xy_sz_(map_xy_sz)
-       {
-           cons_ = new std::vector< std::vector<cell_constraints> >(map_xy_sz_);
-       } 
-
-       ~time_constraints()
-       {
-           delete cons_;
-       }
-
-       inline void
-       add_constraint(uint32_t padded_id, cell_constraints con)
-       {
-           assert(padded_id < cons_->size());
-           cons_->at(padded_id).push_back(con);
-       }
-
-       // return all constraints associated with the xy location
-       // @param padded_id
-       inline std::vector<cell_constraints>& 
-       get_constraints(uint32_t padded_id)
-       {
-           return cons_->at(padded_id);
-       }
-
-       // return any constraints associated with the xy location
-       // @param padded_id at time @param timestep
-       inline cell_constraints*
-       get_constraints(uint32_t padded_id, uint32_t timestep)
-       {
-            cell_constraints* retval = &dummy_;
-            std::vector<cell_constraints>::iterator con_iter = 
-                std::find_if(
-                        cons_->at(padded_id).begin(), 
-                        cons_->at(padded_id).end(),
-                    [timestep](warthog::cbs::cell_constraints& tmp)
-                    -> bool
-                    {
-                        return tmp.timestep_  == timestep;
-                    });
-            if(con_iter != cons_->at(padded_id).end())
-            {
-                retval = &*con_iter;
-            }
-            return retval;
-       }
-
-       void
-       clear_constraints(uint32_t padded_id)
-       {
-           cons_->at(padded_id).clear();
-       }
-
-       void
-       clear_constraints()
-       {
-           for(uint32_t i = 0; i < cons_->size(); i++)
-           {
-               cons_->at(i).clear();
-           }   
-       }
-
-    private:
-        std::vector< std::vector<cell_constraints> >* cons_;
-        warthog::cbs::cell_constraints dummy_;
-        uint32_t map_xy_sz_;
-};
-
 
 // this data structure defines the lessthan comparator for 
 // CBS low-level search. Tie-breaks as follows:
@@ -184,16 +120,16 @@ class cmp_cbs_ll_lessthan
         }
     
     private:
-        typedef bool(cmp_cbs_ll_lessthan::*fn_is_reserved)(uint32_t time_indexed_id);
+        typedef bool(cmp_cbs_ll_lessthan::*fn_is_reserved)(warthog::sn_id_t time_indexed_id);
 
         warthog::reservation_table* restab_;
         fn_is_reserved  is_reserved_fn_;
 
         bool
-        __is_reserved_dummy(uint32_t) { return false; }
+        __is_reserved_dummy(warthog::sn_id_t) { return false; }
 
         bool
-        __is_reserved(uint32_t map_id)
+        __is_reserved(warthog::sn_id_t map_id)
         { 
             return restab_->is_reserved(map_id);
         }

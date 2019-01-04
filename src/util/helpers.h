@@ -9,6 +9,7 @@
 // @created: 21/08/2012
 //
 
+#include "constants.h"
 #include <vector>
 #include <cstdlib>
 #include <cstdint>
@@ -19,14 +20,18 @@ namespace warthog
 namespace helpers
 {
 
-// convert id into x/y coordinates on a grid of width 'mapwidth'
+// convert a one-dimensional grid index into x/y coordinates 
 inline void
-index_to_xy(unsigned int id, unsigned int mapwidth, 
-		int32_t& x, int32_t& y)
+index_to_xy(uint32_t grid_id, uint32_t mapwidth, int32_t& x, int32_t& y)
 {	
-	y = id / mapwidth;
-	x = id % mapwidth;
+	y = (int32_t)(grid_id / mapwidth);
+	x = (int32_t)(grid_id  % mapwidth);
 }
+
+// convert from one address space to another
+//inline uint32_t
+//convert_id_sn_to_xy(warthog::sn_id_t in) { return (uint32_t)in; }
+
 
 // sometimes the nodes of the search graph need to be labeled with
 // integer data (e.g. during a partitioning of the graph)
