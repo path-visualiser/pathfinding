@@ -24,7 +24,6 @@
 #include "scenario_manager.h"
 #include "timer.h"
 #include "labelled_gridmap.h"
-#include "ll_expansion_policy.h"
 #include "vl_gridmap_expansion_policy.h"
 #include "zero_heuristic.h"
 
