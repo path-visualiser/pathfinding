@@ -95,7 +95,7 @@ warthog::ll_expansion_policy::expand(warthog::search_node* current,
     move_cost = cur_cc ? cur_cc->e_[warthog::cbs::move::WAIT] : 1;
     if(cur_cc && move_cost != warthog::INF32)
     {
-        add_neighbour( __generate(nid_m_w, timestep+1), move_cost );
+        add_neighbour( __generate(xy_id, timestep+1), move_cost );
 	} 
 }
 
