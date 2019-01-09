@@ -19,6 +19,7 @@
 #include "jps2_expansion_policy.h"
 #include "jpsplus_expansion_policy.h"
 #include "jps2plus_expansion_policy.h"
+#include "ll_expansion_policy.h"
 #include "manhattan_heuristic.h"
 #include "octile_heuristic.h"
 #include "scenario_manager.h"
@@ -53,7 +54,7 @@ help()
 	<< "\t--checkopt (optional)\n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tcbs_ll, dijkstra, astar, astar_wgm, 4c_astar, sssp\n"
+    << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, 4c_astar, sssp\n"
     << "\tjps, jps2, jps+, jps2+, jps\n"
     << "\tcpg, jpg\n";
 }
@@ -304,6 +305,61 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
+// cbs low-level with variable edge costs
+// (each action still takes one timestep, regardless of cost)
+void
+run_cbs_ll_w(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
+	warthog::cbs_ll_heuristic heuristic;
+	warthog::ll_expansion_policy expander(&gm, &heuristic);
+
+    warthog::reservation_table restab(gm.width()*gm.height());
+    warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
+    warthog::cbs::pqueue_cbs_ll open(&lessthan);
+
+	warthog::flexible_astar<
+		warthog::cbs_ll_heuristic,
+	   	warthog::ll_expansion_policy,
+        warthog::cbs::pqueue_cbs_ll>
+            astar(&heuristic, &expander, &open);
+
+	std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tnanos\tpcost\tplen\tmap\n";
+	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+	{
+		warthog::experiment* exp = scenmgr.get_experiment(i);
+		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
+		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+        warthog::problem_instance pi(startid, goalid, verbose);
+        warthog::solution sol;
+
+        // precompute heuristic values for each target location
+        std::vector<uint32_t> target_locations;
+        target_locations.push_back(goalid);
+        heuristic.compute_h_values(target_locations, &gm);
+
+        // solve
+        astar.get_path(pi, sol);
+
+        std::cout
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (sol.path_.size()-1) << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
+
+	}
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
 void
 run_dijkstra(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
@@ -468,6 +524,10 @@ main(int argc, char** argv)
     else if(alg == "cbs_ll")
     {
         run_cbs_ll(scenmgr, alg); 
+    }
+    else if(alg == "cbs_ll_w")
+    {
+        run_cbs_ll_w(scenmgr, alg); 
     }
 
     else if(alg == "astar_wgm")
