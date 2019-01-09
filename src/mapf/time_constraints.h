@@ -76,7 +76,7 @@ class time_constraints
        add_constraint(uint32_t xy_id, CONSTRAINT& con)
        {
            assert(xy_id < cons_->size());
-           CONSTRAINT& cur_con = 
+           CONSTRAINT* cur_con = 
                get_constraint(xy_id, con.timestep_);
            if(!cur_con)
            {
@@ -84,7 +84,7 @@ class time_constraints
            }
            else
            {
-                cur_con = con;
+                *cur_con = con;
            }
        }
 
