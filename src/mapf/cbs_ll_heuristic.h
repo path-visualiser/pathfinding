@@ -36,12 +36,13 @@ class cbs_ll_heuristic
         {
         }
 
+        // estimate the cost-to-go of a path that begins at 
+        // node @param p_from_id and finishes at node @param p_to_id
+        // NB: Both parameters need to be PADDED IDENTIFIERS
         inline warthog::cost_t
-        h(warthog::sn_id_t id, warthog::sn_id_t id2)
+        h(warthog::sn_id_t p_from_id, warthog::sn_id_t p_to_id)
         {
-            assert(t_map_.find((uint32_t)id2) != t_map_.end());
-            assert(t_map_.find((uint32_t)id2)->second == t_index_);
-            return h_[t_index_][(uint32_t)id];
+            return h_[t_index_][(uint32_t)p_from_id];
         }
 
         // run a Dijkstra grid search (not time expanded!) from each 
@@ -49,6 +50,7 @@ class cbs_ll_heuristic
         // We store the g-value from each target to every node in the grid.
         // These precomputed g-values are a lower-bound on the
         // distance from any location@time to each target.
+        // NB: @param target_nodes must comprise UNPADDED IDENTIFIERS
         void
         compute_h_values(
                 std::vector<uint32_t>& target_nodes,

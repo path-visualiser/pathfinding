@@ -37,6 +37,8 @@
 #include <unordered_map>
 #include <memory>
 
+#include "time_constraints.h"
+
 // check computed solutions are optimal
 int checkopt = 0;
 // print debugging info during search
@@ -269,39 +271,20 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
         warthog::cbs::pqueue_cbs_ll>
             astar(&heuristic, &expander, &open);
 
-	std::cout 
-        << "id\talg\texpanded\tinserted\tupdated\ttouched"
-        << "\tnanos\tpcost\tplen\tmap\n";
+    // precompute heuristic values for each target location
+    std::cerr << "precomputing heuristic values...";
+    std::vector<uint32_t> target_locations;
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
+    {
 		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
 		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-        warthog::problem_instance pi(startid, goalid, verbose);
-        warthog::solution sol;
-
-        // precompute heuristic values for each target location
-        std::vector<uint32_t> target_locations;
         target_locations.push_back(goalid);
-        heuristic.compute_h_values(target_locations, &gm);
+    }
+    heuristic.compute_h_values(target_locations, &gm);
+    std::cerr << "done\n";
 
-        // solve
-        astar.get_path(pi, sol);
-
-        std::cout
-            << i<<"\t" 
-            << alg_name << "\t" 
-            << sol.nodes_expanded_ << "\t" 
-            << sol.nodes_inserted_ << "\t"
-            << sol.nodes_updated_ << "\t"
-            << sol.nodes_touched_ << "\t"
-            << sol.time_elapsed_nano_ << "\t"
-            << sol.sum_of_edge_costs_ << "\t" 
-            << (sol.path_.size()-1) << "\t" 
-            << scenmgr.last_file_loaded() 
-            << std::endl;
-
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
@@ -324,40 +307,22 @@ run_cbs_ll_w(warthog::scenario_manager& scenmgr, std::string alg_name)
         warthog::cbs::pqueue_cbs_ll>
             astar(&heuristic, &expander, &open);
 
-	std::cout 
-        << "id\talg\texpanded\tinserted\tupdated\ttouched"
-        << "\tnanos\tpcost\tplen\tmap\n";
+    // precompute heuristic values for each target location
+    std::cerr << "precomputing heuristic values...";
+    std::vector<uint32_t> target_locations;
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
+    {
 		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
 		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-        warthog::problem_instance pi(startid, goalid, verbose);
-        warthog::solution sol;
-
-        // precompute heuristic values for each target location
-        std::vector<uint32_t> target_locations;
         target_locations.push_back(goalid);
-        heuristic.compute_h_values(target_locations, &gm);
+    }
+    heuristic.compute_h_values(target_locations, &gm);
+    std::cerr << "done\n";
 
-        // solve
-        astar.get_path(pi, sol);
-
-        std::cout
-            << i<<"\t" 
-            << alg_name << "\t" 
-            << sol.nodes_expanded_ << "\t" 
-            << sol.nodes_inserted_ << "\t"
-            << sol.nodes_updated_ << "\t"
-            << sol.nodes_touched_ << "\t"
-            << sol.time_elapsed_nano_ << "\t"
-            << sol.sum_of_edge_costs_ << "\t" 
-            << (sol.path_.size()-1) << "\t" 
-            << scenmgr.last_file_loaded() 
-            << std::endl;
-
-	}
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+
 }
 
 void

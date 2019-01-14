@@ -69,18 +69,18 @@ warthog::ll_expansion_policy::expand(warthog::search_node* current,
             
 	} 
 
-    // move SOUTH
-    move_cost = cur_cc ? cur_cc->e_[warthog::cbs::move::SOUTH] : 1;
-    if( map_->get_label(nid_p_w) && move_cost != warthog::INF32 )
-    {
-        add_neighbour( __generate(nid_p_w, timestep+1), move_cost );
-	} 
-
     // move EAST
     move_cost = cur_cc ? cur_cc->e_[warthog::cbs::move::EAST] : 1;
     if( map_->get_label(xy_id + 1) && move_cost != warthog::INF32)
     {
         add_neighbour( __generate(xy_id+1, timestep+1), move_cost );
+	} 
+
+    // move SOUTH
+    move_cost = cur_cc ? cur_cc->e_[warthog::cbs::move::SOUTH] : 1;
+    if( map_->get_label(nid_p_w) && move_cost != warthog::INF32 )
+    {
+        add_neighbour( __generate(nid_p_w, timestep+1), move_cost );
 	} 
 
     // move WEST
@@ -93,7 +93,7 @@ warthog::ll_expansion_policy::expand(warthog::search_node* current,
 
     // move WAIT
     move_cost = cur_cc ? cur_cc->e_[warthog::cbs::move::WAIT] : 1;
-    if(cur_cc && move_cost != warthog::INF32)
+    if( move_cost != warthog::INF32 )
     {
         add_neighbour( __generate(xy_id, timestep+1), move_cost );
 	} 
@@ -123,7 +123,6 @@ warthog::ll_expansion_policy::generate_target_node(
     if(pi->target_id_ >= max_id) { return 0; }
 
     h_->set_current_target(pi->target_id_);
-
     uint32_t padded_id = map_->to_padded_id((uint32_t)pi->target_id_);
     return __generate(padded_id, 0);
 }
