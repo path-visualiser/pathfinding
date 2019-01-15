@@ -21,6 +21,9 @@ namespace mapf
 
 // The constraint data type.
 //
+// v_: indicates if the tile is blocked or not
+// the default state is unblocked
+//
 // e_: indicates the cost of each move action.
 // the default cost for each action is 1. 
 // the special value warthog::INF indicates the move cannot be executed.
@@ -32,6 +35,7 @@ struct cell_constraint
 {
     cell_constraint()
     {
+        v_ = 0;
         e_[warthog::cbs::move::NORTH] = 1;
         e_[warthog::cbs::move::SOUTH] = 1;
         e_[warthog::cbs::move::EAST] = 1;
@@ -43,6 +47,7 @@ struct cell_constraint
     cell_constraint&
     operator=(const cell_constraint& other)
     {
+        v_ = other.v_;
         e_[0] = other.e_[0];
         e_[1] = other.e_[1];
         e_[2] = other.e_[2];
@@ -52,6 +57,7 @@ struct cell_constraint
         return *this;
     }
 
+    bool v_;
     double e_[5];
     uint16_t timestep_;
 };
