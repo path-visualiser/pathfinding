@@ -93,11 +93,31 @@ class cbs_ll_expansion_policy
             return __generate(xy_id, timestep);
         }
 
+        // an agent arrives at its target if:
+        // (1) its current location is the xy location of the target
+        // (2) the agent is never required to move again
+        // this function returns true only if both conditions are satisfied,
+        // with @param n acting as the current location
         inline bool
         is_target(warthog::search_node* n, warthog::problem_instance* pi)
         {
-            return ((uint32_t)(n->get_id() & UINT32_MAX) == 
-                    (uint32_t)pi->target_id_);
+            uint32_t xy_id = (uint32_t)(n->get_id() & UINT32_MAX);
+            if(xy_id == (uint32_t)pi->target_id_)
+            {
+                uint32_t arrival_time = (uint32_t)(n->get_id() >> 32);
+                std::vector<warthog::cbs::cbs_constraint>& xy_cons = 
+                    cons_->get_constraint_set((uint32_t)(n->get_id()));
+
+                // agents only arrive at their target if they never have
+                // to move from it again
+                bool safe_to_wait_forever = true;
+                for(uint32_t i = 0; i < xy_cons.size(); i++)
+                {
+                    safe_to_wait_forever &= xy_cons.at(i).timestep_ < arrival_time;
+                }
+                return safe_to_wait_forever;
+            }
+            return false;
         }
 
         warthog::mapf::time_constraints<warthog::cbs::cbs_constraint>*

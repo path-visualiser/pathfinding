@@ -141,8 +141,6 @@ class time_constraints
        }
 
        // remove all constraints associated with location
-
-       
        void
        clear_constraint_set(uint32_t xy_id)
        {
