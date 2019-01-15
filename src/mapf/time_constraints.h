@@ -103,16 +103,39 @@ class time_constraints
        {
             auto retval = 
                 std::find_if(
-                        cons_->at(xy_id).begin(), 
-                        cons_->at(xy_id).end(),
+                        (*cons_)[xy_id].begin(),
+                        (*cons_)[xy_id].end(),
                     [timestep](CONSTRAINT& tmp)
                     -> bool
                     {
                         return tmp.timestep_  == timestep;
                     });
-            if(retval == cons_->at(xy_id).end())
+            if(retval == (*cons_)[xy_id].end())
             {
                 return 0;
+            }
+            return &*retval;
+       }
+
+       // create or return the constraint associated with the location
+       // @param xy_id, at the time @param timestep
+       inline CONSTRAINT*
+       get_or_create_constraint(uint32_t xy_id, uint32_t timestep)
+       {
+            auto retval =
+                std::find_if(
+                        (*cons_)[xy_id].begin(),
+                        (*cons_)[xy_id].end(),
+                    [timestep](CONSTRAINT& tmp)
+                    -> bool
+                    {
+                        return tmp.timestep_  == timestep;
+                    });
+            if(retval == (*cons_)[xy_id].end())
+            {
+                auto* con = &((*cons_)[xy_id].emplace_back());
+                con->timestep_ = timestep;
+                return con;
             }
             return &*retval;
        }
