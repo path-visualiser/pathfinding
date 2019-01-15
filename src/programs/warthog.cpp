@@ -319,15 +319,6 @@ run_cbs_ll_w(warthog::scenario_manager& scenmgr, std::string alg_name)
     heuristic.compute_h_values(target_locations, &gm);
     std::cerr << "done\n";
 
-    auto time_constraints = expander.get_time_constraints();
-    {
-        warthog::mapf::cell_constraint new_cost;
-        const auto p_id = gm.to_padded_id(13, 11);
-        new_cost.timestep_ = 19;
-        new_cost.v_ = true;
-        time_constraints->add_constraint(p_id, new_cost);
-    }
-
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
