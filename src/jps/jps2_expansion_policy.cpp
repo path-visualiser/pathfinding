@@ -81,6 +81,7 @@ warthog::jps2_expansion_policy::generate_start_node(
 
     if(start_id >= max_id) { return 0; }
     uint32_t padded_id = map_->to_padded_id(start_id);
+    if(map_->get_label(padded_id) == 0) { return 0; }
     return generate(padded_id);
 }
 
@@ -93,5 +94,6 @@ warthog::jps2_expansion_policy::generate_target_node(
 
     if(target_id  >= max_id) { return 0; }
     uint32_t padded_id = map_->to_padded_id(target_id);
+    if(map_->get_label(padded_id) == 0) { return 0; }
     return generate(padded_id);
 }

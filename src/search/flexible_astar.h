@@ -250,13 +250,17 @@ class flexible_astar : public warthog::search
             // get the internal target id
             if(pi_.target_id_ != warthog::SN_ID_MAX)
             { 
-                pi_.target_id_ = 
-                    expander_->generate_target_node(&pi_)->get_id();
+                warthog::search_node* target = 
+                    expander_->generate_target_node(&pi_);
+                if(!target) { return 0; } // invalid target location
+                pi_.target_id_ = target->get_id();
+
             }
 
             // initialise and push the start node
             if(pi_.start_id_ == warthog::SN_ID_MAX) { return 0; }
             start = expander_->generate_start_node(&pi_);
+            if(!start) { return 0; } // invalid start location
             pi_.start_id_ = start->get_id();
 
 			start->init(pi_.instance_id_, warthog::SN_ID_MAX, 

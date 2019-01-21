@@ -198,6 +198,9 @@ class chase_search : public warthog::search
             warthog::search_node *start, *target;
             start = fexpander_->generate_start_node(&pi_);
             target = bexpander_->generate_target_node(&pi_);
+            if(start == 0 ) { return; } // invalid start
+            if(target == 0) { return; } // invalid target
+
             pi_.start_id_ = start->get_id();
             pi_.target_id_ = target->get_id();
             
