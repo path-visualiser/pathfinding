@@ -43,7 +43,6 @@ contract_graph()
 
     // contract a graph and create a hierarchy
     warthog::graph::xy_graph g;
-    std::vector<uint32_t> order;
 
     std::string partial = cfg.get_param_value("partial");
     int32_t pct_nodes_to_contract = 100;
@@ -72,6 +71,7 @@ contract_graph()
             return;
         }
 
+        std::vector<uint32_t> order;
         if(!warthog::ch::load_node_order(orderfile.c_str(), order))
         {
             std::cerr << "err; could not load node order input file\n";
@@ -109,37 +109,28 @@ contract_graph()
                 << "err; could not load gr or co input files (one or both)\n";
             return;
         }
-        warthog::ch::lazy_graph_contraction contractor(&g);
-        contractor.set_verbose(verbose);
-        contractor.contract(verify, (uint32_t)pct_nodes_to_contract);
 
+        warthog::ch::lazy_graph_contraction contractor;
+        contractor.set_verbose(verbose);
+        warthog::ch::ch_data* chd = 
+            contractor.contract(&g, verify, (uint32_t)pct_nodes_to_contract);
+
+        std::cerr << "saving...\n";
 
         // save the result
         if(pct_nodes_to_contract < 100)
         {
-            grfile.append(".pch");
+            grfile.append(".chd_p");
         }
         else
         {
-            grfile.append(".ch");
+            grfile.append(".chd");
         }
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
-        std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-        if(!ch_out.good())
+        if(!warthog::ch::save(grfile.c_str(), chd))
         {
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
-        g.print_dimacs_gr(ch_out, 0, (uint32_t)g.get_num_nodes());
-        ch_out.close();
-
-        // save the order of contraction
-        contractor.get_order(order);
-        std::string orderfile = grfile + ".ooc";
-        std::cerr << "saving order to file " << orderfile << std::endl;
-
-        warthog::ch::write_node_order(orderfile.c_str(), order);
-        //warthog::ch::write_node_order(std::cout, order);
-
     }
     else
     {

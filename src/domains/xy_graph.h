@@ -423,7 +423,7 @@ class xy_graph_base
         void
         grow(size_t num_nodes)
         {
-            assert(num_nodes > nodes_.size());
+            if(num_nodes <= nodes_.size()) { return; }
             nodes_.resize(num_nodes);
             xy_.resize(num_nodes*2);
             id_map_.resize(num_nodes);
@@ -443,10 +443,10 @@ class xy_graph_base
         }
 
 
-        inline size_t
+        inline uint32_t
         get_num_nodes() const
         {
-            return nodes_.size();
+            return (uint32_t)nodes_.size();
         }
 
         inline uint32_t 

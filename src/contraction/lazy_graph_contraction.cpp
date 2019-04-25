@@ -16,76 +16,20 @@ warthog::ch::operator<(const ch_pair& first, const ch_pair& second)
     return first.cval_ < second.cval_;
 }
 
-warthog::ch::lazy_graph_contraction::lazy_graph_contraction(
-        warthog::graph::xy_graph* g) : g_(g)
-{
-    heuristic_ = new warthog::euclidean_heuristic(g_);
-    c_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
-    u_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
-    fexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
-                g_, c_filter_);
-    bexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
-                g_, c_filter_);
-
-    alg_ = new bidirectional_search< warthog::euclidean_heuristic,
-                 warthog::graph_expansion_policy<warthog::apriori_filter>>(
-                         fexpander_, bexpander_, heuristic_);
-
-    size_t sz_g = g_->get_num_nodes();
-    heap_ = new warthog::heap<ch_pair>((uint32_t)sz_g, true);
-    hn_pool_ = new heap_node<ch_pair>[sz_g];
-
-    terms_ = new niv_metrics[sz_g];
-
-    ws_max_expansions_ = warthog::INF32;
-    verbose_ = false;
-}
-
-warthog::ch::lazy_graph_contraction::~lazy_graph_contraction()
-{
-    delete [] terms_;
-    terms_ = 0;
-
-    delete [] hn_pool_;
-    hn_pool_ = 0;
-
-    delete heap_;
-    heap_ = 0;
-
-    delete alg_;
-    alg_ = 0;
-
-    delete c_filter_;
-    c_filter_ = 0;
-    
-    delete u_filter_;
-    u_filter_ = 0;
-
-    delete heuristic_;
-    heuristic_ = 0;
-
-    delete fexpander_;
-    fexpander_ = 0;
-
-    delete bexpander_;
-    bexpander_ = 0;
-}
-
-void
+warthog::ch::ch_data*
 warthog::ch::lazy_graph_contraction::contract(
+        warthog::graph::xy_graph* g,
         bool verify_priorities, uint32_t c_pct)
 {
-    if(order_.size() > 0) { return; } // graph already contracted
+    warthog::timer mytimer;
+    double t_begin = mytimer.get_time_micro();
+    preliminaries(g);
 
     if(c_pct < 100)
     { std::cerr << "partially " << "("<<c_pct<<"% of nodes) "; }
     std::cerr << "contracting graph " << g_->get_filename() << std::endl;
     uint32_t edges_before = g_->get_num_edges_out();
     std::cerr << " edges before " << edges_before << " ";
-
-    warthog::timer mytimer;
-    double t_begin = mytimer.get_time_micro();
-    preliminaries();
 
     // contract nodes in the order produced by ::next
     uint32_t total_nodes = (uint32_t)((g_->get_num_nodes()*c_pct) / 100);
@@ -157,7 +101,7 @@ warthog::ch::lazy_graph_contraction::contract(
                 //<< "\r " 
                 //<< (int)((order_.size() / (double)g_->get_num_nodes()) * 100)
                 << "time: " << (int)((t_last - t_begin)/1000000) << "s"
-                << "%; " << order_.size() << " /  " << total_nodes 
+                << "; " << order_->size() << " /  " << total_nodes 
                 << "; nid: " << best_id 
                 << ", pri: " << hn_pool_[best_id].get_element().cval_
                 << "; #out: " << g_->get_node(best_id)->out_degree()
@@ -170,16 +114,50 @@ warthog::ch::lazy_graph_contraction::contract(
         }
     }
 
+    warthog::ch::ch_data* ret = new warthog::ch::ch_data(g_);
+    for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
+    {
+        ret->level_->at(i) = order_->at(i);
+    }
+    warthog::ch::value_index_swap_dimacs(*ret->level_);
+    postliminaries();
+
     std::cerr << "\ngraph, contracted. ";
     std::cerr << "edges before " << edges_before 
         << "; edges after " << g_->get_num_edges_out() << std::endl;
-
-    postliminaries();
+    std::cout << "lazy contraction summary:" << std::endl
+        << "\twitness searches: " << total_searches_ << std::endl 
+        << "\tlazy updates: "<< total_lazy_updates_ << std::endl
+        << "\tnode expansions " << total_expansions_ << std::endl;
+    return ret;
 }
 
 void
-warthog::ch::lazy_graph_contraction::preliminaries()
+warthog::ch::lazy_graph_contraction::preliminaries(warthog::graph::xy_graph* g)
 {
+    order_= new std::vector<uint32_t>();
+    g_ = g;
+    heuristic_ = new warthog::euclidean_heuristic(g_);
+    c_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
+    u_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
+    fexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
+                g_, c_filter_);
+    bexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
+                g_, c_filter_);
+
+    alg_ = new bidirectional_search< warthog::euclidean_heuristic,
+                 warthog::graph_expansion_policy<warthog::apriori_filter>>(
+                         fexpander_, bexpander_, heuristic_);
+
+    size_t sz_g = g_->get_num_nodes();
+    heap_ = new warthog::heap<ch_pair>((uint32_t)sz_g, true);
+    hn_pool_ = new heap_node<ch_pair>[sz_g];
+
+    terms_ = new niv_metrics[sz_g];
+
+    ws_max_expansions_ = warthog::INF32;
+    verbose_ = false;
+
     // initialise edge labels with hop numbers (initially, all 1)
     for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
     {
@@ -223,10 +201,36 @@ warthog::ch::lazy_graph_contraction::preliminaries()
 void
 warthog::ch::lazy_graph_contraction::postliminaries()
 {
-    std::cout << "lazy contraction summary:" << std::endl
-        << "\twitness searches: " << total_searches_ << std::endl 
-        << "\tlazy updates: "<< total_lazy_updates_ << std::endl
-        << "\tnode expansions " << total_expansions_ << std::endl;
+    delete [] terms_;
+    terms_ = 0;
+
+    delete [] hn_pool_;
+    hn_pool_ = 0;
+
+    delete heap_;
+    heap_ = 0;
+
+    delete alg_;
+    alg_ = 0;
+
+    delete c_filter_;
+    c_filter_ = 0;
+    
+    delete u_filter_;
+    u_filter_ = 0;
+
+    delete heuristic_;
+    heuristic_ = 0;
+
+    delete fexpander_;
+    fexpander_ = 0;
+
+    delete bexpander_;
+    bexpander_ = 0;
+
+    delete order_;
+    order_ = 0;
+
 }
 
 // identifies the node that should be contracted next NB: nodes are ranked in a
@@ -247,7 +251,7 @@ warthog::ch::lazy_graph_contraction::next(
     }
 
     // early abort; partial contraction limit reached
-    uint32_t pct = (uint32_t)((order_.size() / (warthog::cost_t)g_->get_num_nodes()) * 100);
+    uint32_t pct = (uint32_t)((order_->size() / (warthog::cost_t)g_->get_num_nodes()) * 100);
     if(pct >= c_pct)
     { 
         std::cerr << "\npartial contraction finished " 
@@ -385,24 +389,17 @@ warthog::ch::lazy_graph_contraction::contract_node(
         for(auto& pair : in_shorts) 
         { (pair.first)->add_incoming(pair.second); }
 
-        order_.push_back(node_id); 
+        order_->push_back(node_id); 
     }
 
 
     // another metric is the level estimate for the current node 
     // (at least equal to [#contractions], assuming first level is zero)
-    niv.level_ = (uint32_t)order_.size();
+    niv.level_ = (uint32_t)order_->size();
 
     // finally, we carry over the search-space-size metric (updated elsewhere)
     niv.depth_ = terms_[node_id].depth_;
     return niv;
-}
-
-void
-warthog::ch::lazy_graph_contraction::get_order(std::vector<uint32_t>& order)
-{
-    order = order_;
-
 }
 
 size_t

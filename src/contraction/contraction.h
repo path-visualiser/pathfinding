@@ -76,10 +76,10 @@ load_contraction_hierarchy_and_optimise_for_fch(
 // @param co_file: location of the file containing x & y coordinates.
 // @param rank: a lexical ordering specifying the level/rank of each node
 // @return: the optimised graph, or 0 if load failed
-void
-optimise_graph_for_bch(
-        warthog::graph::xy_graph* g,
-        std::vector<uint32_t>* rank);
+//void
+//optimise_graph_for_bch(
+//        warthog::graph::xy_graph* g,
+//        std::vector<uint32_t>* rank);
 
 // Load an input graph and optimise edges for use with the bi-directional
 // Dijkstra search (BCH). This algorithm traverses the hierarchy as follows:
@@ -93,10 +93,10 @@ optimise_graph_for_bch(
 // @param co_file: location of the file containing x & y coordinates.
 // @param rank: a lexical ordering specifying the level/rank of each node
 // @return: the optimised graph, or 0 if load failed
-void
-optimise_graph_for_bch_v2(
-        warthog::graph::xy_graph* g, 
-        std::vector<uint32_t>* rank);
+//void
+//optimise_graph_for_bch_v2(
+//        warthog::graph::xy_graph* g, 
+//        std::vector<uint32_t>* rank);
 
 void
 write_node_order(const char* filename, std::vector<uint32_t>& order);

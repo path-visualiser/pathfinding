@@ -286,39 +286,20 @@ run_dijkstra(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_bch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
+run_bch(warthog::util::cfg& cfg, 
+        warthog::dimacs_parser& parser, std::string alg_name)
 {
-    std::string orderfile = cfg.get_param_value("input");
-    if(orderfile == "")
+    std::string chd_file = cfg.get_param_value("input");
+    if(chd_file == "")
     {
-        std::cerr << "err; missing contraction order input file\n";
+        std::cerr << "err; chd input file\n";
         return;
     }
-
-    // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load contraction order file\n";
-        return;
-    }
-
-    // load up the graph
-    std::shared_ptr<warthog::graph::xy_graph> g(
-            new warthog::graph::xy_graph());
-    if(!g->load_from_dimacs( gr.c_str(), co.c_str(), false, true))
-    {
-        std::cerr 
-            << "err; could not load gr or co input files "
-            << "(one or both)\n";
-        return;
-    }
-    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+    warthog::ch::ch_data* chd = warthog::ch::load(chd_file.c_str(), true);
 
     std::cerr << "preparing to search\n";
-    warthog::bch_expansion_policy fexp(g.get(), &order);
-    warthog::bch_expansion_policy bexp (g.get(), &order, true);
+    warthog::bch_expansion_policy fexp(chd->g_, chd->level_);
+    warthog::bch_expansion_policy bexp (chd->g_, chd->level_, true);
     warthog::zero_heuristic h;
     warthog::bch_search<
         warthog::zero_heuristic, 
@@ -357,7 +338,7 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             << "(one or both)\n";
         return;
     }
-    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+    //warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
 
     std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy bexp (g.get(), &order, true);
@@ -523,7 +504,7 @@ run_chase(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+    //warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
 
     std::shared_ptr<warthog::label::af_labelling> fwd_afl(fwd_lab);
     std::shared_ptr<warthog::label::af_labelling> bwd_afl(bwd_lab);
@@ -585,7 +566,7 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+    //warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
 
     std::shared_ptr<warthog::label::bb_labelling> fwd_lab(fwd_lab_ptr);
     std::shared_ptr<warthog::label::bb_labelling> bwd_lab(bwd_lab_ptr);
@@ -660,7 +641,7 @@ run_bch_af(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+    //warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
 
     std::shared_ptr<warthog::label::af_labelling> fwd_afl(fwd_lab);
     std::shared_ptr<warthog::label::af_labelling> bwd_afl(bwd_lab);
@@ -736,7 +717,7 @@ run_bch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; could not load arcflags file\n";
         return;
     }
-    warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
+    //warthog::ch::optimise_graph_for_bch_v2(g.get(), &order);
 
     std::shared_ptr<warthog::label::bbaf_labelling> fwd_lab(fwd_lab_ptr);
     std::shared_ptr<warthog::label::bbaf_labelling> bwd_lab(bwd_lab_ptr);
@@ -1242,8 +1223,6 @@ run_fch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 void
 run_dimacs(warthog::util::cfg& cfg)
 {
-    std::string gr = cfg.get_param_value("input");
-    std::string co = cfg.get_param_value("input");
     std::string problemfile = cfg.get_param_value("problem");
     std::string alg_name = cfg.get_param_value("alg");
     std::string par_nruns = cfg.get_param_value("nruns");
@@ -1260,16 +1239,6 @@ run_dimacs(warthog::util::cfg& cfg)
         std::cerr << "parameter is missing: --problem\n";
         return;
     }
-    if((gr == "") || co == "")
-    {
-        std::cerr << "parameter is missing: --input [gr file] [co file]\n";
-        return;
-    }
-    if((alg_name == ""))
-    {
-        std::cerr << "parameter is missing: --alg\n";
-        return;
-    }
 
     warthog::dimacs_parser parser;
     parser.load_instance(problemfile.c_str());
@@ -1281,70 +1250,262 @@ run_dimacs(warthog::util::cfg& cfg)
 
     if(alg_name == "dijkstra")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_dijkstra(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "astar")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_astar(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "bi-dijkstra")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_bi_dijkstra(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "bi-astar")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_bi_astar(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "bch")
     {
-        run_bch(cfg, parser, alg_name, gr, co);
+        run_bch(cfg, parser, alg_name);
     }
     else if(alg_name == "bchb")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_bch_backwards_only(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "chase")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_chase(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "bch-astar")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_bch_astar(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "bch-bb")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_bch_bb(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "bch-af")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_bch_af(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "bch-bbaf")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_bch_bbaf(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_fch(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-af")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_fch_af(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-bb")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_fch_bb(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-bbaf")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_fch_bbaf(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-dfs")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_fch_dfs(cfg, parser, alg_name, gr, co);
     }
     else if(alg_name == "fch-fm")
     {
+        std::string gr = cfg.get_param_value("input");
+        std::string co = cfg.get_param_value("input");
+        if((gr == "") || co == "")
+        {
+            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
+            return;
+        }
+        if((alg_name == ""))
+        {
+            std::cerr << "parameter is missing: --alg\n";
+            return;
+        }
         run_fch_fm(cfg, parser, alg_name, gr, co);
     }
     else

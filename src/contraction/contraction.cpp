@@ -253,92 +253,90 @@ warthog::ch::unpack_and_list_edges(warthog::graph::edge* scut,
     }
 }
 
-void
-warthog::ch::optimise_graph_for_bch(warthog::graph::xy_graph* g,
-        std::vector<uint32_t>* rank)
-{
-    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
-    {
-        warthog::graph::node* n = g->get_node(i);
-        uint32_t n_rank = rank->at(i);
-
-//        std::cerr << "before: node "<< i << "; in_deg="<<n->in_degree()
-//                  << "; out_deg="<<n->out_degree() << "\n";
-
-        // delete all incoming edges except reverse down edges
-        for(uint32_t j = 0; j < n->in_degree(); j++)
-        {
-            warthog::graph::edge_iter e_iter = (n->incoming_begin()+j);
-            uint32_t in_rank = rank->at((*e_iter).node_id_);
-            if(in_rank < n_rank)
-            {
-                n->del_incoming(e_iter);
-                j--;
-            }
-        }
-
-        // delete all outgoing edges except those going up
-        for(uint32_t j = 0; j < n->out_degree(); j++)
-        {
-            warthog::graph::edge_iter e_iter = (n->outgoing_begin()+j);
-            uint32_t out_rank = rank->at((*e_iter).node_id_);
-            if(out_rank < n_rank)
-            {
-                n->del_outgoing(e_iter);
-                j--;
-            }
-        }
-//        std::cerr << "after: node "<< i << "; in_deg="<<n->in_degree()
-//                  << "; out_deg="<<n->out_degree() << "\n";
-    }
-}
-
-void
-warthog::ch::optimise_graph_for_bch_v2(
-        warthog::graph::xy_graph* g, std::vector<uint32_t>* rank)
-{
-    //fch_sort_successors(g, rank);
-
-    // create an new graph with all the same nodes but no edges
-    warthog::graph::xy_graph bch_g;
-    bch_g.capacity(g->get_num_nodes());
-    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
-    {
-        int32_t node_x, node_y;
-        g->get_xy(i, node_x, node_y);
-        bch_g.add_node(node_x, node_y, g->to_external_id(i));
-    }
-
-    // add edges, optimising the layout for BCH
-    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
-    {
-        warthog::graph::node* n = g->get_node(i);
-        uint32_t n_rank = rank->at(i);
-
-        // delete all outgoing edges except those going up
-        for(uint32_t j = 0; j < n->out_degree(); j++)
-        {
-            warthog::graph::edge_iter e_iter = (n->outgoing_begin()+j);
-            uint32_t out_rank = rank->at((*e_iter).node_id_);
-
-            // outgoing-down-eddges become incoming-up-edges and get
-            // stored with the head node
-            if(out_rank < n_rank)
-            {
-                warthog::graph::edge rev_up_e = *e_iter;
-                uint32_t head_id = (*e_iter).node_id_;
-                rev_up_e.node_id_ = i; 
-                bch_g.get_node(head_id)->add_incoming(rev_up_e);
-            }
-            // outgoing up 
-            else
-            {
-                bch_g.get_node(i)->add_outgoing(*e_iter);
-            }
-        }
-    }
-    *g = std::move(bch_g);
-}
+//void
+//warthog::ch::optimise_graph_for_bch(warthog::ch::ch_data chd)
+//{
+//    for(uint32_t i = 0; i < chd->g_->get_num_nodes(); i++)
+//    {
+//        warthog::graph::node* n = chd->g_->get_node(i);
+//        uint32_t n_rank = chd->level_->at(i);
+//
+////        std::cerr << "before: node "<< i << "; in_deg="<<n->in_degree()
+////                  << "; out_deg="<<n->out_degree() << "\n";
+//
+//        // delete all incoming edges except reverse down edges
+//        for(uint32_t j = 0; j < n->in_degree(); j++)
+//        {
+//            warthog::graph::edge_iter e_iter = (n->incoming_begin()+j);
+//            uint32_t in_rank = chd->level_->at((*e_iter).node_id_);
+//            if(in_rank < n_rank)
+//            {
+//                n->del_incoming(e_iter);
+//                j--;
+//            }
+//        }
+//
+//        // delete all outgoing edges except those going up
+//        for(uint32_t j = 0; j < n->out_degree(); j++)
+//        {
+//            warthog::graph::edge_iter e_iter = (n->outgoing_begin()+j);
+//            uint32_t out_rank = chd->level_->at((*e_iter).node_id_);
+//            if(out_rank < n_rank)
+//            {
+//                n->del_outgoing(e_iter);
+//                j--;
+//            }
+//        }
+////        std::cerr << "after: node "<< i << "; in_deg="<<n->in_degree()
+////                  << "; out_deg="<<n->out_degree() << "\n";
+//    }
+//}
+//
+//void
+//warthog::ch::optimise_graph_for_bch_v2(warthog::ch_data* chd)
+//{
+//    //fch_sort_successors(g, rank);
+//
+//    // create an new graph with all the same nodes but no edges
+//    warthog::graph::xy_graph bch_g;
+//    bch_g.capacity(g->get_num_nodes());
+//    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
+//    {
+//        int32_t node_x, node_y;
+//        g->get_xy(i, node_x, node_y);
+//        bch_g.add_node(node_x, node_y, g->to_external_id(i));
+//    }
+//
+//    // add edges, optimising the layout for BCH
+//    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
+//    {
+//        warthog::graph::node* n = g->get_node(i);
+//        uint32_t n_rank = rank->at(i);
+//
+//        // delete all outgoing edges except those going up
+//        for(uint32_t j = 0; j < n->out_degree(); j++)
+//        {
+//            warthog::graph::edge_iter e_iter = (n->outgoing_begin()+j);
+//            uint32_t out_rank = rank->at((*e_iter).node_id_);
+//
+//            // outgoing-down-eddges become incoming-up-edges and get
+//            // stored with the head node
+//            if(out_rank < n_rank)
+//            {
+//                warthog::graph::edge rev_up_e = *e_iter;
+//                uint32_t head_id = (*e_iter).node_id_;
+//                rev_up_e.node_id_ = i; 
+//                bch_g.get_node(head_id)->add_incoming(rev_up_e);
+//            }
+//            // outgoing up 
+//            else
+//            {
+//                bch_g.get_node(i)->add_outgoing(*e_iter);
+//            }
+//        }
+//    }
+//    *g = std::move(bch_g);
+//}
 
 warthog::graph::xy_graph* 
 warthog::ch::load_contraction_hierarchy_and_optimise_for_fch( 

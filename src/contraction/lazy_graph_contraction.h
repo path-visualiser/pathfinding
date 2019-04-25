@@ -31,6 +31,7 @@
 // @created: 2016-01-25
 //
 
+#include "ch_data.h"
 #include "constants.h"
 #include "contraction.h"
 #include "heap.h"
@@ -72,9 +73,6 @@ operator<(const ch_pair& first, const ch_pair& second);
 class lazy_graph_contraction 
 {
     public:
-        lazy_graph_contraction(warthog::graph::xy_graph* g);
-
-        virtual ~lazy_graph_contraction();
 
         // contract the graph lazily
         //
@@ -85,12 +83,8 @@ class lazy_graph_contraction
         // the second best node on the contraction queue the node is requeued. 
         // process repeats until the top node priority is verified.
         // the hope is that this process yields a better ordering
-        void
-        contract(bool verify_priorities=false, uint32_t c_pct=100);
-
-        // @return the order in which nodes were contracted
-        void  
-        get_order(std::vector<uint32_t>& order);
+        warthog::ch::ch_data*
+        contract(warthog::graph::xy_graph* g, bool verify_priorities=false, uint32_t c_pct=100);
 
         void
         set_verbose(bool verbose) { this->verbose_ = verbose; }
@@ -108,7 +102,7 @@ class lazy_graph_contraction
         // node order stuff
         warthog::heap<ch_pair>* heap_;
         warthog::heap_node<ch_pair>* hn_pool_;
-        std::vector<uint32_t> order_; // node ids, as retured by ::next
+        std::vector<uint32_t>* order_; // node ids, as retured by ::next
 
         std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
             in_shorts;
@@ -187,7 +181,7 @@ class lazy_graph_contraction
         uint64_t total_lazy_updates_;
 
         void
-        preliminaries();
+        preliminaries(warthog::graph::xy_graph* g);
 
         void
         postliminaries();

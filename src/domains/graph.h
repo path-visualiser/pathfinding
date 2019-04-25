@@ -28,6 +28,8 @@ const uint16_t ECAP_MAX = UINT16_MAX;
 typedef uintptr_t ELABEL_T;
 
 typedef double edge_cost_t;
+const double EDGE_COST_MAX = DBL_MAX;
+
 class edge
 {
     public:
