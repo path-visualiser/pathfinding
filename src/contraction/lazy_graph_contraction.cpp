@@ -23,13 +23,12 @@ warthog::ch::lazy_graph_contraction::contract(
 {
     warthog::timer mytimer;
     double t_begin = mytimer.get_time_micro();
+    std::cerr << "contracting graph " << ret->g_->get_filename() << std::endl;
     preliminaries(ret);
 
     if(c_pct < 100)
-    { std::cerr << "partially " << "("<<c_pct<<"% of nodes) "; }
-    std::cerr << "contracting graph " << ret->g_->get_filename() << std::endl;
+    { std::cerr << "partial contraction " << "(first "<<c_pct<<"% of nodes only)\n"; }
     uint32_t edges_before = ret->g_->get_num_edges_out();
-    std::cerr << " edges before " << edges_before << " ";
 
     // contract nodes in the order produced by ::next
     uint32_t total_nodes = (uint32_t)((ret->g_->get_num_nodes()*c_pct) / 100);
@@ -174,17 +173,19 @@ warthog::ch::lazy_graph_contraction::preliminaries(warthog::ch::ch_data* chd)
 
     // create an initial ordering by performing on each node
     // a faux contraction operation
-    std::cerr << "creating initial contraction order" << std::endl;
+    std::cerr << "creating initial contraction order:\n";
     total_searches_ = 0;
     total_expansions_ = 0;
     total_lazy_updates_ = 0;
    
+    double pct_counter=0;
     for(uint32_t i = 0;
         i < g_->get_num_nodes(); i++)
     {
-        if((i % 1000) == 0)
+        if( (i / (double)g_->get_num_nodes()) >= pct_counter)
         {
-            std::cerr << i << " / " << g_->get_num_nodes() << "\r";
+            std::cerr << pct_counter*100 << "%...";
+            pct_counter+=0.1;
         }
         niv_metrics niv = contract_node(i, true);
         int32_t priority = compute_contraction_priority(niv);
@@ -192,8 +193,7 @@ warthog::ch::lazy_graph_contraction::preliminaries(warthog::ch::ch_data* chd)
         heap_->push(&hn_pool_[i]);
         terms_[i] = niv;
     }
-    std::cerr << "all " << g_->get_num_nodes() 
-        << " nodes contracted " << std::endl;
+    std::cerr << "100%" << std::endl;
 }
 
 void
@@ -314,7 +314,6 @@ warthog::ch::lazy_graph_contraction::contract_node(
         niv.hops_removed_ += e_out.label_;
         uc_neis_.push_back(e_out);
     }
-    uc_neis_incoming_begin_ = (uint32_t)uc_neis_.size();
     for(uint32_t i = 0; i < n->in_degree(); i++)
     {
         warthog::graph::edge& e_in = *(n->incoming_begin() + i);
@@ -334,14 +333,13 @@ warthog::ch::lazy_graph_contraction::contract_node(
     // witness searches (i.e. between every pair of (in, out) neighbours)
     // NB: during each witness search, we never expand the current node
     c_filter_->set_flag_true(node_id);
-    //ws_max_expansions_ = (metrics_only ? 1000 : warthog::INF32); // ddh
     ws_max_expansions_ = 500; // as recommended by RoutingKit's implementation
-
-    for(uint32_t i = uc_neis_incoming_begin_; i < uc_neis_.size(); i++)
+    //ws_max_expansions_ = (metrics_only ? 1000 : warthog::INF32); // ddh
+    for(uint32_t i = 0; i < uc_neis_.size(); i++)
     {
         warthog::graph::edge& e_in = uc_neis_.at(i);
 
-        for(uint32_t j = 0; j < uc_neis_incoming_begin_; j++)
+        for(uint32_t j = i+1; j < uc_neis_.size(); j++)
         {
             warthog::graph::edge& e_out = uc_neis_.at(j);
             if(e_in.node_id_ == e_out.node_id_) { continue; }

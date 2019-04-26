@@ -110,7 +110,6 @@ contract_graph()
                 << "err; could not load gr or co input files (one or both)\n";
             return;
         }
-        chd.level_->resize(chd.g_->get_num_nodes());
 
         warthog::ch::lazy_graph_contraction contractor;
         contractor.set_verbose(verbose);

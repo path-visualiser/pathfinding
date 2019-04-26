@@ -112,7 +112,6 @@ class lazy_graph_contraction
         // these objects get recycled across all witness searches
         warthog::solution sol_;
         std::vector<warthog::graph::edge> uc_neis_;
-        uint32_t uc_neis_incoming_begin_;
 
         // a variety of "node importance values" are computed for each node
         // in order to determine the order of contraction
