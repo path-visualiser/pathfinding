@@ -154,7 +154,9 @@ class xy_graph_base
             for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
                     it != dimacs.nodes_end(); it++)
             {
-               add_node((*it).x_, (*it).y_, (*it).id_);
+               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
+               // here, we update the id as we add it to the graph
+               add_node((*it).x_, (*it).y_, (*it).id_ - 1);
             }
             if(verbose_) { std::cerr << "nodes, converted" << std::endl; }
 
@@ -164,17 +166,19 @@ class xy_graph_base
             for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
                     it != dimacs.edges_end(); it++)
             {
-                uint32_t h_graph_id = to_graph_id(it->head_id_);
-                uint32_t t_graph_id = to_graph_id(it->tail_id_);
-                in_deg[h_graph_id]++;
-                out_deg[t_graph_id]++;
+               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
+               // here, we convert to 0-indexing on-the-fly
+                in_deg[it->head_id_ - 1]++;
+                out_deg[it->tail_id_ - 1]++;
             }
 
             // allocate memory for edges
             for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
                     it != dimacs.nodes_end(); it++)
             {
-                uint32_t nid = (uint32_t)(it - dimacs.nodes_begin());
+               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
+               // here, we convert to 0-indexing on-the-fly
+                uint32_t nid = (*it).id_ - 1;
                 nodes_[nid].capacity( 
                     store_incoming_edges ? in_deg[nid] : 0, out_deg[nid]);
             }
@@ -183,8 +187,10 @@ class xy_graph_base
             for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
                     it != dimacs.edges_end(); it++)
             {
-                uint32_t hid = to_graph_id( (*it).head_id_ );
-                uint32_t tid = to_graph_id( (*it).tail_id_ );
+               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
+               // here, we convert to 0-indexing on-the-fly
+                uint32_t hid = (*it).head_id_ - 1;
+                uint32_t tid = (*it).tail_id_ - 1;
 
                 // in a reverse graph the head and tail of every 
                 // edge are swapped
@@ -237,6 +243,8 @@ class xy_graph_base
 
             std::cerr << "edge memory fragmentation: (1=none): " 
                 << this->edge_mem_frag() << std::endl;
+            //print_dimacs_co(std::cerr, 0, (uint32_t)nodes_.size()-1);
+            //print_dimacs_gr(std::cerr, 0, (uint32_t)nodes_.size()-1);
             return true;
         }
 
@@ -530,18 +538,18 @@ class xy_graph_base
         {
             // check if a node with the same external id already exists; if so 
             // return the id of the existing node. otherwise, add a new node
-            uint32_t graph_id = to_graph_id(ext_id);
-            if(graph_id != warthog::INF32) { return graph_id; } 
+            //uint32_t graph_id = to_graph_id(ext_id);
+            //if(graph_id != warthog::INF32) { return graph_id; } 
 
-            graph_id = (uint32_t)get_num_nodes();
+            uint32_t graph_id = (uint32_t)get_num_nodes();
             nodes_.push_back(warthog::graph::node());
             xy_.push_back(x);
             xy_.push_back(y);
-            id_map_.push_back(ext_id);
-            if(ext_id != warthog::INF32)
-            {
-                ext_id_map_.insert(std::pair<uint32_t, uint32_t>(ext_id, graph_id));
-            }
+            //id_map_.push_back(ext_id);
+            //if(ext_id != warthog::INF32)
+            //{
+            //    ext_id_map_.insert(std::pair<uint32_t, uint32_t>(ext_id, graph_id));
+            //}
             return graph_id;
         }
 
@@ -594,14 +602,16 @@ class xy_graph_base
         inline uint32_t 
         to_graph_id(uint32_t ext_id) 
         { 
-            if(id_map_.size() == 0) { return warthog::INF32; }
-
-            std::unordered_map<uint32_t, uint32_t>::iterator it 
-                    = ext_id_map_.find(ext_id);
-
-            if(it == ext_id_map_.end()) { return warthog::INF32; }
-            return (*it).second;
-        }
+            assert(ext_id < nodes_.size());
+            return ext_id;
+//            if(id_map_.size() == 0) { return warthog::INF32; }
+//
+//            std::unordered_map<uint32_t, uint32_t>::iterator it 
+//                    = ext_id_map_.find(ext_id);
+//
+//            if(it == ext_id_map_.end()) { return warthog::INF32; }
+//            return (*it).second;
+      }
 
         // convert an internal node id (i.e. as used by the current graph
         // to the equivalent external id (e.g. as appears in an input file)
@@ -614,8 +624,10 @@ class xy_graph_base
         inline uint32_t 
         to_external_id(uint32_t in_id)  const
         { 
-            if(in_id > get_num_nodes()) { return warthog::INF32; }
-            return id_map_.at(in_id);
+            assert(in_id < nodes_.size());
+            return in_id;
+            //if(in_id > get_num_nodes()) { return warthog::INF32; }
+            //return id_map_.at(in_id);
         }
 
         // compute the proportion of bytes allocated to edges with respect

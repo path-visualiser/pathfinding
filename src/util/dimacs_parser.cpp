@@ -64,6 +64,9 @@ warthog::dimacs_parser::load_graph(const char* filename)
 	while(fdimacs->good())
 	{
 		fdimacs->getline(buf, 1024);
+		if(buf[0] == 'c')
+            continue;
+
 		if(buf[0] == 'p')
 		{
 			char* token = strtok(buf, delim); // p char
@@ -81,15 +84,17 @@ warthog::dimacs_parser::load_graph(const char* filename)
                     std::cerr 
                         << "error; invalid graph description on line " 
                         << line << " of file " << filename << "\n";
-                    retval = false;
-                    break;
+                    delete fdimacs;
+                    delete [] buf;
+                    return 0;
                 }
                 std::cerr 
                     << "loading " << tmp_num_edges << " arcs "
                     << "from "<< filename << " ... ";
-                edges_->resize(tmp_num_edges);
+                edges_->reserve(tmp_num_edges);
 				retval = load_gr_file(*fdimacs);
                 std::cerr << "done\n";
+                break;
 			}
 			else if(strcmp(token, "aux") == 0)
 			{
@@ -103,37 +108,43 @@ warthog::dimacs_parser::load_graph(const char* filename)
                     token = strtok(NULL, delim);  
                     if(strcmp(token, "co") != 0)
                     {
-                        retval = false;
+                        std::cerr 
+                            << "error; invalid graph description on line " 
+                            << line <<" of file " << filename << "\n";
+                        delete fdimacs;
+                        delete [] buf;
+                        return 0;
                     }
                     else
                     { 
                         token = strtok(NULL, delim);  
                         char* end;
                         uint32_t tmp_num_nodes = (uint32_t)strtol(token, &end, 10);
-                        if(tmp_num_nodes == 0L) { retval = false; } 
-                        nodes_->resize(tmp_num_nodes);
+                        if(tmp_num_nodes == 0L) 
+                        { 
+                            std::cerr 
+                                << "error; invalid graph description on line " 
+                                << line <<" of file " << filename << "\n";
+                            delete fdimacs;
+                            delete [] buf;
+                            return 0;
+                        }
+                        std::cerr 
+                            << "loading " << nodes_->capacity() << " nodes "
+                            << "from " << filename << " ... ";
+                        nodes_->reserve(tmp_num_nodes);
+                        retval = load_co_file(*fdimacs);
+                        std::cerr << "done\n";
+                        break;
                     }
                 }
-
-                if(retval == 0)
-                {
-                    std::cerr 
-                        << "error; invalid graph description on line " 
-                        << line <<" of file " << filename << "\n";
-                    break;
-                }
-
-                std::cerr 
-                    << "loading " << nodes_->capacity() << " nodes "
-                    << "from " << filename << " ... ";
-				retval = load_co_file(*fdimacs);
-                std::cerr << "done\n";
 			}
 			else
 			{
 				std::cerr << "error; unrecognised problem line in dimacs file\n";
-                retval = 0;
-				break;
+                delete fdimacs;
+                delete [] buf;
+                return 0;
 			}
 		}
 		line++;
@@ -199,8 +210,6 @@ warthog::dimacs_parser::load_co_file(std::istream& fdimacs)
 bool
 warthog::dimacs_parser::load_gr_file(std::istream& fdimacs)
 {
-    edges_->clear();
-
     uint32_t line = 1;
 	char* buf = new char[1024];
 	const char* delim = " \t";
@@ -344,6 +353,8 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
             {
                 exp.target = warthog::INF32;
             }
+
+            // add the experiment
             experiments_->push_back(exp);
         } 
         else

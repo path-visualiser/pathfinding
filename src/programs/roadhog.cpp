@@ -174,7 +174,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
             << touched / nruns << "\t"
             << nano_time << "\t" /// (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
-            << (sol.path_.size()-1) << "\t" 
+            << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t" 
             << parser.get_problemfile() 
             << std::endl;
     }
@@ -295,11 +295,12 @@ run_bch(warthog::util::cfg& cfg,
         std::cerr << "err; chd input file\n";
         return;
     }
-    warthog::ch::ch_data* chd = warthog::ch::load(chd_file.c_str(), true);
+    warthog::ch::ch_data chd;
+    warthog::ch::load_bch(&chd, chd_file.c_str());
 
     std::cerr << "preparing to search\n";
-    warthog::bch_expansion_policy fexp(chd->g_, chd->level_);
-    warthog::bch_expansion_policy bexp (chd->g_, chd->level_, true);
+    warthog::bch_expansion_policy fexp(chd.g_, chd.level_);
+    warthog::bch_expansion_policy bexp (chd.g_, chd.level_, true);
     warthog::zero_heuristic h;
     warthog::bch_search<
         warthog::zero_heuristic, 
@@ -1247,6 +1248,19 @@ run_dimacs(warthog::util::cfg& cfg)
         std::cerr << "err; specified problem file contains no instances\n";
         return;
     }
+
+    // DIMACS uses 1-indexed ids. 
+    // Here we convert all source and target ids to be 0-indexed 
+    for(auto it = parser.experiments_begin(); 
+            it != parser.experiments_end(); 
+            it++)
+    {
+        (*it).source = (*it).source - 1;
+        (*it).target = 
+            ((*it).target == warthog::INF32) ? 
+                         warthog::INF32 : ((*it).target-1);
+    }
+
 
     if(alg_name == "dijkstra")
     {

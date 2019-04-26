@@ -16,23 +16,23 @@ warthog::ch::operator<(const ch_pair& first, const ch_pair& second)
     return first.cval_ < second.cval_;
 }
 
-warthog::ch::ch_data*
+bool
 warthog::ch::lazy_graph_contraction::contract(
-        warthog::graph::xy_graph* g,
+        warthog::ch::ch_data* ret,
         bool verify_priorities, uint32_t c_pct)
 {
     warthog::timer mytimer;
     double t_begin = mytimer.get_time_micro();
-    preliminaries(g);
+    preliminaries(ret);
 
     if(c_pct < 100)
     { std::cerr << "partially " << "("<<c_pct<<"% of nodes) "; }
-    std::cerr << "contracting graph " << g_->get_filename() << std::endl;
-    uint32_t edges_before = g_->get_num_edges_out();
+    std::cerr << "contracting graph " << ret->g_->get_filename() << std::endl;
+    uint32_t edges_before = ret->g_->get_num_edges_out();
     std::cerr << " edges before " << edges_before << " ";
 
     // contract nodes in the order produced by ::next
-    uint32_t total_nodes = (uint32_t)((g_->get_num_nodes()*c_pct) / 100);
+    uint32_t total_nodes = (uint32_t)((ret->g_->get_num_nodes()*c_pct) / 100);
 
     std::vector<uint32_t> update_neis;
     double t_last = mytimer.get_time_micro();
@@ -104,7 +104,7 @@ warthog::ch::lazy_graph_contraction::contract(
                 << "; " << order_->size() << " /  " << total_nodes 
                 << "; nid: " << best_id 
                 << ", pri: " << hn_pool_[best_id].get_element().cval_
-                << "; #out: " << g_->get_node(best_id)->out_degree()
+                << "; #out: " << ret->g_->get_node(best_id)->out_degree()
                 << "; #witn " << num_searches
                 << "; #lazy: " << num_lazy
                 << "; #exps: " << num_expansions
@@ -114,11 +114,9 @@ warthog::ch::lazy_graph_contraction::contract(
         }
     }
 
-    warthog::ch::ch_data* ret = new warthog::ch::ch_data(g_);
-    for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
-    {
-        ret->level_->at(i) = order_->at(i);
-    }
+    // until now we kept track of the _order_ in which nodes were
+    // contracted. but for online search we need to know each node's _level_
+    // here we convert from one to the other
     warthog::ch::value_index_swap_dimacs(*ret->level_);
     postliminaries();
 
@@ -129,14 +127,14 @@ warthog::ch::lazy_graph_contraction::contract(
         << "\twitness searches: " << total_searches_ << std::endl 
         << "\tlazy updates: "<< total_lazy_updates_ << std::endl
         << "\tnode expansions " << total_expansions_ << std::endl;
-    return ret;
+    return true;
 }
 
 void
-warthog::ch::lazy_graph_contraction::preliminaries(warthog::graph::xy_graph* g)
+warthog::ch::lazy_graph_contraction::preliminaries(warthog::ch::ch_data* chd)
 {
-    order_= new std::vector<uint32_t>();
-    g_ = g;
+    order_ = chd->level_;
+    g_ = chd->g_;
     heuristic_ = new warthog::euclidean_heuristic(g_);
     c_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
     u_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
@@ -227,9 +225,6 @@ warthog::ch::lazy_graph_contraction::postliminaries()
 
     delete bexpander_;
     bexpander_ = 0;
-
-    delete order_;
-    order_ = 0;
 
 }
 

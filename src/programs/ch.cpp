@@ -103,17 +103,18 @@ contract_graph()
     else if(order_type == "lazy")
     {
         // create a new contraction hierarchy with dynamic node ordering
-        if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+        warthog::ch::ch_data chd;
+        if(!chd.g_->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
         {
             std::cerr 
                 << "err; could not load gr or co input files (one or both)\n";
             return;
         }
+        chd.level_->resize(chd.g_->get_num_nodes());
 
         warthog::ch::lazy_graph_contraction contractor;
         contractor.set_verbose(verbose);
-        warthog::ch::ch_data* chd = 
-            contractor.contract(&g, verify, (uint32_t)pct_nodes_to_contract);
+        contractor.contract(&chd, verify, (uint32_t)pct_nodes_to_contract);
 
         std::cerr << "saving...\n";
 
@@ -127,7 +128,7 @@ contract_graph()
             grfile.append(".chd");
         }
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
-        if(!warthog::ch::save(grfile.c_str(), chd))
+        if(!warthog::ch::save(grfile.c_str(), &chd))
         {
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
