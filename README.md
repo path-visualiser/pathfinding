@@ -11,9 +11,6 @@ Some things that are hosted in this repository:
 | other | Code that doesn't fit anywhere else. |
 | ├ jump_point_graphs | A graph-specific reinterpretation of Jump Point Search.  |
 | └ hog | A highly modified implementation of Hierarchical Open Graph v1. |
-| └ spec | Specifications for bespoke formats used. |
-|   ├ mesh | Specifications for the mesh file format. |
-|   └ poly | Specifications for the poly file format (an intermediate representation we used). |
 |
 | maps | Benchmark gridmaps that I often use in experiments. |
 | scenarios | Benchmark instances (point-to-point problems) that I tuse in experiments. |
