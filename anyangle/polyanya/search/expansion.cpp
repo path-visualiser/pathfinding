@@ -207,8 +207,8 @@ int get_successors(SearchNode& node, const Point& start, const Mesh& mesh,
                     last_vertex = this_vertex;
                     continue;
                 }
-                const Point& left = mesh_vertices[this_vertex].p,
-                             right = mesh_vertices[last_vertex].p;
+                const Point& left = mesh_vertices[this_vertex].p;
+                const Point& right = mesh_vertices[last_vertex].p;
                 successors[out++] = {succ_type, left, right, i};
                 last_vertex = this_vertex;
             }

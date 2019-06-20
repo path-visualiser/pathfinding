@@ -6,7 +6,7 @@ PU_INCLUDES = $(addprefix -I,$(PU_FOLDERS))
 
 CXX = g++
 CXXFLAGS = -std=c++11 -pedantic -Wall -Wno-strict-aliasing -Wno-long-long -Wno-deprecated -Wno-deprecated-declarations -Werror
-FAST_CXXFLAGS = -O3 -DNDEBUG
+FAST_CXXFLAGS = -O3 -DNDEBUG -Wno-error
 DEV_CXXFLAGS = -g -ggdb -O0
 FADE2DFLAGS = -Ifade2d -Llib/ubuntu16.10_x86_64 -lfade2d -Wl,-rpath=lib/ubuntu16.10_x86_64
 
@@ -25,7 +25,7 @@ clean:
 	rm -f $(PU_OBJ)
 
 .PHONY: $(TARGETS) gridmap2poly
-$(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects: % : bin/%
+$(TARGETS) gridmap2poly meshpacker meshunpacker meshmerger gridmap2rects gridmap2grid: % : bin/%
 
 $(BIN_TARGETS): bin/%: %.cpp $(PU_OBJ)
 	@mkdir -p ./bin
@@ -50,6 +50,14 @@ bin/meshmerger: meshmerger.cpp
 bin/gridmap2rects: gridmap2rects.cpp
 	@mkdir -p ./bin
 	$(CXX) $(CXXFLAGS) -O3 gridmap2rects.cpp -o ./bin/gridmap2rects
+
+bin/gridmap2grid: gridmap2grid.cpp
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) -O3 gridmap2grid.cpp -o ./bin/gridmap2grid
+
+bin/gridmap2grid: gridmap2grid.cpp
+	@mkdir -p ./bin
+	$(CXX) $(CXXFLAGS) -O3 gridmap2grid.cpp -o ./bin/gridmap2grid
 
 -include $(PU_OBJ:.o=.d)
 

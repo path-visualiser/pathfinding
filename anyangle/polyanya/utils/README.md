@@ -57,7 +57,9 @@ This has been tested on:
 - Arch Linux, kernel release 4.8.13 and g++ 6.3.1
 - Ubuntu 16.04 (via Windows Subsystem for Linux) and g++ 5.4.0
 
-Ensure you have [GMP](https://gmplib.org/) installed, and run `make all`.
+Ensure you have [GMP](https://gmplib.org/) installed
+(`sudo apt-get install libgmp3-dev` on Ubuntu),
+and run `make all`.
 All the utilities will be compiled.
 
 If you do not use Linux and still wish to compile all the tools which do not

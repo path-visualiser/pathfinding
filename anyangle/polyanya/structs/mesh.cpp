@@ -245,7 +245,8 @@ void Mesh::precalc_point_location()
             {
                 // Sorts based on the midpoints.
                 // If tied, sort based on width of poly.
-                const Polygon& ap = mesh_polygons[a], bp = mesh_polygons[b];
+                const Polygon& ap = mesh_polygons[a];
+                const Polygon& bp = mesh_polygons[b];
                 const double as = ap.min_y + ap.max_y, bs = bp.min_y + ap.max_y;
                 if (as == bs) {
                     return (ap.max_y - ap.min_y) > (bp.max_y - bp.min_y);
