@@ -984,7 +984,7 @@ void print_mesh(ostream& outfile)
         outfile << "\n";
     }
 
-    cerr << final_p << ";" << num_deadends << ";" << sum_traversable << endl;
+    // cerr << final_p << ";" << num_deadends << ";" << sum_traversable << endl;
 
     #undef get_p
     #undef get_v

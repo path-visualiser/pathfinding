@@ -483,15 +483,33 @@ bool SearchInstance::search()
 
         for (int i = 0; i < num_nodes; i++)
         {
+            const SearchNode &cur_node = search_nodes_to_push[i];
             // We need to update the h value before we push!
-            const SearchNodePtr n = new (node_pool->allocate())
-                SearchNode(search_nodes_to_push[i]);
+
+            // if we turned before, AND we immediately broke out of the
+            // do-while loop, then cur_node has a valid parent pointer
+            // and cur_node is equivalent to node.
+            // so: if cur_node has a parent pointer, then "node"
+            // is the thing we want to push.
+            SearchNodePtr n = nullptr;
+            if (cur_node.parent)
+            {
+                // valid!
+                n = node;
+                // note that we should decrement nodes_generated here
+                // as we overcount because of this
+                nodes_generated--;
+            }
+            else
+            {
+                // need to allocate it in mempool
+                // AND set a valid parent pointer
+                n = new (node_pool->allocate()) SearchNode(cur_node);
+                n->parent = node;
+            }
             const Point& n_root = (n->root == -1 ? start :
                                    mesh->mesh_vertices[n->root].p);
             n->f += get_h_value(n_root, goal, n->left, n->right);
-
-            // This node's parent should be nullptr, so we should set it.
-            n->parent = node;
 
             #ifndef NDEBUG
             if (verbose)
