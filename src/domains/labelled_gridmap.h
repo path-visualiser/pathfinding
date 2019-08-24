@@ -20,6 +20,7 @@
 #include "helpers.h"
 #include "gm_parser.h"
 
+#include <cstring>
 #include <climits>
 #include <stdint.h>
 

@@ -296,7 +296,7 @@ run_bch(warthog::util::cfg& cfg,
         return;
     }
     warthog::ch::ch_data chd;
-    warthog::ch::load_bch(&chd, chd_file.c_str());
+    warthog::ch::load_bch_data(&chd, chd_file.c_str());
 
     std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy fexp(chd.g_, chd.level_);

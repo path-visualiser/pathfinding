@@ -10,6 +10,7 @@
 // @created: 2016-06-14
 //
 
+#include "ch_data.h"
 #include "constants.h"
 #include "forward.h"
 #include "graph.h"

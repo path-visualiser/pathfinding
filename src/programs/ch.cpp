@@ -127,7 +127,7 @@ contract_graph()
             grfile.append(".chd");
         }
         std::cerr << "saving contracted graph to file " << grfile << std::endl;
-        if(!warthog::ch::save(grfile.c_str(), &chd))
+        if(!warthog::ch::save_ch_data(grfile.c_str(), &chd))
         {
             std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
         }
