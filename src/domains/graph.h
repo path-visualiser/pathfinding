@@ -200,7 +200,8 @@ class node
         {
             if(out_deg_ == out_cap_)
             {
-                out_cap_ = increase_capacity(2*out_cap_, out_cap_, outgoing_);
+                assert(out_cap_<<1 < ECAP_MAX);
+                out_cap_ = increase_capacity((ECAP_T)(out_cap_*2), out_cap_, outgoing_);
             }
             assert(out_cap_ > 0 && out_cap_ > out_deg_);
 
@@ -471,7 +472,7 @@ class node
             if(deg == max_elts)
             {
                 //uint32_t bigmax = (max_elts == 0 ? 1 : (2*max_elts));
-                max_elts = increase_capacity(2*max_elts, max_elts, elts);
+                max_elts = increase_capacity((ECAP_T)(2*max_elts), max_elts, elts);
             }
             elts[deg] = e; 
             return &elts[deg++];

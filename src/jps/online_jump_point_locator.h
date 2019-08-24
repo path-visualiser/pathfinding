@@ -30,7 +30,7 @@ class online_jump_point_locator
 		jump(warthog::jps::direction d, uint32_t node_id, uint32_t goalid, 
 				uint32_t& jumpnode_id, double& jumpcost);
 
-		uint32_t 
+		size_t 
 		mem()
 		{
 			return sizeof(this) + rmap_->mem();

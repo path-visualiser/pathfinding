@@ -163,8 +163,8 @@ class gridmap
 		get_label(uint32_t grid_id_p)
 		{
 			// now we can fetch the label
-			warthog::dbword bitmask = 1;
-			bitmask <<= (grid_id_p & warthog::DBWORD_BITS_MASK);
+			uint32_t bitmask = 1;
+			bitmask <<=  (grid_id_p & warthog::DBWORD_BITS_MASK);
 			uint32_t dbindex = grid_id_p >> warthog::LOG2_DBWORD_BITS;
 			if(dbindex > max_id_) { return 0; }
 			return (db_[dbindex] & bitmask) != 0;
@@ -190,18 +190,17 @@ class gridmap
 		set_label(uint32_t grid_id_p, bool label)
 		{
 			uint32_t dbindex = grid_id_p >> warthog::LOG2_DBWORD_BITS;
-			uint8_t bitmask = 
-                (uint8_t)(1u << (grid_id_p & warthog::DBWORD_BITS_MASK));
+			uint32_t bitmask = 1u << (grid_id_p & warthog::DBWORD_BITS_MASK);
 
 			if(dbindex > max_id_) { return; }
 
 			if(label)
 			{
-				db_[dbindex] |= bitmask;
+				db_[dbindex] |= (warthog::dbword)bitmask;
 			}
 			else
 			{
-				db_[dbindex] &= ~bitmask;
+				db_[dbindex] &= (warthog::dbword)~bitmask;
 			}
 		}
 
@@ -247,7 +246,7 @@ class gridmap
 		void
 		printdb(std::ostream& out);
 
-		uint32_t 
+		size_t 
 		mem()
 		{
 			return sizeof(*this) +

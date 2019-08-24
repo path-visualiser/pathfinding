@@ -163,7 +163,7 @@ class pqueue
             }
         }
 
-		unsigned int
+		size_t
 		mem()
 		{
 			return maxsize_*sizeof(warthog::search_node*)

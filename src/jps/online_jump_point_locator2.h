@@ -42,7 +42,7 @@ class online_jump_point_locator2
 				std::vector<uint32_t>& jpoints,
 				std::vector<double>& costs);
 
-		uint32_t 
+		size_t 
 		mem()
 		{
 			return sizeof(this) + rmap_->mem();

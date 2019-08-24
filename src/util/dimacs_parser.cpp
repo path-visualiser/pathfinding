@@ -391,7 +391,7 @@ warthog::dimacs_parser::print_undirected_unweighted_metis(std::ostream& out,
         if(lex_order)
         {
             // core is the top-k% of nodes; 
-            uint32_t min_core_level = (uint32_t)(lex_order->size() * (1-core_pct_value));
+            uint32_t min_core_level = (uint32_t)((double)lex_order->size() * (1-core_pct_value));
 
             // metis ids need to be contiguous and start from 1
             if(lex_order->at(id1 - id_offset) >= min_core_level)
