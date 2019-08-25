@@ -271,20 +271,45 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
         warthog::cbs::pqueue_cbs_ll>
             astar(&heuristic, &expander, &open);
 
-    // precompute heuristic values for each target location
-    std::cerr << "precomputing heuristic values...";
-    std::vector<uint32_t> target_locations;
+	std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tnanos\tpcost\tplen\tmap\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-    {
+	{
 		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-        target_locations.push_back(goalid);
-    }
-    heuristic.compute_h_values(target_locations, &gm);
-    std::cerr << "done\n";
 
-    run_experiments(&astar, alg_name, scenmgr, 
-            verbose, checkopt, std::cout);
+		uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
+		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+        warthog::problem_instance pi(startid, goalid, verbose);
+        warthog::solution sol;
+
+        // We now precompute a perfect 2D heuristic 
+        // (i.e. ignoring dynamic obstacles and ignoring time)
+        // The heuristic is computed for one agent at a time, however
+        // if we are planning for a team of agents we can precompute such 
+        // heuristics for all agents at the same time. We do this by passing 
+        // all goal ids to the function ::compute_h_values
+        // NB: at 4 bytes per heuristic value, memory can be quickly exhausted 
+        // when the team is large 
+        std::vector<uint32_t> target_locations;
+        target_locations.push_back(goalid);
+        heuristic.compute_h_values(target_locations, &gm);
+
+        astar.get_path(pi, sol);
+
+		std::cout
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (sol.path_.size()-1) << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
+	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
