@@ -19,14 +19,16 @@ class manhattan_heuristic
 {
 	public:
 		manhattan_heuristic(unsigned int mapwidth, unsigned int mapheight)
-		 : mapwidth_(mapwidth), mapheight_(mapheight) {}
+		 : mapwidth_(mapwidth)//, mapheight_(mapheight) 
+         {}
+
 		~manhattan_heuristic() {}
 
 		inline warthog::cost_t
 		h(unsigned int x, unsigned int y, unsigned int x2, unsigned int y2)
 		{
             // NB: precision loss when warthog::cost_t is an integer
-			return (abs(x-x2) + abs(y-y2)) * warthog::ONE;
+			return (abs((int32_t)x-(int32_t)x2) + abs((int32_t)y-(int32_t)y2)) * warthog::ONE;
 		}
 
 		inline warthog::cost_t
@@ -40,7 +42,9 @@ class manhattan_heuristic
 		}
 
 	private:
-		unsigned int mapwidth_, mapheight_;
+		//unsigned int mapwidth_, mapheight_;
+		unsigned int mapwidth_;
+
 };
 
 }

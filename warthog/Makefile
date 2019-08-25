@@ -9,7 +9,7 @@ D_LIBS = -L/usr/local/lib -L./lib
 
 CC = g++
 CFLAGS = -std=c++0x -pedantic -Wall -Wno-strict-aliasing -Wno-long-long \
-		 -Wno-deprecated -Wno-deprecated-declarations -Werror
+		 -Wno-deprecated -Wno-deprecated-declarations -Wno-unused-result -Werror
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0
 PROFILE_CFLAGS = -g -ggdb -O0 -DNDEBUG

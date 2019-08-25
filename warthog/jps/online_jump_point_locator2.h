@@ -156,7 +156,7 @@ class online_jump_point_locator2
 
 		warthog::gridmap* map_;
 		warthog::gridmap* rmap_;
-		uint32_t jumplimit_;
+		//uint32_t jumplimit_;
 
 		uint32_t current_goal_id_;
 		uint32_t current_rgoal_id_;

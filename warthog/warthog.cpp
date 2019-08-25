@@ -9,7 +9,6 @@
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
 #include "jps_expansion_policy.h"
-#include "jps_expansion_policy_wgm.h"
 #include "jps2_expansion_policy.h"
 #include "jpsplus_expansion_policy.h"
 #include "jps2plus_expansion_policy.h"
@@ -368,50 +367,6 @@ run_wgm_sssp(warthog::scenario_manager& scenmgr)
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
 
-void
-run_jps_wgm(warthog::scenario_manager& scenmgr)
-{
-    warthog::weighted_gridmap map(scenmgr.get_experiment(0)->map().c_str());
-	warthog::jps_expansion_policy_wgm expander(&map);
-	warthog::octile_heuristic heuristic(map.width(), map.height());
-
-	warthog::flexible_astar<
-		warthog::octile_heuristic,
-	   	warthog::jps_expansion_policy_wgm> astar(&heuristic, &expander);
-	astar.set_verbose(verbose);
-    // cheapest terrain (movingai benchmarks) has ascii value '.'; we scale
-    // all heuristic values accordingly (otherwise the heuristic doesn't 
-    // impact f-values much and search starts to behave like dijkstra)
-    astar.set_hscale('.');  
-
-	std::cout << "id\talg\texpd\tgend\ttouched\ttime\tcost\tsfile\n";
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-	{
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-
-		int startid = exp->starty() * exp->mapwidth() + exp->startx();
-		int goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-		double len = astar.get_length(
-				map.to_padded_id(startid),
-			   	map.to_padded_id(goalid));
-		if(len == warthog::INF)
-		{
-			len = 0;
-		}
-
-		std::cout << i<<"\t" << "jps_wgm" << "\t" 
-		<< astar.get_nodes_expanded() << "\t" 
-		<< astar.get_nodes_generated() << "\t"
-		<< astar.get_nodes_touched() << "\t"
-		<< astar.get_search_time()  << "\t"
-		<< len << "\t" 
-		<< scenmgr.last_file_loaded() << std::endl;
-
-		check_optimality(len, exp);
-	}
-	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
-}
-
 int 
 main(int argc, char** argv)
 {
@@ -478,14 +433,7 @@ main(int argc, char** argv)
 
     if(alg == "jps")
     {
-        if(wgm)
-        {
-            run_jps_wgm(scenmgr);
-        }
-        else
-        {
-            run_jps(scenmgr);
-        }
+        run_jps(scenmgr);
     }
 
 	if(alg == "astar")

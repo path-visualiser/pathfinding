@@ -21,7 +21,8 @@ class octile_heuristic
 {
 	public:
 		octile_heuristic(unsigned int mapwidth, unsigned int mapheight) 
-	    	: mapwidth_(mapwidth), mapheight_(mapheight) { }
+	    	: mapwidth_(mapwidth)//, mapheight_(mapheight) 
+            { }
 		~octile_heuristic() { }
 
 		inline warthog::cost_t
@@ -49,7 +50,7 @@ class octile_heuristic
 
 	private:
 		unsigned int mapwidth_;
-		unsigned int mapheight_;
+		//unsigned int mapheight_;
 };
 
 }

@@ -73,8 +73,8 @@ class offline_jump_point_locator
 		uint32_t dbsize_;
 		uint16_t* db_;	
 
-		uint32_t jumppoints_[3];
-		warthog::cost_t costs_[3];
+		//uint32_t jumppoints_[3];
+		//warthog::cost_t costs_[3];
 		uint32_t max_;
 		uint32_t current_;
 };

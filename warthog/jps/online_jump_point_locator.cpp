@@ -6,7 +6,7 @@
 #include <climits>
 
 warthog::online_jump_point_locator::online_jump_point_locator(warthog::gridmap* map)
-	: map_(map), jumplimit_(UINT32_MAX)
+	: map_(map)//, jumplimit_(UINT32_MAX)
 {
 	rmap_ = create_rmap();
 }
