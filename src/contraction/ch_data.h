@@ -12,6 +12,9 @@ class ch_data
 {
 
 public:
+    ch_data();
+    virtual ~ch_data();
+
     warthog::graph::xy_graph* g_;
     std::vector<uint32_t>* level_;
 

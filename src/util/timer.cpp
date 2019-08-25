@@ -27,7 +27,7 @@ warthog::timer::get_time_nano()
 #else
 	timespec raw_time;
 	clock_gettime(CLOCK_MONOTONIC , &raw_time);
-	return (double)(raw_time.tv_nsec);
+	return (double)(raw_time.tv_sec*1e09+raw_time.tv_nsec);
 #endif
 }
 
@@ -61,10 +61,8 @@ double warthog::timer::elapsed_time_nano()
 	//return (double) UnsignedWideToUInt64(nanosecs) ;
 
 #else
-	if ((stop_time.tv_nsec-start_time.tv_nsec)<0)
-		return (double)(1000000000+stop_time.tv_nsec-start_time.tv_nsec);
-	else
-		return (double)(stop_time.tv_nsec - start_time.tv_nsec);
+    return (stop_time.tv_sec*1e09 + stop_time.tv_nsec) - 
+           (start_time.tv_sec*1e09 + start_time.tv_nsec);
 #endif
 }
 
