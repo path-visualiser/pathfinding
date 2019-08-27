@@ -18,11 +18,12 @@ help()
 {
     std::cerr << 
         "create a contraction hierarchy from " <<
-        "a given (currently, DIMACS-format only) input graph\n";
+        "a input graph (in the 9th DIMACS format) or a gridmap (in GPPC format)\n";
 	std::cerr << "valid parameters:\n"
 	<< "\t--order [ fixed | lazy ]\n"
     << "\t--partial [1-100] (optional; percentage of nodes to contract)\n"
-    << "\t--input [gr file] [co file] (IN THIS ORDER!!)\n"
+    << "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
+    << "\t--gridmap [map file] \n"
 	<< "\t--verbose (optional)\n"
 	<< "\t--verify (verify lazy node priorities before contraction)\n";
 }
@@ -30,20 +31,42 @@ help()
 void 
 contract_graph()
 {
-    std::string grfile = cfg.get_param_value("input");
-    std::string cofile = cfg.get_param_value("input");
+    warthog::ch::ch_data chd;
+    std::string outfile;
 
-    if(grfile == "" || cofile == "")
+    // load up the input graph/grid
+    warthog::graph::xy_graph g;
+    if(cfg.get_num_values("dimacs") == 2)
     {
-        std::cerr << "err; insufficient input parameters."
-                  << " required, in order:\n"
-                  << " --input [gr file] [co file]\n";
+        std::string grfile = cfg.get_param_value("dimacs");
+        std::string cofile = cfg.get_param_value("dimacs");
+
+        if(!chd.g_->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
+        {
+            std::cerr 
+                << "err; could not load gr or co input files (one or both)\n";
+            return;
+        }
+        outfile = grfile + ".chd";
+    }
+    else if(cfg.get_num_values("gridmap") == 1)
+    {
+        std::string mapfile = cfg.get_param_value("gridmap");
+        warthog::gridmap gm(mapfile.c_str());
+        if(!chd.g_->load_from_grid(&gm, true))
+        {
+            std::cerr << "err; could not load gridmap file\n";
+            return;
+        }
+        outfile = mapfile + ".chd";
+    }
+    else
+    {
+        std::cerr << "err; input graph or gridmap not specified\n";
         return;
     }
 
-    // contract a graph and create a hierarchy
-    warthog::graph::xy_graph g;
-
+    // partial contraction means we process only the first k% of nodes
     std::string partial = cfg.get_param_value("partial");
     int32_t pct_nodes_to_contract = 100;
     if(partial != "")
@@ -64,73 +87,39 @@ contract_graph()
             return;
         }
 
-        if(!g.load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
-        {
-            std::cerr 
-                << "err; could not load gr or co input files (one or both)\n";
-            return;
-        }
-
-        std::vector<uint32_t> order;
-        if(!warthog::ch::load_node_order(orderfile.c_str(), order))
+        std::vector<uint32_t> node_order;
+        if(!warthog::ch::load_node_order(orderfile.c_str(), node_order))
         {
             std::cerr << "err; could not load node order input file\n";
             return;
         }
-        warthog::ch::fixed_graph_contraction contractor(&g, &order);
+
+
+        warthog::ch::fixed_graph_contraction contractor;
         contractor.set_verbose(verbose);
-        contractor.set_partial_contraction_percentage((uint32_t)pct_nodes_to_contract);
-        contractor.contract();
+        contractor.contract(chd.g_, &node_order, (uint32_t)pct_nodes_to_contract);
+
+        // assign a level to every node based on its contraction order
+        chd.level_->resize(chd.g_->get_num_nodes(), chd.g_->get_num_nodes()-1);
+        for(uint32_t i = 0; i < node_order.size(); i++)
+        {
+            chd.level_->at(node_order.at(i)) = i;
+        }
 
         // save the result
-        if(pct_nodes_to_contract < 100)
+        std::cerr << "saving contracted graph to file " << outfile << std::endl;
+        if(!warthog::ch::save_ch_data(outfile.c_str(), &chd))
         {
-            grfile.append(".pch");
+            std::cerr << "\nerror writing to file " << outfile << std::endl;
         }
-        else
-        {
-            grfile.append(".ch");
-        }
-        std::cerr << "saving contracted graph to file " << grfile << std::endl;
-        std::fstream ch_out(grfile.c_str(), std::ios_base::out | std::ios_base::trunc);
-        if(!ch_out.good())
-        {
-            std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
-        }
-        g.print_dimacs_gr(ch_out, 0, (uint32_t)g.get_num_nodes());
-        ch_out.close();
     }
     else if(order_type == "lazy")
     {
         // create a new contraction hierarchy with dynamic node ordering
-        warthog::ch::ch_data chd;
-        if(!chd.g_->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
-        {
-            std::cerr 
-                << "err; could not load gr or co input files (one or both)\n";
-            return;
-        }
-
         warthog::ch::lazy_graph_contraction contractor;
         contractor.set_verbose(verbose);
         contractor.contract(&chd, verify, (uint32_t)pct_nodes_to_contract);
 
-        std::cerr << "saving...\n";
-
-        // save the result
-        if(pct_nodes_to_contract < 100)
-        {
-            grfile.append(".chd_p");
-        }
-        else
-        {
-            grfile.append(".chd");
-        }
-        std::cerr << "saving contracted graph to file " << grfile << std::endl;
-        if(!warthog::ch::save_ch_data(grfile.c_str(), &chd))
-        {
-            std::cerr << "\nerror exporting ch to file " << grfile << std::endl;
-        }
     }
     else
     {
@@ -138,6 +127,12 @@ contract_graph()
         return;
     }
 
+    // save the result
+    std::cerr << "saving contracted graph to file " << outfile << std::endl;
+    if(!warthog::ch::save_ch_data(outfile.c_str(), &chd))
+    {
+        std::cerr << "error exporting ch to file " << outfile << std::endl;
+    }
     std::cerr << "all done!\n";
 }
 
@@ -149,7 +144,8 @@ int main(int argc, char** argv)
 	{
 		{"verbose", no_argument, &verbose, 1},
 		{"verify", no_argument, &verify, 1},
-		{"input",  required_argument, 0, 2},
+		{"dimacs",  required_argument, 0, 2},
+		{"gridmap",  required_argument, 0, 1},
 		{"order",  required_argument, 0, 3},
 		{"partial",  required_argument, 0, 4}
 	};

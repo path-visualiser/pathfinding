@@ -10,17 +10,6 @@
 #include <stack>
 #include <vector>
 
-void
-warthog::ch::make_input_order(warthog::graph::xy_graph& g, std::vector<uint32_t>& order)
-{
-    order.clear();
-    order.reserve(g.get_num_nodes());
-    for(uint32_t i=0; i < g.get_num_nodes(); i++)
-    {
-        order.push_back(i);
-    }
-}
-
 void 
 warthog::ch::write_node_order(const char* filename, std::vector<uint32_t>& order)
 {

@@ -17,7 +17,6 @@ public:
 
     warthog::graph::xy_graph* g_;
     std::vector<uint32_t>* level_;
-
 };
 
 // load a contraction hierarchy for use with bi-directional search (BCH).

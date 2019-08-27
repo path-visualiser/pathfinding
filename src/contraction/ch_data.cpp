@@ -21,6 +21,8 @@ warthog::ch::load_bch_data(warthog::ch::ch_data*, const char* filename)
 bool
 warthog::ch::save_ch_data(const char* filename, warthog::ch::ch_data* chd)
 {
+    // node data: [id, lat, lng, level]
+    // edge data: [from, to, cost]
     return false;
 }
 

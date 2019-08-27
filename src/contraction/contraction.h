@@ -102,9 +102,6 @@ load_contraction_hierarchy_and_optimise_for_fch(
 void
 write_node_order(const char* filename, std::vector<uint32_t>& order);
 
-void
-make_input_order(warthog::graph::xy_graph& g, std::vector<uint32_t>& order);
-
 // An order-of-contraction is a sequential list of node-ids that indicates
 // the order in which nodes should be contracted. e.g. 
 // 5, 7, 4, 1, 3, 2, 6  (etc)

@@ -6,23 +6,9 @@
 #include "graph_expansion_policy.h"
 #include "xy_graph.h"
 
-warthog::ch::fixed_graph_contraction::fixed_graph_contraction(
-                warthog::graph::xy_graph* g)
-    : g_(g)
+warthog::ch::fixed_graph_contraction::fixed_graph_contraction()
+    :  heuristic_(0), filter_(0), expander_(0), open_(0), alg_(0)
 {
-    order_ = new std::vector<uint32_t>(get_graph()->get_num_nodes());
-    warthog::ch::make_input_order(*g, *order_);
-    init();
-}
-
-warthog::ch::fixed_graph_contraction::fixed_graph_contraction(
-                warthog::graph::xy_graph* g,
-                std::vector<uint32_t>* order)
-    : g_(g)
-{
-    assert(get_graph()->get_num_nodes() == order->size());
-    order_ = order;
-    init();
 }
 
 warthog::ch::fixed_graph_contraction::~fixed_graph_contraction()
@@ -36,18 +22,29 @@ warthog::ch::fixed_graph_contraction::~fixed_graph_contraction()
 
 
 void
-warthog::ch::fixed_graph_contraction::init()
+warthog::ch::fixed_graph_contraction::init(
+                warthog::graph::xy_graph* g,
+                std::vector<uint32_t>* order,
+                uint32_t c_pct)
 {
-    done_ = false;
-    verbose_ = false;
-    c_pct_ = 100;
+    g_ = g;
+    order_ = order;
+    c_pct_ = c_pct;
+    assert(order_->size() <= g_->get_num_nodes());
+
     order_index_ = 0;
 
+    delete filter_;
     filter_ = new warthog::apriori_filter((uint32_t)get_graph()->get_num_nodes());
+
+    delete expander_;
     expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
         (get_graph(), filter_);
+
+    delete open_;
     open_ = new warthog::pqueue_min();
 
+    delete heuristic_;
     heuristic_ = new warthog::zero_heuristic();
     alg_ = new flexible_astar<
                     warthog::zero_heuristic,
@@ -57,10 +54,12 @@ warthog::ch::fixed_graph_contraction::init()
 }
 
 void
-warthog::ch::fixed_graph_contraction::contract()
+warthog::ch::fixed_graph_contraction::contract(
+                warthog::graph::xy_graph* g,
+                std::vector<uint32_t>* order, 
+                uint32_t c_pct)
 {
-    if(done_) { return; }
-    done_ = true;
+    init(g, order, c_pct);
 
     if(c_pct_ < 100)
     {
@@ -90,69 +89,94 @@ warthog::ch::fixed_graph_contraction::contract()
             break; 
         }
 
+        // contract a node
         warthog::graph::node* n = g_->get_node(cid);
+        filter_->set_flag_true(cid);
+        in_shorts.clear();
+        out_shorts.clear();
 
-
-        uc_neis_.clear();
-        for(uint32_t i = 0; i < n->out_degree(); i++)
+        if(this->verbose_)
         {
-            warthog::graph::edge& e_out = *(n->outgoing_begin() + i);
-            if(filter_->get_flag(e_out.node_id_)) { continue; }
-            uc_neis_.push_back(e_out);
+            std::cerr << "contracting " << cid << std::endl;
         }
 
-        uint32_t uc_neis_incoming_begin_ = (uint32_t)uc_neis_.size();
+        
+        // maximum expansions per Dijkstra witness search
+        // the value 500 comes from RoutingKit's CH implementation
+        uint32_t max_expand = 500;
+
+        // establish a cost upperbound on the length of witness paths
+        double  max_outgoing_wt = 0;
+        for(uint32_t i = 0; i < n->out_degree(); i++)
+        {
+            warthog::graph::edge& e_out = *(n->outgoing_begin()+i);
+            if(e_out.wt_ > max_outgoing_wt) { max_outgoing_wt = e_out.wt_; }
+        }
+
+        uint32_t eadd = 0;
         for(uint32_t i = 0; i < n->in_degree(); i++)
         {
             warthog::graph::edge& e_in = *(n->incoming_begin() + i);
             if(filter_->get_flag(e_in.node_id_)) { continue; }
-            uc_neis_.push_back(e_in);
-        }
-        
-        uint32_t max_expand = warthog::INF32;
-        double  max_outgoing_wt = 0;
-        for(uint32_t j = 0; j < uc_neis_incoming_begin_; j++)
-        {
-            warthog::graph::edge& e_out = uc_neis_.at(j);
-            if(e_out.wt_ > max_outgoing_wt) { max_outgoing_wt = e_out.wt_; }
-        }
 
-        // contract
-        filter_->set_flag_true(cid);
-        uint32_t eadd = 0;
-        for(uint32_t i = uc_neis_incoming_begin_; i < uc_neis_.size(); i++)
-        {
-            warthog::graph::edge& e_in = uc_neis_.at(i);
             double max_cost = e_in.wt_ + max_outgoing_wt;
             witness_search(e_in.node_id_, warthog::INF32, max_cost, max_expand);
 
-            for(uint32_t j = 0; j < uc_neis_incoming_begin_; j++)
+            for(uint32_t j = 0; j < n->out_degree(); j++)
             {
-                warthog::graph::edge& e_out = uc_neis_.at(j);
+                warthog::graph::edge& e_out = *(n->outgoing_begin()+j);
                 if(e_in.node_id_ == e_out.node_id_) { continue; }
-                
+                if(filter_->get_flag(e_out.node_id_)) { continue; }
+
+                //double witness_len = 
+                //    witness_search(e_in.node_id_,  e_out.node_id_, max_cost, max_expand);
                 warthog::search_node* nei = 
-                    alg_->get_generated_node(e_out.node_id_);
+                     alg_->get_generated_node(e_out.node_id_);
                 double witness_len = nei ? nei->get_g() : warthog::INF32;
                 double via_len = e_in.wt_ + e_out.wt_;
 
                 if(witness_len > via_len)
                 {
+                    if(this->verbose_)
+                    {
+                        std::cerr << "bypassing " << cid 
+                        << "; " << e_in.node_id_ << " to "
+                        << e_out.node_id_ << " cost " << via_len << std::endl;
+                    }
                     eadd++;
-                    warthog::graph::node* tail = g_->get_node(e_in.node_id_);
-                    tail->add_outgoing(
-                            warthog::graph::edge(e_out.node_id_, (uint32_t)via_len));
-                    warthog::graph::node* head = g_->get_node(e_out.node_id_);
-                    head->add_incoming(
-                            warthog::graph::edge(e_in.node_id_, (uint32_t)via_len));
+
+                    out_shorts.push_back(
+                        std::pair<warthog::graph::node*,
+                            warthog::graph::edge>(
+                                g_->get_node(e_in.node_id_),
+                                warthog::graph::edge(
+                                    e_out.node_id_,
+                                    (warthog::graph::edge_cost_t)via_len)));
+
+                    in_shorts.push_back(
+                        std::pair<warthog::graph::node*,
+                            warthog::graph::edge>(
+                                g_->get_node(e_out.node_id_),
+                                warthog::graph::edge(
+                                    e_in.node_id_,
+                                    (warthog::graph::edge_cost_t)via_len)));
                 }
             }
         }
 
+        // add the shortcuts
+        for(auto& pair : out_shorts)
+        { (pair.first)->add_outgoing(pair.second); }
+        for(auto& pair : in_shorts)
+        { (pair.first)->add_incoming(pair.second); }
+
+        num_contractions++;
+
         if((mytimer.get_time_micro() - t_last) > 1000000)
         {
             std::cerr 
-                << pct << "%; " << ++num_contractions 
+                << "time: " << (int)((t_last - t_begin)/1000000) << "s; "
+                << num_contractions 
                 << " /  " << total_nodes
                 << "; current: " << cid 
                 << " in: " << n->in_degree() << " out: " << n->out_degree() 
@@ -163,11 +187,14 @@ warthog::ch::fixed_graph_contraction::contract()
     }
 
     std::cerr 
-        << "\ngraph, contracted. "
-        << " time (s): " << 
-        (mytimer.get_time_micro() - t_begin) / 1000000.0
-        << ". edges before " << edges_before 
-        << "; edges after " << g_->get_num_edges_out() << std::endl;
+        << "\ngraph, contracted. " << std::endl
+        << "time " << 
+        (mytimer.get_time_micro() - t_begin) / 1000000.0 << " (s)"
+        << "; edges before " << edges_before 
+        << "; edges after " << g_->get_num_edges_out() << std::endl
+        << "total searches " << total_searches_ 
+        << "; total expansions (x 1e6) "<< ((double)total_expansions_)/1e6
+        << std::endl;
 }
 
 uint32_t 
@@ -189,8 +216,13 @@ warthog::ch::fixed_graph_contraction::witness_search(
     // pathfinding queries must specify an external start and target id
     // (i.e. as they appear in the input file)
     warthog::graph::xy_graph* g = this->get_graph();
-    uint32_t ext_from_id = g->to_external_id(from_id);
-    uint32_t ext_to_id = g->to_external_id(to_id);
+    warthog::sn_id_t ext_from_id = g->to_external_id(from_id);
+    warthog::sn_id_t ext_to_id = g->to_external_id(to_id);
+    if(ext_to_id == warthog::INF32)
+    {
+        // hacktacular; these uint32_t ids need to be converted to 64bit sn_id_t
+        ext_to_id = warthog::SN_ID_MAX;
+    }
 
     // run the search
     alg_->set_cost_cutoff(via_len);

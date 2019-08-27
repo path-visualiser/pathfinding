@@ -32,7 +32,7 @@ endif
 
 
 .PHONY: all
-all: fast
+all: dev
 
 .PHONY: fast
 fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
@@ -41,6 +41,7 @@ fast: main extras__
 .PHONY: dev 
 dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
 dev: main extras__
+    @echo "COMPILE FINISHED: DEBUG MODE. RUN MAKE FAST FOR PERFORMANCE"
 
 .PHONY: profile
 profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES) 

@@ -27,17 +27,14 @@ class fixed_graph_contraction
 {
     public:
         // default order is input order (i.e. crap)
-        fixed_graph_contraction(
-                warthog::graph::xy_graph* g);
-
-        fixed_graph_contraction(
-                warthog::graph::xy_graph* g,
-                std::vector<uint32_t>* order);
-
+        fixed_graph_contraction();
         ~fixed_graph_contraction();
 
         void
-        contract();
+        contract(
+                warthog::graph::xy_graph* g,
+                std::vector<uint32_t>* order,
+                uint32_t c_pct = 100);
 
         void
         get_order(std::vector<uint32_t>& order)
@@ -64,7 +61,8 @@ class fixed_graph_contraction
 
     private:
         void 
-        init();
+        init( warthog::graph::xy_graph* g, std::vector<uint32_t>* order, 
+              uint32_t c_pct );
         
         uint32_t
         next();
@@ -78,10 +76,12 @@ class fixed_graph_contraction
         warthog::graph::xy_graph* g_;
         
         bool verbose_;
-        bool done_;
         uint32_t c_pct_;
 
-        std::vector<warthog::graph::edge> uc_neis_;
+        std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
+            in_shorts;
+        std::vector<std::pair<warthog::graph::node*, warthog::graph::edge>>
+            out_shorts;
 
         // witness search stuff
         warthog::zero_heuristic* heuristic_;

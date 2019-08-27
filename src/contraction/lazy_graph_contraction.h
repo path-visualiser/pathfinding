@@ -73,6 +73,7 @@ operator<(const ch_pair& first, const ch_pair& second);
 class lazy_graph_contraction 
 {
     public:
+        lazy_graph_contraction();
 
         // contract the graph lazily
         //
@@ -111,7 +112,7 @@ class lazy_graph_contraction
 
         // these objects get recycled across all witness searches
         warthog::solution sol_;
-        std::vector<warthog::graph::edge> uc_neis_;
+        std::vector<uint32_t> uc_neis_;
 
         // a variety of "node importance values" are computed for each node
         // in order to determine the order of contraction
