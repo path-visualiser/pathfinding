@@ -143,8 +143,8 @@ warthog::ch::load_ch_data(const char* filename, bool up_only)
     fs_in.close();
     std::cerr << "graph, loaded.\n";
     std::cerr 
-        << "read " << n_added << " nodes (expected " << num_nodes << ")"
-        << " and read " << e_added << " edges (expected "<< num_edges << ")"
+        << "read " << n_added << " nodes (total " << num_nodes << ")"
+        << " and read " << e_added << " edges (total "<< num_edges << ")"
         << std::endl;
     return chd;
 }

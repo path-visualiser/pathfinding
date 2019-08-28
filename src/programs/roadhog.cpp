@@ -148,8 +148,10 @@ run_experiments( warthog::search* algo, std::string alg_name,
     {
         warthog::dimacs_parser::experiment exp = (*it);
         warthog::solution sol;
-        warthog::problem_instance pi(
-                exp.source, (exp.p2p ? exp.target : warthog::INF32), verbose);
+        uint32_t dimacs_offset = 1; // we use 0-index; dimacs uses 1-index
+        uint32_t start_id = exp.source - dimacs_offset;
+        uint32_t target_id = exp.p2p ? (exp.target - dimacs_offset) : warthog::INF32;
+        warthog::problem_instance pi(start_id, target_id, verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0;
         double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
@@ -741,38 +743,22 @@ run_bch_bbaf(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
 void
 run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name, std::string gr, std::string co)
+        std::string alg_name)
 {
-    std::string orderfile = cfg.get_param_value("input");
-    if(orderfile == "")
+    std::string chd_file = cfg.get_param_value("input");
+    if(chd_file == "")
     {
-        std::cerr << "err; insufficient input parameters for --alg "
-                  << alg_name << ". required, in order:\n"
-                  << " --input [gr file] [co file] "
-                  << " [contraction order file] \n";
+        std::cerr << "err; missing chd input file\n";
         return;
     }
 
     // load up the graph 
-    warthog::graph::xy_graph g;
-    if(!g.load_from_dimacs(gr.c_str(), co.c_str(), false, true))
-    {
-        std::cerr 
-            << "err; could not load gr or co input files (one or both)\n";
-        return;
-    }
+    warthog::ch::ch_data& chd = *(warthog::ch::load_ch_data(chd_file.c_str()));
 
     // load up the node order
-    std::vector<uint32_t> order;
-    if(!warthog::ch::load_node_order(orderfile.c_str(), order, true))
-    {
-        std::cerr << "err; could not load node order input file\n";
-        return;
-    }
-
     std::cerr << "preparing to search\n";
-    warthog::fch_expansion_policy fexp(&g, &order); 
-    warthog::euclidean_heuristic h(&g);
+    warthog::fch_expansion_policy fexp(chd.g_, chd.level_); 
+    warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
 
     warthog::flexible_astar< 
@@ -783,16 +769,16 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     
     // extra metric; how many nodes do we expand above the apex?
     std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
-    [&order, &fexp] (warthog::search_node* n) -> uint32_t
+    [&chd, &fexp] (warthog::search_node* n) -> uint32_t
     {
         while(true)
         {
             warthog::search_node* p = fexp.generate(n->get_parent());
-            if(!p || order.at(p->get_id()) < order.at(n->get_id()))
+            if(!p || chd.level_->at(p->get_id()) < chd.level_->at(n->get_id()))
             { break; }
             n = p;
         }
-        return order.at(n->get_id());
+        return chd.level_->at(n->get_id());
     };
 
     run_experiments(&alg, alg_name, parser, std::cout);
@@ -1250,19 +1236,6 @@ run_dimacs(warthog::util::cfg& cfg)
         return;
     }
 
-    // DIMACS uses 1-indexed ids. 
-    // Here we convert all source and target ids to be 0-indexed 
-    for(auto it = parser.experiments_begin(); 
-            it != parser.experiments_end(); 
-            it++)
-    {
-        (*it).source = (*it).source - 1;
-        (*it).target = 
-            ((*it).target == warthog::INF32) ? 
-                         warthog::INF32 : ((*it).target-1);
-    }
-
-
     if(alg_name == "dijkstra")
     {
         std::string gr = cfg.get_param_value("input");
@@ -1429,19 +1402,7 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "fch")
     {
-        std::string gr = cfg.get_param_value("input");
-        std::string co = cfg.get_param_value("input");
-        if((gr == "") || co == "")
-        {
-            std::cerr << "parameter is missing: --input [gr file] [co file]\n";
-            return;
-        }
-        if((alg_name == ""))
-        {
-            std::cerr << "parameter is missing: --alg\n";
-            return;
-        }
-        run_fch(cfg, parser, alg_name, gr, co);
+        run_fch(cfg, parser, alg_name);
     }
     else if(alg_name == "fch-af")
     {

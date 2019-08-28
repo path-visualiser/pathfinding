@@ -144,6 +144,7 @@ class expansion_policy
 		inline warthog::search_node*
 		generate(sn_id_t node_id)
 		{
+            if(node_id > nodes_pool_size_) { return 0; }
             return nodepool_->generate(node_id);
 		}
 
