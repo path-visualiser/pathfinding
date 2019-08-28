@@ -53,6 +53,7 @@ class xy_graph_base
         load_from_grid(warthog::gridmap* gm, bool store_incoming=true)
         {
             std::vector<uint32_t> id_map(gm->header_height() * gm->header_width());
+            filename_ = gm->filename();
 
             // add each traversable tile as a node in the graph
             uint32_t num_traversable_tiles = 0;
@@ -517,7 +518,7 @@ class xy_graph_base
         {
             uint32_t nodes_sz = get_num_nodes();
             if(id >= nodes_sz) { return; }
-            if(xy_.size() != nodes_sz) { xy_.resize(nodes_sz); }
+            if(xy_.size() != nodes_sz) { xy_.resize(nodes_sz*2); }
             xy_[id*2] = x;
             xy_[id*2+1] = y;
         }

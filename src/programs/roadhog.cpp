@@ -292,11 +292,12 @@ run_bch(warthog::util::cfg& cfg,
     std::string chd_file = cfg.get_param_value("input");
     if(chd_file == "")
     {
-        std::cerr << "err; chd input file\n";
+        std::cerr << "err; missing chd input file\n";
         return;
     }
-    warthog::ch::ch_data chd;
-    warthog::ch::load_bch_data(&chd, chd_file.c_str());
+
+    warthog::ch::ch_data& chd = 
+        *(warthog::ch::load_ch_data(chd_file.c_str(), true));
 
     std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy fexp(chd.g_, chd.level_);

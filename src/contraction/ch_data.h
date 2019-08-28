@@ -19,11 +19,8 @@ public:
     std::vector<uint32_t>* level_;
 };
 
-// load a contraction hierarchy for use with bi-directional search (BCH).
-// In BCH, only outgoing up edges and incoming up edges are stored with
-// the graph. Other edges, which may be read from file, are discarded. 
-bool
-load_bch_data(warthog::ch::ch_data*, const char* filename);
+warthog::ch::ch_data* 
+load_ch_data(const char* filename, bool up_only = false);
 
 bool
 save_ch_data(const char* filename, warthog::ch::ch_data* chd);
