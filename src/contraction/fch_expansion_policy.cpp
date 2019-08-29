@@ -5,45 +5,10 @@
 
 warthog::fch_expansion_policy::fch_expansion_policy(
         warthog::graph::xy_graph* g, 
-        std::vector<uint32_t>* rank,
-        warthog::ch::search_direction d,
-        bool sort_successors)
+        std::vector<uint32_t>* rank)
     : expansion_policy(g->get_num_nodes()), g_(g) 
 {
     rank_ = rank;
-
-    // sort edges s.t. all up successors appear before any down successor
-    if(sort_successors) 
-    {
-        // TODO: only if sanity check fails
-        warthog::ch::fch_sort_successors(g, rank); 
-    }
-
-    // store the location of the first down successor 
-    down_heads_ = new warthog::graph::ECAP_T[g->get_num_nodes()];
-    for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
-    {
-        warthog::graph::node* n = g->get_node(i);
-        uint32_t i_rank = rank->at(i);
-
-        down_heads_[i] = n->out_degree(); // begin assuming none
-        for(warthog::graph::edge_iter it = n->outgoing_begin();
-                it != n->outgoing_end(); it++)
-        {
-            if(rank_->at(it->node_id_) < i_rank)
-            {
-                down_heads_[i] = (warthog::graph::ECAP_T)(it - n->outgoing_begin());
-                break;
-            }
-        }
-    }
-
-    dir_ = d;
-}
-
-warthog::fch_expansion_policy::~fch_expansion_policy()
-{
-    delete [] down_heads_;
 }
 
 void
@@ -53,23 +18,41 @@ warthog::fch_expansion_policy::expand(
     reset();
 
     warthog::search_node* pn = generate(current->get_parent());
-    uint32_t current_id = (uint32_t)current->get_id();
+    warthog::sn_id_t current_id = current->get_id();
     uint32_t current_rank = get_rank(current_id);
-    warthog::graph::node* n = g_->get_node(current_id);
+    warthog::graph::node* n = g_->get_node((uint32_t)current_id);
 
 
     // traveling up the hierarchy we generate all neighbours;
     // traveling down, we generate only "down" neighbours
-    warthog::graph::edge_iter begin = n->outgoing_begin();
-    warthog::graph::edge_iter end = n->outgoing_end();
-    bool up_travel = dir_ & (!pn || (current_rank > get_rank((uint32_t)pn->get_id())));
-    if(!up_travel) { begin += down_heads_[current_id]; }
-
-    for(warthog::graph::edge_iter it = begin; it != end; it++)
+    bool up_travel = !pn || (current_rank > get_rank(pn->get_id()));
+    if(up_travel)
     {
-        warthog::graph::edge& e = *it;
-        assert(e.node_id_ < g_->get_num_nodes());
-        this->add_neighbour(this->generate(e.node_id_), e.wt_);
+        // generate up edges
+        for(uint32_t i = 0; i < n->out_degree(); i++)
+        {
+            warthog::graph::edge& e = *(n->outgoing_begin() + i);
+            assert(e.node_id_ < g_->get_num_nodes());
+            this->add_neighbour(this->generate(e.node_id_), e.wt_);
+        }
+        // generate down edges
+        // NB: we abuse the incoming list and store here the 
+        // set of outgoing successors which go down the hierarchy
+        for(uint32_t i = 0; i < n->in_degree(); i++)
+        {
+            warthog::graph::edge& e = *(n->incoming_begin() + i);
+            assert(e.node_id_ < g_->get_num_nodes());
+            this->add_neighbour(this->generate(e.node_id_), e.wt_);
+        }
+    }
+    else
+    {
+        for(uint32_t i = 0; i < n->in_degree(); i++)
+        {
+            warthog::graph::edge& e = *(n->incoming_begin() + i);
+            assert(e.node_id_ < g_->get_num_nodes());
+            this->add_neighbour(this->generate(e.node_id_), e.wt_);
+        }
     }
 }
 

@@ -1,9 +1,11 @@
 #include "ch_data.h"
 
-warthog::ch::ch_data::ch_data()
+warthog::ch::ch_data::ch_data(
+    uint32_t num_nodes, warthog::ch::ch_direction_t type)
 {
-    g_ = new warthog::graph::xy_graph();
-    level_ = new std::vector<uint32_t>(0);
+    g_ = new warthog::graph::xy_graph(num_nodes);
+    level_ = new std::vector<uint32_t>(num_nodes, num_nodes-1);
+    type_ = type;
 }
 
 warthog::ch::ch_data::~ch_data()
@@ -48,7 +50,15 @@ warthog::ch::save_ch_data(const char* filename, warthog::ch::ch_data* chd)
          fs_out << level << std::endl;
     }
 
-    // edge data
+    // edge data. [===== NB ==== THIS NEXT BIT IS IMPORTANT ====]
+    // contraction hierarchy data can be stored in two different
+    // ways, depending on whether query algorithm is bidirectional
+    // or forward search. For the former, the CH is stored as an 
+    // "up only" graph where all outgoing edges go up and where
+    // all incoming edges are from higher level nodes.
+    // For the latter, the CH is stored as an "up/down" graph
+    // where all outgoing edges go up and all down edges are
+    // stored in the incoming list 
     for(uint32_t i = 0; i < chd->g_->get_num_nodes(); i++)
     {
         warthog::graph::node* n = chd->g_->get_node(i);
@@ -57,6 +67,25 @@ warthog::ch::save_ch_data(const char* filename, warthog::ch::ch_data* chd)
             warthog::graph::edge* e = n->outgoing_begin()+edge_idx;
             fs_out << "e " << i << " " << e->node_id_ << " " << e->wt_ << std::endl;
         }
+
+        for(uint32_t edge_idx = 0; edge_idx < n->in_degree(); edge_idx++)
+        {
+            warthog::graph::edge* e = n->incoming_begin()+edge_idx;
+            switch(chd->type_)
+            {
+                case warthog::ch::UP_DOWN:
+                {
+                    fs_out << "e " << i << " " << e->node_id_ << " " << e->wt_ << std::endl;
+                    break;
+                }
+                case warthog::ch::UP_ONLY:
+                default:
+                {
+                    fs_out << "e " << e->node_id_ << " " << i  << " " << e->wt_ << std::endl;
+                    break;
+                }
+            }
+        }
     }
 
     fs_out.close();
@@ -64,7 +93,7 @@ warthog::ch::save_ch_data(const char* filename, warthog::ch::ch_data* chd)
 }
 
 warthog::ch::ch_data* 
-warthog::ch::load_ch_data(const char* filename, bool up_only)
+warthog::ch::load_ch_data(const char* filename, warthog::ch::ch_direction_t type)
 {
     warthog::ch::ch_data* chd = 0;
     std::ifstream fs_in(filename);
@@ -88,9 +117,7 @@ warthog::ch::load_ch_data(const char* filename, bool up_only)
         break;
     }
 
-    chd = new warthog::ch::ch_data();
-    chd->g_ = new warthog::graph::xy_graph(num_nodes);
-    chd->level_ = new std::vector<uint32_t>(num_nodes, num_nodes-1);
+    chd = new warthog::ch::ch_data(num_nodes, type);
 
     uint32_t n_added = 0, e_added=0;
     while(fs_in.good())
@@ -118,23 +145,34 @@ warthog::ch::load_ch_data(const char* filename, bool up_only)
             fs_in >> from_id >> to_id >> cost;
             if(chd->level_->at(from_id) <= chd->level_->at(to_id))
             {
+                // up edges are added to the outgoing list
                 warthog::graph::node* from = chd->g_->get_node(from_id);
                 from->add_outgoing(warthog::graph::edge(to_id, cost));
-                if(up_only == false)
-                {
-                    warthog::graph::node* to = chd->g_->get_node(to_id);
-                    to->add_incoming(warthog::graph::edge(from_id, cost));
-                }
             }
             else
             {
-                if(up_only == false)
+                switch(chd->type_)
                 {
-                    warthog::graph::node* from = chd->g_->get_node(from_id);
-                    from->add_outgoing(warthog::graph::edge(to_id, cost));
+                    // when the graph is up/down (e.g. as per algorithm FCH)
+                    // all down edges are added to the incoming list
+                    // this separation improves the performance of FCH
+                    // but its an abuse of the incoming list
+                    case warthog::ch::UP_DOWN:
+                    {
+                        warthog::graph::node* from = chd->g_->get_node(from_id);
+                        from->add_incoming(warthog::graph::edge(to_id, cost));
+                        break;
+                    }
+
+                    // when the graph is "up only" (e.g. as per the algorithm BCH)
+                    // we store for every down edge an incoming up edge
+                    case warthog::ch::UP_ONLY:
+                    {
+                        warthog::graph::node* to = chd->g_->get_node(to_id);
+                        to->add_incoming(warthog::graph::edge(from_id, cost));
+                        break;
+                    }
                 }
-                warthog::graph::node* to = chd->g_->get_node(to_id);
-                to->add_incoming(warthog::graph::edge(from_id, cost));
             }
             e_added++;
             fs_in >> std::ws;

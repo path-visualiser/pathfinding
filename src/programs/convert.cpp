@@ -7,42 +7,6 @@
 #include <fstream>
 
 int
-main_dimacs_to_binary(int argc, char** argv)
-{
-    if(argc < 3)
-    {
-        std::cerr 
-            << argv[0] 
-            << " [dimacs gr file] [dimacs co file] [output file]\n";
-        exit(EINVAL);
-    }
-
-    warthog::graph::xy_graph g;
-    g.load_from_dimacs(argv[1], argv[2]);
-
-    std::ofstream ofs(argv[3], std::ofstream::binary);
-    g.save(ofs),
-    ofs.close();
-
-    warthog::graph::xy_graph g2;
-    std::ifstream ifs(argv[3], std::ifstream::binary);
-    g2.load_from_blob(ifs, true, true);
-    ifs.close();
-
-//    if(g == g2)
-//    {
-//        std::cout << "conversion finished and verified. all good!" 
-//            << std::endl;
-//    }
-//    else
-//    {
-//        std::cout << "conversion failed" << std::endl;
-//    }
-    return 0; 
-}
-
-
-int
 main_af(int argc, char** argv)
 {
 	// parse arguments
@@ -405,6 +369,6 @@ main_bbaf_convert(int argc, char** argv)
 int
 main(int argc, char** argv)
 {
-    main_dimacs_to_binary(argc, argv);
+    main_af(argc, argv);
 }
 

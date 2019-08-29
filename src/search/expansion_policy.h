@@ -142,9 +142,8 @@ class expansion_policy
         // get a search_node memory pointer associated with @param node_id. 
         // (value is null if @param node_id is bigger than nodes_pool_size_)
 		inline warthog::search_node*
-		generate(sn_id_t node_id)
+		generate(warthog::sn_id_t node_id)
 		{
-            if(node_id > nodes_pool_size_) { return 0; }
             return nodepool_->generate(node_id);
 		}
 

@@ -31,7 +31,7 @@ help()
 void 
 contract_graph()
 {
-    warthog::ch::ch_data chd;
+    warthog::ch::ch_data chd(0, warthog::ch::UP_DOWN);
     std::string outfile;
 
     // load up the input graph/grid

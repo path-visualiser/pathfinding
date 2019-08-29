@@ -299,7 +299,7 @@ run_bch(warthog::util::cfg& cfg,
     }
 
     warthog::ch::ch_data& chd = 
-        *(warthog::ch::load_ch_data(chd_file.c_str(), true));
+        *(warthog::ch::load_ch_data(chd_file.c_str(), warthog::ch::UP_ONLY));
 
     std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy fexp(chd.g_, chd.level_);
@@ -753,7 +753,9 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::ch::ch_data& chd = *(warthog::ch::load_ch_data(chd_file.c_str()));
+    warthog::ch::ch_data& chd = 
+        *(warthog::ch::load_ch_data(
+            chd_file.c_str(), warthog::ch::UP_DOWN));
 
     // load up the node order
     std::cerr << "preparing to search\n";

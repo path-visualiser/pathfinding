@@ -34,11 +34,10 @@ class fch_expansion_policy : public expansion_policy
     public:
         fch_expansion_policy(
                 warthog::graph::xy_graph* graph,
-                std::vector<uint32_t>* rank,  
-                warthog::ch::search_direction = warthog::ch::ANY,
-                bool sort_successors = false);
+                std::vector<uint32_t>* rank);
 
-        ~fch_expansion_policy();
+        virtual 
+        ~fch_expansion_policy() { }
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
@@ -60,15 +59,6 @@ class fch_expansion_policy : public expansion_policy
         }
 
         ////////////////////// FCH specific stuff ////////////////////
-        inline void
-        set_search_direction(warthog::ch::search_direction d)
-        { dir_ = d; } 
-
-        // return the index of the first down node from among the list 
-        // of outgoing edges of node @param n_id
-        uint32_t
-        get_first_down_index(uint32_t n_id) { return down_heads_[n_id] ; }
-
         warthog::graph::xy_graph*
         get_graph() { return g_; } 
 
@@ -79,12 +69,9 @@ class fch_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::xy_graph* g_;
-        warthog::graph::ECAP_T* down_heads_;
-
-        warthog::ch::search_direction dir_;
 
         inline uint32_t
-        get_rank(uint32_t id)
+        get_rank(warthog::sn_id_t id)
         {
             return rank_->at(id);
         }

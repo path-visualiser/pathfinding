@@ -51,7 +51,9 @@ warthog::mem::node_pool::generate(sn_id_t node_id)
 {
 	sn_id_t block_id = node_id >> warthog::mem::node_pool_ns::LOG2_NBS;
 	sn_id_t list_id = node_id &  warthog::mem::node_pool_ns::NBS_MASK;
-	assert(block_id <= num_blocks_);
+
+    // id outside the pool address range 
+	if(block_id > num_blocks_) { return 0; }
 
     // add a new block of nodes if necessary
 	if(!blocks_[block_id])
@@ -84,7 +86,9 @@ warthog::mem::node_pool::get_ptr(sn_id_t node_id)
 {
 	sn_id_t block_id = node_id >> warthog::mem::node_pool_ns::LOG2_NBS;
 	sn_id_t list_id = node_id &  warthog::mem::node_pool_ns::NBS_MASK;
-	assert(block_id <= num_blocks_);
+
+    // id outside the pool address range 
+	if(block_id > num_blocks_) { return 0; }
 
 	if(!blocks_[block_id])
     {
