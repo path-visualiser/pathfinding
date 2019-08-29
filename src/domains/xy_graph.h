@@ -216,7 +216,7 @@ class xy_graph_base
                     hid = tid;
                     tid = tmp;
                 }
-                warthog::graph::edge e;
+                T_EDGE e;
                 e.node_id_ = hid;
                 e.wt_ = (*it).weight_;
 
@@ -241,7 +241,7 @@ class xy_graph_base
                     // sanity check: either the edge was a duplicate (and nothing
                     // was added) or the added was added in which case it should
                     // be the last element in the outgoing list of the tail node
-                    warthog::graph::edge sanity = 
+                    T_EDGE sanity = 
                         *(nodes_[tid].outgoing_end()-1);
                     assert(deg_before == deg_after || 
                             sanity.node_id_ == hid);
@@ -445,7 +445,7 @@ class xy_graph_base
             //if(graph_id != warthog::INF32) { return graph_id; } 
 
             uint32_t graph_id = (uint32_t)get_num_nodes();
-            nodes_.push_back(warthog::graph::node());
+            nodes_.push_back(T_NODE());
             xy_.push_back(x);
             xy_.push_back(y);
             //id_map_.push_back(ext_id);
@@ -565,10 +565,10 @@ class xy_graph_base
                             max_addr;
             }
             
-            size_t mem_lb = sizeof(warthog::graph::edge) *
+            size_t mem_lb = sizeof(T_EDGE) *
                 (this->get_num_edges_out() + this->get_num_edges_in());
             size_t mem_actual =
-                ((size_t)(max_addr-min_addr)) * sizeof(warthog::graph::edge);
+                ((size_t)(max_addr-min_addr)) * sizeof(T_EDGE);
             return mem_actual / (double)mem_lb;
         }
 
@@ -652,8 +652,8 @@ class xy_graph_base
                     this->get_num_edges_out() << std::endl;
                 for(uint32_t i = first_id; i < last_id; i++)
                 {
-                    warthog::graph::node* n = get_node(i);
-                    for(warthog::graph::edge_iter it = n->outgoing_begin(); 
+                    T_NODE* n = get_node(i);
+                    for(T_EDGE* it = n->outgoing_begin(); 
                             it != n->outgoing_end(); it++)
                     {
                         oss << "a " << to_external_id(i) << " " 
@@ -676,7 +676,7 @@ class xy_graph_base
                 int32_t tx, ty, hx, hy;
                 get_xy(t_id, tx, ty);
 
-                for(warthog::graph::edge_iter it = nodes_[t_id].outgoing_begin();
+                for(T_EDGE* it = nodes_[t_id].outgoing_begin();
                     it != nodes_[t_id].outgoing_end();
                     it++)
                 {
