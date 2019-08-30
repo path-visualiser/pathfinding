@@ -40,7 +40,8 @@ class xy_graph_base
 {
     public:
         // create an empty graph
-        xy_graph_base(uint32_t num_nodes=0) : verbose_(false)
+        xy_graph_base(uint32_t num_nodes=0, std::string filename = "") 
+            : verbose_(false), filename_(filename)
         {
             grow(num_nodes);
         }
@@ -48,83 +49,6 @@ class xy_graph_base
         ~xy_graph_base() 
         { }
 
-        // create a graph from a grid map. 
-        bool
-        load_from_grid(warthog::gridmap* gm, bool store_incoming=true)
-        {
-            std::vector<uint32_t> id_map(gm->header_height() * gm->header_width());
-            filename_ = gm->filename();
-
-            // add each traversable tile as a node in the graph
-            uint32_t num_traversable_tiles = 0;
-            warthog::gridmap_expansion_policy exp(gm);
-            for(uint32_t y = 0; y < gm->header_height(); y++)
-            {
-                for(uint32_t x = 0; x < gm->header_width(); x++)
-                {
-                    // we differentiate between external grid ids
-                    // (unpadded) and internal grid ids (with padding)
-                    uint32_t from_gm_id = y * gm->header_width() + x;
-
-                    // skip obstacles
-                    if(!gm->get_label(gm->to_padded_id(from_gm_id))) 
-                    { continue; }
-                    num_traversable_tiles++;
-
-                    // add graph node (we scale up all costs and coordinates)
-                    id_map[from_gm_id] = add_node(
-                        (int32_t)(x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR),
-                        (int32_t)(y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR),
-                        from_gm_id);
-                }
-            }
-            assert(num_traversable_tiles == get_num_nodes());
-
-            // add edges
-            for(uint32_t y = 0; y < gm->header_height(); y++)
-            {
-                for(uint32_t x = 0; x < gm->header_width(); x++)
-                {
-                    // we use a grid-expansion policy here which enforces
-                    // standard constraints on grid moves re; e.g. corner cutting
-                    uint32_t from_graph_id;
-                    {
-                        from_graph_id = id_map[y*gm->header_width() + x];
-                        assert(from_graph_id < num_traversable_tiles);
-                    }
-
-                    warthog::search_node* nei = 0;
-                    warthog::search_node* n = 0;
-                    edge_cost_t edge_cost = 0;
-
-                    n = exp.generate(gm->to_padded_id(y*gm->header_width() + x));
-                    exp.expand(n, 0);
-                    for(exp.first(nei, edge_cost); nei != 0; exp.next(nei, edge_cost))
-                    {
-                        uint32_t to_graph_id;
-                        {
-                            uint32_t nei_x, nei_y;
-                            gm->to_unpadded_xy((uint32_t)nei->get_id(), nei_x, nei_y);
-                            uint32_t to_gm_id = nei_y * gm->header_width() + nei_x;
-                            to_graph_id = id_map[to_gm_id];
-                            assert(from_graph_id != to_graph_id);
-                            assert(to_graph_id < num_traversable_tiles);
-                        }
-
-                        T_NODE* gr_from = get_node(from_graph_id);
-                        T_NODE* gr_to = get_node(to_graph_id);
-                        edge_cost_t gr_weight = edge_cost * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR;
-
-                        gr_from->add_outgoing(T_EDGE(to_graph_id, gr_weight));
-                        if(store_incoming)
-                        {
-                            gr_to->add_incoming(T_EDGE(from_graph_id, gr_weight));
-                        }
-                    }
-                }
-            }
-            return true;
-        }
 
         // read in a map in the format of the 9th DIMACS
         // competition. In this format graphs are specified
@@ -480,6 +404,12 @@ class xy_graph_base
         inline const char* 
         get_filename() const { return filename_.c_str(); }
 
+        inline void
+        set_filename(const char* filename)
+        {
+            filename_ = filename;
+        }
+
         inline size_t
         mem()
         {
@@ -722,10 +652,16 @@ class xy_graph_base
         std::vector<uint32_t> id_map_; 
         std::unordered_map<uint32_t, uint32_t> ext_id_map_; 
 
-        std::string filename_;
         bool verbose_;
+        std::string filename_;
 };
 typedef xy_graph_base<warthog::graph::node, warthog::graph::edge> xy_graph;
+
+// create a graph from a grid map. 
+void
+gridmap_to_xy_graph(
+    warthog::gridmap* gm, warthog::graph::xy_graph*, 
+    bool store_incoming = false);
 
 }
 }

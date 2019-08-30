@@ -35,7 +35,6 @@ contract_graph()
     std::string outfile;
 
     // load up the input graph/grid
-    warthog::graph::xy_graph g;
     if(cfg.get_num_values("dimacs") == 2)
     {
         std::string grfile = cfg.get_param_value("dimacs");
@@ -53,11 +52,7 @@ contract_graph()
     {
         std::string mapfile = cfg.get_param_value("gridmap");
         warthog::gridmap gm(mapfile.c_str());
-        if(!chd.g_->load_from_grid(&gm, true))
-        {
-            std::cerr << "err; could not load gridmap file\n";
-            return;
-        }
+        warthog::graph::gridmap_to_xy_graph(&gm, chd.g_, true);
         outfile = mapfile + ".chd";
     }
     else

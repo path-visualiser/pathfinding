@@ -33,11 +33,12 @@ main(int argc, char** argv)
 
     if(strcmp(argv[1], "map") == 0)
     {
-        warthog::graph::xy_graph g;
         warthog::gridmap gm(argv[2]);
-        g.load_from_grid(&gm);
-        g.print_dimacs_gr(std::cout, 0, (uint32_t)g.get_num_nodes());
-        g.print_dimacs_co(std::cout, 0, (uint32_t)g.get_num_nodes());
+        warthog::graph::xy_graph g;
+        warthog::graph::gridmap_to_xy_graph(&gm, &g);
+
+        g.print_dimacs_gr(std::cout, 0, g.get_num_nodes());
+        g.print_dimacs_co(std::cout, 0, g.get_num_nodes());
     }
     else if(strcmp(argv[1], "scen") == 0)
     {

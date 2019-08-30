@@ -17,6 +17,7 @@ warthog::gridmap::gridmap(const char* filename)
 
 	init_db();
 	// populate matrix
+    num_traversable_ = 0;
 	for(unsigned int i = 0; i < parser.get_num_tiles(); i++)
 	{
 		unsigned char c = parser.get_tile_at(i);
@@ -32,6 +33,7 @@ warthog::gridmap::gridmap(const char* filename)
 				break;
 			default: // everything else is traversable
 				this->set_label(to_padded_id(i), 1); 
+                num_traversable_++;
 				assert(this->get_label(to_padded_id(i)) == 1);
 				break;
 		}
