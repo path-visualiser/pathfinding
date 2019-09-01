@@ -15,6 +15,14 @@ void
 warthog::fch_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance*)
 {
+    // TODO store one extra bit with each search node to indicate 
+    // its parent-edge direction in the hierarchy (up or down)
+    // the extra bit is used as an address offset for the 
+    // appropriate successor generating function
+    // this optimisation removes the need to compare the
+    // rank of the current node with the parent which 
+    // currently costs three branching instructions and one 
+    // read instruction with the possibility of a cache miss
     reset();
 
     warthog::search_node* pn = generate(current->get_parent());

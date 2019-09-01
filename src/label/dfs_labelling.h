@@ -13,9 +13,6 @@
 //  - bounding box: a rectangular bounding box that contains every
 //  node in the down closure of each edge
 //  
-//  - arc flags: a bitfield that indicates set-reachability info for every
-//  node in the down closure of each edge
-//
 // @author: dharabor
 // @created: 2017-12-06
 // 
@@ -86,49 +83,27 @@ operator<<(std::ostream& out, warthog::label::id_range_label& label);
 struct dfs_label
 {
     typedef uint8_t T_FLAG;
-    dfs_label(size_t arcflag_bytes)
-    {
-        for(uint32_t i = 0; i < arcflag_bytes; i++) { flags_.push_back(0); }
-    }
+    dfs_label() { } 
 
     dfs_label&
     operator=(const dfs_label& other)
     {
-        rank_ = other.rank_;
-        ids_ = other.ids_;
         bbox_ = other.bbox_;
-        for(uint32_t i = 0; i < other.flags_.size(); i++)
-        { flags_[i] = other.flags_.at(i); }
         return *this;
     }
 
     void
     merge(const dfs_label& other)
     {
-        rank_.grow(other.rank_);
-        ids_.grow(other.ids_);
         bbox_.grow(other.bbox_);
-        for(uint32_t i = 0; i < flags_.size(); i++)
-        { flags_[i] |= other.flags_[i]; }
     }
 
     void
     print(std::ostream& out)
     {
         out << " dfs_label";
-        rank_.print(out);
-        ids_.print(out);
         bbox_.print(out);
-        out << " arcflags ";
-        for(uint32_t i = 0; i < flags_.size(); i++)
-        {
-            out << " " << flags_.at(i);
-        }
     }
-
-    id_range_label rank_;
-    id_range_label ids_;
-    std::vector<T_FLAG> flags_;
     warthog::geom::rectangle bbox_;
 };
 
@@ -149,12 +124,6 @@ class dfs_labelling
     public:
 
         ~dfs_labelling();
-
-        inline std::vector<uint32_t>*
-        get_partitioning()
-        {
-            return part_;
-        }
 
         inline warthog::graph::xy_graph*
         get_graph() 
@@ -178,7 +147,7 @@ class dfs_labelling
             size_t retval = sizeof(this);
             for(uint32_t i = 0; i < lab_->size(); i++)
             {
-                retval += (sizeof(dfs_label) + bytes_per_af_label_) 
+                retval += (sizeof(dfs_label) ) 
                     * lab_->at(i).size();
             }
             retval += sizeof(int32_t) * dfs_order_->size();
@@ -187,7 +156,7 @@ class dfs_labelling
 
         static warthog::label::dfs_labelling*
         load(const char* filename, warthog::graph::xy_graph* g, 
-            std::vector<uint32_t>* rank, std::vector<uint32_t>* part)
+            std::vector<uint32_t>* rank)
         {
             std::cerr << "loading dfs_labelling from file " 
                 << filename << std::endl;
@@ -202,7 +171,7 @@ class dfs_labelling
             }
 
             warthog::label::dfs_labelling* lab = 
-                new warthog::label::dfs_labelling(g, rank, part);
+                new warthog::label::dfs_labelling(g, rank);
 
             ifs >> *lab;
 
@@ -237,14 +206,13 @@ class dfs_labelling
         // compute labels for all nodes specified by the given workload
         static warthog::label::dfs_labelling*
         compute(warthog::graph::xy_graph* g, 
-                std::vector<uint32_t>* part, 
                 std::vector<uint32_t>* rank,
                 warthog::util::workload_manager* workload)
         {
             warthog::timer t;
             t.start();
 
-            if(g == 0 || rank == 0 || part  == 0) { return 0; } 
+            if(g == 0 || rank == 0 ) { return 0; } 
 
             std::function<fch_expansion_policy*(void)> expander_fn = 
             [g, rank] (void) -> fch_expansion_policy*
@@ -326,16 +294,9 @@ class dfs_labelling
                     dfs_label& s_lab = 
                         lab->lab_->at(source_id).at(edge_idx);
 
-                    s_lab.rank_.grow((int32_t)lab->rank_->at(node_id));
-                    s_lab.ids_.grow((int32_t)lab->dfs_order_->at(node_id));
-
                     int32_t x, y;
                     lab->g_->get_xy(node_id, x, y);
                     s_lab.bbox_.grow(x, y);
-
-                    uint32_t s_part = lab->part_->at(node_id);
-                    s_lab.flags_[s_part >> 3] |= (1 << (s_part & 7)); // div8, mod8
-                    assert(s_lab.flags_[s_part >> 3] & (1 << (s_part & 7)));
                 };
 
                 warthog::zero_heuristic h;
@@ -375,7 +336,7 @@ class dfs_labelling
             };
 
             warthog::label::dfs_labelling* lab = 
-                new warthog::label::dfs_labelling(g, rank, part);
+                new warthog::label::dfs_labelling(g, rank);
 
             shared_data shared;
             shared.fn_new_expander_ = expander_fn;
@@ -450,8 +411,7 @@ class dfs_labelling
         // only via ::compute or ::load please
         dfs_labelling(
             warthog::graph::xy_graph* g, 
-            std::vector<uint32_t>* rank,
-            std::vector<uint32_t>* partitioning);
+            std::vector<uint32_t>* rank);
 
         // DFS-based preprocessing computes labels for every edge 
         // @param contraction order of every node in the graph
@@ -460,8 +420,6 @@ class dfs_labelling
 
         warthog::graph::xy_graph* g_;
         std::vector<uint32_t>* rank_;
-        std::vector<uint32_t>* part_;
-        size_t bytes_per_af_label_;
         uint32_t apex_id_; 
 
         std::vector<uint32_t>* dfs_order_;

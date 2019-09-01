@@ -139,6 +139,12 @@ class dimacs_parser
         inline std::string 
         get_problemfile() { return problemfile_; }
 
+        inline std::string
+        get_co_filename() { return co_file_; } 
+
+        inline std::string
+        get_gr_filename() { return gr_file_; }
+
     private:
         void init();
         bool load_co_file(std::istream& fdimacs);
@@ -148,6 +154,8 @@ class dimacs_parser
        std::vector<warthog::dimacs_parser::edge>* edges_;
        std::vector<warthog::dimacs_parser::experiment>* experiments_;
        std::string problemfile_;
+       std::string co_file_;
+       std::string gr_file_;
 
 };
 

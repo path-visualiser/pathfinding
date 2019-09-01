@@ -35,18 +35,11 @@ contract_graph()
     std::string outfile;
 
     // load up the input graph/grid
-    if(cfg.get_num_values("dimacs") == 2)
+    if(cfg.get_num_values("xy") == 1)
     {
-        std::string grfile = cfg.get_param_value("dimacs");
-        std::string cofile = cfg.get_param_value("dimacs");
-
-        if(!chd.g_->load_from_dimacs(grfile.c_str(), cofile.c_str(), false, true))
-        {
-            std::cerr 
-                << "err; could not load gr or co input files (one or both)\n";
-            return;
-        }
-        outfile = grfile + ".chd";
+        std::string xy_file = cfg.get_param_value("xy");
+        std::ifstream ifs(xy_file);
+        warthog::graph::read_xy(ifs, *chd.g_, true);
     }
     else if(cfg.get_num_values("gridmap") == 1)
     {
@@ -57,7 +50,7 @@ contract_graph()
     }
     else
     {
-        std::cerr << "err; input graph or gridmap not specified\n";
+        std::cerr << "err; input graph (--xy [file]) or gridmap (--gridmap [file]) not specified\n";
         return;
     }
 

@@ -93,6 +93,7 @@ warthog::dimacs_parser::load_graph(const char* filename)
                     << "from "<< filename << " ... ";
                 edges_->reserve(tmp_num_edges);
 				retval = load_gr_file(*fdimacs);
+                gr_file_ = filename;
                 std::cerr << "done\n";
                 break;
 			}
@@ -134,6 +135,7 @@ warthog::dimacs_parser::load_graph(const char* filename)
                             << "from " << filename << " ... ";
                         nodes_->reserve(tmp_num_nodes);
                         retval = load_co_file(*fdimacs);
+                        gr_file_ = filename;
                         std::cerr << "done\n";
                         break;
                     }
@@ -295,6 +297,10 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
 
     bool p2p = true;
     char buf[1024];
+
+    // dimacs stuff is 1-indexed but warthog is zero indexed
+    // we adjust ids if necessary 
+    uint32_t id_offset = 1; 
     while(infile.good())
     {
         infile.getline(buf, 1024);
@@ -302,6 +308,21 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
         if(buf[0] == 'c')
         {
             continue;
+        }
+        // "p2p-xy is a warthog extended problem specification format
+        // where start and target ids are zero indexed. In these cases
+        // we don't need to adjust the start and target ids
+        else if(strstr(buf, "p aux sp p2p-zero") != 0)
+        {
+            p2p = true;
+            id_offset = 0;
+            break;
+        }
+        else if(strstr(buf, "p aux sp ss-zero") != 0)
+        {
+            id_offset = 0;
+            p2p = false;
+            break;
         }
         if(strstr(buf, "p aux sp p2p") != 0)
         {
@@ -338,6 +359,7 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
 
             }
             exp.source = (uint32_t)atoi(tok);
+            exp.source -= id_offset;
             exp.p2p = p2p;
 
             if(p2p)
@@ -348,6 +370,7 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
                     std::cerr << "invalid query in problem file:  " << buf << "\n";
                 }
                 exp.target = (uint32_t)atoi(tok);
+                exp.target -= id_offset;
             }
             else
             {

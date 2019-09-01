@@ -31,12 +31,7 @@ warthog::label::operator<<(std::ostream& out,
 std::istream&
 warthog::label::operator>>(std::istream& in, warthog::label::dfs_label& label)
 {
-    in >> label.rank_ >> label.ids_ >> label.bbox_;
-    for(uint32_t i = 0; i < label.flags_.size(); i++)
-    {   
-        in.read( (char*)(&label.flags_.at(i)), 
-                  sizeof(warthog::label::dfs_label::T_FLAG) );
-    }
+    in >> label.bbox_;
     return in;
 }
 
@@ -44,12 +39,7 @@ std::ostream&
 warthog::label::operator<<(std::ostream& out, 
         warthog::label::dfs_label& label)
 {
-    out << label.rank_ << label.ids_ << label.bbox_;
-    for(uint32_t i = 0; i < label.flags_.size(); i++)
-    { 
-        out.write( (char*)(&label.flags_.at(i)), 
-                    sizeof(warthog::label::dfs_label::T_FLAG) );
-    }
+    out << label.bbox_;
     return out;
 }
 
@@ -107,21 +97,16 @@ warthog::label::operator<<(std::ostream& out,
 
 warthog::label::dfs_labelling::dfs_labelling(
         warthog::graph::xy_graph* g, 
-        std::vector<uint32_t>* rank,
-        std::vector<uint32_t>* partitioning)
-    : g_(g), rank_(rank), part_(partitioning)
+        std::vector<uint32_t>* rank)
+    : g_(g), rank_(rank)
 {
     dfs_order_ = new std::vector< uint32_t >();
     apex_id_ = compute_dfs_ids(g_, rank_, dfs_order_);
     
-    // figure out how many bytes are required per label
-    uint32_t max_id = *(std::max_element(part_->begin(), part_->end()));
-    bytes_per_af_label_ = (max_id / 8) + !!(max_id % 8);
-
     // allocate memory for edge labels
     lab_ = new std::vector< std::vector < dfs_label > >();
     lab_->resize(g_->get_num_nodes());
-    dfs_label dummy(bytes_per_af_label_);
+    dfs_label dummy;
     for(uint32_t n_id = 0; n_id < g_->get_num_nodes(); n_id++)
     {
         warthog::graph::node* n = this->g_->get_node(n_id);
@@ -145,7 +130,7 @@ warthog::label::dfs_labelling::compute_dfs_labels(
     // 3. store for every down edge a label that bounds the reachable subtree
     // 4. store for all nodes a label to bound its down closure
     std::vector< dfs_label > closure(
-            this->g_->get_num_nodes(), dfs_label(bytes_per_af_label_));
+            this->g_->get_num_nodes(), dfs_label());
     std::vector< uint8_t > recurse(this->g_->get_num_nodes(), 1);
     std::function<void(uint32_t)> label_fn = 
         [this, workload, &recurse, &closure, &label_fn] 
@@ -177,16 +162,13 @@ warthog::label::dfs_labelling::compute_dfs_labels(
             }
             recurse.at(source_id) = 0;
 
-            s_lab.rank_.grow((int32_t)this->rank_->at(source_id));
-            s_lab.ids_.grow((int32_t)this->dfs_order_->at(source_id));
-
             int32_t x, y;
             this->g_->get_xy(source_id, x, y);
             s_lab.bbox_.grow(x, y);
 
-            uint32_t s_part = this->part_->at(source_id);
-            s_lab.flags_[s_part >> 3] |= (1 << (s_part & 7)); // div8, mod8
-            assert(s_lab.flags_[s_part >> 3] & (1 << (s_part & 7)));
+            //uint32_t s_part = this->part_->at(source_id);
+            //s_lab.flags_[s_part >> 3] |= (1 << (s_part & 7)); // div8, mod8
+            //assert(s_lab.flags_[s_part >> 3] & (1 << (s_part & 7)));
         };
 
     // Here we:
@@ -194,7 +176,7 @@ warthog::label::dfs_labelling::compute_dfs_labels(
     // 2. store for every up edge a label that bounds the up-reachable subtree
     // 3. store for all nodes a label to bound its up-reachable closure
     std::vector< dfs_label > up_closure(
-            this->g_->get_num_nodes(), dfs_label(bytes_per_af_label_));
+            this->g_->get_num_nodes(), dfs_label());
     std::function<void(uint32_t)> up_label_fn = 
         [this, workload, &closure, &up_closure, &recurse, &up_label_fn] 
         (uint32_t source_id) -> void

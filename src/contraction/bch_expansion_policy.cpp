@@ -5,12 +5,10 @@
 
 warthog::bch_expansion_policy::bch_expansion_policy(
         warthog::graph::xy_graph* g, 
-        std::vector<uint32_t>* rank, 
         bool backward)
     : expansion_policy(g->get_num_nodes())
 {
     g_ = g;
-    rank_ = rank;
     backward_ = backward;
 
     if(backward_)

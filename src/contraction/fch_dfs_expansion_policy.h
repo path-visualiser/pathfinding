@@ -28,10 +28,10 @@ class fch_dfs_expansion_policy : public expansion_policy
         fch_dfs_expansion_policy(
                 warthog::graph::xy_graph* graph,
                 std::vector<uint32_t>* rank, 
-                warthog::label::dfs_labelling* lab,
-                bool sort_successors=true);
+                warthog::label::dfs_labelling* lab);
 
-        ~fch_dfs_expansion_policy();
+        virtual 
+        ~fch_dfs_expansion_policy() { }
 
 		virtual void 
 		expand(warthog::search_node*, warthog::problem_instance*);
@@ -57,13 +57,10 @@ class fch_dfs_expansion_policy : public expansion_policy
     private:
         std::vector<uint32_t>* rank_;
         warthog::graph::xy_graph* g_;
-        warthog::graph::ECAP_T* heads_;
 
         warthog::label::dfs_labelling* lab_;
         uint32_t s_label, t_label;
         int32_t tx_, ty_;
-        uint32_t t_byte_;
-        warthog::label::dfs_label::T_FLAG t_bitmask_;
         uint32_t t_graph_id;
         uint32_t t_rank;
 
@@ -78,21 +75,7 @@ class fch_dfs_expansion_policy : public expansion_policy
         {
             warthog::label::dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.flags_[t_byte_] & t_bitmask_)
-                && label.bbox_.contains(tx_, ty_)
-                && label.ids_.contains((int32_t)t_label)
-                && label.rank_.contains((int32_t)t_rank);
-            return !retval; 
-        }
-
-        inline bool
-        filter_id_range_only(uint32_t node_idx, uint32_t edge_idx)
-        {
-            warthog::label::dfs_label& label = 
-                lab_->get_label(node_idx, edge_idx);
-            bool retval = 
-                label.ids_.contains((int32_t)t_label) && 
-                label.rank_.contains((int32_t)t_rank);
+            bool retval = label.bbox_.contains(tx_, ty_);
             return !retval; 
         }
 
@@ -102,45 +85,6 @@ class fch_dfs_expansion_policy : public expansion_policy
             warthog::label::dfs_label& label = 
                 lab_->get_label(node_idx, edge_idx);
             bool retval = label.bbox_.contains(tx_, ty_);
-            return !retval; 
-        }
-
-        inline bool
-        filter_af_only(uint32_t node_idx, uint32_t edge_idx)
-        {
-            warthog::label::dfs_label& label = 
-                lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.flags_[t_byte_] & t_bitmask_);
-            return !retval; 
-        }
-
-        inline bool
-        filter_bb_and_af(uint32_t node_idx, uint32_t edge_idx)
-        {
-            warthog::label::dfs_label& label = 
-                lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.flags_[t_byte_] & t_bitmask_)
-                && label.bbox_.contains(tx_, ty_);
-            return !retval; 
-        }
-
-        inline bool
-        filter_id_range_and_bb(uint32_t node_idx, uint32_t edge_idx)
-        {
-            warthog::label::dfs_label& label = 
-                lab_->get_label(node_idx, edge_idx);
-            bool retval = label.bbox_.contains(tx_, ty_)
-                && label.ids_.contains((int32_t)t_label);
-            return !retval; 
-        }
-
-        inline bool
-        filter_id_range_and_af(uint32_t node_idx, uint32_t edge_idx)
-        {
-            warthog::label::dfs_label& label = 
-                lab_->get_label(node_idx, edge_idx);
-            bool retval = (label.flags_[t_byte_] & t_bitmask_)
-                && label.ids_.contains((int32_t)t_label);
             return !retval; 
         }
 

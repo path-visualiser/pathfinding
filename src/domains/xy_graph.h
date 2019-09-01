@@ -49,145 +49,6 @@ class xy_graph_base
         ~xy_graph_base() 
         { }
 
-
-        // read in a map in the format of the 9th DIMACS
-        // competition. In this format graphs are specified
-        // using two files: (i) a gr file which defines edge
-        // weights and endpoints and; (ii) a co file which defines 
-        // node ids and xy coordinates
-        //
-        // @param reverse_arcs: reverses the direction of each edge
-        // @param duplicate_edges: store edges with both head and tail node
-        // @param enforce_euclidean: arc lengths must be >= euclidean distance
-        bool
-        load_from_dimacs(const char* gr_file, const char* co_file,
-                bool reverse_arcs =false,
-                bool store_incoming_edges = false,
-                bool enforce_euclidean=true)
-        {
-            clear();
-
-            //warthog::dimacs_parser dimacs(gr_file, co_file);
-            warthog::dimacs_parser dimacs;
-            if(!( dimacs.load_graph(gr_file) && dimacs.load_graph(co_file) ))
-            {
-                return false;
-            }
-            //std::cout << "loaded" << std::endl;
-            
-            filename_.assign(gr_file);
-
-            // sort nodes by their ids
-            bool (*node_comparator) 
-                 (warthog::dimacs_parser::node, warthog::dimacs_parser::node) =
-                    [](warthog::dimacs_parser::node n1,
-                       warthog::dimacs_parser::node n2) -> bool
-                        {
-                            return n1.id_ < n2.id_;
-                        };
-            std::sort(dimacs.nodes_begin(), dimacs.nodes_end(), node_comparator);
-            if(verbose_) { std::cerr << "nodes, sorted" << std::endl; }
-            
-            // allocate memory for nodes
-            uint32_t num_nodes_dimacs = dimacs.get_num_nodes();
-            capacity(num_nodes_dimacs);
-            for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
-                    it != dimacs.nodes_end(); it++)
-            {
-               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
-               // here, we update the id as we add it to the graph
-               add_node((*it).x_, (*it).y_, (*it).id_ - 1);
-            }
-            if(verbose_) { std::cerr << "nodes, converted" << std::endl; }
-
-            // scan the list of edges so as to know the in and out degree of each node
-            std::vector<warthog::graph::ECAP_T> in_deg(dimacs.get_num_nodes(), 0);
-            std::vector<warthog::graph::ECAP_T> out_deg(dimacs.get_num_nodes(), 0);
-            for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
-                    it != dimacs.edges_end(); it++)
-            {
-               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
-               // here, we convert to 0-indexing on-the-fly
-                in_deg[it->head_id_ - 1]++;
-                out_deg[it->tail_id_ - 1]++;
-            }
-
-            // allocate memory for edges
-            for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
-                    it != dimacs.nodes_end(); it++)
-            {
-               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
-               // here, we convert to 0-indexing on-the-fly
-                uint32_t nid = (*it).id_ - 1;
-                nodes_[nid].capacity( 
-                    store_incoming_edges ? in_deg[nid] : 0, out_deg[nid]);
-            }
-
-            // convert edges to graph format
-            for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
-                    it != dimacs.edges_end(); it++)
-            {
-               // NB: xy_graph uses 0-indexed ids, DIMACS uses 1-indexed ids
-               // here, we convert to 0-indexing on-the-fly
-                uint32_t hid = (*it).head_id_ - 1;
-                uint32_t tid = (*it).tail_id_ - 1;
-
-                // in a reverse graph the head and tail of every 
-                // edge are swapped
-                if(reverse_arcs)
-                {
-                    uint32_t tmp = hid;
-                    hid = tid;
-                    tid = tmp;
-                }
-                T_EDGE e;
-                e.node_id_ = hid;
-                e.wt_ = (*it).weight_;
-
-#ifndef NDEBUG
-                warthog::graph::ECAP_T deg_before = nodes_[tid].out_degree();
-#endif
-
-                nodes_[tid].add_outgoing(e);
-
-#ifndef NDEBUG
-                warthog::graph::ECAP_T deg_after = nodes_[tid].out_degree();
-#endif
-
-                // edges can be stored twice: once as an incoming edge 
-                // and once as an outgoing edge
-                if(store_incoming_edges)
-                {
-                    e.node_id_ = tid;
-                    nodes_[hid].add_incoming(e);
-
-#ifndef NDEBUG
-                    // sanity check: either the edge was a duplicate (and nothing
-                    // was added) or the added was added in which case it should
-                    // be the last element in the outgoing list of the tail node
-                    T_EDGE sanity = 
-                        *(nodes_[tid].outgoing_end()-1);
-                    assert(deg_before == deg_after || 
-                            sanity.node_id_ == hid);
-#endif
-                }
-                if(verbose_ && ((it - dimacs.edges_begin()) % 1000) == 0)
-                {
-                    std::cerr 
-                        << "\rconverted K edges " 
-                        << (it - dimacs.edges_begin()) / 1000;
-                }
-            }
-            is_euclidean(enforce_euclidean);
-            if(verbose_) { std::cout << "edges, converted" << std::endl; }
-
-            std::cerr << "edge memory fragmentation: (1=none): " 
-                << this->edge_mem_frag() << std::endl;
-            //print_dimacs_co(std::cerr, 0, (uint32_t)nodes_.size()-1);
-            //print_dimacs_gr(std::cerr, 0, (uint32_t)nodes_.size()-1);
-            return true;
-        }
-
         warthog::graph::xy_graph_base<T_NODE, T_EDGE>&
         operator=(const warthog::graph::xy_graph_base<T_NODE, T_EDGE>&& other)
         {
@@ -199,8 +60,6 @@ class xy_graph_base
             filename_ = other.filename_;
             nodes_ = std::move(other.nodes_);
             xy_ = std::move(other.xy_);
-            id_map_ = std::move(other.id_map_);
-            ext_id_map_ = std::move(other.ext_id_map_);
 
             return *this;
         }
@@ -217,16 +76,6 @@ class xy_graph_base
             } 
             else { return false; }
 
-
-            if(id_map_.size() == other.id_map_.size())
-            {
-                for(uint32_t i = 0; i < id_map_.size(); i++)
-                {
-                    if(id_map_[i] != other.id_map_[i]) { return false; }
-                }
-            }
-            else { return false; }
-            
             if(get_num_nodes() == other.get_num_nodes())
             {
                 for(uint32_t i = 0; i < get_num_nodes(); i++)
@@ -248,8 +97,6 @@ class xy_graph_base
         {
             nodes_.clear();
             xy_.clear();
-            id_map_.clear();
-            ext_id_map_.clear();
         }
 
         // grow the graph so that the number of vertices is equal to 
@@ -260,9 +107,7 @@ class xy_graph_base
         {
             if(num_nodes <= nodes_.size()) { return; }
             nodes_.resize(num_nodes);
-            xy_.resize(num_nodes*2);
-            id_map_.resize(num_nodes);
-            ext_id_map_.reserve(num_nodes);
+            xy_.resize(num_nodes*2, INT32_MAX);
         }
 
         // allocate capacity for at least @param num_nodes
@@ -273,8 +118,6 @@ class xy_graph_base
         {
             nodes_.reserve(num_nodes);
             xy_.reserve(num_nodes*2);
-            id_map_.reserve(num_nodes);
-            ext_id_map_.reserve(num_nodes);
         }
 
 
@@ -372,11 +215,6 @@ class xy_graph_base
             nodes_.push_back(T_NODE());
             xy_.push_back(x);
             xy_.push_back(y);
-            //id_map_.push_back(ext_id);
-            //if(ext_id != warthog::INF32)
-            //{
-            //    ext_id_map_.insert(std::pair<uint32_t, uint32_t>(ext_id, graph_id));
-            //}
             return graph_id;
         }
 
@@ -435,16 +273,8 @@ class xy_graph_base
         inline uint32_t 
         to_graph_id(uint32_t ext_id) 
         { 
-//            assert(ext_id < nodes_.size());
             return ext_id;
-//            if(id_map_.size() == 0) { return warthog::INF32; }
-//
-//            std::unordered_map<uint32_t, uint32_t>::iterator it 
-//                    = ext_id_map_.find(ext_id);
-//
-//            if(it == ext_id_map_.end()) { return warthog::INF32; }
-//            return (*it).second;
-      }
+        }
 
         // convert an internal node id (i.e. as used by the current graph
         // to the equivalent external id (e.g. as appears in an input file)
@@ -457,10 +287,7 @@ class xy_graph_base
         inline uint32_t 
         to_external_id(uint32_t in_id)  const
         { 
-            //assert(in_id < nodes_.size());
             return in_id;
-            //if(in_id > get_num_nodes()) { return warthog::INF32; }
-            //return id_map_.at(in_id);
         }
 
         // compute the proportion of bytes allocated to edges with respect
@@ -502,97 +329,6 @@ class xy_graph_base
             return mem_actual / (double)mem_lb;
         }
 
-        // write a binary blob description of the graph
-        void
-        save(std::ostream& oss)
-        {
-            // write number of nodes
-            size_t nodes_sz = get_num_nodes();
-            oss.write((char*)(&nodes_sz), sizeof(nodes_sz));
-            if(!oss.good()) 
-            { std::cerr << "err writing #nodes\n"; return; }
-
-            // write xy values
-            size_t xy_sz = xy_.size();
-            oss.write((char*)&xy_sz, sizeof(xy_sz));
-            if(!oss.good()) 
-            { std::cerr << "err writing #xy\n"; return; }
-            oss.write((char*)&xy_[0], (long)(sizeof(int32_t)*xy_sz));
-            if(!oss.good()) 
-            { std::cerr << "err writing xy coordinates data\n"; return; }
-
-            // write external ids
-            size_t id_map_sz = id_map_.size();
-            oss.write((char*)&id_map_sz, sizeof(int32_t));
-            if(!oss.good()) 
-            { std::cerr << "err writing #external ids\n"; return; }
-            oss.write((char*)&id_map_[0], (long)(sizeof(int32_t)*id_map_sz));
-            if(!oss.good()) 
-            { std::cerr << "err writing external ids\n"; return; }
-            
-            // write edge data
-            size_t nid = 0;
-            for( ; nid < get_num_nodes(); nid++)
-            {
-                nodes_[nid].save(oss);
-                if(!oss.good()) 
-                { std::cerr 
-                    << "err; writing outgoing adj list for node " << nid
-                    << std::endl;
-                    break;
-                }
-            }
-        }
-
-        // print text descriptions of the set of nodes 
-        // in the range [firstid, lastid)
-        // NB: if the range is invalid, nothing is printed
-        void
-        print_dimacs_co(
-                std::ostream& oss, uint32_t first_id, uint32_t last_id)
-        {
-            if(first_id > last_id || last_id > get_num_nodes())
-            { return; }
-
-            if(get_num_nodes() > 0)
-            {
-                oss << "p aux sp co " << (last_id - first_id) << std::endl;
-                for(uint32_t i = first_id; i < last_id; i++)
-                {
-                    oss << "v " << to_external_id(i) 
-                        << " " << xy_[i*2] << " " << xy_[i*2+1] << std::endl;
-                }
-            }
-        }
-
-        // print text descriptions of the set of arcs associated with 
-        // all nodes in the range [firstid, lastid)
-        // NB: if the range is invalid, nothing is printed
-        void
-        print_dimacs_gr(
-                std::ostream& oss,
-                uint32_t first_id, uint32_t last_id)
-        {
-            if(first_id > last_id || last_id > get_num_nodes())
-            { return; }
-
-            if(get_num_nodes() > 0)
-            {
-                oss << "p sp " << (last_id - first_id) << " " << 
-                    this->get_num_edges_out() << std::endl;
-                for(uint32_t i = first_id; i < last_id; i++)
-                {
-                    T_NODE* n = get_node(i);
-                    for(T_EDGE* it = n->outgoing_begin(); 
-                            it != n->outgoing_end(); it++)
-                    {
-                        oss << "a " << to_external_id(i) << " " 
-                            << to_external_id((*it).node_id_)
-                            << " " << (uint32_t)((*it).wt_) << std::endl;
-                    }
-                }
-            }
-        }
 
         // check if arc weights are Euclidean and (optionally) fix if not.
         // "fixing" means arc weights must be at least as large as the
@@ -647,21 +383,48 @@ class xy_graph_base
         // xy coordinates stored as adjacent pairs (x, then y)
         std::vector<int32_t> xy_;
 
-        // these containers serve to map from external graph ids to 
-        // internal graph ids
-        std::vector<uint32_t> id_map_; 
-        std::unordered_map<uint32_t, uint32_t> ext_id_map_; 
-
         bool verbose_;
         std::string filename_;
 };
 typedef xy_graph_base<warthog::graph::node, warthog::graph::edge> xy_graph;
 
-// create a graph from a grid map. 
+// Create an xy-graph from a gridmap data in the format of
+// the Grid-based Path Planning Competition
+//
+// @param gm: the gridmap
+// @param g: the target graph object; if not empty, the graph will be cleared
+// @param store_incoming_edges: if true, incoming and outgoing edges are 
+// both added to the graph; if false, only outgoing edges are added.
 void
 gridmap_to_xy_graph(
     warthog::gridmap* gm, warthog::graph::xy_graph*, 
     bool store_incoming = false);
+
+// create an xy-graph from DIMACS 9th Challenge graph data
+// In this format graphs are specified using two files: 
+// (i) a gr file which defines edge weights and endpoints and; 
+// (ii) a co file which defines node ids and xy coordinates
+//
+// @param dimacs: a parser object with preloaded coordinates and edge data
+// @param g: the target graph object; if not empty, the graph will be cleared
+// @param reverse_arcs: reverses the direction of each edge
+// @param store_incoming_edges: store edges with both head and tail node
+// @param enforce_euclidean: arc lengths must be >= euclidean distance
+void
+dimacs_to_xy_graph(
+        warthog::dimacs_parser& dimacs, warthog::graph::xy_graph& g, 
+        bool reverse_arcs=false,
+        bool store_incoming_edges = false, 
+        bool enforce_euclidean=true);
+
+void
+write_xy(std::ostream& out, warthog::graph::xy_graph& g);
+
+void
+read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming=false);
+
+void 
+write_dimacs(std::ostream& out, warthog::graph::xy_graph& g);
 
 }
 }

@@ -42,63 +42,6 @@ bool
 load_node_order(const char* filename, 
         std::vector<uint32_t>& order, bool lex_order=false);
 
-// load a new xy_graph from file in the format of the 9th DIMACS
-// Implementation Challenge. 
-// In this format graphs are specified
-// using two files: (i) a gr file which defines edge
-// weights and endpoints and; (ii) a co file which defines 
-// node ids and planar coordinates
-//
-// @param gr_file: location of the file containing arc weights and endpoints
-// @param co_file: location of the file containing x & y coordinates.
-// @param rank: a lexical ordering specifying the level/rank of each node
-// @param reverse_arcs: reverses the direction of each edge
-// @param duplicate_edges: store edges with both head and tail node
-// @param enforce_euclidean: arc lengths must be >= euclidean distance
-// @return: the optimised graph, or 0 if load failed
-warthog::graph::xy_graph* 
-load_contraction_hierarchy_and_optimise_for_fch( 
-        const char* gr_file, 
-        const char* co_file, 
-        std::vector<uint32_t>* rank,
-        bool reverse_arcs =false, 
-        bool store_incoming_edges = false,
-        bool enforce_euclidean=true);
-
-// Load an input graph and optimise edges for use with the bi-directional
-// Dijkstra search (BCH). This algorithm traverses the hierarchy as follows:
-// In the forward direction, it follows only up edges
-// In the backward direction, it follows only incoming down edges
-//
-// In this function we prune away all other edges in order to speed up
-// search (there's no longer a need to filter on the fly other types of edges)
-//
-// @param gr_file: location of the file containing arc weights and endpoints
-// @param co_file: location of the file containing x & y coordinates.
-// @param rank: a lexical ordering specifying the level/rank of each node
-// @return: the optimised graph, or 0 if load failed
-//void
-//optimise_graph_for_bch(
-//        warthog::graph::xy_graph* g,
-//        std::vector<uint32_t>* rank);
-
-// Load an input graph and optimise edges for use with the bi-directional
-// Dijkstra search (BCH). This algorithm traverses the hierarchy as follows:
-// In the forward direction, it follows only up edges
-// In the backward direction, it follows only incoming down edges
-//
-// In this function we sort the edges of the original input graph to create
-// an optimised version.
-//
-// @param gr_file: location of the file containing arc weights and endpoints
-// @param co_file: location of the file containing x & y coordinates.
-// @param rank: a lexical ordering specifying the level/rank of each node
-// @return: the optimised graph, or 0 if load failed
-//void
-//optimise_graph_for_bch_v2(
-//        warthog::graph::xy_graph* g, 
-//        std::vector<uint32_t>* rank);
-
 void
 write_node_order(const char* filename, std::vector<uint32_t>& order);
 
