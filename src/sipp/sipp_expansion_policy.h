@@ -19,7 +19,7 @@
 // @created 2019-10-25
 //
 
-#include "domains/sipp_gridmap.h"
+#include "sipp/sipp_gridmap.h"
 #include "memory/node_pool.h"
 #include "search/expansion_policy.h"
 #include "search/search_node.h"

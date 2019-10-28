@@ -1,4 +1,4 @@
-#include "search/sipp_expansion_policy.h"
+#include "sipp/sipp_expansion_policy.h"
 
 warthog::sipp_expansion_policy::sipp_expansion_policy(
     warthog::sipp_gridmap* sipp_map) : sipp_map_(sipp_map)

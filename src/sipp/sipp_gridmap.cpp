@@ -1,4 +1,4 @@
-#include "domains/sipp_gridmap.h"
+#include "sipp/sipp_gridmap.h"
 #include <algorithm>
 
 warthog::sipp_gridmap::sipp_gridmap(warthog::gridmap* gm)
