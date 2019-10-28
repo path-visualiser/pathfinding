@@ -103,6 +103,7 @@ class sipp_gridmap
                 retval += sizeof(warthog::sipp::safe_interval)*intervals_.at(i).size();
                 retval += sizeof(intervals_.at(i));
             }
+            retval += gm_->mem();
             retval += sizeof(this);
             return retval;
         }
