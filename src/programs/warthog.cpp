@@ -25,6 +25,7 @@
 #include "scenario_manager.h"
 #include "timer.h"
 #include "labelled_gridmap.h"
+#include "sipp_expansion_policy.h"
 #include "vl_gridmap_expansion_policy.h"
 #include "zero_heuristic.h"
 
@@ -56,8 +57,8 @@ help()
 	<< "\t--checkopt (optional)\n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, 4c_astar, sssp\n"
-    << "\tjps, jps2, jps+, jps2+, jps\n"
+    << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, 4c_astar, sipp\n"
+    << "\tsssp, jps, jps2, jps+, jps2+, jps\n"
     << "\tcpg, jpg\n";
 }
 
@@ -248,6 +249,25 @@ run_4c_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 	   	warthog::gridmap_expansion_policy, 
         warthog::pqueue_min> 
             astar(&heuristic, &expander, &open);
+
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
+run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
+	warthog::manhattan_heuristic heuristic(gm.header_width(), gm.header_height());
+    warthog::sipp_gridmap sipp_map(&gm);
+	warthog::sipp_expansion_policy expander(&sipp_map);
+    warthog::pqueue_min open;
+
+	warthog::flexible_astar<
+		warthog::manhattan_heuristic,
+	   	warthog::sipp_expansion_policy,
+        warthog::pqueue_min> astar(&heuristic, &expander, &open);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -518,6 +538,10 @@ main(int argc, char** argv)
     else if(alg == "cbs_ll_w")
     {
         run_cbs_ll_w(scenmgr, alg); 
+    }
+    else if(alg == "sipp")
+    {
+        run_sipp(scenmgr, alg);
     }
 
     else if(alg == "astar_wgm")

@@ -83,7 +83,6 @@ extras__: makedirs warthog
 	$(CC) programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/labelmaker.cpp -o ./bin/labelmaker -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/dimacs2xy.cpp -o ./bin/dimacs2xy -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/grid2graph.cpp -o ./bin/grid2graph -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
