@@ -129,22 +129,22 @@ class sipp_expansion_policy
             if((tiles & 514) == 514) // N
             {  
                 uint32_t succ_xy_id = c_xy_id - sipp_map_->gm_->header_width();
-                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::SOUTH);
+                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::SOUTH, problem);
             } 
             if((tiles & 1536) == 1536) // E
             {
                 uint32_t succ_xy_id = c_xy_id + 1;
-                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::WEST);
+                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::WEST, problem);
             }
             if((tiles & 131584) == 131584) // S
             { 
                 uint32_t succ_xy_id = c_xy_id + sipp_map_->gm_->header_width();
-                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::NORTH);
+                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::NORTH, problem);
             }
             if((tiles & 768) == 768) // W
             { 
                 uint32_t succ_xy_id = c_xy_id - 1;
-                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::EAST);
+                generate_successors(current, c_si, succ_xy_id, warthog::cbs::move::EAST, problem);
             }
         }
 
@@ -232,7 +232,8 @@ class sipp_expansion_policy
         inline void 
         generate_successors(warthog::search_node* current, 
                 warthog::sipp::safe_interval& c_si, 
-                uint32_t succ_xy_id, warthog::cbs::move ec_direction)
+                uint32_t succ_xy_id, warthog::cbs::move ec_direction,
+                warthog::problem_instance* pi)
         {
             // iterate over adjacent safe intervals
             std::vector<warthog::sipp::safe_interval>& neis 
@@ -273,7 +274,7 @@ class sipp_expansion_policy
                     // prune: moved to successor but the location is not the
                     // target and not enough time remains to move again
                     //if((current->get_g() + action_cost) == succ_si.e_time_
-                    //   && !(succ_xy_id == pi->target_id_)
+                    //   && !(succ_xy_id == pi->target_id_))
                     //{ continue; }
 
                     // generate successor
