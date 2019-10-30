@@ -44,7 +44,7 @@ class flexible_astar : public warthog::search
             heuristic_(heuristic), expander_(expander)
 		{
 			open_ = queue;
-            cost_cutoff_ = DBL_MAX;
+            cost_cutoff_ = warthog::COST_MAX;
             exp_cutoff_ = UINT32_MAX;
             on_relax_fn_ = 0;
             on_generate_fn_ = 0;
@@ -89,7 +89,7 @@ class flexible_astar : public warthog::search
                     if(current->get_parent() == warthog::SN_ID_MAX) break;
                     current = expander_->generate(current->get_parent());
 				}
-				assert(sol.path_.back() == pi_.start_id_);
+                std::reverse(sol.path_.begin(), sol.path_.end());
 
                 #ifndef NDEBUG
                 if(pi_.verbose_)

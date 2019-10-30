@@ -122,6 +122,16 @@ class search_node
 		inline bool
 		operator<(const warthog::search_node& other) const
 		{
+        //    static uint64_t SIGN_MASK = UINT64_MAX & (1ULL<<63);
+        //    warthog::cost_t result = this->f_ - other.f_;
+        //    uint64_t sign = ((uint64_t)result) >> 63;
+        //    if(!((uint64_t)result & ~SIGN_MASK))
+        //    {
+        //        result = g_ - other.g_;
+        //        sign = (((uint64_t)result) >> 63) ^ 1ULL;
+        //    }
+        //    return sign;
+
 			if(f_ < other.f_)
 			{
 				return true;

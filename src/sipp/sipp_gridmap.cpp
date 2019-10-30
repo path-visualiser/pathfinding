@@ -35,9 +35,9 @@ warthog::sipp_gridmap::add_obstacle(
 
         // these intervals are unaffected by the new obstacle (still safe)
         if(end_time < si.s_time_) { temp.push_back(si); continue; }
-        if(start_time < si.e_time_) { temp.push_back(si); continue; }
+        if(start_time > si.e_time_) { temp.push_back(si); continue; }
 
-        // these intervals are dominated by the obstacle so we reaction them
+        // these intervals are dominated by the obstacle so we remove them
         if(start_time <= si.s_time_ && si.e_time_ <= end_time)
         { continue; }
 

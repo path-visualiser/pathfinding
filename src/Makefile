@@ -77,6 +77,7 @@ main: makedirs warthog
 	@echo "linking..."
 	$(CC) programs/warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/roadhog.cpp -o ./bin/roadhog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/mapf.cpp -o ./bin/mapf -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: extras__
 extras__: makedirs warthog 

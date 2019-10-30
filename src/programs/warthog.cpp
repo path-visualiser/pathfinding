@@ -1,4 +1,4 @@
-// gridhog.cpp
+// warthog.cpp
 //
 // Pulls together a variety of different algorithms 
 // for pathfinding on grid graphs.

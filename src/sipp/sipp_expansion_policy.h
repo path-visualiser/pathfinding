@@ -43,7 +43,7 @@ class sipp_expansion_policy
             warthog::sn_id_t xy_id = node_id & INT32_MAX;
             warthog::sn_id_t index = node_id >> 32;
 
-            while(pool_.size() < index)
+            while(pool_.size() <= index)
             { pool_.push_back(new warthog::mem::node_pool(sz_xy)); }
             warthog::search_node* node = pool_.at(index)->generate(xy_id);
             node->set_id(node_id);
@@ -118,6 +118,8 @@ class sipp_expansion_policy
             uint32_t c_index = (uint32_t)(current->get_id() >> 32);
             warthog::sipp::safe_interval c_si = 
                 sipp_map_->get_safe_interval(c_xy_id, c_index);
+            assert(current->get_g() >= c_si.s_time_);
+            assert(current->get_g() <= c_si.e_time_);
 
             // get the neighbouring tiles
             uint32_t tiles = 0;
@@ -237,28 +239,44 @@ class sipp_expansion_policy
                 = sipp_map_->get_all_intervals(succ_xy_id);
             for(uint32_t i = 0; i < neis.size(); i++)
             {
-                // we generate safe intervals for adjacent cells but 
-                // (i) only if they begin no later than the end of the 
-                // current safe interval and; 
-                // (ii) only if they don't finish before the agent
-                // can reach them
+                // we generate safe intervals for adjacent cells but:
+                // (i) only if the successor safe interval begins before 
+                // (i.e. <) the end of the current safe interval and; 
+                // (ii) only if the current safe interval is safe for
+                // the duration of the action that moves the agent
+                // (iii) only the successor is safe at the time the 
+                // agent finishes moving.
                 warthog::sipp::safe_interval& succ_si = neis.at(i);
+
                 warthog::cost_t action_cost = 1;
-                if(succ_si.s_time_ <= c_si.e_time_ && 
-                   (c_si.s_time_ + action_cost) <= succ_si.e_time_)
+                if( succ_si.s_time_ < c_si.e_time_ && 
+                    current->get_g() < succ_si.e_time_)
                 {
                     // if the adjacent safe interval begins at some time
                     // in the future then we wait at the current
                     // safe interval and move away at the earliest time
                     if(succ_si.s_time_ >= current->get_g())
                     {
-                        // prune unreachable successors (edge colllisions)
+                        // wait cost
+                        action_cost +=  (succ_si.s_time_ - current->get_g());
+
+                        // prune: avoid edge colllisions
                         if(succ_si.action_ == ec_direction)
                         { continue; }
 
-                        // wait cost
-                        action_cost +=  current->get_g() - succ_si.s_time_;
                     }
+
+                    // prune: not enough time to execute the action
+                    if((current->get_g() + action_cost) > c_si.e_time_) 
+                    { continue;  }
+
+                    // prune: moved to successor but the location is not the
+                    // target and not enough time remains to move again
+                    //if((current->get_g() + action_cost) == succ_si.e_time_
+                    //   && !(succ_xy_id == pi->target_id_)
+                    //{ continue; }
+
+                    // generate successor
                     warthog::sn_id_t succ_node_id = succ_xy_id;
                     succ_node_id = ((warthog::sn_id_t)i << 32) + succ_node_id;
                     add_neighbour(generate(succ_node_id), action_cost);

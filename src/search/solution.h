@@ -17,7 +17,10 @@ class solution
 {
     public:
         solution()
-        { reset (); } 
+        { 
+            reset (); 
+            path_.reserve(2048); 
+        }
 
         solution(const solution& other) :   
             sum_of_edge_costs_(other.sum_of_edge_costs_), 
@@ -61,7 +64,7 @@ class solution
         void
         reset()
         {
-            sum_of_edge_costs_ = warthog::INF32;
+            sum_of_edge_costs_ = warthog::COST_MAX;
             time_elapsed_nano_ = 0;
             nodes_expanded_ = 0; 
             nodes_inserted_ = 0; 
@@ -71,7 +74,7 @@ class solution
         }
 
         // metrics
-        double sum_of_edge_costs_;
+        warthog::cost_t sum_of_edge_costs_;
         double time_elapsed_nano_;
         uint32_t nodes_expanded_;
         uint32_t nodes_inserted_;
