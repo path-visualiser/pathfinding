@@ -281,6 +281,9 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
 
+    // the reservation table is just here as an example
+    // for single agent search, or prioritised/rule planning, we 
+    // don't need it. only for decomposition-based algos like CBS
     warthog::reservation_table restab(gm.width()*gm.height());
     warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
     warthog::cbs::pqueue_cbs_ll open(&lessthan);
@@ -318,7 +321,7 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
             << scenmgr.last_file_loaded() 
             << std::endl;
 	}
-	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() + restab.mem() << "\n";
 }
 
 // cbs low-level with variable edge costs
