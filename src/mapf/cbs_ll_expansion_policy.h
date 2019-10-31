@@ -16,7 +16,6 @@
 // @created: 2018-11-01
 //
 
-#include "cbs_ll_heuristic.h"
 #include "expansion_policy.h"
 #include "forward.h"
 #include "gridmap.h"
@@ -32,8 +31,7 @@ class cbs_ll_expansion_policy
 {
 	public:
 		cbs_ll_expansion_policy(
-                warthog::gridmap* map, 
-                warthog::cbs_ll_heuristic* h);
+            warthog::gridmap* map, warthog::cbs_ll_heuristic* h);
 
 		~cbs_ll_expansion_policy();
 
@@ -119,6 +117,42 @@ class cbs_ll_expansion_policy
             return true;
         }
 
+        // adds constraints on the location @param node_id
+        // the constraints can block the cell itself, by setting 
+        // @param block_cell or the constraints can block specific
+        // outgoing edges/moves, by setting @param block_edges.
+        // 
+        // NB: at each cell agents can move in up to 5 possible directions: 
+        // four cardinal and one wait. To block a specific move simply pass 
+        // its move index into the array and set NONE for all the
+        // rest of the values. 
+        // e.g. to block only the NORTH move we can pass in to @param
+        // block_edges the following array {NORTH, NONE, NONE, NONE, NONE}
+        inline void
+        add_constraint(
+            warthog::sn_id_t node_id, bool block_cell, 
+            warthog::cbs::move* block_edges)
+        { 
+            uint32_t xy_id = node_id & UINT32_MAX;
+
+            warthog::cbs::cbs_constraint con;
+            con.v_ = (uint8_t)block_cell;
+            if(block_cell) { con.e_ = 255; }
+            else for(uint32_t i = 0; i < 5; i++)
+            {
+                    con.e_ |= (uint8_t)(1 << block_edges[i]);
+            }
+            cons_->add_constraint(xy_id, con);
+        }
+
+        warthog::cbs::cbs_constraint*
+        get_constraint(warthog::sn_id_t node_id)
+        {
+            uint32_t xy_id = (uint32_t)(node_id & UINT32_MAX);
+            uint32_t timestep = (uint32_t)(node_id >> 32);
+            return cons_->get_or_create_constraint(xy_id, timestep);
+        }
+    
         warthog::mapf::time_constraints<warthog::cbs::cbs_constraint>*
         get_time_constraints() { return cons_; }
 
@@ -131,6 +165,7 @@ class cbs_ll_expansion_policy
         uint32_t map_xy_sz_;
         std::vector<warthog::mem::node_pool*>* time_map_;
         warthog::cbs_ll_heuristic* h_;
+
         warthog::mapf::time_constraints<warthog::cbs::cbs_constraint>* cons_;
 
         struct neighbour_record

@@ -1,7 +1,8 @@
 #include "cbs.h"
+#include "cbs_ll_heuristic.h"
+#include "cbs_ll_expansion_policy.h"
 #include "grid.h"
 #include "helpers.h"
-#include "cbs_ll_expansion_policy.h"
 #include "problem_instance.h"
 
 #include <algorithm>
@@ -9,7 +10,8 @@
 using namespace warthog::cbs;
 
 warthog::cbs_ll_expansion_policy::cbs_ll_expansion_policy(
-		warthog::gridmap* map, warthog::cbs_ll_heuristic* h) : map_(map), h_(h)
+		warthog::gridmap* map, warthog::cbs_ll_heuristic* h) 
+    : map_(map), h_(h)
 {
     neis_ = new warthog::arraylist<neighbour_record>(32);
 
@@ -130,6 +132,8 @@ warthog::cbs_ll_expansion_policy::generate_target_node(
 {
     warthog::sn_id_t max_id = map_->header_width() * map_->header_height();
     if(pi->target_id_ >= max_id) { return 0; }
+
+    // precompute h-values
     h_->set_current_target(pi->target_id_);
 
     uint32_t padded_id = map_->to_padded_id((uint32_t)pi->target_id_);

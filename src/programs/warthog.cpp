@@ -278,7 +278,7 @@ void
 run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
-	warthog::cbs_ll_heuristic heuristic;
+	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
 
     warthog::reservation_table restab(gm.width()*gm.height());
@@ -303,20 +303,8 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
         warthog::problem_instance pi(startid, goalid, verbose);
         warthog::solution sol;
 
-        // We now precompute a perfect 2D heuristic 
-        // (i.e. ignoring dynamic obstacles and ignoring time)
-        // The heuristic is computed for one agent at a time, however
-        // if we are planning for a team of agents we can precompute such 
-        // heuristics for all agents at the same time. We do this by passing 
-        // all goal ids to the function ::compute_h_values
-        // NB: at 4 bytes per heuristic value, memory can be quickly exhausted 
-        // when the team is large 
-        std::vector<uint32_t> target_locations;
-        target_locations.push_back(goalid);
-        heuristic.compute_h_values(target_locations, &gm);
-
+        // solve and print results
         astar.get_path(pi, sol);
-
 		std::cout
             << i<<"\t" 
             << alg_name << "\t" 
@@ -339,7 +327,7 @@ void
 run_cbs_ll_w(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
-	warthog::cbs_ll_heuristic heuristic;
+	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::ll_expansion_policy expander(&gm, &heuristic);
 
     warthog::reservation_table restab(gm.width()*gm.height());
@@ -351,18 +339,6 @@ run_cbs_ll_w(warthog::scenario_manager& scenmgr, std::string alg_name)
 	   	warthog::ll_expansion_policy,
         warthog::cbs::pqueue_cbs_ll>
             astar(&heuristic, &expander, &open);
-
-    // precompute heuristic values for each target location
-    std::cerr << "precomputing heuristic values...";
-    std::vector<uint32_t> target_locations;
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-    {
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-        target_locations.push_back(goalid);
-    }
-    heuristic.compute_h_values(target_locations, &gm);
-    std::cerr << "done\n";
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);

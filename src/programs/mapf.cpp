@@ -42,12 +42,12 @@ void
 help()
 {
 	std::cerr << "valid parameters:\n"
-	<< "\t--alg []\n"
+	<< "\t--alg [algorithm name]\n"
 	<< "\t--scen [scenario filename]\n"
 	<< "\t--gen [map filename] \n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tcbs_ll, upuipp\n";
+    << "\tcbs_ll, sipp\n";
 }
 
 // run SIPP as a prioritised planning algorithm; assume each instance is an
@@ -159,17 +159,14 @@ void
 run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
-	warthog::cbs_ll_heuristic heuristic;
+	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
-
-    warthog::reservation_table restab(gm.width()*gm.height());
-    warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
-    warthog::cbs::pqueue_cbs_ll open(&lessthan);
+    warthog::pqueue_min open;
 
 	warthog::flexible_astar<
 		warthog::cbs_ll_heuristic,
 	   	warthog::cbs_ll_expansion_policy,
-        warthog::cbs::pqueue_cbs_ll>
+        warthog::pqueue_min>
             astar(&heuristic, &expander, &open);
 
 	std::cout 
@@ -184,20 +181,7 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
         warthog::problem_instance pi(startid, goalid, verbose);
         warthog::solution sol;
 
-        // We now precompute a perfect 2D heuristic 
-        // (i.e. ignoring dynamic obstacles and ignoring time)
-        // The heuristic is computed for one agent at a time, however
-        // if we are planning for a team of agents we can precompute such 
-        // heuristics for all agents at the same time. We do this by passing 
-        // all goal ids to the function ::compute_h_values
-        // NB: at 4 bytes per heuristic value, memory can be quickly exhausted 
-        // when the team is large 
-        std::vector<uint32_t> target_locations;
-        target_locations.push_back(goalid);
-        heuristic.compute_h_values(target_locations, &gm);
-
         astar.get_path(pi, sol);
-
 		std::cout
             << i<<"\t" 
             << alg_name << "\t" 
@@ -208,8 +192,41 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
             << sol.time_elapsed_nano_ << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << (sol.path_.size()-1) << "\t" 
-            << scenmgr.last_file_loaded() 
+            << scenmgr.last_file_loaded()
             << std::endl;
+
+        // the path of the agent now becomes an obstacle for 
+        // the next agent. We assume that agents reach their
+        // target and then disappear after one unit of time
+        for(uint32_t i = 0; i < sol.path_.size()-1; i++)
+        {
+            int32_t x, y;
+            expander.get_xy(sol.path_.at(i), x, y);
+
+            int32_t nx, ny;
+            expander.get_xy(sol.path_.at(i+1), nx, ny);
+
+            // block each cell occupied by the agent
+            expander.get_constraint(sol.path_.at(i))->v_ = true;
+            
+            // block any other agent from swapping positions with the agent
+            // (i.e. prevent edge collisions) 
+            if(nx !=  x || ny != y)
+            {
+                // compute the opposite direction
+                warthog::cbs::move direction; 
+                if(nx == x && ny < y) {  direction = warthog::cbs::move::SOUTH; }
+                if(nx == x && ny > y) {  direction = warthog::cbs::move::NORTH; }
+                if(nx < x && ny == y) {  direction = warthog::cbs::move::WEST; }
+                if(nx > x && ny == y) {  direction = warthog::cbs::move::EAST; }
+
+                uint32_t xy_id = sol.path_.at(i+1) & UINT32_MAX;
+                uint64_t timestep = i;
+                warthog::sn_id_t block_id = (timestep << 32) | xy_id;
+                expander.get_constraint(block_id)->e_ 
+                    |= (uint8_t)(1 << direction);
+            }
+        }
 	}
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
