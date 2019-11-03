@@ -9,9 +9,34 @@
 //
 
 #include <vector>
+#include <ostream>
 
 namespace warthog
 {
+
+// a solution is made up of a sequence of states
+// each of which is achieved with some cost from
+// the start node
+// another way to look at this: we store the nodes 
+// on a given path along with their g-values
+struct state
+{
+    state(warthog::sn_id_t id, warthog::cost_t cost)
+    {
+        node_id_ = id;
+        cost_ = cost;
+    }
+
+    warthog::sn_id_t node_id_;
+    warthog::cost_t cost_;
+};
+
+inline std::ostream&
+operator<<(std::ostream& out, warthog::state s)
+{
+   out << s.node_id_ << " " << s.cost_; 
+   return out;
+};
 
 class solution
 {
@@ -19,7 +44,7 @@ class solution
         solution()
         { 
             reset (); 
-            path_.reserve(2048); 
+            path_.reserve(1024); 
         }
 
         solution(const solution& other) :   
@@ -58,7 +83,7 @@ class solution
         print_path(std::ostream& out)
         {
             out << "path=";
-           for(auto &id : path_) { out << id << " "; }
+           for(auto &state : path_) { out << state << " "; }
         }
 
         void
@@ -81,9 +106,9 @@ class solution
         uint32_t nodes_updated_;
         uint32_t nodes_touched_;
 
-        // the actual solution
-        std::vector<warthog::sn_id_t> path_;
-
+        // the sequence of states that comprise 
+        // a solution path
+        std::vector<warthog::state> path_;
 };
 
 }

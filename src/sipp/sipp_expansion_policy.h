@@ -65,17 +65,31 @@ class sipp_expansion_policy
 
         // the target node is the earliest safe interval in 
         // which we can reach the grid location specified by
-        // the problem instance.
-        // We don't know this when this earliest time is but
-        // we need to generate a concrete node. So we return 
-        // the first safe interval for the target grid location
+        // the problem instance such that the agent can wait
+        // at the target indefinitely 
         // 
         // NB: See also the function ::is_target where we need to
         // detect whether a node being expanded is the target
         warthog::search_node*
         generate_target_node(warthog::problem_instance* pi)
         {
-            return generate((warthog::sn_id_t)pi->target_id_);
+            uint32_t xy_id = (pi->target_id_ & INT32_MAX);
+            std::vector<warthog::sipp::safe_interval>& ivals = 
+                sipp_map_->get_all_intervals(xy_id);
+            for(uint32_t i = 0; i < ivals.size(); i++)
+            {
+                // update the target identifier once we
+                // find a suitable interval where the agent
+                // can wait
+                if(ivals.at(i).e_time_ == warthog::COST_MAX)
+                {
+                    warthog::sn_id_t tmp_id = i;
+                    pi->target_id_ = (tmp_id << 32) + xy_id;
+                    return generate((warthog::sn_id_t)pi->target_id_);
+                }
+            }
+            return 0; // no such target
+
         }
 
         // The objective in SIPP is to reach a specific xy location 
@@ -91,8 +105,9 @@ class sipp_expansion_policy
         bool
         is_target(warthog::search_node* n, warthog::problem_instance* pi)
         {
-            uint32_t xy_id = (n->get_id() & INT32_MAX);
-            return xy_id == pi->target_id_;
+            //uint32_t xy_id = (n->get_id() & INT32_MAX);
+            //return xy_id == pi->target_id_;
+            return n->get_id() == pi->target_id_;
         }
 
 
@@ -256,15 +271,16 @@ class sipp_expansion_policy
                     // if the adjacent safe interval begins at some time
                     // in the future then we wait at the current
                     // safe interval and move away at the earliest time
-                    if(succ_si.s_time_ >= current->get_g())
+                    if(succ_si.s_time_ >= (current->get_g() + action_cost))
                     {
-                        // wait cost
-                        action_cost +=  (succ_si.s_time_ - current->get_g());
+                        // the wait+move action completes exactly as 
+                        // the successor interval begins
+                        action_cost = succ_si.s_time_ - current->get_g();
 
-                        // prune: avoid edge colllisions
+                        // prune: avoid edge colllisions when moving
+                        // into the successor interval
                         if(succ_si.action_ == ec_direction)
                         { continue; }
-
                     }
 
                     // prune: not enough time to execute the action
