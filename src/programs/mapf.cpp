@@ -204,7 +204,7 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
 }
 
 void
-run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name, std::string planfile)
+run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
 	warthog::cbs_ll_heuristic heuristic(&gm);
