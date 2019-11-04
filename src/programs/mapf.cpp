@@ -109,13 +109,17 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
 
             if(i == (sol.path_.size()-2))
             {
+                // after arriving, agents block their target 
+                // location indefinitely 
+                start_time = end_time;
+                end_time = warthog::COST_MAX;
                 sipp_map.add_obstacle( (uint32_t)nx, (uint32_t)ny, 
                     end_time, end_time+1, warthog::cbs::move::WAIT);
                 if(verbose)
                 {
                     std::cerr 
                         << "add obstacle: (" << nx << ", " << ny 
-                        << ") @ (" << end_time << ", " << end_time+1 
+                        << ") @ (" << start_time << ", " << end_time
                         << ") dir WAIT" << std::endl;
                 }
                 break;
@@ -163,10 +167,18 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
             << scenmgr.last_file_loaded() 
             << std::endl;
 
-        // record the newly found plan and make this agent
-        // higher priority than all subsequent agents 
-        add_higher_priority_plan(sol);
+        // when exporting the plan we discard internal state
+        // identifiers in favour of domian-specific node ids:
+        // i.e. the plan is written in terms of (one dimensional)
+        // xy identifiers and their cost
+        for(warthog::state& s : sol.path_)
+        { s.node_id_ = s.node_id_ & UINT32_MAX; }
+
         theplan.paths_.push_back(sol);
+
+        // all subsequent agents need to avoid locations on the
+        // newly found plan (i.e. we perform prioritised planning)
+        add_higher_priority_plan(sol);
 	}
 
     // some extra info about sipp's performance
@@ -232,6 +244,13 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
             << (sol.path_.size()-1) << "\t" 
             << scenmgr.last_file_loaded()
             << std::endl;
+
+        // when exporting the plan we discard internal state
+        // identifiers in favour of domian-specific node ids:
+        // i.e. the plan is written in terms of (one dimensional)
+        // xy identifiers and their cost
+        for(warthog::state& s : sol.path_)
+        { s.node_id_ = gm.to_unpadded_id(s.node_id_ & UINT32_MAX); }
 
         theplan.paths_.push_back(sol);
 

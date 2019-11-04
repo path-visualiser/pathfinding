@@ -58,6 +58,13 @@ class gridmap
 		}
 
 		inline void
+		to_padded_xy(uint32_t grid_id_p, uint32_t& x, uint32_t& y)
+		{
+			y = grid_id_p / padded_width_;
+			x = grid_id_p % padded_width_;
+		}
+
+		inline void
 		to_unpadded_xy(uint32_t grid_id_p, uint32_t& x, uint32_t& y)
 		{
 			grid_id_p -= padded_rows_before_first_row_* padded_width_;
@@ -65,12 +72,13 @@ class gridmap
 			x = grid_id_p % padded_width_;
 		}
 
-		inline void
-		to_padded_xy(uint32_t grid_id_p, uint32_t& x, uint32_t& y)
-		{
-			y = grid_id_p / padded_width_;
-			x = grid_id_p % padded_width_;
-		}
+        inline uint32_t 
+        to_unpadded_id(uint32_t padded_id)
+        {
+            uint32_t x, y;
+            to_unpadded_xy(padded_id, x, y);
+            return y * header_.width_ + x;
+        }
 
 		// get the immediately adjacent neighbours of @param node_id
 		// neighbours from the row above node_id are stored in 
