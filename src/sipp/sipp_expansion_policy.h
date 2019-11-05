@@ -63,10 +63,14 @@ class sipp_expansion_policy
             return generate(pi->start_id_);
         }
 
-        // the target node is the earliest safe interval in 
-        // which we can reach the grid location specified by
-        // the problem instance such that the agent can wait
-        // at the target indefinitely 
+        // the target node in SIPP is an xy location which 
+        // the agent must reach. This function can be adjusted.
+        // e.g. for some types of problems the target may be a 
+        // at a specific time index or part of a specific 
+        // safe interval. In MAPF the agent needs to wait 
+        // indefinitely once it reaches its target 
+        // location. This can only be satisfied if the safe
+        // interval ends at time infinity.
         // 
         // NB: See also the function ::is_target where we need to
         // detect whether a node being expanded is the target
@@ -74,21 +78,28 @@ class sipp_expansion_policy
         generate_target_node(warthog::problem_instance* pi)
         {
             uint32_t xy_id = (pi->target_id_ & INT32_MAX);
-            std::vector<warthog::sipp::safe_interval>& ivals = 
-                sipp_map_->get_all_intervals(xy_id);
-            for(uint32_t i = 0; i < ivals.size(); i++)
+            if(!sipp_map_->gm_->get_label(sipp_map_->gm_->to_padded_id(xy_id)))
             {
-                // update the target identifier once we
-                // find a suitable interval where the agent
-                // can wait
-                if(ivals.at(i).e_time_ == warthog::COST_MAX)
-                {
-                    warthog::sn_id_t tmp_id = i;
-                    pi->target_id_ = (tmp_id << 32) + xy_id;
-                    return generate((warthog::sn_id_t)pi->target_id_);
-                }
+                return 0; // target is an obstacle
             }
-            return 0; // no such target
+            return generate(xy_id);
+
+            // ENABLE THIS CODE FOR MAPF TARGET CONDITION
+            //std::vector<warthog::sipp::safe_interval>& ivals = 
+            //    sipp_map_->get_all_intervals(xy_id);
+            //for(uint32_t i = 0; i < ivals.size(); i++)
+            //{
+            //    // update the target identifier once we
+            //    // find a suitable interval where the agent
+            //    // can wait
+            //    if(ivals.at(i).e_time_ == warthog::COST_MAX)
+            //    {
+            //        warthog::sn_id_t tmp_id = i;
+            //        pi->target_id_ = (tmp_id << 32) + xy_id;
+            //        return generate((warthog::sn_id_t)pi->target_id_);
+            //    }
+            //}
+            //return 0; // no such target
 
         }
 
@@ -105,9 +116,10 @@ class sipp_expansion_policy
         bool
         is_target(warthog::search_node* n, warthog::problem_instance* pi)
         {
-            //uint32_t xy_id = (n->get_id() & INT32_MAX);
-            //return xy_id == pi->target_id_;
-            return n->get_id() == pi->target_id_;
+            uint32_t xy_id = (n->get_id() & INT32_MAX);
+            return xy_id == pi->target_id_;
+
+            //return n->get_id() == pi->target_id_;
         }
 
 
