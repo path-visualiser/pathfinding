@@ -11,13 +11,14 @@ draw_grid <- function(gridfile)
     for(i in seq(1, length(tmp)))
     {
         obs <- strsplit(tmp[i], "")
-        xvals <- which(unlist(obs) == "@") - 1
-        yvals <- rep(i, length(xvals)) - 1
-        points(xvals, yvals, pch=22, col="black", bg="black", cex=0.5)
+        xvals <- which(unlist(obs) == "@") 
+        yvals <- rep(i, length(xvals))
+        # R is 1-indexed, grids are 0-indexed. So we apply a -1 offset
+        points(xvals-1, yvals-1, pch=".", col="black", bg="black", cex=0.5)
     }
 }
 
-draw_plan <- function(planfile, mapwidth, path_color="blue", path_lwd=2)
+draw_plan <- function(planfile, mapwidth, path_color="blue", path_lwd=2, text_labels=FALSE)
 {
     plan <- unlist(read.csv(planfile, header=FALSE, sep="\n", stringsAsFactors=FALSE))
     pbegin <- grep("^p", plan)
@@ -50,10 +51,16 @@ draw_plan <- function(planfile, mapwidth, path_color="blue", path_lwd=2)
         #print(xvals)
         if(length(xvals > 1))
         {
-            lines(xvals, yvals, col=path_color, lwd=path_lwd)
+            points(xvals, yvals, pch=".", col=path_color, lwd=path_lwd, cex=0.5)
             points(xvals[1], yvals[1], col=path_color, bg=path_color, pch=21)
             points(xvals[length(xvals)], yvals[length(yvals)], col=path_color, 
                 bg=path_color, pch=22)
+            if(text_labels)
+            {
+                text(xvals[1], yvals[1], labels=paste("S", i, sep=""), col=path_color, pos=1)
+                text(xvals[length(xvals)], yvals[length(yvals)], 
+                    labels=paste("T", i, sep=""), col=path_color, pos=1)
+            }
             print(paste(xvals[1], yvals[1]))
         }
     }
