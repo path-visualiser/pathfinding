@@ -239,8 +239,7 @@ class search_node
 		uint32_t search_number_;
         uint8_t jps_parent_direction_; // hack
 
-
-static uint32_t refcount_;
+        static uint32_t refcount_;
 };
 
 struct cmp_less_search_node

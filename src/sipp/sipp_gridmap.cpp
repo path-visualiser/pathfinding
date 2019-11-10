@@ -4,6 +4,10 @@
 warthog::sipp_gridmap::sipp_gridmap(warthog::gridmap* gm)
     : gm_(gm)
 {
+    t_gm_ = new warthog::gridmap(gm_->header_height(), gm_->header_width());
+    for(uint32_t i = 0; i < t_gm_->width() * t_gm_->height(); i++)
+    { t_gm_->set_label(i, 0); }
+
     uint32_t mapsize = gm_->header_width() * gm_->header_height();
     intervals_.resize(mapsize);
     for(uint32_t i = 0; i < mapsize; i++)
@@ -17,7 +21,27 @@ warthog::sipp_gridmap::sipp_gridmap(warthog::gridmap* gm)
         si.e_time_ = warthog::COST_MAX;
         intervals_.at(i).push_back(warthog::sipp::safe_interval());
     }
+
+//    xy_id_offsets[warthog::cbs::NONE] = 0;
+//    xy_id_offsets[warthog::cbs::WAIT] = 0;
+//    xy_id_offsets[warthog::cbs::EAST] = 1;
+//    xy_id_offsets[warthog::cbs::WEST] = -1;
+//    xy_id_offsets[warthog::cbs::SOUTH] = gm_->header_width();
+//    xy_id_offsets[warthog::cbs::NORTH] = -1 * gm_->header_width();
+//
+//    ec_moves[warthog::cbs::NONE] = 0;
+//    ec_moves[warthog::cbs::WAIT] = 0;
+//    ec_moves[warthog::cbs::NORTH] = warthog::cbs::SOUTH;
+//    ec_moves[warthog::cbs::SOUTH] = warthog::cbs::NORTH;
+//    ec_moves[warthog::cbs::EAST] = warthog::cbs::WEST;
+//    ec_moves[warthog::cbs::WEST] = warthog::cbs::EAST;
 }
+
+warthog::sipp_gridmap::~sipp_gridmap()
+{
+    delete t_gm_;
+}
+
 
 void
 warthog::sipp_gridmap::add_obstacle(
@@ -84,6 +108,9 @@ warthog::sipp_gridmap::add_obstacle(
 
     // replace the old list with the new list
     intervals_.at(node_id) = temp;
+
+    // record the fact that there are temporal obstacles at this location
+    t_gm_->set_label(t_gm_->to_padded_id(node_id), true);
 }
 
 void
@@ -100,5 +127,8 @@ warthog::sipp_gridmap::clear_obstacles(uint32_t x, uint32_t y)
     si.e_time_ = warthog::COST_MAX;
 
     intervals_.at(node_id).push_back(si);
+
+    // record the fact that there are no temporal obstacles at this location
+    t_gm_->set_label(t_gm_->to_padded_id(node_id), false);
 }
 

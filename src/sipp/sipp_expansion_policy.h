@@ -146,7 +146,7 @@ class sipp_expansion_policy
             warthog::sipp::safe_interval c_si = 
                 sipp_map_->get_safe_interval(c_xy_id, c_index);
             assert(current->get_g() >= c_si.s_time_);
-            assert(current->get_g() <= c_si.e_time_);
+            assert(current->get_g() < c_si.e_time_);
 
             // get the neighbouring tiles
             uint32_t tiles = 0;
@@ -265,7 +265,10 @@ class sipp_expansion_policy
             // iterate over adjacent safe intervals
             std::vector<warthog::sipp::safe_interval>& neis 
                 = sipp_map_->get_all_intervals(succ_xy_id);
-            for(uint32_t i = 0; i < neis.size(); i++)
+
+            for(uint32_t i = 0;
+                         i < neis.size(); 
+                         i++)
             {
                 // we generate safe intervals for adjacent cells but:
                 // (i) only if the successor safe interval begins before 
