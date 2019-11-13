@@ -17,7 +17,7 @@
 #include "jps/online_jump_point_locator.h"
 #include "search/problem_instance.h"
 #include "sipp/jpst_locator.h"
-#include "sipp/sipp_gridmap.h"
+#include "sipp/jpst_gridmap.h"
 #include "util/arraylist.h"
 
 namespace warthog
@@ -26,7 +26,7 @@ namespace warthog
 class temporal_jps_expansion_policy
 {
     public:
-        temporal_jps_expansion_policy(warthog::sipp_gridmap* gm);
+        temporal_jps_expansion_policy(warthog::jpst_gridmap* gm);
         virtual ~temporal_jps_expansion_policy(); 
 
         // get a search_node memory pointer associated with @param node_id. 
@@ -51,7 +51,7 @@ class temporal_jps_expansion_policy
         generate_start_node(warthog::problem_instance* pi)
         {
             warthog::sipp::safe_interval start_si = 
-                sipp_map_->get_safe_interval(
+                jpst_gm_->get_safe_interval(
                     (uint32_t)pi->start_id_, 0);
             if(start_si.s_time_ != 0) { return 0; }
             return generate(pi->start_id_);
@@ -73,30 +73,12 @@ class temporal_jps_expansion_policy
         {
             uint32_t xy_id = (pi->target_id_ & INT32_MAX);
             uint32_t gm_id = gm_->to_padded_id(xy_id);
-            if(!sipp_map_->gm_->get_label(gm_id))
+            if(!jpst_gm_->gm_->get_label(gm_id))
             {
                 return 0; // target is an obstacle
             }
             target_gm_id_ = gm_id;
             return generate(pi->target_id_);
-
-            // ENABLE THIS CODE FOR MAPF TARGET CONDITION
-            //std::vector<warthog::sipp::safe_interval>& ivals = 
-            //    sipp_map_->get_all_intervals(xy_id);
-            //for(uint32_t i = 0; i < ivals.size(); i++)
-            //{
-            //    // update the target identifier once we
-            //    // find a suitable interval where the agent
-            //    // can wait
-            //    if(ivals.at(i).e_time_ == warthog::COST_MAX)
-            //    {
-            //        warthog::sn_id_t tmp_id = i;
-            //        pi->target_id_ = (tmp_id << 32) + xy_id;
-            //        return generate((warthog::sn_id_t)pi->target_id_);
-            //    }
-            //}
-            //return 0; // no such target
-
         }
 
         // returns true if @param n is the target node and false otherwise.
@@ -113,9 +95,6 @@ class temporal_jps_expansion_policy
         is_target(warthog::search_node* n, warthog::problem_instance* pi)
         {
             return (n->get_id() & INT32_MAX) == (pi->target_id_ & INT32_MAX);
-
-            // ENABLE THIS CODE IF THE TARGET IS A SPECIFIC SAFE INTERVAL
-            //return n->get_id() == pi->target_id_;
         }
 
 
@@ -125,8 +104,8 @@ class temporal_jps_expansion_policy
         get_xy(sn_id_t node_id, int32_t& x, int32_t& y) 
         {
             uint32_t xy_id = (uint32_t)(node_id & INT32_MAX);
-            y = (int32_t)(xy_id / sipp_map_->gm_->header_width());
-            x = (int32_t)(xy_id % sipp_map_->gm_->header_width());
+            y = (int32_t)(xy_id / jpst_gm_->gm_->header_width());
+            x = (int32_t)(xy_id % jpst_gm_->gm_->header_width());
         }
 
         // SIPP looks for successors among the set of safe intervals stored
@@ -141,8 +120,8 @@ class temporal_jps_expansion_policy
             c_node_ = c_node;
             c_xy_id_ = (uint32_t)(c_node->get_id() & INT32_MAX);
             c_index_ = (uint32_t)(c_node->get_id() >> 32);
-            c_gm_id_ = sipp_map_->gm_->to_padded_id(c_xy_id_);
-            c_si_ = &sipp_map_->get_safe_interval(c_xy_id_, c_index_);
+            c_gm_id_ = jpst_gm_->gm_->to_padded_id(c_xy_id_);
+            c_si_ = &jpst_gm_->get_safe_interval(c_xy_id_, c_index_);
             problem_ = problem;
 
             warthog::jps::direction lastmove = c_node->get_pdir();
@@ -173,7 +152,7 @@ class temporal_jps_expansion_policy
                 jump_west( c_xy_id_, c_gm_id_ );
 
                 // reverse direction if future obstacles appear at the parent 
-                if(p_index < (sipp_map_->get_all_intervals(p_xy_id).size()-1))
+                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
                 { jump_south( c_xy_id_, c_gm_id_ ); }
             }
 
@@ -184,7 +163,7 @@ class temporal_jps_expansion_policy
                 jump_west( c_xy_id_, c_gm_id_ );
 
                 // reverse direction if future obstacles appear at the parent 
-                if(p_index < (sipp_map_->get_all_intervals(p_xy_id).size()-1))
+                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
                 { jump_north( c_xy_id_, c_gm_id_ ); }
             }
 
@@ -193,7 +172,7 @@ class temporal_jps_expansion_policy
                 jump_east( c_xy_id_, c_gm_id_  );
 
                 // reverse direction if future obstacles appear at the parent 
-                if(p_index < (sipp_map_->get_all_intervals(p_xy_id).size()-1))
+                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
                 { jump_west( c_xy_id_, c_gm_id_ ); }
             }
 
@@ -202,7 +181,7 @@ class temporal_jps_expansion_policy
                 jump_west( c_xy_id_, c_gm_id_ );
 
                 // reverse direction if future obstacles appear at the parent 
-                if(p_index < (sipp_map_->get_all_intervals(p_xy_id).size()-1))
+                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
                 { jump_east( c_xy_id_, c_gm_id_ ); }
             }
         }
@@ -251,7 +230,7 @@ class temporal_jps_expansion_policy
             {
                 retval += pool_.at(i)->mem();
             }
-            retval += sipp_map_->mem();
+            retval += jpst_gm_->mem();
             retval += sizeof(this);
             retval += sizeof(neighbour_record)*neis_->size();
             return retval;
@@ -275,7 +254,7 @@ class temporal_jps_expansion_policy
         uint32_t current_;
         arraylist<neighbour_record>* neis_;
 
-        warthog::sipp_gridmap* sipp_map_;
+        warthog::jpst_gridmap* jpst_gm_;
         warthog::gridmap* gm_;
         warthog::gridmap* t_gm_;
         warthog::online_jump_point_locator* jpl_spatial_;
@@ -355,36 +334,41 @@ class temporal_jps_expansion_policy
                        warthog::jps::direction jump_direction,
                        warthog::cbs::move ec_direction )
         {
-            uint32_t succ_xy_id = (uint32_t)((int32_t)from_xy_id + succ_offset);
-            uint32_t succ_gm_id = (uint32_t)((int32_t)from_gm_id + gm_succ_offset);
+            int32_t succ_xy_id = ((int32_t)from_xy_id + succ_offset);
+            int32_t succ_gm_id = ((int32_t)from_gm_id + gm_succ_offset);
             warthog::cost_t action_cost = 1; // TODO: action model
 
             // can't jump if the proposed location is an obstacle
-            if(!gm_->get_label(succ_gm_id)) { return; }
+            if(!gm_->get_label((uint32_t)succ_gm_id)) { return; }
 
             // if the first location in the jump direction has temporal 
             // obstacles we proceed conservatively; only one step forward
-            if(!t_gm_->get_label(succ_gm_id))
+            if(!t_gm_->get_label((uint32_t)succ_gm_id))
             {
                 // no temporal obstacles directly ahead. 
                 // try jump spatially as far as possible.
                 uint32_t spatial_id;
                 double spatial_cost;
-                jpl_spatial_->jump( jump_direction, succ_gm_id, target_gm_id_, 
-                    spatial_id, spatial_cost); 
+                jpl_spatial_->jump( jump_direction, (uint32_t)succ_gm_id, 
+                    target_gm_id_, spatial_id, spatial_cost); 
 
                 // jump again, checking for (potential) temporal jump points; 
                 uint32_t temporal_id; 
                 double temporal_cost;
-                jpl_temporal_->jump(jump_direction, succ_gm_id, 0, 
+                jpl_temporal_->jump(jump_direction, (uint32_t)succ_gm_id, 0, 
                     temporal_id, temporal_cost);
+
+                // prune; the spatial jump is a dead-end and there are 
+                // no temporal obstacles along the way to that location 
+                if(spatial_cost < temporal_cost && spatial_id == warthog::INF32)
+                { return; }
 
                 // the jump distance is the minimum of the two jump costs
                 temporal_cost = std::min<double>(spatial_cost, temporal_cost);
                 action_cost += temporal_cost;
-                succ_xy_id -= (uint32_t)(temporal_cost * gm_->header_width());
+                succ_xy_id += (temporal_cost * succ_offset); 
             }
-            generate_successors(succ_xy_id, ec_direction, action_cost);
+            generate_successors((uint32_t)succ_xy_id, ec_direction, action_cost);
         }
 
         // generates all safe-interval successors at location @param succ_xy_id
@@ -398,7 +382,7 @@ class temporal_jps_expansion_policy
         {
             // iterate over adjacent safe intervals
             std::vector<warthog::sipp::safe_interval>& neis 
-                = sipp_map_->get_all_intervals(succ_xy_id);
+                = jpst_gm_->get_all_intervals(succ_xy_id);
             for(uint32_t i = 0; i < neis.size(); i++)
             {
                 // we generate safe intervals for adjacent cells but:

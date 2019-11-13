@@ -19,7 +19,8 @@
 #include "mapf/plan.h"
 #include "scenario_manager.h"
 #include "timer.h"
-#include "sipp_expansion_policy.h"
+#include "sipp/sipp_expansion_policy.h"
+#include "sipp/jpst_gridmap.h"
 #include "sipp/temporal_jps_expansion_policy.h"
 #include "getopt.h"
 
@@ -206,147 +207,150 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
 void
 run_jpst(warthog::scenario_manager& scenmgr, std::string alg_name, std::string plan_file)
 {
-   // warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
-   // warthog::manhattan_heuristic heuristic(gm.header_width(), gm.header_height());
-   // warthog::sipp_gridmap sipp_map(&gm);
-   // warthog::temporal_jps_expansion_policy expander(&sipp_map);
-   // warthog::pqueue_min open;
+    warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
+    warthog::manhattan_heuristic heuristic(gm.header_width(), gm.header_height());
+    warthog::jpst_gridmap jpst_gm(&gm);
+    warthog::temporal_jps_expansion_policy expander(&jpst_gm);
+    warthog::pqueue_min open;
 
-   // warthog::flexible_astar<
-   // 	warthog::manhattan_heuristic,
-   //    	warthog::temporal_jps_expansion_policy,
-   //     warthog::pqueue_min> astar(&heuristic, &expander, &open);
+    //jpst_gm.t_gm_r_->print(std::cerr);
+    //exit(0);
 
-   // warthog::mapf::plan theplan;
+    warthog::flexible_astar<
+    	warthog::manhattan_heuristic,
+       	warthog::temporal_jps_expansion_policy,
+        warthog::pqueue_min> astar(&heuristic, &expander, &open);
 
-   // // this function blocks (== makes obstacles from) the planned paths of 
-   // // higher priority agents 
-   // auto add_higher_priority_plan = 
-   // [&sipp_map, &expander](warthog::solution& sol) -> void
-   // {
-   //     for(uint32_t i = 0; i < sol.path_.size(); i++)
-   //     {
-   //         int32_t x, y;
-   //         expander.get_xy(sol.path_.at(i).node_id_, x, y);
+    warthog::mapf::plan theplan;
 
-   //         int32_t nx, ny;
-   //         expander.get_xy(sol.path_.at(i+1).node_id_, nx, ny);
+    // this function blocks (== makes obstacles from) the planned paths of 
+    // higher priority agents 
+    auto add_higher_priority_plan = 
+    [&jpst_gm, &expander](warthog::solution& sol) -> void
+    {
+        for(uint32_t i = 0; i < sol.path_.size(); i++)
+        {
+            int32_t x, y;
+            expander.get_xy(sol.path_.at(i).node_id_, x, y);
 
-   //         warthog::cbs::move direction; 
+            int32_t nx, ny;
+            expander.get_xy(sol.path_.at(i+1).node_id_, nx, ny);
 
-   //         assert(nx == x || ny == y);
-   //         if(nx == x && ny == y) {  direction = warthog::cbs::move::WAIT; }
-   //         if(nx == x && ny < y) {  direction = warthog::cbs::move::NORTH; }
-   //         if(nx == x && ny > y) {  direction = warthog::cbs::move::SOUTH; }
-   //         if(nx < x && ny == y) {  direction = warthog::cbs::move::WEST; }
-   //         if(nx > x && ny == y) {  direction = warthog::cbs::move::EAST; }
+            warthog::cbs::move direction; 
 
-   //         warthog::cost_t start_time = sol.path_.at(i).cost_;
-   //         warthog::cost_t end_time = sol.path_.at(i+1).cost_;
-   //         sipp_map.add_obstacle(
-   //             (uint32_t)x, (uint32_t)y, start_time, end_time, direction);
+            assert(nx == x || ny == y);
+            if(nx == x && ny == y) {  direction = warthog::cbs::move::WAIT; }
+            if(nx == x && ny < y) {  direction = warthog::cbs::move::NORTH; }
+            if(nx == x && ny > y) {  direction = warthog::cbs::move::SOUTH; }
+            if(nx < x && ny == y) {  direction = warthog::cbs::move::WEST; }
+            if(nx > x && ny == y) {  direction = warthog::cbs::move::EAST; }
 
-   //         if(verbose)
-   //         {
-   //             std::cerr  << " add obstacle: (" << x << ", " << y << ") @ (" 
-   //                        << start_time << ", " << end_time << ") dir " 
-   //                        << direction << std::endl;
-   //         }
+            warthog::cost_t start_time = sol.path_.at(i).cost_;
+            warthog::cost_t end_time = sol.path_.at(i+1).cost_;
+            jpst_gm.add_obstacle(
+                (uint32_t)x, (uint32_t)y, start_time, end_time, direction);
 
-   //         if(i == (sol.path_.size()-2))
-   //         {
-   //             // after arriving, agents block their target 
-   //             // location indefinitely 
-   //             start_time = end_time;
-   //             end_time = warthog::COST_MAX;
-   //             sipp_map.add_obstacle( (uint32_t)nx, (uint32_t)ny, 
-   //                 end_time, end_time+1, warthog::cbs::move::WAIT);
-   //             if(verbose)
-   //             {
-   //                 std::cerr 
-   //                     << "add obstacle: (" << nx << ", " << ny 
-   //                     << ") @ (" << start_time << ", " << end_time
-   //                     << ") dir WAIT" << std::endl;
-   //             }
-   //             break;
-   //         }
-   //     }
-   // };
+            if(verbose)
+            {
+                std::cerr  << " add obstacle: (" << x << ", " << y << ") @ (" 
+                           << start_time << ", " << end_time << ") dir " 
+                           << direction << std::endl;
+            }
 
-   // // load plans of higher priority agents (if any) and block their
-   // // temporal locations to avoid collisions
-   // if(plan_file != "")
-   // {
-   //     std::ifstream ifs(plan_file);
-   //     warthog::mapf::plan hoplan; // higher priority plans
-   //     ifs >> hoplan;
-   //     for(uint32_t i = 0; i < hoplan.paths_.size(); i++)
-   //     {
-   //         add_higher_priority_plan(hoplan.paths_.at(i));
-   //     }
-   //     ifs.close();
-   // }
+            if(i == (sol.path_.size()-2))
+            {
+                // after arriving, agents block their target 
+                // location indefinitely 
+                start_time = end_time;
+                end_time = warthog::COST_MAX;
+                jpst_gm.add_obstacle( (uint32_t)nx, (uint32_t)ny, 
+                    end_time, end_time+1, warthog::cbs::move::WAIT);
+                if(verbose)
+                {
+                    std::cerr 
+                        << "add obstacle: (" << nx << ", " << ny 
+                        << ") @ (" << start_time << ", " << end_time
+                        << ") dir WAIT" << std::endl;
+                }
+                break;
+            }
+        }
+    };
 
-   // std::cout 
-   //     << "id\talg\texpanded\tinserted\tupdated\ttouched"
-   //     << "\tnanos\tpcost\tplen\tmap\n";
-   // for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-   // {
-   // 	warthog::experiment* exp = scenmgr.get_experiment(i);
+    // load plans of higher priority agents (if any) and block their
+    // temporal locations to avoid collisions
+    if(plan_file != "")
+    {
+        std::ifstream ifs(plan_file);
+        warthog::mapf::plan hoplan; // higher priority plans
+        ifs >> hoplan;
+        for(uint32_t i = 0; i < hoplan.paths_.size(); i++)
+        {
+            add_higher_priority_plan(hoplan.paths_.at(i));
+        }
+        ifs.close();
+    }
 
-   // 	uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
-   // 	uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-   //     warthog::problem_instance pi(startid, goalid, verbose);
-   //     warthog::solution sol;
+    std::cout 
+        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "\tnanos\tpcost\tplen\tmap\n";
+    for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
+    {
+    	warthog::experiment* exp = scenmgr.get_experiment(i);
 
-   //     astar.get_path(pi, sol);
-   // 	std::cout
-   //         << i<<"\t" 
-   //         << alg_name << "\t" 
-   //         << sol.nodes_expanded_ << "\t" 
-   //         << sol.nodes_inserted_ << "\t"
-   //         << sol.nodes_updated_ << "\t"
-   //         << sol.nodes_touched_ << "\t"
-   //         << sol.time_elapsed_nano_ << "\t"
-   //         << sol.sum_of_edge_costs_ << "\t" 
-   //         << (sol.path_.size()-1) << "\t" 
-   //         << scenmgr.last_file_loaded() 
-   //         << std::endl;
+    	uint32_t startid = exp->starty() * exp->mapwidth() + exp->startx();
+    	uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
+        warthog::problem_instance pi(startid, goalid, verbose);
+        warthog::solution sol;
 
-   //     // when exporting the plan we discard internal state
-   //     // identifiers in favour of domian-specific node ids:
-   //     // i.e. the plan is written in terms of (one dimensional)
-   //     // xy identifiers and their cost
-   //     for(warthog::state& s : sol.path_)
-   //     { s.node_id_ = s.node_id_ & UINT32_MAX; }
+        astar.get_path(pi, sol);
+    	std::cout
+            << i<<"\t" 
+            << alg_name << "\t" 
+            << sol.nodes_expanded_ << "\t" 
+            << sol.nodes_inserted_ << "\t"
+            << sol.nodes_updated_ << "\t"
+            << sol.nodes_touched_ << "\t"
+            << sol.time_elapsed_nano_ << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (sol.path_.size()-1) << "\t" 
+            << scenmgr.last_file_loaded() 
+            << std::endl;
 
-   //     theplan.paths_.push_back(sol);
+        // when exporting the plan we discard internal state
+        // identifiers in favour of domian-specific node ids:
+        // i.e. the plan is written in terms of (one dimensional)
+        // xy identifiers and their cost
+        for(warthog::state& s : sol.path_)
+        { s.node_id_ = s.node_id_ & UINT32_MAX; }
 
-   //     // all subsequent agents need to avoid locations on the
-   //     // newly found plan (i.e. we perform prioritised planning)
-   //     add_higher_priority_plan(sol);
-   // }
+        theplan.paths_.push_back(sol);
 
-   // // some extra info about sipp's performance
-   // size_t max_intervals = 0;
-   // size_t tot_intervals = 0;
-   // uint32_t map_sz = sipp_map.gm_->header_height() * sipp_map.gm_->header_width();
-   // for(uint32_t i = 0; i < map_sz; i++)
-   // {
-   //     max_intervals = sipp_map.get_all_intervals(i).size() > max_intervals ? 
-   //                     sipp_map.get_all_intervals(i).size() : max_intervals;
-   //     tot_intervals += sipp_map.get_all_intervals(i).size();
-   // }
+        // all subsequent agents need to avoid locations on the
+        // newly found plan (i.e. we perform prioritised planning)
+        //add_higher_priority_plan(sol);
+    }
 
-   // std::string tmp_planfile = scenmgr.last_file_loaded() + "." + alg_name + ".plan";
-   // std::cerr  << "writing plan to " << tmp_planfile << std::endl;
-   // std::ofstream ofs(tmp_planfile);
-   // ofs << theplan;
-   // ofs.close();
-   // std::cerr << "done. \n";
-   // std::cerr << "total memory: "<< astar.mem() + scenmgr.mem() << "\n";
-   // std::cerr << "max sipp intervals per node: "<< max_intervals << "\n";
-   // std::cerr << "avg sipp intervals per node: "<< tot_intervals / (double)map_sz << "\n";
+    // some extra info about sipp's performance
+    size_t max_intervals = 0;
+    size_t tot_intervals = 0;
+    uint32_t map_sz = jpst_gm.gm_->header_height() * jpst_gm.gm_->header_width();
+    for(uint32_t i = 0; i < map_sz; i++)
+    {
+        max_intervals = jpst_gm.get_all_intervals(i).size() > max_intervals ? 
+                        jpst_gm.get_all_intervals(i).size() : max_intervals;
+        tot_intervals += jpst_gm.get_all_intervals(i).size();
+    }
+
+    std::string tmp_planfile = scenmgr.last_file_loaded() + "." + alg_name + ".plan";
+    std::cerr  << "writing plan to " << tmp_planfile << std::endl;
+    std::ofstream ofs(tmp_planfile);
+    ofs << theplan;
+    ofs.close();
+    std::cerr << "done. \n";
+    std::cerr << "total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+    std::cerr << "max sipp intervals per node: "<< max_intervals << "\n";
+    std::cerr << "avg sipp intervals per node: "<< tot_intervals / (double)map_sz << "\n";
 }
 
 void

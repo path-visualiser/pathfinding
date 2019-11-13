@@ -4,21 +4,22 @@
 warthog::sipp_gridmap::sipp_gridmap(warthog::gridmap* gm)
     : gm_(gm)
 {
-    t_gm_ = new warthog::gridmap(gm_->header_height(), gm_->header_width());
-    for(uint32_t i = 0; i < t_gm_->width() * t_gm_->height(); i++)
-    { t_gm_->set_label(i, 0); }
-
     uint32_t mapsize = gm_->header_width() * gm_->header_height();
     intervals_.resize(mapsize);
     for(uint32_t i = 0; i < mapsize; i++)
     {
+        uint32_t gm_id = gm->to_padded_id(i);
+
         warthog::sipp::safe_interval si; 
-        if(!gm_->get_label(i))
+        si.e_time_ = warthog::COST_MAX;
+
+        if(!gm_->get_label(gm_id))
         { si.s_time_ = warthog::COST_MAX; }
         else 
-        { si.s_time_ = 0; }
+        {
+            si.s_time_ = 0; 
+        }
 
-        si.e_time_ = warthog::COST_MAX;
         intervals_.at(i).push_back(warthog::sipp::safe_interval());
     }
 
@@ -38,9 +39,7 @@ warthog::sipp_gridmap::sipp_gridmap(warthog::gridmap* gm)
 }
 
 warthog::sipp_gridmap::~sipp_gridmap()
-{
-    delete t_gm_;
-}
+{ }
 
 
 void
@@ -108,9 +107,6 @@ warthog::sipp_gridmap::add_obstacle(
 
     // replace the old list with the new list
     intervals_.at(node_id) = temp;
-
-    // record the fact that there are temporal obstacles at this location
-    t_gm_->set_label(t_gm_->to_padded_id(node_id), true);
 }
 
 void
@@ -127,8 +123,5 @@ warthog::sipp_gridmap::clear_obstacles(uint32_t x, uint32_t y)
     si.e_time_ = warthog::COST_MAX;
 
     intervals_.at(node_id).push_back(si);
-
-    // record the fact that there are no temporal obstacles at this location
-    t_gm_->set_label(t_gm_->to_padded_id(node_id), false);
 }
 

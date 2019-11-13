@@ -5,41 +5,12 @@
 #include <cassert>
 #include <climits>
 
-warthog::jpst_locator::jpst_locator(warthog::gridmap* map)
-	: map_(map)//, jumplimit_(UINT32_MAX)
-{
-	rmap_ = create_rmap();
-}
+warthog::jpst_locator::jpst_locator(warthog::jpst_gridmap* jpst_map)
+	: jpst_gm_(jpst_map)
+{ }
 
 warthog::jpst_locator::~jpst_locator()
-{
-	delete rmap_;
-}
-
-// create a copy of the grid map which is rotated by 90 degrees clockwise.
-// this version will be used when jumping North or South. 
-warthog::gridmap*
-warthog::jpst_locator::create_rmap()
-{
-	uint32_t maph = map_->header_height();
-	uint32_t mapw = map_->header_width();
-	uint32_t rmaph = mapw;
-	uint32_t rmapw = maph;
-	warthog::gridmap* rmap = new warthog::gridmap(rmaph, rmapw);
-
-	for(uint32_t x = 0; x < mapw; x++) 
-	{
-		for(uint32_t y = 0; y < maph; y++)
-		{
-			uint32_t label = map_->get_label(map_->to_padded_id(x, y));
-			uint32_t rx = ((rmapw-1) - y);
-			uint32_t ry = x;
-			uint32_t rid = rmap->to_padded_id(rx, ry);
-			rmap->set_label(rid, label);
-		}
-	}
-	return rmap;
-}
+{ }
 
 
 // Finds a jump point successor of node (x, y) in Direction d.
@@ -76,10 +47,36 @@ void
 warthog::jpst_locator::jump_north(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost)
 {
-	node_id = this->map_id_to_rmap_id(node_id);
-	goal_id = this->map_id_to_rmap_id(goal_id);
-	__jump_north(node_id, goal_id, jumpnode_id, jumpcost, rmap_);
-	jumpnode_id = this->rmap_id_to_map_id(jumpnode_id);
+    uint32_t num_steps = 0;
+    uint32_t mapw = jpst_gm_->t_gm_->width();
+
+    uint32_t jp_w_id;
+    uint32_t jp_e_id;
+    double jp_w_cost;
+    double jp_e_cost;
+
+    uint32_t x, y; 
+    jpst_gm_->t_gm_->to_unpadded_xy(node_id, x, y);
+    uint32_t max_steps_west = x;
+    uint32_t max_steps_east = (jpst_gm_->t_gm_->header_width()-1) - x;
+
+    uint32_t next_id = node_id;
+    while(true)
+    {
+        __jump_east(next_id, goal_id, jp_e_id, jp_e_cost, jpst_gm_->t_gm_);
+        __jump_west(next_id, goal_id, jp_w_id, jp_w_cost, jpst_gm_->t_gm_);
+        if( (jp_e_cost <= max_steps_east) || (jp_w_cost <= max_steps_west) ) { break; }
+
+        next_id -= mapw;
+        num_steps++;
+        if(!jpst_gm_->gm_->get_label(next_id)) 
+        { 
+            num_steps--;
+            break;
+        }
+    }
+    jumpnode_id = node_id - (mapw*num_steps);
+    jumpcost = num_steps;
 }
 
 void
@@ -89,17 +86,43 @@ warthog::jpst_locator::__jump_north(uint32_t node_id,
 {
 	// jumping north in the original map is the same as jumping
 	// east when we use a version of the map rotated 90 degrees.
-	__jump_east(node_id, goal_id, jumpnode_id, jumpcost, rmap_);
+	__jump_east(node_id, goal_id, jumpnode_id, jumpcost, jpst_gm_->t_gm_r_);
 }
 
 void
 warthog::jpst_locator::jump_south(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost)
 {
-	node_id = this->map_id_to_rmap_id(node_id);
-	goal_id = this->map_id_to_rmap_id(goal_id);
-	__jump_south(node_id, goal_id, jumpnode_id, jumpcost, rmap_);
-	jumpnode_id = this->rmap_id_to_map_id(jumpnode_id);
+    uint32_t num_steps = 0;
+    uint32_t mapw = jpst_gm_->t_gm_->width();
+
+    uint32_t jp_w_id;
+    uint32_t jp_e_id;
+    double jp_w_cost;
+    double jp_e_cost;
+
+    uint32_t x, y; 
+    jpst_gm_->t_gm_->to_unpadded_xy(node_id, x, y);
+    uint32_t max_steps_west = x;
+    uint32_t max_steps_east = (jpst_gm_->t_gm_->header_width()-1) - x;
+
+    uint32_t next_id = node_id;
+    while(true)
+    {
+        __jump_east(next_id, goal_id, jp_e_id, jp_e_cost, jpst_gm_->t_gm_);
+        __jump_west(next_id, goal_id, jp_w_id, jp_w_cost, jpst_gm_->t_gm_);
+        if( (jp_e_cost <= max_steps_east) || (jp_w_cost <= max_steps_west) ) { break; }
+
+        next_id += mapw;
+        num_steps++;
+        if(!jpst_gm_->gm_->get_label(next_id)) 
+        { 
+            num_steps--;
+            break;
+        }
+    }
+    jumpnode_id = node_id + (mapw*num_steps);
+    jumpcost = num_steps;
 }
 
 void
@@ -109,14 +132,14 @@ warthog::jpst_locator::__jump_south(uint32_t node_id,
 {
 	// jumping north in the original map is the same as jumping
 	// west when we use a version of the map rotated 90 degrees.
-	__jump_west(node_id, goal_id, jumpnode_id, jumpcost, rmap_);
+	__jump_west(node_id, goal_id, jumpnode_id, jumpcost, jpst_gm_->t_gm_r_);
 }
 
 void
 warthog::jpst_locator::jump_east(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost)
 {
-	__jump_east(node_id, goal_id, jumpnode_id, jumpcost, map_);
+	__jump_east(node_id, goal_id, jumpnode_id, jumpcost, jpst_gm_->t_gm_);
 }
 
 
@@ -140,7 +163,7 @@ warthog::jpst_locator::__jump_east(uint32_t node_id,
 		uint32_t stop_bits = neis[0] | neis[1] | neis[2];
 		if(stop_bits)
 		{
-			int32_t stop_pos = __builtin_ffsl(stop_bits)-1; // returns idx+1
+			uint32_t stop_pos = (uint32_t)__builtin_ffs((int)stop_bits)-1; // returns idx+1
 			jumpnode_id += (uint32_t)stop_pos; 
 			break;
 		}
@@ -154,7 +177,7 @@ void
 warthog::jpst_locator::jump_west(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost)
 {
-	__jump_west(node_id, goal_id, jumpnode_id, jumpcost, map_);
+	__jump_west(node_id, goal_id, jumpnode_id, jumpcost, jpst_gm_->t_gm_);
 }
 
 void
@@ -174,7 +197,7 @@ warthog::jpst_locator::__jump_west(uint32_t node_id,
 		uint32_t stop_bits = neis[0] | neis[1] | neis[2];
 		if(stop_bits)
 		{
-			uint32_t stop_pos = (uint32_t)__builtin_clzl(stop_bits);
+			uint32_t stop_pos = (uint32_t)__builtin_clz(stop_bits);
 			jumpnode_id -= stop_pos;
 			break;
 		}

@@ -177,7 +177,6 @@ class sipp_gridmap
 
 
         warthog::gridmap* gm_; 
-        warthog::gridmap* t_gm_;
 
     private:
         std::vector<std::vector<warthog::sipp::safe_interval>> intervals_;
