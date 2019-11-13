@@ -248,10 +248,20 @@ class gridmap
 			return this->filename_;
 		}
 
-        uint32_t
+        inline uint32_t
         get_num_traversable_tiles()
         {
             return num_traversable_;
+        }
+
+        // invert map (traversable tiles become obstacles and vice versa) 
+        inline void
+        invert()
+        {
+            for(unsigned int i=0; i < db_size_; i++)
+            {
+                db_[i] = ~db_[i];
+            }
         }
 
 
