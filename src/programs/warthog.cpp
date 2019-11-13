@@ -8,17 +8,19 @@
 //
 
 #include "cbs.h"
+#include "cbs_ll_expansion_policy.h"
 #include "cbs_ll_heuristic.h"
 #include "cfg.h"
 #include "constants.h"
 #include "flexible_astar.h"
+#include "four_connected_jps_locator.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
-#include "cbs_ll_expansion_policy.h"
 #include "jps_expansion_policy.h"
 #include "jps2_expansion_policy.h"
-#include "jpsplus_expansion_policy.h"
 #include "jps2plus_expansion_policy.h"
+#include "jps4c_expansion_policy.h"
+#include "jpsplus_expansion_policy.h"
 #include "ll_expansion_policy.h"
 #include "manhattan_heuristic.h"
 #include "octile_heuristic.h"
@@ -57,8 +59,8 @@ help()
 	<< "\t--checkopt (optional)\n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, 4c_astar, sipp\n"
-    << "\tsssp, jps, jps2, jps+, jps2+, jps\n"
+    << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, astar4c, sipp\n"
+    << "\tsssp, jps, jps2, jps+, jps2+, jps, jps4c\n"
     << "\tcpg, jpg\n";
 }
 
@@ -218,6 +220,25 @@ run_jps(warthog::scenario_manager& scenmgr, std::string alg_name)
 }
 
 void
+run_jps4c(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::jps4c_expansion_policy expander(&map);
+	warthog::manhattan_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
+
+	warthog::flexible_astar<
+		warthog::manhattan_heuristic,
+	   	warthog::jps4c_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
+
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
 run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
@@ -237,7 +258,7 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 }
 
 void
-run_4c_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
+run_astar4c(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::gridmap_expansion_policy expander(&map, true);
@@ -495,6 +516,10 @@ main(int argc, char** argv)
     {
         run_jps(scenmgr, alg);
     }
+    else if(alg == "jps4c")
+    {
+        run_jps4c(scenmgr, alg);
+    }
 
     else if(alg == "dijkstra")
     {
@@ -505,9 +530,9 @@ main(int argc, char** argv)
     {
         run_astar(scenmgr, alg); 
     }
-    else if(alg == "4c_astar")
+    else if(alg == "astar4c")
     {
-        run_4c_astar(scenmgr, alg); 
+        run_astar4c(scenmgr, alg); 
     }
 
     else if(alg == "cbs_ll")
