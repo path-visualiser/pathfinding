@@ -14,6 +14,7 @@
 //
 
 #include "jps.h"
+#include "jps/four_connected_jps_locator.h"
 #include "sipp/jpst_gridmap.h"
 #include "gridmap.h"
 
@@ -37,6 +38,7 @@ class jpst_locator
 		}
 
 	private:
+
 		void
 		jump_north(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost);
@@ -50,27 +52,19 @@ class jpst_locator
 		jump_west(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost);
 
-		// these versions can be passed a map parameter to
-		// use when jumping. they allow switching between
-		// map_ and rmap_ (a rotated counterpart).
+		// these versions scan the grid looking for 
+        // temporal jump points
 		void
 		__jump_east(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost, 
-				warthog::gridmap* mymap);
+				uint32_t jumplimit);
 		void
 		__jump_west(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost, 
-				warthog::gridmap* mymap);
-		void
-		__jump_north(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, double& jumpcost,
-				warthog::gridmap* mymap);
-		void
-		__jump_south(uint32_t node_id, uint32_t goal_id, 
-				uint32_t& jumpnode_id, double& jumpcost, 
-				warthog::gridmap* mymap);
+				uint32_t jumplimit);
 
         warthog::jpst_gridmap* jpst_gm_;
+        warthog::four_connected_jps_locator* fc_jpl_;
 };
 
 }

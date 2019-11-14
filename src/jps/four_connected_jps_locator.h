@@ -34,7 +34,7 @@ class four_connected_jps_locator
 			return sizeof(this);
 		}
 
-	private:
+	//private:
 		void
 		jump_north(uint32_t node_id, uint32_t goal_id, 
 				uint32_t& jumpnode_id, double& jumpcost);

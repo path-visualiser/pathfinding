@@ -16,6 +16,7 @@
 //
 
 #include "forward.h"
+#include "helpers.h"
 
 #include <stdint.h>
 #include <unordered_map>
@@ -48,6 +49,33 @@ const uint32_t JPS_ID_MASK = (1 << 24)-1;
 // from (px, py) to (x, y)
 warthog::jps::direction
 compute_direction(uint32_t px, uint32_t py, uint32_t x, uint32_t y);
+
+// compute the 4-connected canonical direction of travel, 
+// from (px, py) to (x, y)
+inline warthog::jps::direction
+compute_direction_4c(int32_t px, int32_t py, int32_t x, int32_t y)
+{
+    int32_t delta_x  = (px - x);
+    int32_t delta_y  = (py - y);
+
+    warthog::jps::direction d;
+    d = (delta_y < 0) ? warthog::jps::NORTH : warthog::jps::SOUTH;
+
+    if(delta_x)
+    {
+        d = (delta_x < 0) ? warthog::jps::WEST : warthog::jps::EAST;
+    }
+    return d; 
+}
+
+inline warthog::jps::direction
+compute_direction_4c(uint32_t n1_xy_id, uint32_t n2_xy_id, uint32_t mapwidth)
+{
+    int32_t x1, y1, x2, y2;
+    warthog::helpers::index_to_xy(n1_xy_id, mapwidth, x1, y1);
+    warthog::helpers::index_to_xy(n2_xy_id, mapwidth, x2, y2);
+    return warthog::jps::compute_direction_4c(x1, y1, x2, y2);
+}
 
 // Computes the set of "forced" directions in which to search for jump points
 // from a given location (x, y). 

@@ -34,7 +34,7 @@ class temporal_jps_expansion_policy
 		inline warthog::search_node*
 		generate(warthog::sn_id_t node_id)
 		{
-            warthog::sn_id_t xy_id = node_id & INT32_MAX;
+            warthog::sn_id_t xy_id = node_id & UINT32_MAX;
             warthog::sn_id_t index = node_id >> 32;
 
             while(pool_.size() <= index)
@@ -71,8 +71,8 @@ class temporal_jps_expansion_policy
         warthog::search_node*
         generate_target_node(warthog::problem_instance* pi)
         {
-            uint32_t xy_id = (pi->target_id_ & INT32_MAX);
-            uint32_t gm_id = gm_->to_padded_id(xy_id);
+            uint32_t xy_id = (pi->target_id_ & UINT32_MAX);
+            uint32_t gm_id = jpst_gm_->gm_->to_padded_id(xy_id);
             if(!jpst_gm_->gm_->get_label(gm_id))
             {
                 return 0; // target is an obstacle
@@ -94,7 +94,7 @@ class temporal_jps_expansion_policy
         bool
         is_target(warthog::search_node* n, warthog::problem_instance* pi)
         {
-            return (n->get_id() & INT32_MAX) == (pi->target_id_ & INT32_MAX);
+            return (n->get_id() & UINT32_MAX) == (pi->target_id_ & UINT32_MAX);
         }
 
 
@@ -118,72 +118,61 @@ class temporal_jps_expansion_policy
             reset();
 
             c_node_ = c_node;
-            c_xy_id_ = (uint32_t)(c_node->get_id() & INT32_MAX);
+            c_xy_id_ = (uint32_t)(c_node->get_id() & UINT32_MAX);
             c_index_ = (uint32_t)(c_node->get_id() >> 32);
             c_gm_id_ = jpst_gm_->gm_->to_padded_id(c_xy_id_);
             c_si_ = &jpst_gm_->get_safe_interval(c_xy_id_, c_index_);
             problem_ = problem;
+            uint32_t p_xy_id = (uint32_t)(c_node_->get_parent() & UINT32_MAX);
 
-            warthog::jps::direction lastmove = c_node->get_pdir();
-            uint32_t p_xy_id = (uint32_t)(c_node_->get_parent() & INT32_MAX);
-            uint32_t p_index = (uint32_t)(c_node_->get_parent() >> 32);
-
-            // not enough time to generate any successor
-            uint32_t min_action_cost = 1;
-            if((c_node_->get_g() + min_action_cost) >= c_si_->e_time_) 
-            { return; }
-
-            // for the start node, we jump in all directions
-            if(c_node_->get_parent() == warthog::SN_ID_MAX)
-            { 
-                jump_north( c_xy_id_, c_gm_id_ );
-                jump_south( c_xy_id_, c_gm_id_ );
-                jump_east( c_xy_id_, c_gm_id_ );
-                jump_west( c_xy_id_, c_gm_id_ );
-                return; 
-            }
-            
-            // for every other node, we consider only those directions
-            // which are canonical or forced
-            if(lastmove & warthog::jps::NORTH)
+            // get the parent direction
+            warthog::jps::direction lastmove;
+            if(p_xy_id == warthog::INF32)
             {
-                jump_north( c_xy_id_, c_gm_id_ );
-                jump_east( c_xy_id_, c_gm_id_ );
-                jump_west( c_xy_id_, c_gm_id_ );
-
-                // reverse direction if future obstacles appear at the parent 
-                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
-                { jump_south( c_xy_id_, c_gm_id_ ); }
+                lastmove = warthog::jps::NONE;
             }
-
-            if( lastmove & warthog::jps::SOUTH )
+            else
             {
-                jump_south( c_xy_id_, c_gm_id_ );
-                jump_east( c_xy_id_, c_gm_id_ );
-                jump_west( c_xy_id_, c_gm_id_ );
-
-                // reverse direction if future obstacles appear at the parent 
-                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
-                { jump_north( c_xy_id_, c_gm_id_ ); }
+                lastmove = warthog::jps::compute_direction_4c(c_xy_id_, 
+                               p_xy_id, map_width_);
             }
 
-            if( lastmove & warthog::jps::EAST )
+            // get the tiles around the current node c and determine
+            // which of the available moves are forced and which are natural
+            uint32_t c_tiles;
+            jpst_gm_->gm_->get_neighbours(c_gm_id_, (uint8_t*)&c_tiles);
+            uint32_t succ_dirs = warthog::jps::compute_successors_4c(lastmove, c_tiles);
+
+             // the parent can be forced if there exist temporal obstacles 
+             // at that location (reasoning about time is weird, man)
+             if(lastmove && jpst_gm_->get_all_intervals(p_xy_id).size() > 1)
+             {
+                succ_dirs |= opposite_dir[__builtin_ffs(lastmove)];
+             }
+
+            // generate successors
+            for(uint32_t i = 0; i < 4; i++)
             {
-                jump_east( c_xy_id_, c_gm_id_  );
+                warthog::jps::direction d = (warthog::jps::direction) (1 << i);
+                if(succ_dirs & d)
+                {
+                    double jumpcost;
+                    uint32_t succ_id;
+                    jpl_t_->jump(d, c_gm_id_, target_gm_id_, succ_id, jumpcost);
 
-                // reverse direction if future obstacles appear at the parent 
-                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
-                { jump_west( c_xy_id_, c_gm_id_ ); }
+                    if(succ_id != warthog::INF32)
+                    {
+                        int32_t succ_xy_id = 
+                            (int32_t)c_xy_id_ + (int32_t)(xy_id_offsets_[(i+1)]*jumpcost);
+                        assert(succ_xy_id >= 0);
+                        warthog::cbs::move ec_move = ec_moves_[(i+1)];
+                        generate_successors((uint32_t)succ_xy_id, ec_move, jumpcost);
+                    }
+                }
             }
 
-            if( lastmove & warthog::jps::WEST )
-            {
-                jump_west( c_xy_id_, c_gm_id_ );
-
-                // reverse direction if future obstacles appear at the parent 
-                if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
-                { jump_east( c_xy_id_, c_gm_id_ ); }
-            }
+            //if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
+            //{ jump_east( c_xy_id_, c_gm_id_ ); }
         }
 
 		inline void
@@ -230,7 +219,6 @@ class temporal_jps_expansion_policy
             {
                 retval += pool_.at(i)->mem();
             }
-            retval += jpst_gm_->mem();
             retval += sizeof(this);
             retval += sizeof(neighbour_record)*neis_->size();
             return retval;
@@ -247,7 +235,6 @@ class temporal_jps_expansion_policy
             warthog::search_node* node_;
             warthog::cost_t cost_;
         };
-        typedef bool (*fn_lessThanSI)(warthog::sipp::safe_interval, warthog::cost_t);
 
 
         uint32_t sz_xy;
@@ -255,10 +242,10 @@ class temporal_jps_expansion_policy
         arraylist<neighbour_record>* neis_;
 
         warthog::jpst_gridmap* jpst_gm_;
-        warthog::gridmap* gm_;
-        warthog::gridmap* t_gm_;
-        warthog::online_jump_point_locator* jpl_spatial_;
-        warthog::jpst_locator* jpl_temporal_;
+        warthog::jpst_locator* jpl_t_;
+        int32_t xy_id_offsets_[5];
+        warthog::cbs::move ec_moves_[5];
+        warthog::jps::direction opposite_dir[5];
 
         // convenience variables
         warthog::search_node* c_node_;
@@ -285,91 +272,6 @@ class temporal_jps_expansion_policy
         // the (x, y) location of the node containing the sipp::safe_interval
         // the lower 4 bytes specifies the index of the sipp::safe_interval
         std::vector<warthog::mem::node_pool*> pool_;
-
-        inline void
-        jump_north( uint32_t from_xy_id, uint32_t from_gm_id )
-        { 
-            int32_t xy_offset = -1 * (int32_t)map_width_;
-            int32_t gm_xy_offset = -1 * (int32_t)gm_map_width_;
-            jump( from_xy_id, from_gm_id, xy_offset, gm_xy_offset,
-                  warthog::jps::NORTH, warthog::cbs::SOUTH );
-        }
-
-        inline void
-        jump_south( uint32_t from_xy_id, uint32_t from_gm_id )
-        { 
-            int32_t xy_offset =  (int32_t)map_width_;
-            int32_t gm_xy_offset = (int32_t)gm_map_width_;
-            jump( from_xy_id, from_gm_id, xy_offset, gm_xy_offset,
-                  warthog::jps::SOUTH, warthog::cbs::NORTH );
-        }
-
-        inline void
-        jump_east( uint32_t from_xy_id, uint32_t from_gm_id )
-        {
-            int32_t xy_offset = 1;
-            int32_t gm_xy_offset = 1;
-            jump( from_xy_id, from_gm_id, xy_offset, gm_xy_offset,
-                  warthog::jps::EAST, warthog::cbs::WEST );
-        }
-        
-        inline void
-        jump_west( uint32_t from_xy_id, uint32_t from_gm_id )
-        {
-            int32_t xy_offset = -1;
-            int32_t gm_xy_offset = -1;
-            jump( from_xy_id, from_gm_id, xy_offset, gm_xy_offset,
-                  warthog::jps::WEST, warthog::cbs::EAST );
-        }
-
-        inline void 
-        jump_null(uint32_t xy_id, uint32_t si_index, uint32_t gm_id)
-        { 
-            assert(true == false);
-        }
-
-        inline void
-        jump( uint32_t from_xy_id, uint32_t from_gm_id, 
-                       int32_t succ_offset, int32_t gm_succ_offset,
-                       warthog::jps::direction jump_direction,
-                       warthog::cbs::move ec_direction )
-        {
-            int32_t succ_xy_id = ((int32_t)from_xy_id + succ_offset);
-            int32_t succ_gm_id = ((int32_t)from_gm_id + gm_succ_offset);
-            warthog::cost_t action_cost = 1; // TODO: action model
-
-            // can't jump if the proposed location is an obstacle
-            if(!gm_->get_label((uint32_t)succ_gm_id)) { return; }
-
-            // if the first location in the jump direction has temporal 
-            // obstacles we proceed conservatively; only one step forward
-            if(!t_gm_->get_label((uint32_t)succ_gm_id))
-            {
-                // no temporal obstacles directly ahead. 
-                // try jump spatially as far as possible.
-                uint32_t spatial_id;
-                double spatial_cost;
-                jpl_spatial_->jump( jump_direction, (uint32_t)succ_gm_id, 
-                    target_gm_id_, spatial_id, spatial_cost); 
-
-                // jump again, checking for (potential) temporal jump points; 
-                uint32_t temporal_id; 
-                double temporal_cost;
-                jpl_temporal_->jump(jump_direction, (uint32_t)succ_gm_id, 0, 
-                    temporal_id, temporal_cost);
-
-                // prune; the spatial jump is a dead-end and there are 
-                // no temporal obstacles along the way to that location 
-                if(spatial_cost < temporal_cost && spatial_id == warthog::INF32)
-                { return; }
-
-                // the jump distance is the minimum of the two jump costs
-                temporal_cost = std::min<double>(spatial_cost, temporal_cost);
-                action_cost += temporal_cost;
-                succ_xy_id += (temporal_cost * succ_offset); 
-            }
-            generate_successors((uint32_t)succ_xy_id, ec_direction, action_cost);
-        }
 
         // generates all safe-interval successors at location @param succ_xy_id
         // the location may be adjacent to the node being currently expanded or
