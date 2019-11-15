@@ -469,7 +469,6 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
                 // at one timestep earlier than the arrival of the current agent
                 uint64_t n_xy_id = sol.path_.at(i+1).node_id_ & UINT32_MAX;
                 uint64_t timestep = sol.path_.at(i).node_id_ >> 32;
-
                 warthog::sn_id_t block_id = (timestep << 32) | n_xy_id;
                 expander.get_constraint(block_id)->e_ 
                     |= (uint8_t)(1 << direction);
