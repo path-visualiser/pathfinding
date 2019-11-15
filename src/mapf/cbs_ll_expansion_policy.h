@@ -103,17 +103,18 @@ class cbs_ll_expansion_policy
             uint32_t xy_id = (uint32_t)(n->get_id() & UINT32_MAX);
             if(xy_id != (uint32_t)pi->target_id_) { return false; }
 
-            uint32_t arrival_time = (uint32_t)(n->get_id() >> 32);
-            std::vector<warthog::cbs::cbs_constraint>& xy_cons = 
-                cons_->get_constraint_set((uint32_t)(n->get_id()));
+            // ENABLE THIS CODE FOR MAPF TARGET CONDITION
+            //uint32_t arrival_time = (uint32_t)(n->get_id() >> 32);
+            //std::vector<warthog::cbs::cbs_constraint>& xy_cons = 
+            //    cons_->get_constraint_set((uint32_t)(n->get_id()));
 
-            // the arrival is _safe_ if the agent never has to move again
-            for(uint32_t i = 0; i < xy_cons.size(); i++)
-            {
-                if((xy_cons.at(i).timestep_ >= arrival_time) &&
-                    xy_cons.at(i).v_) 
-                { return false; }
-            }
+            //// the arrival is _safe_ if the agent never has to move again
+            //for(uint32_t i = 0; i < xy_cons.size(); i++)
+            //{
+            //    if((xy_cons.at(i).timestep_ >= arrival_time) &&
+            //        xy_cons.at(i).v_) 
+            //    { return false; }
+            //}
             return true;
         }
 

@@ -275,12 +275,12 @@ class sipp_expansion_policy
                 // (i.e. <) the end of the current safe interval and; 
                 // (ii) only if the current safe interval is safe for
                 // the duration of the action that moves the agent
-                // (iii) only the successor is safe at the time the 
+                // (iii) only if the successor is safe at the time the 
                 // agent finishes moving.
                 warthog::sipp::safe_interval& succ_si = neis.at(i);
 
                 warthog::cost_t action_cost = 1;
-                if( succ_si.s_time_ < c_si.e_time_ && 
+                if( succ_si.s_time_ <= c_si.e_time_ && 
                     current->get_g() < succ_si.e_time_)
                 {
                     // if the adjacent safe interval begins at some time
@@ -298,15 +298,15 @@ class sipp_expansion_policy
                         { continue; }
                     }
 
-                    // prune: not enough time to execute the action
+                    // prune: not enough time remains (current interval) 
+                    // to execute the proposed action
                     if((current->get_g() + action_cost) > c_si.e_time_) 
                     { continue;  }
 
-                    // prune: moved to successor but the location is not the
-                    // target and not enough time remains to move again
-                    //if((current->get_g() + action_cost) == succ_si.e_time_
-                    //   && !(succ_xy_id == pi->target_id_))
-                    //{ continue; }
+                    // prune: not enough time remains (successor interval) 
+                    // to execute the proposed action
+                    if((current->get_g() + action_cost) >= succ_si.e_time_) 
+                    { continue;  }
 
                     // generate successor
                     warthog::sn_id_t succ_node_id = succ_xy_id;

@@ -81,6 +81,29 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
     {
         for(uint32_t i = 0; i < sol.path_.size(); i++)
         {
+            uint32_t xy_id = (uint32_t)(sol.path_.at(i).node_id_);
+            if(sol.path_.at(i).node_id_== sol.path_.back().node_id_) 
+            { 
+                // agents occupy their target location for one 
+                // timestep then disappear (DIFFERENT FROM STANDARD MAPF!!)
+                int32_t x, y;
+                expander.get_xy(sol.path_.at(i).node_id_, x, y);
+                warthog::cost_t start_time = sol.path_.at(i).cost_;
+                warthog::cost_t end_time = start_time + 1;
+                sipp_map.add_obstacle( (uint32_t)x, (uint32_t)y, 
+                    start_time, end_time, warthog::cbs::move::WAIT);
+
+                if(verbose)
+                {
+                    std::cerr  << " add obstacle: " << xy_id 
+                               << " (" << x << ", " << y << ") @ "
+                               << "(" << start_time << ", " << end_time << ") "
+                               << " dir " << warthog::cbs::WAIT << std::endl;
+                }
+
+                break;
+            }
+
             int32_t x, y;
             expander.get_xy(sol.path_.at(i).node_id_, x, y);
 
@@ -103,42 +126,39 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
 
             if(verbose)
             {
-                std::cerr  << " add obstacle: (" << x << ", " << y << ") @ (" 
-                           << start_time << ", " << end_time << ") dir " 
-                           << direction << std::endl;
+                std::cerr  << " add obstacle: " << xy_id << 
+                           " (" << x << ", " << y << ") @ "
+                           << "(" << start_time << ", " << end_time << ") "
+                           << " dir " << warthog::cbs::WAIT << std::endl;
             }
 
-            if(i == (sol.path_.size()-2))
-            {
-                // after arriving, agents block their target 
-                // location indefinitely 
-                start_time = end_time;
-                end_time = warthog::COST_MAX;
-                sipp_map.add_obstacle( (uint32_t)nx, (uint32_t)ny, 
-                    end_time, end_time+1, warthog::cbs::move::WAIT);
-                if(verbose)
-                {
-                    std::cerr 
-                        << "add obstacle: (" << nx << ", " << ny 
-                        << ") @ (" << start_time << ", " << end_time
-                        << ") dir WAIT" << std::endl;
-                }
-                break;
-            }
+            //if(i == (sol.path_.size()-2))
+            //{
+            //    // after arriving, agents block their target 
+            //    // location indefinitely 
+            //    start_time = end_time;
+            //    end_time = warthog::COST_MAX;
+            //    sipp_map.add_obstacle( (uint32_t)nx, (uint32_t)ny, 
+            //        end_time, end_time+1, warthog::cbs::move::WAIT);
+            //    if(verbose)
+            //    {
+            //        std::cerr 
+            //            << "add obstacle: (" << nx << ", " << ny 
+            //            << ") @ (" << start_time << ", " << end_time
+            //            << ") dir WAIT" << std::endl;
+            //    }
+            //    break;
+            //}
         }
     };
 
     // load plans of higher priority agents (if any) and block their
     // temporal locations to avoid collisions
+    warthog::mapf::plan hoplan; 
     if(plan_file != "")
     {
         std::ifstream ifs(plan_file);
-        warthog::mapf::plan hoplan; // higher priority plans
         ifs >> hoplan;
-        for(uint32_t i = 0; i < hoplan.paths_.size(); i++)
-        {
-            add_higher_priority_plan(hoplan.paths_.at(i));
-        }
         ifs.close();
     }
 
@@ -168,18 +188,23 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
             << scenmgr.last_file_loaded() 
             << std::endl;
 
-        // when exporting the plan we discard internal state
-        // identifiers in favour of domian-specific node ids:
-        // i.e. the plan is written in terms of (one dimensional)
-        // xy identifiers and their cost
-        for(warthog::state& s : sol.path_)
-        { s.node_id_ = s.node_id_ & UINT32_MAX; }
+         // when exporting the plan we discard internal state
+         // identifiers in favour of domian-specific node ids:
+         // i.e. the plan is written in terms of (one dimensional)
+         // xy identifiers and their cost
+         for(warthog::state& s : sol.path_)
+         { s.node_id_ = s.node_id_ & UINT32_MAX; }
 
-        theplan.paths_.push_back(sol);
+         theplan.paths_.push_back(sol);
 
-        // all subsequent agents need to avoid locations on the
-        // newly found plan (i.e. we perform prioritised planning)
-        add_higher_priority_plan(sol);
+         // all subsequent agents need to avoid locations on the
+         // newly found plan (i.e. we perform prioritised planning)
+        // add_higher_priority_plan(sol);
+
+        if(i < hoplan.paths_.size())
+        {
+            add_higher_priority_plan(hoplan.paths_.at(i));
+        }
 	}
 
     // some extra info about sipp's performance
@@ -395,22 +420,22 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
             << scenmgr.last_file_loaded()
             << std::endl;
 
-        // when exporting the plan we discard internal state
-        // identifiers in favour of domian-specific node ids:
-        // i.e. the plan is written in terms of (one dimensional)
-        // xy identifiers and their cost
-        for(warthog::state& s : sol.path_)
-        { s.node_id_ = gm.to_unpadded_id(s.node_id_ & UINT32_MAX); }
-
-        theplan.paths_.push_back(sol);
-
         // the path of the agent now becomes an obstacle for 
         // the next agent. We assume that agents reach their
         // target and then disappear after one unit of time
         for(uint32_t i = 0; i < sol.path_.size(); i++)
         {
             if(sol.path_.at(i).node_id_== sol.path_.back().node_id_) 
-            { break; }
+            { 
+                int32_t x, y;
+                expander.get_xy(sol.path_.back().node_id_, x, y);
+                expander.get_constraint(sol.path_.back().node_id_)->v_ = true;
+                if(verbose)
+                {
+                    std::cerr << "add obstacle (" << x << ", " << y << ") @ " << i << std::endl;
+                }
+                break;
+            }
 
             int32_t x, y;
             expander.get_xy(sol.path_.at(i).node_id_, x, y);
@@ -425,36 +450,45 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
                 std::cerr << "add obstacle (" << x << ", " << y << ") @ " 
                           << i << std::endl;
             }
+            assert(expander.get_constraint(sol.path_.at(i).node_id_)->v_);
 
             // block any other agent from swapping positions with the agent
             // (i.e. prevent edge collisions) 
             if(nx !=  x || ny != y)
             {
                 // compute the opposite direction
-                warthog::cbs::move direction; 
+                warthog::cbs::move direction = warthog::cbs::NONE;
                 if(nx == x && ny < y) {  direction = warthog::cbs::move::SOUTH; }
                 if(nx == x && ny > y) {  direction = warthog::cbs::move::NORTH; }
-                if(nx < x && ny == y) {  direction = warthog::cbs::move::WEST; }
-                if(nx > x && ny == y) {  direction = warthog::cbs::move::EAST; }
+                if(nx < x && ny == y) {  direction = warthog::cbs::move::EAST; }
+                if(nx > x && ny == y) {  direction = warthog::cbs::move::WEST; }
 
-                uint32_t xy_id = sol.path_.at(i+1).node_id_ & UINT32_MAX;
-                uint64_t timestep = i;
-                warthog::sn_id_t block_id = (timestep << 32) | xy_id;
+                // place a constraint that forbids moving in the opposite
+                // direction to the agent. the constraint is placed on the 
+                // tile corresponding to the kth xy location on the path but
+                // at one timestep earlier than the arrival of the current agent
+                uint64_t n_xy_id = sol.path_.at(i+1).node_id_ & UINT32_MAX;
+                uint64_t timestep = sol.path_.at(i).node_id_ >> 32;
+
+                warthog::sn_id_t block_id = (timestep << 32) | n_xy_id;
                 expander.get_constraint(block_id)->e_ 
                     |= (uint8_t)(1 << direction);
             }
         }
-        // block target cell 
-        if(sol.path_.size() > 0)
-        {
-            int32_t x, y;
-            expander.get_xy(sol.path_.back().node_id_, x, y);
-            expander.get_constraint(sol.path_.back().node_id_)->v_ = true;
-            if(verbose)
-            {
-                std::cerr << "add obstacle (" << x << ", " << y << ") @ " << i << std::endl;
-            }
+
+        // when exporting the plan we discard internal state
+        // identifiers in favour of domain-specific node ids:
+        // i.e. the plan is written in terms of (one dimensional)
+        // xy identifiers and their cost
+        for(warthog::state& s : sol.path_)
+        { 
+            warthog::sn_id_t xy_id = 
+                gm.to_unpadded_id(s.node_id_ & UINT32_MAX);
+            s.node_id_ = xy_id;
         }
+
+        theplan.paths_.push_back(sol);
+
 	}
     std::string tmp_planfile = scenmgr.last_file_loaded() + "." + alg_name + ".plan";
     std::cerr  << "writing plan to " << tmp_planfile << std::endl;

@@ -31,6 +31,16 @@ enum move
     WAIT = WEST + 1
 };
 
+inline warthog::cbs::move
+opposite_move(warthog::cbs::move m)
+{   
+    static warthog::cbs::move opposite[5] = 
+    { warthog::cbs::move::SOUTH, warthog::cbs::move::NORTH, 
+      warthog::cbs::move::WEST, warthog::cbs::move::EAST };
+
+    return (m == warthog::cbs::NONE) ? warthog::cbs::NONE : opposite[m];
+}
+
 // This data structure describes the constraints CBS imposes on 
 // single grid cells. A brief description of the members:
 //
