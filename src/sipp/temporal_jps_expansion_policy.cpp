@@ -11,32 +11,34 @@ warthog::temporal_jps_expansion_policy::temporal_jps_expansion_policy(
     neis_ = new warthog::arraylist<neighbour_record>(32);
     jpl_t_ = new warthog::jpst_locator(jpst_gm_);
 
-    assert(__builtin_ffs(warthog::jps::NONE) == 0);
-    assert(__builtin_ffs(warthog::jps::NORTH) == 1);
-    assert(__builtin_ffs(warthog::jps::SOUTH) == 2);
-    assert(__builtin_ffs(warthog::jps::EAST) == 3);
-    assert(__builtin_ffs(warthog::jps::WEST) == 4);
+    assert(warthog::cbs::NORTH == 0);
+    assert(warthog::cbs::SOUTH == 1);
+    assert(warthog::cbs::EAST == 2);
+    assert(warthog::cbs::WEST == 3);
 
     // incompatible moves that can lead to 
     // edge collisions
-    ec_moves_[0] = warthog::cbs::NONE;
-    ec_moves_[1] = warthog::cbs::SOUTH;
-    ec_moves_[2] = warthog::cbs::NORTH;
-    ec_moves_[3] = warthog::cbs::WEST;
-    ec_moves_[4] = warthog::cbs::EAST;
+    ec_moves_[warthog::cbs::NORTH] = warthog::cbs::SOUTH;
+    ec_moves_[warthog::cbs::SOUTH] = warthog::cbs::NORTH;
+    ec_moves_[warthog::cbs::EAST] = warthog::cbs::WEST;
+    ec_moves_[warthog::cbs::WEST] = warthog::cbs::EAST;
 
     // for quickly computing successor xy_id values
-    xy_id_offsets_[0] = 0;
-    xy_id_offsets_[1] = -1 * (int32_t)map_width_;
-    xy_id_offsets_[2] = (int32_t)map_width_;
-    xy_id_offsets_[3] = 1;
-    xy_id_offsets_[4] = -1;
+    xy_id_offsets_[warthog::cbs::NORTH] = (uint32_t)(-1 * (int32_t)map_width_);
+    xy_id_offsets_[warthog::cbs::SOUTH] = map_width_;
+    xy_id_offsets_[warthog::cbs::EAST] = 1;
+    xy_id_offsets_[warthog::cbs::WEST] = (uint32_t)-1;
 
-    opposite_dir[0] = warthog::jps::NONE;
-    opposite_dir[1] = warthog::jps::SOUTH;
-    opposite_dir[2] = warthog::jps::NORTH;
-    opposite_dir[3] = warthog::jps::WEST;
-    opposite_dir[4] = warthog::jps::EAST;
+    // for quickly computing successor gm_id values
+    gm_id_offsets_[warthog::cbs::NORTH] = (uint32_t)(-1 * (int32_t)gm_map_width_);
+    gm_id_offsets_[warthog::cbs::SOUTH] = gm_map_width_;
+    gm_id_offsets_[warthog::cbs::EAST] = 1;
+    gm_id_offsets_[warthog::cbs::WEST] = (uint32_t)-1;
+
+    opposite_dir_[warthog::cbs::NORTH] = warthog::jps::SOUTH;
+    opposite_dir_[warthog::cbs::SOUTH] = warthog::jps::NORTH;
+    opposite_dir_[warthog::cbs::EAST] = warthog::jps::WEST;
+    opposite_dir_[warthog::cbs::WEST] = warthog::jps::EAST;
 }
 
 warthog::temporal_jps_expansion_policy::~temporal_jps_expansion_policy()

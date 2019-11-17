@@ -49,9 +49,7 @@ class jpst_gridmap
             // record the fact that there are temporal obstacles at this location
             uint32_t node_id = y * t_gm_->header_width() + x;
             uint32_t gm_id = t_gm_->to_padded_id(node_id);
-            uint32_t gm_r_id = this->map_id_to_rmap_id(gm_id);
             t_gm_->set_label(gm_id, true);
-            t_gm_r_->set_label(gm_r_id, true);
         }
 
 
@@ -69,9 +67,7 @@ class jpst_gridmap
             // record the fact that there are no temporal obstacles at this location
             uint32_t node_id = y * t_gm_->header_width() + x;
             uint32_t gm_id = t_gm_->to_padded_id(node_id);
-            uint32_t gm_r_id = this->map_id_to_rmap_id(gm_id);
             t_gm_->set_label(gm_id, false);
-            t_gm_r_->set_label(gm_r_id, false);
         }
 
         // return a reference to the (@param index)th safe interval 
@@ -90,42 +86,22 @@ class jpst_gridmap
             return sipp_map_->get_all_intervals(node_id);
         }
 
-        // converts padded gridmap identifiers to padded rotated
-        // gridmap identifiers
-		inline uint32_t
-		map_id_to_rmap_id(uint32_t mapid)
-		{
-			if(mapid == warthog::INF32) { return mapid; }
-
-			uint32_t x, y;
-			uint32_t rx, ry;
-			t_gm_->to_unpadded_xy(mapid, x, y);
-			ry = x;
-			rx = t_gm_->header_height() - y - 1;
-			return t_gm_r_->to_padded_id(rx, ry);
-		}
-
-        // converts padded rotated gridmap identifiers to 
-        // padded (unrotated) gridmap identifiers
-		inline uint32_t
-		rmap_id_to_map_id(uint32_t rmapid)
-		{
-			if(rmapid == warthog::INF32) { return rmapid; }
-
-			uint32_t x, y;
-			uint32_t rx, ry;
-			t_gm_r_->to_unpadded_xy(rmapid, rx, ry);
-			x = ry;
-			y = t_gm_r_->header_width() - rx - 1;
-			return t_gm_->to_padded_id(x, y);
-		}
+        warthog::sipp::safe_interval* 
+        find_first_reachable(uint32_t xy_id, warthog::cost_t current_time)
+        {
+            for(auto& si : intervals_.at(xy_id))
+            {
+                if(si.e_time_ >= current_time) 
+                { return &si; }
+            }
+            return 0;
+        }
 
         size_t
         mem()
         {
             size_t retval = 
             sipp_map_->mem() + 
-            t_gm_r_->mem();
             t_gm_->mem();
             retval += sizeof(this);
 
@@ -137,18 +113,12 @@ class jpst_gridmap
 
         // track which xy locations have temporal obstacles
         warthog::gridmap* t_gm_;
-        warthog::gridmap* t_gm_r_;
 
         // track when temporal obstacles appear and disappear
         warthog::sipp_gridmap* sipp_map_;
 
     private:
         std::vector<std::vector<warthog::sipp::safe_interval>> intervals_;
-
-        warthog::gridmap*
-        create_rmap();
-
-
 };
 
 }

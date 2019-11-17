@@ -199,12 +199,11 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
 
          // all subsequent agents need to avoid locations on the
          // newly found plan (i.e. we perform prioritised planning)
-        // add_higher_priority_plan(sol);
-
-        if(i < hoplan.paths_.size())
-        {
-            add_higher_priority_plan(hoplan.paths_.at(i));
-        }
+         // add_higher_priority_plan(sol);
+         if(i < hoplan.paths_.size())
+         {
+             add_higher_priority_plan(hoplan.paths_.at(i));
+         }
 	}
 
     // some extra info about sipp's performance
@@ -255,6 +254,29 @@ run_jpst(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
     {
         for(uint32_t i = 0; i < sol.path_.size(); i++)
         {
+            uint32_t xy_id = (uint32_t)(sol.path_.at(i).node_id_);
+            if( (i+1) ==  sol.path_.size() )
+            { 
+                // agents occupy their target location for one 
+                // timestep then disappear (DIFFERENT FROM STANDARD MAPF!!)
+                int32_t x, y;
+                expander.get_xy(sol.path_.at(i).node_id_, x, y);
+                warthog::cost_t start_time = sol.path_.at(i).cost_;
+                warthog::cost_t end_time = start_time + 1;
+                jpst_gm.add_obstacle( (uint32_t)x, (uint32_t)y, 
+                    start_time, end_time, warthog::cbs::move::WAIT);
+
+                if(verbose)
+                {
+                    std::cerr  << " add obstacle: " << xy_id 
+                               << " (" << x << ", " << y << ") @ "
+                               << "(" << start_time << ", " << end_time << ") "
+                               << " dir " << warthog::cbs::WAIT << std::endl;
+                }
+
+                break;
+            }
+
             int32_t x, y;
             expander.get_xy(sol.path_.at(i).node_id_, x, y);
 
@@ -282,37 +304,33 @@ run_jpst(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
                            << direction << std::endl;
             }
 
-            if(i == (sol.path_.size()-2))
-            {
-                // after arriving, agents block their target 
-                // location indefinitely 
-                start_time = end_time;
-                end_time = warthog::COST_MAX;
-                jpst_gm.add_obstacle( (uint32_t)nx, (uint32_t)ny, 
-                    end_time, end_time+1, warthog::cbs::move::WAIT);
-                if(verbose)
-                {
-                    std::cerr 
-                        << "add obstacle: (" << nx << ", " << ny 
-                        << ") @ (" << start_time << ", " << end_time
-                        << ") dir WAIT" << std::endl;
-                }
-                break;
-            }
+            //if(i == (sol.path_.size()-2))
+            //{
+            //    // after arriving, agents block their target 
+            //    // location indefinitely 
+            //    start_time = end_time;
+            //    end_time = warthog::COST_MAX;
+            //    jpst_gm.add_obstacle( (uint32_t)nx, (uint32_t)ny, 
+            //        end_time, end_time+1, warthog::cbs::move::WAIT);
+            //    if(verbose)
+            //    {
+            //        std::cerr 
+            //            << "add obstacle: (" << nx << ", " << ny 
+            //            << ") @ (" << start_time << ", " << end_time
+            //            << ") dir WAIT" << std::endl;
+            //    }
+            //    break;
+            //}
         }
     };
 
     // load plans of higher priority agents (if any) and block their
     // temporal locations to avoid collisions
+    warthog::mapf::plan hoplan; 
     if(plan_file != "")
     {
         std::ifstream ifs(plan_file);
-        warthog::mapf::plan hoplan; // higher priority plans
         ifs >> hoplan;
-        for(uint32_t i = 0; i < hoplan.paths_.size(); i++)
-        {
-            add_higher_priority_plan(hoplan.paths_.at(i));
-        }
         ifs.close();
     }
 
@@ -354,6 +372,10 @@ run_jpst(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
         // all subsequent agents need to avoid locations on the
         // newly found plan (i.e. we perform prioritised planning)
         //add_higher_priority_plan(sol);
+        if(i < hoplan.paths_.size())
+        {
+            add_higher_priority_plan(hoplan.paths_.at(i));
+        }
     }
 
     // some extra info about sipp's performance
@@ -457,7 +479,7 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
             if(nx !=  x || ny != y)
             {
                 // compute the opposite direction
-                warthog::cbs::move direction = warthog::cbs::NONE;
+                warthog::cbs::move direction = warthog::cbs::WAIT;
                 if(nx == x && ny < y) {  direction = warthog::cbs::move::SOUTH; }
                 if(nx == x && ny > y) {  direction = warthog::cbs::move::NORTH; }
                 if(nx < x && ny == y) {  direction = warthog::cbs::move::EAST; }

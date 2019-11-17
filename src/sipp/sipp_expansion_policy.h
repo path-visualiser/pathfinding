@@ -272,7 +272,7 @@ class sipp_expansion_policy
             {
                 // we generate safe intervals for adjacent cells but:
                 // (i) only if the successor safe interval begins before 
-                // (i.e. <) the end of the current safe interval and; 
+                // (i.e. <=) the end of the current safe interval and; 
                 // (ii) only if the current safe interval is safe for
                 // the duration of the action that moves the agent
                 // (iii) only if the successor is safe at the time the 

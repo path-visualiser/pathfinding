@@ -127,52 +127,48 @@ class temporal_jps_expansion_policy
 
             // get the parent direction
             warthog::jps::direction lastmove;
+            uint32_t succ_dirs;
             if(p_xy_id == warthog::INF32)
             {
                 lastmove = warthog::jps::NONE;
+                succ_dirs = warthog::jps::ALL;
             }
             else
             {
                 lastmove = warthog::jps::compute_direction_4c(c_xy_id_, 
                                p_xy_id, map_width_);
+                succ_dirs = compute_successor_directions(lastmove);
             }
 
-            // get the tiles around the current node c and determine
-            // which of the available moves are forced and which are natural
-            uint32_t c_tiles;
-            jpst_gm_->gm_->get_neighbours(c_gm_id_, (uint8_t*)&c_tiles);
-            uint32_t succ_dirs = warthog::jps::compute_successors_4c(lastmove, c_tiles);
-
-             // the parent can be forced if there exist temporal obstacles 
-             // at that location (reasoning about time is weird, man)
-             if(lastmove && jpst_gm_->get_all_intervals(p_xy_id).size() > 1)
-             {
-                succ_dirs |= opposite_dir[__builtin_ffs(lastmove)];
-             }
 
             // generate successors
             for(uint32_t i = 0; i < 4; i++)
             {
                 warthog::jps::direction d = (warthog::jps::direction) (1 << i);
+                warthog::cbs::move m = (warthog::cbs::move) i;
                 if(succ_dirs & d)
                 {
+
                     double jumpcost;
                     uint32_t succ_id;
-                    jpl_t_->jump(d, c_gm_id_, target_gm_id_, succ_id, jumpcost);
+                    if(jumplimit_[m] == 1)
+                    {
+                        succ_id = c_gm_id_ + gm_id_offsets_[d];
+                        jumpcost = 1;
+                    }
+                    else
+                    {
+                        jpl_t_->jump(d, c_gm_id_, target_gm_id_, succ_id, jumpcost);
+                    }
 
                     if(succ_id != warthog::INF32)
                     {
-                        int32_t succ_xy_id = 
-                            (int32_t)c_xy_id_ + (int32_t)(xy_id_offsets_[(i+1)]*jumpcost);
+                        uint32_t succ_xy_id = c_xy_id_ + (uint32_t)(xy_id_offsets_[m]*jumpcost);
                         assert(succ_xy_id >= 0);
-                        warthog::cbs::move ec_move = ec_moves_[(i+1)];
-                        generate_successors((uint32_t)succ_xy_id, ec_move, jumpcost);
+                        generate_successors(succ_xy_id, ec_moves_[m], jumpcost);
                     }
                 }
             }
-
-            //if(p_index < (jpst_gm_->get_all_intervals(p_xy_id).size()-1))
-            //{ jump_east( c_xy_id_, c_gm_id_ ); }
         }
 
 		inline void
@@ -243,9 +239,10 @@ class temporal_jps_expansion_policy
 
         warthog::jpst_gridmap* jpst_gm_;
         warthog::jpst_locator* jpl_t_;
-        int32_t xy_id_offsets_[5];
-        warthog::cbs::move ec_moves_[5];
-        warthog::jps::direction opposite_dir[5];
+        uint32_t xy_id_offsets_[4];
+        uint32_t gm_id_offsets_[4];
+        warthog::cbs::move ec_moves_[4];
+        warthog::jps::direction opposite_dir_[4];
 
         // convenience variables
         warthog::search_node* c_node_;
@@ -254,6 +251,8 @@ class temporal_jps_expansion_policy
         uint32_t c_index_;
         uint32_t c_gm_id_;
         warthog::sipp::safe_interval* c_si_;
+
+        uint32_t jumplimit_[4]; 
 
         // convenience variables
         uint32_t map_width_;
@@ -289,14 +288,14 @@ class temporal_jps_expansion_policy
             {
                 // we generate safe intervals for adjacent cells but:
                 // (i) only if the successor safe interval begins before 
-                // (i.e. <) the end of the current safe interval and; 
+                // (i.e. <=) the end of the current safe interval and; 
                 // (ii) only if the current safe interval is safe for
                 // the duration of the action that moves the agent
                 // (iii) only the successor is safe at the time the 
                 // agent finishes moving.
                 warthog::sipp::safe_interval* succ_si = &(neis.at(i));
 
-                if( succ_si->s_time_ < c_si_->e_time_ && 
+                if( succ_si->s_time_ <= c_si_->e_time_ && 
                     c_node_->get_g() < succ_si->e_time_)
                 {
                     // if the adjacent safe interval begins at some time
@@ -315,14 +314,13 @@ class temporal_jps_expansion_policy
                     }
 
                     // prune: not enough time to execute the action
-                    //if((c_node->get_g() + action_cost) > c_si.e_time_) 
-                    //{ continue;  }
+                    if((c_node_->get_g() + action_cost) > c_si_->e_time_) 
+                    { continue;  }
 
-                    // prune: moved to successor but the location is not the
-                    // target and not enough time remains to move again
-                    //if((current->get_g() + action_cost) == succ_si.e_time_
-                    //   && !(succ_xy_id == pi->target_id_))
-                    //{ continue; }
+                    // prune: not enough time remains (successor interval) 
+                    // to execute the proposed action
+                    if((c_node_->get_g() + action_cost) >= succ_si->e_time_) 
+                    { continue;  }
 
                     // generate successor
                     warthog::sn_id_t succ_node_id = succ_xy_id;
@@ -332,11 +330,191 @@ class temporal_jps_expansion_policy
             }
         }
 
+        uint32_t
+        compute_successor_directions(warthog::jps::direction pdir)
+        {
+            uint32_t retval = 0;
+
+            for(uint32_t i = 0; i < 4; i++)
+            { jumplimit_[i] = warthog::INF32; }
+
+            // everything is forced if we have no direction
+            // (special case for the start node)
+            if(pdir == warthog::jps::NONE) 
+            { return warthog::jps::ALL; }
+
+            // parent direction is forced if its tile has temporal obstacles.
+            // jumping is limited to a single step in the forced direction.
+            warthog::cbs::move lastmove = __m2d(pdir); 
+            uint32_t p_gm_id = c_gm_id_ + gm_id_offsets_[ec_moves_[lastmove]];
+            if(jpst_gm_->t_gm_->get_label(p_gm_id))
+            { 
+                retval |= opposite_dir_[lastmove];
+                jumplimit_[opposite_dir_[lastmove]] = 1;
+            }
+
+            // forward direction is always a natural successor.
+            retval |= pdir; 
+
+            uint8_t neis[3];
+            jpst_gm_->t_gm_->get_neighbours(c_gm_id_, neis);
+            switch(pdir)
+            {
+                // for vertical moves, we add forward and horizontal 
+                // directions as natural successors. there are no forced.
+                // moving to a location with temporal obstacles limits jumping.
+                case warthog::jps::NORTH:
+                case warthog::jps::SOUTH:
+                {
+                    retval |= warthog::jps::EAST;
+                    retval |= warthog::jps::WEST;
+                    break;
+                }
+
+                // for horizontal moves, we check vertically for forced neighbours.
+                // jumping in each forced direction is limited to just one step.
+                // we also limit the forward direction to just one step, in case
+                // the just-detected vertical obstacle forms a temporal jump point
+                // (this is just an approximation; checking properly is complicated)
+                case warthog::jps::EAST:
+                {
+                    if(neis[0] & 3)
+                    { 
+                        retval |= warthog::jps::NORTH;
+                        if(neis[0] & 2)
+                        { jumplimit_[lastmove] = 1; }
+                    }
+                    if(neis[2] & 3)
+                    { 
+                        retval |= warthog::jps::SOUTH;
+                        if(neis[2] & 2)
+                        { jumplimit_[lastmove] = 1; }
+                    }
+                    break;
+                }
+                case warthog::jps::WEST:
+                {
+                    if(neis[0] & 6)
+                    { 
+                        retval |= warthog::jps::NORTH;
+                        if(neis[0] & 2)
+                        { jumplimit_[lastmove] = 1; }
+                    }
+                    if(neis[2] & 6)
+                    { 
+                        retval |= warthog::jps::SOUTH;
+                        if(neis[2] & 2)
+                        { jumplimit_[lastmove] = 1; }
+                    }
+                    break;
+                }
+                default:
+                {
+                    assert(true == false);
+                    break;
+                }
+            }
+
+            //// for horizontal moves, we force the up/down directions
+            //// if the tiles there have temporal obstacles
+            //uint32_t gm_id_n = c_gm_id_ + gm_id_offsets_[warthog::cbs::NORTH];
+            //uint32_t gm_id_s = c_gm_id_ + gm_id_offsets_[warthog::cbs::SOUTH];
+            //uint32_t obs_n = jpst_gm_->t_gm_->get_label(gm_id_n);
+            //uint32_t obs_s = jpst_gm_->t_gm_->get_label(gm_id_s);
+            //retval |= obs_n << warthog::cbs::NORTH;
+            //retval |= obs_s << warthog::cbs::SOUTH;
+
+            //if(obs_s | obs_n) { emulate_sipp_ = true; } 
+
+
+            //uint8_t tiles[3];
+            //jpst_gm_->t_gm_->get_neighbours(c_gm_id_, tiles);
+
+            //warthog::cost_t p_steptime = c_node_->get_g() - 1;
+            //bool pstep_n  = can_step(p_xy_id, p_gm_id, 
+            //                  p_steptime, warthog::cbs::NORTH);
+            //bool pstep_s  = can_step(p_xy_id, p_gm_id, 
+            //                  p_steptime, warthog::cbs::SOUTH);
+
+            //if(pdir == warthog::jps::EAST)
+            //{
+            //    // force locations above and below if they have 
+            //    // temporal obstacles
+            //    retval |= ((tiles[0] & 2u) >> 1) << warthog::cbs::NORTH;
+            //    retval |= ((tiles[2] & 2u) >> 1) << warthog::cbs::SOUTH;
+
+            //    // force locations above and below if temporal 
+            //    // obstacles block the alternative canonical path
+            //    // i.e. if the vertical move at the parent is blocked
+            //    if( (tiles[0] & 3) == 1u && pstep_n)
+            //    { retval |= warthog::jps::NORTH; }
+            //    if( (tiles[2] & 3) == 1u && pstep_s)
+            //    { retval |= warthog::jps::SOUTH; }
+            //}
+
+            //if(pdir == warthog::jps::WEST)
+            //{
+            //    // force locations above and below if they have 
+            //    // temporal obstacles
+            //    retval |= (tiles[0] & 2u) << warthog::cbs::NORTH;
+            //    retval |= (tiles[2] & 2u) << warthog::cbs::SOUTH;
+
+            //    // force locations above and below if temporal 
+            //    // obstacles block the alternative canonical path
+            //    // i.e. if the vertical move at the parent is blocked
+            //    if( (tiles[0] & 6) == 1 && pstep_n)
+            //    { retval |= warthog::jps::NORTH; }
+            //    if((tiles[2] & 6) == 1 && pstep_s)
+            //    { retval |= warthog::jps::SOUTH; }
+            //}
+
+            return retval;
+         }
+
+         // can the agent step grid optimally in direction @param d1
+         // from the location @param xy_id at the proposed @param time?
+         // @return true if the agent can step, and false otherwise
+         bool 
+         can_step(uint32_t xy_id, uint32_t gm_id, 
+                  warthog::cost_t time, warthog::cbs::move d1)
+         {
+            uint32_t d1_xy_id = xy_id + xy_id_offsets_[d1];
+            uint32_t d1_gm_id = gm_id + gm_id_offsets_[d1];
+            assert(xy_id >= 0 && gm_id >= 0);
+
+            // is there a permanent obstacle in direction d1?
+            if(jpst_gm_->gm_->get_label(d1_gm_id) == 0)
+            { return false; }
+
+            // is there a temporary obstacle in direction d1?
+            bool can_step_d1 = false;
+            warthog::cost_t can_step_d1_time = time + 1;
+            if(jpst_gm_->t_gm_->get_label(d1_gm_id))
+            {
+                // can we move in direction d1 grid optimally?
+                warthog::sipp::safe_interval* d1_si = 
+                    jpst_gm_->find_first_reachable(
+                        d1_xy_id, can_step_d1_time);
+                can_step_d1 = d1_si && 
+                          ((d1_si->s_time_ < can_step_d1_time) ||
+                          (d1_si->s_time_ == can_step_d1_time &&
+                          d1_si->action_ != ec_moves_[d1]));
+            }
+            return can_step_d1;
+         }
+
         inline void 
         add_neighbour(warthog::search_node* nei, double cost)
         {
             neis_->push_back(neighbour_record(nei, cost));
             //std::cout << " neis_.size() == " << neis_->size() << std::endl;
+        }
+
+        inline warthog::cbs::move
+        __m2d(warthog::jps::direction dir)
+        {
+            assert(dir != warthog::jps::NONE);
+            return (warthog::cbs::move)(__builtin_ffs(dir)-1);
         }
 };
 
