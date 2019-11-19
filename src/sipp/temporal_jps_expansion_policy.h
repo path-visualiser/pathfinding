@@ -117,11 +117,6 @@ class temporal_jps_expansion_policy
         {
             reset();
 
-            if(jpst_gm_->t_gm_->height() != 262)
-            {
-                std::cerr << "!!!\n";
-            }
-
             c_node_ = c_node;
             c_xy_id_ = (uint32_t)(c_node->get_id() & UINT32_MAX);
             c_index_ = (uint32_t)(c_node->get_id() >> 32);
