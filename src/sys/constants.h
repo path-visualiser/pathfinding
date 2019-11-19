@@ -41,6 +41,7 @@ namespace warthog
 
     typedef double cost_t;
     static const cost_t COST_MAX = DBL_MAX; 
+    static const cost_t COST_MIN = DBL_MIN;
 
 	// hashing constants
 	static const uint32_t FNV32_offset_basis = 2166136261;

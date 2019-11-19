@@ -103,7 +103,7 @@ class temporal_jps_expansion_policy
         void
         get_xy(sn_id_t node_id, int32_t& x, int32_t& y) 
         {
-            uint32_t xy_id = (uint32_t)(node_id & INT32_MAX);
+            uint32_t xy_id = (uint32_t)(node_id & UINT32_MAX);
             y = (int32_t)(xy_id / jpst_gm_->gm_->header_width());
             x = (int32_t)(xy_id % jpst_gm_->gm_->header_width());
         }
@@ -116,6 +116,11 @@ class temporal_jps_expansion_policy
 		expand(warthog::search_node* c_node, warthog::problem_instance* problem)
         {
             reset();
+
+            if(jpst_gm_->t_gm_->height() != 262)
+            {
+                std::cerr << "!!!\n";
+            }
 
             c_node_ = c_node;
             c_xy_id_ = (uint32_t)(c_node->get_id() & UINT32_MAX);
@@ -131,14 +136,14 @@ class temporal_jps_expansion_policy
             if(p_xy_id == warthog::INF32)
             {
                 lastmove = warthog::jps::NONE;
-                succ_dirs = warthog::jps::ALL;
             }
             else
             {
-                lastmove = warthog::jps::compute_direction_4c(c_xy_id_, 
+                lastmove = 
+                    warthog::jps::compute_direction_4c(c_xy_id_, 
                                p_xy_id, map_width_);
-                succ_dirs = compute_successor_directions(lastmove);
             }
+            succ_dirs = compute_successor_directions(lastmove);
 
 
             // generate successors
@@ -153,8 +158,10 @@ class temporal_jps_expansion_policy
                     uint32_t succ_id;
                     if(jumplimit_[m] == 1)
                     {
-                        succ_id = c_gm_id_ + gm_id_offsets_[d];
+                        succ_id = c_gm_id_ + gm_id_offsets_[m];
                         jumpcost = 1;
+                        if(!jpst_gm_->gm_->get_label(succ_id))
+                        { succ_id = warthog::INF32; }
                     }
                     else
                     {
@@ -281,6 +288,7 @@ class temporal_jps_expansion_policy
         generate_successors( uint32_t succ_xy_id, warthog::cbs::move ec_direction, 
                              warthog::cost_t action_cost )
         {
+            warthog::cost_t firstmove_cost = 1;
             // iterate over adjacent safe intervals
             std::vector<warthog::sipp::safe_interval>& neis 
                 = jpst_gm_->get_all_intervals(succ_xy_id);
@@ -313,8 +321,8 @@ class temporal_jps_expansion_policy
                         { continue; }
                     }
 
-                    // prune: not enough time to execute the action
-                    if((c_node_->get_g() + action_cost) > c_si_->e_time_) 
+                    // prune: not enough time to jump away from the current node
+                    if((c_node_->get_g() + firstmove_cost) > c_si_->e_time_) 
                     { continue;  }
 
                     // prune: not enough time remains (successor interval) 
@@ -338,10 +346,29 @@ class temporal_jps_expansion_policy
             for(uint32_t i = 0; i < 4; i++)
             { jumplimit_[i] = warthog::INF32; }
 
+            uint8_t neis[4];
+            jpst_gm_->gm_->get_neighbours(c_gm_id_, neis);
+            retval = warthog::jps::compute_successors_4c(pdir, *((uint32_t*)neis));
+
             // everything is forced if we have no direction
             // (special case for the start node)
             if(pdir == warthog::jps::NONE) 
-            { return warthog::jps::ALL; }
+            { 
+                retval |= warthog::jps::ALL; 
+                if(neis[0] & 2) 
+                {
+                    jumplimit_[warthog::cbs::NORTH] = 1;
+                    jumplimit_[warthog::cbs::EAST] = 1;
+                    jumplimit_[warthog::cbs::WEST] = 1;
+                }
+                if(neis[2] & 2) 
+                {
+                    jumplimit_[warthog::cbs::SOUTH] = 1;
+                    jumplimit_[warthog::cbs::EAST] = 1;
+                    jumplimit_[warthog::cbs::WEST] = 1;
+                }
+                return retval;
+            }
 
             // parent direction is forced if its tile has temporal obstacles.
             // jumping is limited to a single step in the forced direction.
@@ -350,24 +377,39 @@ class temporal_jps_expansion_policy
             if(jpst_gm_->t_gm_->get_label(p_gm_id))
             { 
                 retval |= opposite_dir_[lastmove];
-                jumplimit_[opposite_dir_[lastmove]] = 1;
+                jumplimit_[ec_moves_[lastmove]] = 1;
             }
 
-            // forward direction is always a natural successor.
-            retval |= pdir; 
-
-            uint8_t neis[3];
+            //uint8_t neis[4];
             jpst_gm_->t_gm_->get_neighbours(c_gm_id_, neis);
             switch(pdir)
             {
                 // for vertical moves, we add forward and horizontal 
                 // directions as natural successors. there are no forced.
-                // moving to a location with temporal obstacles limits jumping.
+                // when there are temporal obstacles in the vertical direction 
+                // we limit jumping in each natural direction to a single step
                 case warthog::jps::NORTH:
+                {
+                    retval |= warthog::jps::EAST;
+                    retval |= warthog::jps::WEST;
+                    if(neis[0] & 2)
+                    {
+                        jumplimit_[warthog::cbs::NORTH] = 1;
+                        jumplimit_[warthog::cbs::WEST] = 1;
+                        jumplimit_[warthog::cbs::EAST] = 1;
+                    }
+                    break;
+                }
                 case warthog::jps::SOUTH:
                 {
                     retval |= warthog::jps::EAST;
                     retval |= warthog::jps::WEST;
+                    if(neis[2] & 2)
+                    {
+                        jumplimit_[warthog::cbs::SOUTH] = 1;
+                        jumplimit_[warthog::cbs::EAST] = 1;
+                        jumplimit_[warthog::cbs::WEST] = 1;
+                    }
                     break;
                 }
 
@@ -382,13 +424,19 @@ class temporal_jps_expansion_policy
                     { 
                         retval |= warthog::jps::NORTH;
                         if(neis[0] & 2)
-                        { jumplimit_[lastmove] = 1; }
+                        { 
+                            jumplimit_[lastmove] = 1;
+                            jumplimit_[warthog::cbs::NORTH] = 1;
+                        }
                     }
                     if(neis[2] & 3)
                     { 
                         retval |= warthog::jps::SOUTH;
                         if(neis[2] & 2)
-                        { jumplimit_[lastmove] = 1; }
+                        { 
+                            jumplimit_[lastmove] = 1; 
+                            jumplimit_[warthog::cbs::SOUTH] = 1;
+                        }
                     }
                     break;
                 }
@@ -398,13 +446,19 @@ class temporal_jps_expansion_policy
                     { 
                         retval |= warthog::jps::NORTH;
                         if(neis[0] & 2)
-                        { jumplimit_[lastmove] = 1; }
+                        { 
+                            jumplimit_[lastmove] = 1; 
+                            jumplimit_[warthog::cbs::NORTH] = 1;
+                        }
                     }
                     if(neis[2] & 6)
                     { 
                         retval |= warthog::jps::SOUTH;
                         if(neis[2] & 2)
-                        { jumplimit_[lastmove] = 1; }
+                        { 
+                            jumplimit_[lastmove] = 1; 
+                            jumplimit_[warthog::cbs::SOUTH] = 1;
+                        }
                     }
                     break;
                 }

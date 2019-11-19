@@ -49,7 +49,6 @@ void
 warthog::jpst_locator::jump_south(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost)
 {
-    uint32_t num_steps = 0;
     uint32_t mapw = jpst_gm_->gm_->width();
 
     uint32_t jp_w_id;
@@ -57,20 +56,35 @@ warthog::jpst_locator::jump_south(uint32_t node_id,
     double jp_w_cost;
     double jp_e_cost;
 
-    uint32_t next_id = node_id;
+    uint32_t next_id = node_id += mapw;
+    uint32_t num_steps = 1;
     while(true)
     {
-        next_id += mapw;
-        num_steps++;
-
         // verify the next location is traversable
 		if(!jpst_gm_->gm_->get_label(next_id))
-        { next_id = warthog::INF32; break; }
+        {
+            next_id = warthog::INF32; 
+            break; 
+        }
+
+        // stop if the next location has temporal obstacles;
+        // take one step back and generate a jump point
+		if(jpst_gm_->t_gm_->get_label(next_id))
+        { 
+        //    next_id -= mapw; 
+        //    num_steps--;
+        //    assert(num_steps > 0);
+            break;
+        }
 
         jump_east(next_id, goal_id, jp_e_id, jp_e_cost);
 		if(jp_e_id != warthog::INF32) { break; }
         jump_west(next_id, goal_id, jp_w_id, jp_w_cost);
 		if(jp_w_id != warthog::INF32) { break; }
+
+        next_id += mapw;
+        num_steps++;
+
     }
     jumpnode_id = next_id;
     jumpcost = num_steps;
@@ -85,7 +99,6 @@ void
 warthog::jpst_locator::jump_north(uint32_t node_id, 
 		uint32_t goal_id, uint32_t& jumpnode_id, double& jumpcost)
 {
-    uint32_t num_steps = 0;
     uint32_t mapw = jpst_gm_->gm_->width();
 
     uint32_t jp_w_id;
@@ -93,20 +106,34 @@ warthog::jpst_locator::jump_north(uint32_t node_id,
     double jp_w_cost;
     double jp_e_cost;
 
-    uint32_t next_id = node_id;
+    uint32_t next_id = node_id -= mapw;
+    uint32_t num_steps = 1;
     while(true)
     {
-        next_id -= mapw;
-        num_steps++;
-
-        // verify the next location is traversable
+        // stop if the current location is a deadend
 		if(!jpst_gm_->gm_->get_label(next_id))
-        { next_id = warthog::INF32; break; }
+        { 
+            next_id = warthog::INF32; break; 
+        }
+
+        // stop if the current location has temporal obstacles;
+        // take one step back and generate a jump point
+		if(jpst_gm_->t_gm_->get_label(next_id))
+        { 
+        //    num_steps--; 
+        //    next_id += mapw; 
+        //    assert(num_steps > 0);
+            break; 
+        }
 
         jump_east(next_id, goal_id, jp_e_id, jp_e_cost);
 		if(jp_e_id != warthog::INF32) { break; }
         jump_west(next_id, goal_id, jp_w_id, jp_w_cost);
 		if(jp_w_id != warthog::INF32) { break; }
+
+        next_id -= mapw;
+        num_steps++;
+
     }
 
     jumpnode_id = next_id;
@@ -174,6 +201,18 @@ warthog::jpst_locator::__jump_east(uint32_t node_id,
 	uint32_t neis[3] = {0, 0, 0};
 	jumpnode_id = node_id + 1;
 
+    uint8_t tmp[3];
+    jpst_gm_->t_gm_->get_neighbours(node_id, tmp);
+    if((tmp[0] | tmp[2]) & 1) 
+    { 
+        jumpcost = jumpnode_id - node_id;
+        if(jumpnode_id > max_id)
+        {
+            jumpnode_id = warthog::INF32;
+        }
+        return;
+    }
+
 	while(jumpnode_id <= max_id)
 	{
 		// read in tiles from 3 adjacent rows. the curent node 
@@ -209,6 +248,19 @@ warthog::jpst_locator::__jump_west(uint32_t node_id,
     uint32_t min_id = node_id - jumplimit;
 	uint32_t neis[3] = {0, 0, 0};
 	jumpnode_id = node_id - 1;
+
+    uint8_t tmp[3];
+    jpst_gm_->t_gm_->get_neighbours(node_id, tmp);
+    if((tmp[0] | tmp[2]) & 4) 
+    { 
+        // return the jump point
+        jumpcost = node_id - jumpnode_id;
+        if(jumpnode_id < min_id)
+        {
+            jumpnode_id = warthog::INF32;
+        }
+        return;
+    }
 
 	while(jumpnode_id >= min_id)
 	{

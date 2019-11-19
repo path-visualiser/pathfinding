@@ -11,16 +11,17 @@ warthog::sipp_gridmap::sipp_gridmap(warthog::gridmap* gm)
         uint32_t gm_id = gm->to_padded_id(i);
 
         warthog::sipp::safe_interval si; 
-        si.e_time_ = warthog::COST_MAX;
-
         if(!gm_->get_label(gm_id))
-        { si.s_time_ = warthog::COST_MAX; }
+        { 
+            si.e_time_ = warthog::COST_MIN;
+            si.s_time_ = warthog::COST_MAX;
+        }
         else 
         {
             si.s_time_ = 0; 
+            si.e_time_ = warthog::COST_MAX;
         }
-
-        intervals_.at(i).push_back(warthog::sipp::safe_interval());
+        intervals_.at(i).push_back(si);
     }
 
 //    xy_id_offsets[warthog::cbs::NONE] = 0;

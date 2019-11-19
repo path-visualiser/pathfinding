@@ -174,6 +174,7 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
         warthog::problem_instance pi(startid, goalid, verbose);
         warthog::solution sol;
 
+        //if(i == 621) { pi.verbose_ = true; }
         astar.get_path(pi, sol);
 		std::cout
             << i<<"\t" 
@@ -346,6 +347,7 @@ run_jpst(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
         warthog::problem_instance pi(startid, goalid, verbose);
         warthog::solution sol;
 
+        //if(i == 621) { pi.verbose_ = true; }
         astar.get_path(pi, sol);
     	std::cout
             << i<<"\t" 
