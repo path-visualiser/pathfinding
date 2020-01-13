@@ -27,6 +27,7 @@
 #include <fstream>
 #include <functional>
 #include <iomanip>
+#include <deque>
 #include <sstream>
 #include <string>
 #include <unordered_map>
@@ -152,8 +153,6 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
         }
     };
 
-    // load plans of higher priority agents (if any) and block their
-    // temporal locations to avoid collisions
     warthog::mapf::plan hoplan; 
     if(plan_file != "")
     {
@@ -161,6 +160,11 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
         ifs >> hoplan;
         ifs.close();
     }
+
+    // max number of previous agents still moving when we plan the current
+    // agent (their paths become dynamic obstacles for the current agent). 
+    uint32_t sz_max_queue = 5;
+    std::deque<warthog::mapf::plan> obstacles;
 
 	std::cout 
         << "id\talg\texpanded\tinserted\tupdated\ttouched"
@@ -201,6 +205,19 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
          // all subsequent agents need to avoid locations on the
          // newly found plan (i.e. we perform prioritised planning)
          // add_higher_priority_plan(sol);
+
+         // load plans of higher priority agents (if any) and block their
+         // temporal locations to avoid collisions
+         if(obstacles.size() == sz_max_queue)
+         {
+             obstacles.pop_front();
+         }
+         obstacles.push_back(theplan);
+         for(auto& myplan : obstacles)
+         {
+             add_higher_priority_plan(myplan);
+         }
+
          if(i < hoplan.paths_.size())
          {
              add_higher_priority_plan(hoplan.paths_.at(i));
