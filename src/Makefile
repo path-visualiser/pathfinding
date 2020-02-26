@@ -12,8 +12,8 @@ D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
 					 -I./heuristics -I./jps -I./contraction -I./label \
 					 -I./memory -I./mapf -I./sys -I./sipp -I./cpd
 
-D_INCLUDES = -I/usr/include -I/usr/local/include $(D_WARTHOG_INCLUDES)
-D_LIBS = -L/usr/local/lib -L./lib
+D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include 
+D_LIBS = -L./lib -L/usr/local/lib 
 
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wconversion
 FAST_CFLAGS = -O3 -DNDEBUG
