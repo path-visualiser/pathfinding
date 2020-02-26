@@ -24,21 +24,6 @@
 #define QUICK_LOG 0
 #endif
 
-
-/**
- * always log an entry via std cio
- *
- * Does no impact performances whatsoever
- *
- * @code
- * 	debug("hello", person->name, "!");
- * @endcode
- *
- * @param[in] level the name of the log level
- * @param[in] ... the entries to put on stream
- */
-#define _abstractLog(level, ...) std::cerr <<  "[" << level << "] " << getBaseName(__FILE__) << "@" << __func__ << "[" << __LINE__ << "] " << _debug(__VA_ARGS__) << std::endl
-
 #if QUICK_LOG <= 0
 /**
  * always log an entry via std cio
@@ -197,16 +182,34 @@
 #define _debug(...) FOR_EACH(, _LOG_OP, _LOG_COMB, __VA_ARGS__)
 
 #if defined(DEBUG) || !defined(NDEBUG)
-    /**
-     * Perform some work if debug has been enabled
-     *
-     *
-     */
-    #define DO_ON_DEBUG_IF(expr) if (expr)
-    #define DO_ON_DEBUG if (true)
+/**
+ * Perform some work if debug has been enabled
+ *
+ *
+ */
+#define DO_ON_DEBUG_IF(expr) if (expr)
+#define DO_ON_DEBUG if (true)
+
+/**
+ * always log an entry via std cio
+ *
+ * Does no impact performances whatsoever
+ *
+ * @code
+ * 	debug("hello", person->name, "!");
+ * @endcode
+ *
+ * @param[in] level the name of the log level
+ * @param[in] ... the entries to put on stream
+ */
+#define _abstractLog(level, ...) std::cerr <<  "[" << level << "] " << getBaseName(__FILE__) << "@" << __func__ << ":" << __LINE__ << " " << _debug(__VA_ARGS__) << std::endl
+
 #else
-    #define DO_ON_DEBUG_IF(expr) if(false)
-    #define DO_ON_DEBUG if (false)
+
+#define DO_ON_DEBUG_IF(expr) if(false)
+#define DO_ON_DEBUG if (false)
+#define _abstractLog(level, ...) ;
+
 #endif
 
 
