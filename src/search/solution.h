@@ -36,7 +36,7 @@ operator<<(std::ostream& out, warthog::state s)
 {
    out << s.node_id_ << " " << s.cost_; 
    return out;
-};
+}
 
 class solution
 {

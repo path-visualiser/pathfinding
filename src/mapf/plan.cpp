@@ -39,7 +39,7 @@ warthog::mapf::operator>>(std::istream& in, warthog::mapf::plan& theplan)
         theplan.paths_.back().path_.push_back(warthog::state(node_id, cost));
     }
     return in;
-};
+}
 
 // write out the current plan
 std::ostream&
@@ -54,4 +54,4 @@ warthog::mapf::operator<<(std::ostream& out, warthog::mapf::plan& theplan)
         }
     }
     return out;
-};
+}

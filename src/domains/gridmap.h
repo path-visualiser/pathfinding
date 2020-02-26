@@ -260,7 +260,7 @@ class gridmap
         {
             for(unsigned int i=0; i < db_size_; i++)
             {
-                db_[i] = ~db_[i];
+                db_[i] = (warthog::dbword)~db_[i];
             }
         }
 

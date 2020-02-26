@@ -3,19 +3,19 @@ WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
 			  $(wildcard heuristics/*.cpp) $(wildcard jps/*.cpp) \
 			  $(wildcard contraction/*.cpp) $(wildcard label/*.cpp) \
 			  $(wildcard memory/*.cpp) $(wildcard mapf/*.cpp) $(wildcard sys/*.cpp) \
-			  $(wildcard sipp/*.cpp) 
+			  $(wildcard sipp/*.cpp) $(wildcard cpd/*.cpp)
 			  
 
 WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 
 D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
 					 -I./heuristics -I./jps -I./contraction -I./label \
-					 -I./memory -I./mapf -I./sys -I./sipp
+					 -I./memory -I./mapf -I./sys -I./sipp -I./cpd
 
 D_INCLUDES = -I/usr/include -I/usr/local/include $(D_WARTHOG_INCLUDES)
 D_LIBS = -L/usr/local/lib -L./lib
 
-CFLAGS = -std=c++11 -pedantic -pthread -Wall -Wconversion -Werror 
+CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wconversion
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 
 #DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments

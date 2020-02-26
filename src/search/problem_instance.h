@@ -9,7 +9,10 @@ namespace warthog
 class problem_instance
 {
 	public:
-        problem_instance(warthog::sn_id_t startid, warthog::sn_id_t targetid=warthog::SN_ID_MAX, bool verbose=0) :
+        problem_instance(
+                warthog::sn_id_t startid, 
+                warthog::sn_id_t targetid=warthog::SN_ID_MAX, 
+                bool verbose=0) :
             start_id_(startid), 
             target_id_(targetid), 
             instance_id_(instance_counter_++),
