@@ -19,10 +19,11 @@ namespace warthog
 class search_node
 {
 	public:
-		search_node(warthog::sn_id_t id = warthog::SN_ID_MAX) : 
-            id_(id), parent_id_(warthog::SN_ID_MAX), 
-            g_(warthog::COST_MAX), f_(warthog::COST_MAX), 
-            status_(0), priority_(warthog::INF32), search_number_(0)
+		search_node(warthog::sn_id_t id = warthog::SN_ID_MAX) :
+            id_(id), parent_id_(warthog::SN_ID_MAX),
+            g_(warthog::COST_MAX), f_(warthog::COST_MAX),
+            status_(0), priority_(warthog::INF32), search_number_(0),
+            ub_(warthog::COST_MAX)
 		{
             set_pdir(warthog::jps::direction::NONE);
 			refcount_++;
@@ -34,12 +35,17 @@ class search_node
 		}
 
 		inline void
-		init(uint32_t search_number, warthog::sn_id_t parent_id, double g, double f)
+		init(uint32_t search_number,
+             warthog::sn_id_t parent_id,
+             double g,
+             double f,
+             warthog::cost_t ub=warthog::COST_MAX)
 		{
 			status_ = 0;
             parent_id_= parent_id;
             f_ = f;
             g_ = g;
+            ub_ = ub;
 			search_number_ = search_number;
 		}
 
@@ -111,6 +117,13 @@ class search_node
 		set_f(double f) { f_ = f; }
 
 		inline void 
+		inline warthog::cost_t
+		get_ub() const { return ub_; }
+
+		inline void
+		set_ub(warthog::cost_t ub) { ub_ = ub; }
+
+		inline void
 		relax(double g, warthog::sn_id_t parent_id)
 		{
 			assert(g < g_);
@@ -197,15 +210,15 @@ class search_node
 			return false;
 		}
 
-		inline void 
+		inline void
 		print(std::ostream&  out) const
 		{
 			out << "search_node id:" << get_id();
             out << " p_id: ";
             out << parent_id_;
-            out << " g: "<<g_ <<" f: "<<this->get_f() 
-            << " expanded: " << get_expanded() << " " 
-            << " search_number_: " << search_number_ 
+            out << " g: "<<g_ <<" f: "<<this->get_f()
+            << " expanded: " << get_expanded() << " "
+            << " search_number_: " << search_number_
             << " pdir: "<< get_pdir() << " ";
 		}
 
@@ -215,7 +228,7 @@ class search_node
 			return sizeof(*this);
 		}
 
-        static uint32_t 
+        static uint32_t
         get_refcount() { return refcount_; }
 
 	private:
@@ -228,6 +241,7 @@ class search_node
 
 		uint32_t search_number_;
         uint8_t jps_parent_direction_; // hack
+        warthog::cost_t ub_;
 
 
 static uint32_t refcount_;
@@ -269,4 +283,3 @@ struct cmp_less_search_node_f_only
 }
 
 #endif
-
