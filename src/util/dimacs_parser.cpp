@@ -94,6 +94,7 @@ warthog::dimacs_parser::load_graph(const char* filename)
                 edges_->reserve(tmp_num_edges);
 				retval = load_gr_file(*fdimacs);
                 gr_file_ = filename;
+                assert(tmp_num_edges == get_num_edges());
                 std::cerr << "done\n";
                 break;
 			}
@@ -131,11 +132,12 @@ warthog::dimacs_parser::load_graph(const char* filename)
                             return 0;
                         }
                         std::cerr 
-                            << "loading " << nodes_->capacity() << " nodes "
+                            << "loading " << tmp_num_nodes << " nodes "
                             << "from " << filename << " ... ";
                         nodes_->reserve(tmp_num_nodes);
                         retval = load_co_file(*fdimacs);
                         gr_file_ = filename;
+                        assert(tmp_num_nodes == get_num_nodes());
                         std::cerr << "done\n";
                         break;
                     }
