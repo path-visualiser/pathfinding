@@ -36,7 +36,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define debug(...) _abstractLog("DEBUG", __VA_ARGS__)
+#define debug(p, ...) _abstractLog("DEBUG", p, __VA_ARGS__)
 #else
 #define debug(...) ;
 #endif
@@ -70,7 +70,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define info(...) _abstractLog("INFO ", __VA_ARGS__)
+#define info(p, ...) _abstractLog("INFO ", p, __VA_ARGS__)
 #else
 #define info(...) ;
 #endif
@@ -87,7 +87,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define user(...) _abstractLog("USER ", __VA_ARGS__)
+#define user(p, ...) _abstractLog("USER ", p, __VA_ARGS__)
 #else
 #define user(...) ;
 #endif
@@ -104,7 +104,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define warning(...) _abstractLog("WARN ", __VA_ARGS__)
+#define warning(p, ...) _abstractLog("WARN ", p, __VA_ARGS__)
 #else
 #define warning(...) ;
 #endif
@@ -121,7 +121,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define error(...) _abstractLog("ERROR", __VA_ARGS__)
+#define error(p, ...) _abstractLog("ERROR", p, __VA_ARGS__)
 #else
 #define error(...) ;
 #endif
@@ -138,7 +138,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define critical(...) _abstractLog("CRTCL", __VA_ARGS__)
+#define critical(p, ...) _abstractLog("CRTCL", p, __VA_ARGS__)
 #else
 #define critical(...) ;
 #endif
@@ -202,7 +202,7 @@
  * @param[in] level the name of the log level
  * @param[in] ... the entries to put on stream
  */
-#define _abstractLog(level, ...) std::cerr <<  "[" << level << "] " << getBaseName(__FILE__) << "@" << __func__ << ":" << __LINE__ << " " << _debug(__VA_ARGS__) << std::endl
+#define _abstractLog(level, p, ...) if (p) std::cerr <<  "[" << level << "] " << getBaseName(__FILE__) << "@" << __func__ << ":" << __LINE__ << " " << _debug(__VA_ARGS__) << std::endl
 
 #else
 
