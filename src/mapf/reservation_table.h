@@ -107,6 +107,15 @@ class reservation_table
             }
         }
 
+        size_t
+        mem()
+        {
+            size_t retval = sizeof(this);
+            retval += pool_->mem();
+            retval += sizeof(uint64_t*)*table_.size();
+            return retval;
+        }
+
     private:
         std::vector<uint64_t*> table_;
         uint32_t map_sz_;

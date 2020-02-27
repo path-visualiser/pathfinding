@@ -2,29 +2,30 @@ WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
 			  $(wildcard search/*.cpp) $(wildcard experimental/*.cpp) \
 			  $(wildcard heuristics/*.cpp) $(wildcard jps/*.cpp) \
 			  $(wildcard contraction/*.cpp) $(wildcard label/*.cpp) \
-			  $(wildcard memory/*.cpp) $(wildcard mapf/*.cpp) $(wildcard sys/*.cpp) 
+			  $(wildcard memory/*.cpp) $(wildcard mapf/*.cpp) $(wildcard sys/*.cpp) \
+			  $(wildcard sipp/*.cpp) $(wildcard cpd/*.cpp)
 			  
 
 WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 
 D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
 					 -I./heuristics -I./jps -I./contraction -I./label \
-					 -I./memory -I./mapf -I./sys
+					 -I./memory -I./mapf -I./sys -I./sipp -I./cpd
 
-D_INCLUDES = -I/usr/include -I/usr/local/include $(D_WARTHOG_INCLUDES)
-D_LIBS = -L/usr/local/lib -L./lib
+D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include 
+D_LIBS = -L./lib -L/usr/local/lib 
 
-CFLAGS = -std=c++11 -pedantic -pthread -Wall -Wconversion -Werror 
+CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion
 FAST_CFLAGS = -O3 -DNDEBUG
 DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 
 #DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
 PROFILE_CFLAGS = $(DEV_CFLAGS) -DNDEBUG 
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
-  CC = clang++
+  CC = g++
   CFLAGS += -DOS_MAC
 else
-  CC = clang++
+  CC = g++
   ifeq ("$(findstring Linux, "$(shell uname -s)")", "Linux")
     D_LIBS += -lrt
   endif
@@ -76,6 +77,7 @@ main: makedirs warthog
 	@echo "linking..."
 	$(CC) programs/warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/roadhog.cpp -o ./bin/roadhog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/mapf.cpp -o ./bin/mapf -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: extras__
 extras__: makedirs warthog 

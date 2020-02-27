@@ -16,6 +16,7 @@
 //
 
 #include "forward.h"
+#include "helpers.h"
 
 #include <stdint.h>
 #include <unordered_map>
@@ -49,6 +50,33 @@ const uint32_t JPS_ID_MASK = (1 << 24)-1;
 warthog::jps::direction
 compute_direction(uint32_t px, uint32_t py, uint32_t x, uint32_t y);
 
+// compute the 4-connected canonical direction of travel, 
+// from (px, py) to (x, y)
+inline warthog::jps::direction
+compute_direction_4c(int32_t px, int32_t py, int32_t x, int32_t y)
+{
+    int32_t delta_x  = (px - x);
+    int32_t delta_y  = (py - y);
+
+    warthog::jps::direction d;
+    d = (delta_y < 0) ? warthog::jps::NORTH : warthog::jps::SOUTH;
+
+    if(delta_x)
+    {
+        d = (delta_x < 0) ? warthog::jps::WEST : warthog::jps::EAST;
+    }
+    return d; 
+}
+
+inline warthog::jps::direction
+compute_direction_4c(uint32_t n1_xy_id, uint32_t n2_xy_id, uint32_t mapwidth)
+{
+    int32_t x1, y1, x2, y2;
+    warthog::helpers::index_to_xy(n1_xy_id, mapwidth, x1, y1);
+    warthog::helpers::index_to_xy(n2_xy_id, mapwidth, x2, y2);
+    return warthog::jps::compute_direction_4c(x1, y1, x2, y2);
+}
+
 // Computes the set of "forced" directions in which to search for jump points
 // from a given location (x, y). 
 // A neighbour is forced if it cannot be proven that there is at least one 
@@ -67,7 +95,7 @@ compute_natural(warthog::jps::direction d, uint32_t tiles);
 // @param d: the direction of travel used to reach (x, y)
 // @param tiles: the 3x3 square of cells having (x, y) at its centre.
 //
-// @return an integer representing the set of forced directions.
+// @return an integer representing the set of forced and natural directions.
 // Each of the first 8 bits of the returned value, when set, correspond to a
 // direction, as defined in warthog::jps::direction
 inline uint32_t
@@ -77,6 +105,75 @@ compute_successors(warthog::jps::direction d, uint32_t tiles)
 	   	warthog::jps::compute_natural(d, tiles);
 }
 
+// Computes all the natural and forced directions of a node (x, y)
+// This function is specialised for 4-connected uniform cost grid maps.
+// 
+// @param d: the direction of travel used to reach (x, y)
+// @param tiles: the 3x3 square of cells having (x, y) at its centre.
+//
+// @return an integer representing the set of forced and natural directions.
+// The bits of the lowest byte, when set, each correspond to a specific direction, 
+// as defined in warthog::jps::direction
+inline uint32_t 
+compute_successors_4c(warthog::jps::direction d, uint32_t tiles)
+{
+    uint32_t retval = 0;
+    switch(d)
+    {
+        case warthog::jps::NORTH:
+        {
+            // all natural, nothing forced
+            retval = 
+                warthog::jps::NORTH | warthog::jps::EAST | warthog::jps::WEST; 
+            break;
+        }
+        case warthog::jps::SOUTH:
+        {
+            // all natural, nothing forced
+            retval = 
+                warthog::jps::SOUTH | warthog::jps::EAST | warthog::jps::WEST; 
+            break;
+        }
+        case warthog::jps::EAST:
+        {
+            // natural
+            retval = warthog::jps::EAST;
+
+            // forced
+			uint32_t force_n = ((tiles & 3) == 2);
+            retval |= force_n;        // force north
+
+            uint32_t force_s= ((tiles & 196608) == 131072);
+            retval |= (force_s << 1); // force south
+			break;
+
+        }
+        case warthog::jps::WEST:
+        {
+            // natural
+            retval = warthog::jps::WEST;
+
+            // forced
+            uint32_t force_n = ((tiles & 6) == 2);
+            retval |= force_n;        // force north
+
+			uint32_t force_s = ((tiles & 393216) == 131072);
+            retval |= (force_s << 1); // force south
+			break;
+        }
+        case warthog::jps::NONE:
+        {
+            // all natural, nothing forced
+            retval = 
+                warthog::jps::NORTH | warthog::jps::SOUTH |
+                warthog::jps::EAST | warthog::jps::WEST;
+            break;
+        }
+        default:
+            break;
+    }
+    return retval;
+}
 
 // creates a warthog::graph::xy_graph which contains only 
 // nodes that are jump points and edges which represent valid jumps,

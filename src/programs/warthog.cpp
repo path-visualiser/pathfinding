@@ -1,4 +1,4 @@
-// gridhog.cpp
+// warthog.cpp
 //
 // Pulls together a variety of different algorithms 
 // for pathfinding on grid graphs.
@@ -8,23 +8,26 @@
 //
 
 #include "cbs.h"
+#include "cbs_ll_expansion_policy.h"
 #include "cbs_ll_heuristic.h"
 #include "cfg.h"
 #include "constants.h"
 #include "flexible_astar.h"
+#include "four_connected_jps_locator.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
-#include "cbs_ll_expansion_policy.h"
 #include "jps_expansion_policy.h"
 #include "jps2_expansion_policy.h"
-#include "jpsplus_expansion_policy.h"
 #include "jps2plus_expansion_policy.h"
+#include "jps4c_expansion_policy.h"
+#include "jpsplus_expansion_policy.h"
 #include "ll_expansion_policy.h"
 #include "manhattan_heuristic.h"
 #include "octile_heuristic.h"
 #include "scenario_manager.h"
 #include "timer.h"
 #include "labelled_gridmap.h"
+#include "sipp_expansion_policy.h"
 #include "vl_gridmap_expansion_policy.h"
 #include "zero_heuristic.h"
 
@@ -56,8 +59,8 @@ help()
 	<< "\t--checkopt (optional)\n"
 	<< "\t--verbose (optional)\n"
     << "\nRecognised values for --alg:\n"
-    << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, 4c_astar, sssp\n"
-    << "\tjps, jps2, jps+, jps2+, jps\n"
+    << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, astar4c, sipp\n"
+    << "\tsssp, jps, jps2, jps+, jps2+, jps, jps4c\n"
     << "\tcpg, jpg\n";
 }
 
@@ -217,6 +220,25 @@ run_jps(warthog::scenario_manager& scenmgr, std::string alg_name)
 }
 
 void
+run_jps4c(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::jps4c_expansion_policy expander(&map);
+	warthog::manhattan_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
+
+	warthog::flexible_astar<
+		warthog::manhattan_heuristic,
+	   	warthog::jps4c_expansion_policy,
+        warthog::pqueue_min> 
+            astar(&heuristic, &expander, &open);
+
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
 run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
@@ -236,7 +258,7 @@ run_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 }
 
 void
-run_4c_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
+run_astar4c(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
 	warthog::gridmap_expansion_policy expander(&map, true);
@@ -255,12 +277,34 @@ run_4c_astar(warthog::scenario_manager& scenmgr, std::string alg_name)
 }
 
 void
+run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
+	warthog::manhattan_heuristic heuristic(gm.header_width(), gm.header_height());
+    warthog::sipp_gridmap sipp_map(&gm);
+	warthog::sipp_expansion_policy expander(&sipp_map);
+    warthog::pqueue_min open;
+
+	warthog::flexible_astar<
+		warthog::manhattan_heuristic,
+	   	warthog::sipp_expansion_policy,
+        warthog::pqueue_min> astar(&heuristic, &expander, &open);
+
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+}
+
+void
 run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
-	warthog::cbs_ll_heuristic heuristic;
+	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::cbs_ll_expansion_policy expander(&gm, &heuristic);
 
+    // the reservation table is just here as an example
+    // for single agent search, or prioritised/rule planning, we 
+    // don't need it. only for decomposition-based algos like CBS
     warthog::reservation_table restab(gm.width()*gm.height());
     warthog::cbs::cmp_cbs_ll_lessthan lessthan(&restab);
     warthog::cbs::pqueue_cbs_ll open(&lessthan);
@@ -283,20 +327,8 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
         warthog::problem_instance pi(startid, goalid, verbose);
         warthog::solution sol;
 
-        // We now precompute a perfect 2D heuristic 
-        // (i.e. ignoring dynamic obstacles and ignoring time)
-        // The heuristic is computed for one agent at a time, however
-        // if we are planning for a team of agents we can precompute such 
-        // heuristics for all agents at the same time. We do this by passing 
-        // all goal ids to the function ::compute_h_values
-        // NB: at 4 bytes per heuristic value, memory can be quickly exhausted 
-        // when the team is large 
-        std::vector<uint32_t> target_locations;
-        target_locations.push_back(goalid);
-        heuristic.compute_h_values(target_locations, &gm);
-
+        // solve and print results
         astar.get_path(pi, sol);
-
 		std::cout
             << i<<"\t" 
             << alg_name << "\t" 
@@ -310,7 +342,7 @@ run_cbs_ll(warthog::scenario_manager& scenmgr, std::string alg_name)
             << scenmgr.last_file_loaded() 
             << std::endl;
 	}
-	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
+	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() + restab.mem() << "\n";
 }
 
 // cbs low-level with variable edge costs
@@ -319,7 +351,7 @@ void
 run_cbs_ll_w(warthog::scenario_manager& scenmgr, std::string alg_name)
 {
     warthog::gridmap gm(scenmgr.get_experiment(0)->map().c_str());
-	warthog::cbs_ll_heuristic heuristic;
+	warthog::cbs_ll_heuristic heuristic(&gm);
 	warthog::ll_expansion_policy expander(&gm, &heuristic);
 
     warthog::reservation_table restab(gm.width()*gm.height());
@@ -331,18 +363,6 @@ run_cbs_ll_w(warthog::scenario_manager& scenmgr, std::string alg_name)
 	   	warthog::ll_expansion_policy,
         warthog::cbs::pqueue_cbs_ll>
             astar(&heuristic, &expander, &open);
-
-    // precompute heuristic values for each target location
-    std::cerr << "precomputing heuristic values...";
-    std::vector<uint32_t> target_locations;
-	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
-    {
-		warthog::experiment* exp = scenmgr.get_experiment(i);
-		uint32_t goalid = exp->goaly() * exp->mapwidth() + exp->goalx();
-        target_locations.push_back(goalid);
-    }
-    heuristic.compute_h_values(target_locations, &gm);
-    std::cerr << "done\n";
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);
@@ -496,6 +516,10 @@ main(int argc, char** argv)
     {
         run_jps(scenmgr, alg);
     }
+    else if(alg == "jps4c")
+    {
+        run_jps4c(scenmgr, alg);
+    }
 
     else if(alg == "dijkstra")
     {
@@ -506,9 +530,9 @@ main(int argc, char** argv)
     {
         run_astar(scenmgr, alg); 
     }
-    else if(alg == "4c_astar")
+    else if(alg == "astar4c")
     {
-        run_4c_astar(scenmgr, alg); 
+        run_astar4c(scenmgr, alg); 
     }
 
     else if(alg == "cbs_ll")
@@ -518,6 +542,10 @@ main(int argc, char** argv)
     else if(alg == "cbs_ll_w")
     {
         run_cbs_ll_w(scenmgr, alg); 
+    }
+    else if(alg == "sipp")
+    {
+        run_sipp(scenmgr, alg);
     }
 
     else if(alg == "astar_wgm")

@@ -326,7 +326,7 @@ class xy_graph_base
                 (this->get_num_edges_out() + this->get_num_edges_in());
             size_t mem_actual =
                 ((size_t)(max_addr-min_addr)) * sizeof(T_EDGE);
-            return mem_actual / (double)mem_lb;
+            return (double)mem_actual / (double)mem_lb;
         }
 
 

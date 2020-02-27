@@ -94,7 +94,7 @@ warthog::graph::dimacs_to_xy_graph(
     
     // allocate memory for nodes
     uint32_t num_nodes_dimacs = dimacs.get_num_nodes();
-    g.capacity(num_nodes_dimacs);
+    g.grow(num_nodes_dimacs);
 
     // set xy coordinates of each node
     for(warthog::dimacs_parser::node_iterator it = dimacs.nodes_begin();
@@ -120,6 +120,7 @@ warthog::graph::dimacs_to_xy_graph(
         uint32_t nid = (*it).id_ - offset;
         g.get_node(nid)->capacity( 
             store_incoming_edges ? in_deg[nid] : 0, out_deg[nid]);
+        g.set_xy(nid, (*it).x_, (*it).y_);
     }
 
     // convert edges to graph format
@@ -188,8 +189,8 @@ warthog::graph::write_xy(std::ostream& out, warthog::graph::xy_graph& g)
         << "# this file is formatted as follows: [header data] [node data] [edge data]\n"
         << "# header format: nodes [number of nodes] edges [number of edges] \n"
         << "# node data format: v [id] [x] [y]\n"
-        << "# edge data format: e [from_node_id] [to_node_id] [cost]" 
-        << "#" 
+        << "# edge data format: e [from_node_id] [to_node_id] [cost]\n"
+        << "#\n" 
         << "# 32bit integer values are used throughout.\n"
         << "# Identifiers are all zero indexed.\n"
         << std::endl;

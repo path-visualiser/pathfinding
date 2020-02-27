@@ -3,54 +3,82 @@
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
 #include "labelled_gridmap.h"
+#include "solution.h"
 #include "vl_gridmap_expansion_policy.h"
 #include "zero_heuristic.h"
 
 #include <functional>
 #include <stdint.h>
 
-void
-warthog::cbs_ll_heuristic::compute_h_values(
-        std::vector<uint32_t>& targets,
-        warthog::gridmap* map)
+warthog::cbs_ll_heuristic::cbs_ll_heuristic(warthog::gridmap* gm)
 {
-    t_map_.clear();
-    h_.clear();
-    h_.resize(targets.size());
-    t_index_ = 0;
-
-    warthog::pqueue_min open;
-    warthog::zero_heuristic h;
+    sol_ = new warthog::solution();
+    open_ = new warthog::pqueue_min();
+    zh_ = new warthog::zero_heuristic();
+    gm_sz_ = gm->width() * gm->height();
 
     bool manhattan = true;
-    warthog::gridmap_expansion_policy expander(map, manhattan);
+    expander_ = new warthog::gridmap_expansion_policy(gm, manhattan);
 
-    warthog::flexible_astar<
+    alg_ = new warthog::flexible_astar<
         warthog::zero_heuristic, 
         warthog::gridmap_expansion_policy,
         warthog::pqueue_min> 
-            alg(&h, &expander, &open);
+            (zh_, expander_, open_);
+}
 
-    uint32_t tmp_idx;
+warthog::cbs_ll_heuristic::~cbs_ll_heuristic() 
+{
+    delete alg_;
+    delete expander_;
+    delete zh_;
+    delete open_;
+    delete sol_;
+}
+
+void
+warthog::cbs_ll_heuristic::set_current_target(warthog::sn_id_t target_id)
+{
+    uint32_t target_xy_id = (uint32_t)target_id;
+    std::unordered_map<uint32_t, uint32_t>::iterator it = t_map_.find(target_xy_id);
+
+    // already have precomputed h-values for this target
+    if(it != t_map_.end()) 
+    {
+        t_index_ = it->second;
+        return;
+    }
+
+    // new target; precompute h-values from scratch
+    t_index_ = (uint32_t)t_map_.size();
+    t_map_[(uint32_t)target_id] = t_index_;
+    h_.push_back(std::vector<warthog::cost_t>());
+    h_[t_index_].resize(gm_sz_, warthog::INF32);
+
     std::function<void(warthog::search_node*)> on_expand_fn = 
         [&] (warthog::search_node* current) -> void
         {
-            h_[tmp_idx][(uint32_t)current->get_id()] = current->get_g();
+            h_[t_index_][(uint32_t)current->get_id()] = current->get_g();
         };
-    alg.apply_on_expand(on_expand_fn);
+    alg_->apply_on_expand(on_expand_fn);
 
-    for(uint32_t target_id : targets)
-    {
-        // skip targets already processed
-        if(t_map_.find(target_id) != t_map_.end()) { continue; }
-
-        tmp_idx = (uint32_t)t_map_.size();
-        t_map_[target_id] = tmp_idx;
-
-        h_[tmp_idx].resize(map->width() * map->height(), warthog::INF32);
-        warthog::problem_instance problem(target_id);
-        warthog::solution sol;
-        alg.get_distance(problem, sol);
-    }
+    sol_->reset();
+    warthog::problem_instance problem(target_id);
+    alg_->get_distance(problem, *sol_);
 }
 
+size_t
+warthog::cbs_ll_heuristic::mem() 
+{ 
+    size_t sz = sizeof(this);
+    for(uint32_t i = 0; i < h_.size(); i++)
+    {
+        sz += sizeof(warthog::cost_t) * h_[i].size();
+    }
+    sz += sizeof(void*)*h_.size();
+    sz += sizeof(uint32_t)*2*t_map_.size();
+    sz += open_->mem();
+    sz += expander_->mem();
+    sz += alg_->mem();
+    return sz;
+}

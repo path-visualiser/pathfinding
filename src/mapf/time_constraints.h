@@ -139,9 +139,9 @@ class time_constraints
                     });
             if(retval == (*cons_)[xy_id].end())
             {
-                auto* con = &((*cons_)[xy_id].emplace_back());
-                con->timestep_ = timestep;
-                return con;
+                (*cons_)[xy_id].emplace_back();
+                (*cons_)[xy_id].back().timestep_ = (uint16_t)timestep;
+                return &(*cons_)[xy_id].back();
             }
             return &*retval;
        }

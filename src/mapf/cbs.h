@@ -23,6 +23,7 @@ namespace cbs
 
 enum move 
 {
+//    NONE = 0,
     NORTH = __builtin_ffs(warthog::grid::NORTH)-1,
     SOUTH = __builtin_ffs(warthog::grid::SOUTH)-1,
     EAST = __builtin_ffs(warthog::grid::EAST)-1,

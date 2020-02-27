@@ -15,12 +15,15 @@ namespace warthog
 class apriori_filter;
 class apex_filter;
 class bb_filter;
+class cbs_ll_heuristic;
 class dummy_filter;
 class expansion_policy;
 class euclidean_heuristic;
 class gridmap;
+class gridmap_expansion_policy;
 class problem_instance;
 class search_node;
+class solution;
 class zero_heuristic;
 
 template<typename H, typename E, typename Q>
