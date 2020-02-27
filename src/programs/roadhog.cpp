@@ -69,6 +69,7 @@ help()
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf\n"
     << "\tfch, fch-af, fch-bb, fch-bbaf, fch-dfs\n"
+    << "\tcpd-search\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at runtime\n";
 }
