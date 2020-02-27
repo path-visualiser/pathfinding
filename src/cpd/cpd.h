@@ -25,10 +25,6 @@ namespace warthog
 namespace cpd
 {
 
-//  limits on the number of nodes in a graph 
-//  for which we compute a CPD
-const uint32_t RLE_RUN32_MAX_INDEX = (UINT32_MAX >> 4);
-
 // defines a 32bit run in a run-length encoding
 // the first 4 bits tell the symbol.
 // the next 28 bits tell the index where the run begins
@@ -50,44 +46,47 @@ struct rle_run32
     uint32_t data_;
 };
 
+//  limits on the number of nodes in a graph 
+//  for which we compute a CPD
+static const uint32_t RLE_RUN32_MAX_INDEX = (UINT32_MAX >> 4);
 
 // limits on the maximum number of first-move labels that need to be stored.
 // this value should be greater than the maximum degree of any node plus one
 // extra value for the case where a node is unreachable
-const uint32_t FM_MAX=16;
+static const uint32_t CPD_FM_MAX = 16;
 
 // special value to denote that no first move exists.
-const uint32_t FM_NONE=(FM_MAX-1);
+static const uint32_t CPD_FM_NONE=(CPD_FM_MAX-1);
 
 // the number of bytes needed to store a single first-move label
-#if (FM_MAX & (FM_MAX-1))
-const uint32_t FM_MAX_BYTES = ((FM_MAX >> 3) + 1);
+#if (CPD_FM_MAX & (CPD_FM_MAX-1))
+static const uint32_t CPD_FM_MAX_BYTES = ((CPD_FM_MAX >> 3) + 1);
 #else 
-const uint32_t FM_MAX_BYTES = (FM_MAX >> 3);
+static const uint32_t CPD_FM_MAX_BYTES = (CPD_FM_MAX >> 3);
 #endif
 
 // a collection of optimal first moves. 
 // this data structure is useful during preprocessing.
 // we keep one bit for each optimal move. the maximum
-// degree of any node is determined by FM_MAX
+// degree of any node is determined by CPD_FM_MAX
 struct fm_coll
 {
     fm_coll()
     {
         // each collection begins empty
-        for(uint32_t i = 0; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = 0; i < CPD_FM_MAX_BYTES; i++)
         { moves_[i] = 0; } 
     }
 
     fm_coll&
     operator=(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
+        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { *(uint64_t*)(&moves_[i*8]) = *(uint64_t*)(&other.moves_[i*8]); }
 
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
         { moves_[i] = other.moves_[i]; }
 
         return *this;
@@ -97,14 +96,14 @@ struct fm_coll
     operator==(const fm_coll& other)
     {
         bool retval = true;
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
+        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { retval &= 
             (*(uint64_t*)(&moves_[i*8]) == *(uint64_t*)(&other.moves_[i*8])); 
         }
 
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
         { 
             retval &= (moves_[i] == other.moves_[i]); 
         }
@@ -114,12 +113,12 @@ struct fm_coll
     fm_coll&
     operator|=(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
+        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { *(uint64_t*)(&moves_[i*8]) |= *(uint64_t*)(&other.moves_[i*8]); }
 
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
         { moves_[i] |= other.moves_[i]; }
 
         return *this;
@@ -128,12 +127,12 @@ struct fm_coll
     fm_coll&
     operator&=(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
+        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
 
         for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
         { *(uint64_t*)(&moves_[i*8]) &= *(uint64_t*)(&other.moves_[i*8]); }
 
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
         { moves_[i] &= other.moves_[i]; }
 
         return *this;
@@ -142,7 +141,7 @@ struct fm_coll
     fm_coll
     operator&(const fm_coll& other)
     {
-        const uint32_t NUM_QUAD_WORDS = FM_MAX_BYTES >> 3;
+        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
         fm_coll retval;
 
        
@@ -152,7 +151,7 @@ struct fm_coll
                 ((uint64_t*)(&moves_))[i] & ((uint64_t*)(&other.moves_))[i];
         }
 
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
         { 
             retval.moves_[i] = moves_[i] & other.moves_[i]; 
         }
@@ -162,7 +161,7 @@ struct fm_coll
     void
     add_move(uint32_t move)
     {
-        assert(move < FM_MAX);
+        assert(move < CPD_FM_MAX);
         uint32_t byte = move >> 3;
         uint32_t bit  = move & 7;
         moves_[byte] |= (1 << bit);
@@ -172,7 +171,7 @@ struct fm_coll
     num_set_bits()
     {
         uint32_t retval = 0;
-        for(uint32_t i = 0; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = 0; i < CPD_FM_MAX_BYTES; i++)
         {
             for(uint32_t j = 0; j < 8; j++)
             {
@@ -188,7 +187,7 @@ struct fm_coll
     ffs()
     {
         // __builtin_ffs takes 32bit operands; stride label 4 bytes at a time
-        const uint32_t NUM_DOUBLE_WORDS = FM_MAX_BYTES >> 2;
+        const uint32_t NUM_DOUBLE_WORDS = CPD_FM_MAX_BYTES >> 2;
         for(uint32_t i = 0; i < NUM_DOUBLE_WORDS; i+=4)
         {
             uint32_t index = (uint32_t)__builtin_ffsl(*(uint32_t*)(&moves_[i*4]));
@@ -199,7 +198,7 @@ struct fm_coll
         }
 
         // no more 32bit dwords in the label; scan the rest one byte at a time
-        for(uint32_t i = NUM_DOUBLE_WORDS*4; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = NUM_DOUBLE_WORDS*4; i < CPD_FM_MAX_BYTES; i++)
         {
             uint32_t index = (uint32_t)__builtin_ffsl(moves_[i]);
             if(index)
@@ -216,12 +215,12 @@ struct fm_coll
     eval() 
     {
         uint32_t retval = 0;
-        for(uint32_t i = 0; i < FM_MAX_BYTES; i++)
+        for(uint32_t i = 0; i < CPD_FM_MAX_BYTES; i++)
         { retval += moves_[i]; }
         return retval;
     }
 
-    uint8_t moves_[FM_MAX_BYTES];
+    uint8_t moves_[CPD_FM_MAX_BYTES];
 };
 
 // a DFS pre-order traversal of the input graph is known to produce an 

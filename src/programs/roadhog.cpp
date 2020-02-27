@@ -28,6 +28,7 @@
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
+#include "graph_oracle.h"
 #include "lazy_graph_contraction.h"
 #include "xy_graph.h"
 #include "solution.h"
@@ -622,6 +623,37 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
+run_cpd_search(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    warthog::graph::xy_graph g;
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+
+    warthog::cpd::graph_oracle oracle(&g);
+    oracle.precompute();
+
+//    warthog::simple_graph_expansion_policy expander(&g);
+//    warthog::euclidean_heuristic h(&g);
+//    warthog::pqueue_min open;
+//
+//    warthog::flexible_astar<
+//        warthog::euclidean_heuristic, 
+//        warthog::simple_graph_expansion_policy, 
+//        warthog::pqueue_min> 
+//            alg(&h, &expander, &open);
+//
+//    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
 run_dimacs(warthog::util::cfg& cfg)
 {
     std::string alg_name = cfg.get_param_value("alg");
@@ -697,6 +729,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch-bb-dfs")
     {
         run_fch_bb_dfs(cfg, parser, alg_name);
+    }
+    else if(alg_name == "cpd-search")
+    {
+        run_cpd_search(cfg, parser, alg_name);
     }
     else
     {

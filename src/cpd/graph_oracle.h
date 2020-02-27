@@ -45,7 +45,7 @@ class graph_oracle
                  warthog::sn_id_t target_id)
         {
             assert(source_id < g_->get_num_nodes());
-            if(fm_.at(source_id).size() == 0) { return warthog::cpd::FM_NONE; }
+            if(fm_.at(source_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
 
             std::vector<warthog::cpd::rle_run32>& row = fm_.at(source_id);
             uint32_t target_index = order_.at(target_id);
@@ -73,7 +73,7 @@ class graph_oracle
                 if(!tmp.ffs())
                 {
                     uint32_t firstmove = current.ffs() - 1;
-                    assert(firstmove < warthog::cpd::FM_MAX);
+                    assert(firstmove < warthog::cpd::CPD_FM_MAX);
                     fm_.at(source_id).push_back(
                             warthog::cpd::rle_run32{ (head << 4) | firstmove} );
                     current = row.at(next_id);
