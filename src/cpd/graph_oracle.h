@@ -94,7 +94,7 @@ class graph_oracle
                 source_nodes.push_back(i);
             }
 
-            warthog::cpd::compute_and_compress<
+            warthog::cpd::compute_firstmoves_and_compress<
                 warthog::simple_graph_expansion_policy, 
                 warthog::cpd::graph_oracle> (this, &expander, &source_nodes);
         }

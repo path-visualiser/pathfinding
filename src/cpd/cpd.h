@@ -230,14 +230,14 @@ struct fm_coll
 // start node
 void
 compute_dfs_preorder(
-        warthog::graph::xy_graph* g, 
+        warthog::graph::xy_graph* g,
         std::vector<uint32_t>* column_order);
 
 // compute and compress labels for all nodes specified by 
 // @param workload_manager 
 template <typename T_EXPANDER, typename T_CPD>
 void
-compute_and_compress(
+compute_firstmoves_and_compress(
         T_CPD* cpd,
         T_EXPANDER* expander,
         std::vector<uint32_t>* source_nodes)
