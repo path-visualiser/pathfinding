@@ -58,6 +58,7 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
     if(task_total == 0) { return 0; }
 
     // OK, let's fork some threads
+    // TODO: detect cores with std::thread::hardware_concurrency();
     const uint32_t NUM_THREADS = 4;
     pthread_t threads[NUM_THREADS];
     thread_params task_data[NUM_THREADS];

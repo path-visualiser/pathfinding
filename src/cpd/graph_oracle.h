@@ -60,61 +60,18 @@ class graph_oracle
             }
             return row.at(begin).get_move();
         }
+
+        // compute first-move labels and compress the result
+        void
+        precompute();
     
+        // compress a given first-move table @param row and associate
+        // the compressed result with source node @param source_id
         void
         add_row(uint32_t source_id, 
-                 std::vector<warthog::cpd::fm_coll>& row)
-        {
-            // source gets a wildcard move
-            row.at(source_id) = warthog::cpd::CPD_FM_NONE;
+                 std::vector<warthog::cpd::fm_coll>& row);
 
-            // greedily compress the row w.r.t. the current column order
-            warthog::cpd::fm_coll current = row.at(order_.at(0));
-            uint32_t head = 0;
-            for(uint32_t index = 0; index < row.size(); index++)
-            {
-                assert(current > 0);
-                uint32_t next_id = order_.at(index);
-                if(!(current & row.at(next_id)))
-                {
-                    uint32_t firstmove = __builtin_ffsl(current) - 1;
-                    assert(firstmove < warthog::cpd::CPD_FM_MAX);
-                    fm_.at(source_id).push_back(
-                            warthog::cpd::rle_run32{ (head << 4) | firstmove} );
-                    current = row.at(next_id);
-                    head = index;
-                }
-                current = current & row.at(next_id);
-            } 
-            
-            // add the last run
-            uint32_t firstmove = __builtin_ffsl(current) - 1;
-            assert(firstmove < warthog::cpd::CPD_FM_MAX);
-            fm_.at(source_id).push_back(
-                    warthog::cpd::rle_run32{ (head << 4) | firstmove} );
-            
-            std::cerr << "compressed source row " << source_id << " with " << fm_.at(source_id).size() << std::endl;
-        }
-
-        void
-        precompute() 
-        {
-            warthog::cpd::compute_dfs_preorder(g_, &order_);
-            warthog::simple_graph_expansion_policy expander(g_);
-
-            std::vector<uint32_t> source_nodes;
-            source_nodes.reserve(g_->get_num_nodes());
-            for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
-            {
-                source_nodes.push_back(i);
-            }
-
-            warthog::cpd::compute_firstmoves_and_compress<
-                warthog::simple_graph_expansion_policy, 
-                warthog::cpd::graph_oracle> (this, &expander, &source_nodes);
-        }
-
-        warthog::graph::xy_graph*
+        inline warthog::graph::xy_graph*
         get_graph() { return g_; } 
 
 
