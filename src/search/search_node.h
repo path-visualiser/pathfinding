@@ -116,7 +116,6 @@ class search_node
 		inline void
 		set_f(double f) { f_ = f; }
 
-		inline void 
 		inline warthog::cost_t
 		get_ub() const { return ub_; }
 
