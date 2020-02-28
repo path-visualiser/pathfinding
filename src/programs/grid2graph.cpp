@@ -11,13 +11,13 @@ void
 help()
 {
     std::cerr 
-       << "Converts between the graph and experiment formats used at the \n"
-       << "Grid-based Path Planning Competition and the format used at \n"
-       << "the 9th DIMACS Implementation Challenge\n"
-       << "Usage: ./grid2dimacs [map | scen] [grid file]"
+       << "Converts from the format used at the Grid-based Path Planning Competition "
+       << "\nand the xy_graph format used by the Warthog Pathfinding Library\n"
+       << "\n"
+       << "Usage: ./grid2graph [map | scen] [grid file]"
        << "\n\nParameter descriptions: " 
-       << "\n\tmap: convert directly from a grid map to a dimacs graph"
-       << "\n\tscen: convert a gridmap scenario file into a dimacs instance file\n";
+       << "\n\tmap: convert directly from a grid map to an xy_graph"
+       << "\n\tscen: convert a gridmap scenario file into an xy_graph problem file\n";
 
 }
 
