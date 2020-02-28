@@ -66,32 +66,29 @@ class graph_oracle
                  std::vector<warthog::cpd::fm_coll>& row)
         {
             // source gets a wildcard move
-            for(uint32_t i = 0; i < warthog::cpd::CPD_FM_MAX_BYTES; i++)
-            {
-                row.at(source_id).moves_[i] = UINT8_MAX;
-            }
+            row.at(source_id) = warthog::cpd::CPD_FM_NONE;
 
             // greedily compress the row w.r.t. the current column order
             warthog::cpd::fm_coll current = row.at(order_.at(0));
             uint32_t head = 0;
             for(uint32_t index = 0; index < row.size(); index++)
             {
-                assert(current.ffs() > 0);
+                assert(current > 0);
                 uint32_t next_id = order_.at(index);
-                warthog::cpd::fm_coll tmp = current & row.at(next_id);
-                if(!tmp.ffs())
+                if(!(current & row.at(next_id)))
                 {
-                    uint32_t firstmove = current.ffs() - 1;
+                    uint32_t firstmove = __builtin_ffsl(current) - 1;
                     assert(firstmove < warthog::cpd::CPD_FM_MAX);
                     fm_.at(source_id).push_back(
                             warthog::cpd::rle_run32{ (head << 4) | firstmove} );
                     current = row.at(next_id);
                     head = index;
                 }
+                current = current & row.at(next_id);
             } 
             
             // add the last run
-            uint32_t firstmove = current.ffs() - 1;
+            uint32_t firstmove = __builtin_ffsl(current) - 1;
             assert(firstmove < warthog::cpd::CPD_FM_MAX);
             fm_.at(source_id).push_back(
                     warthog::cpd::rle_run32{ (head << 4) | firstmove} );

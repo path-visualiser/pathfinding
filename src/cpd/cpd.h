@@ -56,172 +56,12 @@ static const uint32_t RLE_RUN32_MAX_INDEX = (UINT32_MAX >> 4);
 static const uint32_t CPD_FM_MAX = 16;
 
 // special value to denote that no first move exists.
-static const uint32_t CPD_FM_NONE=(CPD_FM_MAX-1);
-
-// the number of bytes needed to store a single first-move label
-#if (CPD_FM_MAX & (CPD_FM_MAX-1))
-static const uint32_t CPD_FM_MAX_BYTES = ((CPD_FM_MAX >> 3) + 1);
-#else 
-static const uint32_t CPD_FM_MAX_BYTES = (CPD_FM_MAX >> 3);
-#endif
+static const uint32_t CPD_FM_NONE=0xF;
 
 // a collection of optimal first moves. 
-// this data structure is useful during preprocessing.
 // we keep one bit for each optimal move. the maximum
 // degree of any node is determined by CPD_FM_MAX
-struct fm_coll
-{
-    fm_coll()
-    {
-        // each collection begins empty
-        for(uint32_t i = 0; i < CPD_FM_MAX_BYTES; i++)
-        { moves_[i] = 0; } 
-    }
-
-    fm_coll&
-    operator=(const fm_coll& other)
-    {
-        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
-
-        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
-        { *(uint64_t*)(&moves_[i*8]) = *(uint64_t*)(&other.moves_[i*8]); }
-
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
-        { moves_[i] = other.moves_[i]; }
-
-        return *this;
-    }
-
-    bool
-    operator==(const fm_coll& other)
-    {
-        bool retval = true;
-        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
-
-        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
-        { retval &= 
-            (*(uint64_t*)(&moves_[i*8]) == *(uint64_t*)(&other.moves_[i*8])); 
-        }
-
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
-        { 
-            retval &= (moves_[i] == other.moves_[i]); 
-        }
-        return retval;
-    }
-
-    fm_coll&
-    operator|=(const fm_coll& other)
-    {
-        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
-
-        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
-        { *(uint64_t*)(&moves_[i*8]) |= *(uint64_t*)(&other.moves_[i*8]); }
-
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
-        { moves_[i] |= other.moves_[i]; }
-
-        return *this;
-    }
-
-    fm_coll&
-    operator&=(const fm_coll& other)
-    {
-        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
-
-        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
-        { *(uint64_t*)(&moves_[i*8]) &= *(uint64_t*)(&other.moves_[i*8]); }
-
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
-        { moves_[i] &= other.moves_[i]; }
-
-        return *this;
-    }
-
-    fm_coll
-    operator&(const fm_coll& other)
-    {
-        const uint32_t NUM_QUAD_WORDS = CPD_FM_MAX_BYTES >> 3;
-        fm_coll retval;
-
-       
-        for(uint32_t i = 0; i < NUM_QUAD_WORDS; i++)
-        { 
-            ((uint64_t*)(&retval.moves_))[i] = 
-                ((uint64_t*)(&moves_))[i] & ((uint64_t*)(&other.moves_))[i];
-        }
-
-        for(uint32_t i = NUM_QUAD_WORDS*8; i < CPD_FM_MAX_BYTES; i++)
-        { 
-            retval.moves_[i] = moves_[i] & other.moves_[i]; 
-        }
-        return retval;
-    }
-
-    void
-    add_move(uint32_t move)
-    {
-        assert(move < CPD_FM_MAX);
-        uint32_t byte = move >> 3;
-        uint32_t bit  = move & 7;
-        moves_[byte] |= (1 << bit);
-    }
-
-    uint32_t
-    num_set_bits()
-    {
-        uint32_t retval = 0;
-        for(uint32_t i = 0; i < CPD_FM_MAX_BYTES; i++)
-        {
-            for(uint32_t j = 0; j < 8; j++)
-            {
-                retval += !!(moves_[i] & (1 << j));
-            }
-        }
-        return retval;
-    }
-
-    // return one plus the index of the first set bit in the collection
-    // and zero if there are no set bits in the collection.
-    uint32_t
-    ffs()
-    {
-        // __builtin_ffs takes 32bit operands; stride label 4 bytes at a time
-        const uint32_t NUM_DOUBLE_WORDS = CPD_FM_MAX_BYTES >> 2;
-        for(uint32_t i = 0; i < NUM_DOUBLE_WORDS; i+=4)
-        {
-            uint32_t index = (uint32_t)__builtin_ffsl(*(uint32_t*)(&moves_[i*4]));
-            if(index)
-            {
-                return i*32 + index;
-            }
-        }
-
-        // no more 32bit dwords in the label; scan the rest one byte at a time
-        for(uint32_t i = NUM_DOUBLE_WORDS*4; i < CPD_FM_MAX_BYTES; i++)
-        {
-            uint32_t index = (uint32_t)__builtin_ffsl(moves_[i]);
-            if(index)
-            {
-                return NUM_DOUBLE_WORDS*32 + i*8 + index;
-            }
-        }
-        
-        return 0;
-    }
-
-    // sum the byte values of all firstmoves
-    uint32_t
-    eval() 
-    {
-        uint32_t retval = 0;
-        for(uint32_t i = 0; i < CPD_FM_MAX_BYTES; i++)
-        { retval += moves_[i]; }
-        return retval;
-    }
-
-    uint8_t moves_[CPD_FM_MAX_BYTES];
-};
+typedef uint16_t fm_coll;
 
 // a DFS pre-order traversal of the input graph is known to produce an 
 // effective node order for the purposes of compression
@@ -282,12 +122,12 @@ compute_firstmoves_and_compress(
 
             if(from->get_id() == source_id) // start node successors
             { 
-                assert(s_row.at(succ->get_id()).num_set_bits() == 0);
+                assert(s_row.at(succ->get_id()) == 0);
                 assert(edge_id < 
                 shared->cpd_->get_graph()->get_node(
                         (uint32_t)source_id)->out_degree());
-                s_row.at(succ->get_id()).add_move(edge_id);
-                assert(s_row.at(succ->get_id()).eval());
+                s_row.at(succ->get_id()) = (1 << edge_id);
+                assert(s_row.at(succ->get_id()));
             }
             else // all other nodes
             {
@@ -309,8 +149,7 @@ compute_firstmoves_and_compress(
                 if(alt_g == g_val) 
                 { 
                     s_row.at(succ_id) |= s_row.at(from_id); 
-                    assert(s_row.at(succ_id).eval() >=
-                           s_row.at(from_id).eval());
+                    assert(s_row.at(succ_id) >= s_row.at(from_id));
                 }
             }
         };
