@@ -175,13 +175,9 @@ std::istream&
 warthog::cpd::operator>>(std::istream& in, 
         warthog::cpd::graph_oracle& lab)
 {
-    lab.fm_.clear();
-    lab.order_.resize(lab.g_->get_num_nodes());
-
     // read the graph size data
     uint32_t num_nodes;
     in.read((char*)(&num_nodes), 4);
-
     if(num_nodes != lab.g_->get_num_nodes())
     {
         std::cerr 
@@ -189,6 +185,9 @@ warthog::cpd::operator>>(std::istream& in,
             << " nodes, but graph contains " << lab.g_->get_num_nodes() << "\n";
         return in;
     }
+
+    lab.fm_.clear();
+    lab.order_.resize(lab.g_->get_num_nodes());
 
     // read the node ordering data
     for(uint32_t i = 0; i < num_nodes; i++)
