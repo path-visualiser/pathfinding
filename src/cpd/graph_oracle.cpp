@@ -1,3 +1,4 @@
+#include "cpd.h"
 #include "cpd/graph_oracle.h"
 
 struct shared_data
@@ -168,5 +169,140 @@ warthog::cpd::graph_oracle::add_row(uint32_t source_id,
     
 //    std::cerr << "compressed source row " << source_id << " with " 
 //        << fm_.at(source_id).size() << std::endl;
+}
+
+std::istream&
+warthog::cpd::operator>>(std::istream& in, 
+        warthog::cpd::graph_oracle& lab)
+{
+    lab.fm_.clear();
+    lab.order_.resize(lab.g_->get_num_nodes());
+
+    // read the graph size data
+    uint32_t num_nodes;
+    in.read((char*)(&num_nodes), 4);
+
+    if(num_nodes != lab.g_->get_num_nodes())
+    {
+        std::cerr 
+            << "err; " << "input mismatch. cpd file says " << num_nodes 
+            << " nodes, but graph contains " << lab.g_->get_num_nodes() << "\n";
+        return in;
+    }
+
+    // read the node ordering data
+    for(uint32_t i = 0; i < num_nodes; i++)
+    {
+        uint32_t n_id; 
+        in.read((char*)(&n_id), 4);
+        lab.order_.at(i) = n_id;
+    }
+
+    // read the compressed data
+    lab.fm_.resize(lab.g_->get_num_nodes());
+    uint32_t num_rows;
+    in.read((char*)(&num_rows), 4);
+
+    for(uint32_t row = 0; row < num_rows; row++)
+    {
+        uint32_t row_id; 
+        in.read((char*)(&row_id), 4);
+
+        if(row_id > lab.g_->get_num_nodes())
+        {
+            std::cerr << "err; " << row_id 
+                << " is aninvalid row identifier. aborting.\n";
+            break;
+        }
+
+        if(lab.fm_.at(row_id).size() != 0)
+        {
+            std::cerr << "err; row id "<< row_id 
+                << " appears more than once. aborting.\n";
+            break;
+        }
+
+        uint32_t num_runs;
+        in.read((char*)(&num_runs), 4);
+
+        // read all the runs for the current row
+        for(uint32_t i = 0; i < num_runs; i++)
+        {
+            warthog::cpd::rle_run32 tmp;
+            in >> tmp;
+            lab.fm_.at(row_id).push_back(tmp);
+
+            assert(in.good());
+
+            if(!in.good())
+            {
+                std::cerr << "err; while reading firstmove labels\n";
+                std::cerr 
+                    << "[debug info] row# " << row
+                    << " row_id " << row_id 
+                    << " run# " << i << " of " << num_runs 
+                    << ". aborting.\n";
+                return in;
+            }
+        }
+    }
+    return in;
+}
+
+std::ostream&
+warthog::cpd::operator<<(std::ostream& out,
+        warthog::cpd::graph_oracle& lab)
+{
+    // write graph size 
+    uint32_t num_nodes = lab.g_->get_num_nodes();
+    out.write((char*)(&num_nodes), 4);
+
+    // write node ordering
+    assert(lab.order_.size() == num_nodes);
+    for(uint32_t i = 0; i < num_nodes; i++)
+    {
+        uint32_t n_id = lab.order_.at(i);
+        out.write((char*)(&n_id), 4);
+    }
+
+    uint32_t num_rows = 0;
+    for(uint32_t n_id = 0; n_id < lab.g_->get_num_nodes(); n_id++)
+    {
+        if(lab.fm_.at(n_id).size() > 0) { num_rows++; }
+    }
+    out.write((char*)(&num_rows), 4);
+
+    //uint32_t row_count = 0;
+    //uint32_t run_count = 0;
+    for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
+    {
+        if(lab.fm_.at(row_id).size() == 0) { continue; }
+        out.write((char*)(&row_id), 4);
+
+        uint32_t num_runs = (uint32_t)lab.fm_.at(row_id).size();
+        out.write((char*)(&num_runs), 4);
+
+        for(uint32_t run = 0; run < num_runs; run++)
+        {
+            out << lab.fm_.at(row_id).at(run);
+//            run_count++;
+            if(!out.good())
+            {
+                std::cerr << "err; while writing labels\n";
+                std::cerr 
+                    << "[debug info] "
+                    << " row_id " << row_id 
+                    << " run# " << run 
+                    << ". aborting.\n";
+                return out;
+            }
+        }
+//        row_count++;
+    }
+//    std::cerr 
+//        << "wrote to disk " << row_count 
+//        << " rows and "
+//        << run_count << " runs \n";
+    return out;
 }
 

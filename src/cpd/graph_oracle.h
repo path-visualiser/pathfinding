@@ -71,8 +71,15 @@ class graph_oracle
         add_row(uint32_t source_id, 
                  std::vector<warthog::cpd::fm_coll>& row);
 
-        inline warthog::graph::xy_graph*
+        inline warthog::graph::xy_graph* 
         get_graph() { return g_; } 
+
+        friend std::ostream&
+        operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
+
+        friend std::istream&
+        operator>>(std::istream& in, warthog::cpd::graph_oracle& o);
+
 
 
     private:
@@ -81,11 +88,11 @@ class graph_oracle
         warthog::graph::xy_graph* g_;
 };
 
-//friend ostream&
-//operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
-//
-//friend ostream&
-//operator<<(std::ostream& in, warthog::cpd::graph_oracle& o);
+std::ostream&
+operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
+
+std::istream&
+operator>>(std::istream& in, warthog::cpd::graph_oracle& o);
 
 }
 

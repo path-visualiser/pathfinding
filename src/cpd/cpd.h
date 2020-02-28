@@ -46,6 +46,12 @@ struct rle_run32
     uint32_t data_;
 };
 
+std::istream&
+operator>>(std::istream& in, warthog::cpd::rle_run32& the_run);
+
+std::ostream&
+operator<<(std::ostream& out, warthog::cpd::rle_run32& the_run);
+
 //  limits on the number of nodes in a graph 
 //  for which we compute a CPD
 static const uint32_t RLE_RUN32_MAX_INDEX = (UINT32_MAX >> 4);
