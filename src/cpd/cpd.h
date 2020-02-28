@@ -325,8 +325,8 @@ compute_firstmoves_and_compress(
         {
             // source nodes are evenly divided among all threads;
             // skip any source nodes not intended for current thread
-            if((i % par->max_threads_) != par->thread_id_) 
-            { continue; }
+//            if((i % par->max_threads_) != par->thread_id_) 
+//            { continue; }
 
             source_id = shared->sources_->at(i);
             warthog::problem_instance problem(source_id);
@@ -345,19 +345,25 @@ compute_firstmoves_and_compress(
     shared.cpd_ = cpd;
     shared.expander_ = expander;
     shared.sources_ = source_nodes;
+    warthog::helpers::thread_params params;
+    params.shared_ = &shared;
 
 
-    std::cerr << "computing dijkstra labels\n";
-    warthog::helpers::parallel_compute(
-            thread_compute_fn, &shared, 
-            (uint32_t)source_nodes->size());
-            
+    thread_compute_fn(&params);
+
+//
+//    std::cerr << "computing dijkstra labels\n";
+//    warthog::helpers::parallel_compute(
+//            thread_compute_fn, &shared, 
+//            (uint32_t)source_nodes->size());
+//            
 
     t.stop();
     std::cerr 
         << "total preproc time (seconds): "
         << t.elapsed_time_micro() / 1000000 << "\n";
 }
+
 
 }
 

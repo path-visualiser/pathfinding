@@ -36,6 +36,7 @@ class graph_oracle
              : g_(g)
         {
             order_.resize(g_->get_num_nodes());
+            fm_.resize(g_->get_num_nodes());
         }
 
         virtual ~graph_oracle() { } 
@@ -64,10 +65,18 @@ class graph_oracle
         add_row(uint32_t source_id, 
                  std::vector<warthog::cpd::fm_coll>& row)
         {
+            // source gets a wildcard move
+            for(uint32_t i = 0; i < warthog::cpd::CPD_FM_MAX_BYTES; i++)
+            {
+                row.at(source_id).moves_[i] = UINT8_MAX;
+            }
+
+            // greedily compress the row w.r.t. the current column order
             warthog::cpd::fm_coll current = row.at(order_.at(0));
             uint32_t head = 0;
             for(uint32_t index = 0; index < row.size(); index++)
             {
+                assert(current.ffs() > 0);
                 uint32_t next_id = order_.at(index);
                 warthog::cpd::fm_coll tmp = current & row.at(next_id);
                 if(!tmp.ffs())
@@ -80,6 +89,14 @@ class graph_oracle
                     head = index;
                 }
             } 
+            
+            // add the last run
+            uint32_t firstmove = current.ffs() - 1;
+            assert(firstmove < warthog::cpd::CPD_FM_MAX);
+            fm_.at(source_id).push_back(
+                    warthog::cpd::rle_run32{ (head << 4) | firstmove} );
+            
+            std::cerr << "compressed source row " << source_id << " with " << fm_.at(source_id).size() << std::endl;
         }
 
         void
@@ -88,7 +105,8 @@ class graph_oracle
             warthog::cpd::compute_dfs_preorder(g_, &order_);
             warthog::simple_graph_expansion_policy expander(g_);
 
-            std::vector<uint32_t> source_nodes(g_->get_num_nodes());
+            std::vector<uint32_t> source_nodes;
+            source_nodes.reserve(g_->get_num_nodes());
             for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
             {
                 source_nodes.push_back(i);
