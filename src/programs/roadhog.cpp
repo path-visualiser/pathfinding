@@ -634,12 +634,31 @@ run_cpd_search(warthog::util::cfg& cfg,
         return;
     }
 
+    std::string cpd_filename = cfg.get_param_value("cpd");
+    if(cpd_filename == "")
+    {
+        cpd_filename = xy_filename + ".cpd";
+    }
+
     warthog::graph::xy_graph g;
+
     std::ifstream ifs(xy_filename);
     warthog::graph::read_xy(ifs, g);
+    ifs.close();
 
     warthog::cpd::graph_oracle oracle(&g);
-    oracle.precompute();
+    ifs.open(cpd_filename);
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        oracle.precompute();
+        std::ofstream ofs(cpd_filename);
+        ofs << oracle;
+        std::cerr << "writing " << cpd_filename << std::endl;
+    }
 
 //    warthog::simple_graph_expansion_policy expander(&g);
 //    warthog::euclidean_heuristic h(&g);

@@ -7,6 +7,7 @@
 #include <fstream>
 #include <iostream>
 #include <pthread.h>
+#include <thread>
 #include <unistd.h>
 
 bool
@@ -58,9 +59,10 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
     if(task_total == 0) { return 0; }
 
     // OK, let's fork some threads
-    const uint32_t NUM_THREADS = 4;
-    pthread_t threads[NUM_THREADS];
-    thread_params task_data[NUM_THREADS];
+    // TODO: detect cores with std::thread::hardware_concurrency();
+    const uint32_t NUM_THREADS = (uint32_t)std::thread::hardware_concurrency(); 
+    std::vector<pthread_t> threads(NUM_THREADS);
+    std::vector<thread_params> task_data(NUM_THREADS);
 
     void*(*fn_task_wrapper)(void*) = [] (void* in) -> void*
     {

@@ -111,10 +111,10 @@ run_sipp(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
             int32_t nx, ny;
             expander.get_xy(sol.path_.at(i+1).node_id_, nx, ny);
 
-            warthog::cbs::move direction; 
 
             assert(nx == x || ny == y);
-            if(nx == x && ny == y) {  direction = warthog::cbs::move::WAIT; }
+            warthog::cbs::move direction = warthog::cbs::move::WAIT;
+            //if(nx == x && ny == y) {  direction = warthog::cbs::move::WAIT; }
             if(nx == x && ny < y) {  direction = warthog::cbs::move::NORTH; }
             if(nx == x && ny > y) {  direction = warthog::cbs::move::SOUTH; }
             if(nx < x && ny == y) {  direction = warthog::cbs::move::WEST; }
@@ -301,10 +301,9 @@ run_jpst(warthog::scenario_manager& scenmgr, std::string alg_name, std::string p
             int32_t nx, ny;
             expander.get_xy(sol.path_.at(i+1).node_id_, nx, ny);
 
-            warthog::cbs::move direction; 
-
             assert(nx == x || ny == y);
-            if(nx == x && ny == y) {  direction = warthog::cbs::move::WAIT; }
+            warthog::cbs::move direction = warthog::cbs::move::WAIT;
+            //if(nx == x && ny == y) {  direction = warthog::cbs::move::WAIT; }
             if(nx == x && ny < y) {  direction = warthog::cbs::move::NORTH; }
             if(nx == x && ny > y) {  direction = warthog::cbs::move::SOUTH; }
             if(nx < x && ny == y) {  direction = warthog::cbs::move::WEST; }

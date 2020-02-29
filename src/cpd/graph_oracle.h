@@ -36,6 +36,7 @@ class graph_oracle
              : g_(g)
         {
             order_.resize(g_->get_num_nodes());
+            fm_.resize(g_->get_num_nodes());
         }
 
         virtual ~graph_oracle() { } 
@@ -59,48 +60,26 @@ class graph_oracle
             }
             return row.at(begin).get_move();
         }
+
+        // compute first-move labels and compress the result
+        void
+        precompute();
     
+        // compress a given first-move table @param row and associate
+        // the compressed result with source node @param source_id
         void
         add_row(uint32_t source_id, 
-                 std::vector<warthog::cpd::fm_coll>& row)
-        {
-            warthog::cpd::fm_coll current = row.at(order_.at(0));
-            uint32_t head = 0;
-            for(uint32_t index = 0; index < row.size(); index++)
-            {
-                uint32_t next_id = order_.at(index);
-                warthog::cpd::fm_coll tmp = current & row.at(next_id);
-                if(!tmp.ffs())
-                {
-                    uint32_t firstmove = current.ffs() - 1;
-                    assert(firstmove < warthog::cpd::CPD_FM_MAX);
-                    fm_.at(source_id).push_back(
-                            warthog::cpd::rle_run32{ (head << 4) | firstmove} );
-                    current = row.at(next_id);
-                    head = index;
-                }
-            } 
-        }
+                 std::vector<warthog::cpd::fm_coll>& row);
 
-        void
-        precompute() 
-        {
-            warthog::cpd::compute_dfs_preorder(g_, &order_);
-            warthog::simple_graph_expansion_policy expander(g_);
-
-            std::vector<uint32_t> source_nodes(g_->get_num_nodes());
-            for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
-            {
-                source_nodes.push_back(i);
-            }
-
-            warthog::cpd::compute_and_compress<
-                warthog::simple_graph_expansion_policy, 
-                warthog::cpd::graph_oracle> (this, &expander, &source_nodes);
-        }
-
-        warthog::graph::xy_graph*
+        inline warthog::graph::xy_graph* 
         get_graph() { return g_; } 
+
+        friend std::ostream&
+        operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
+
+        friend std::istream&
+        operator>>(std::istream& in, warthog::cpd::graph_oracle& o);
+
 
 
     private:
@@ -109,11 +88,11 @@ class graph_oracle
         warthog::graph::xy_graph* g_;
 };
 
-//friend ostream&
-//operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
-//
-//friend ostream&
-//operator<<(std::ostream& in, warthog::cpd::graph_oracle& o);
+std::ostream&
+operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
+
+std::istream&
+operator>>(std::istream& in, warthog::cpd::graph_oracle& o);
 
 }
 
