@@ -128,6 +128,7 @@ class search_node
 			assert(g < g_);
 			f_ = (f_ - g_) + g;
 			g_ = g;
+			if (ub_ < warthog::COST_MAX) { ub_ = (ub_ - g_) + g; }
 			parent_id_ = parent_id;
 		}
 
