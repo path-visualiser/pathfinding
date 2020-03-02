@@ -15,9 +15,12 @@ namespace warthog
 {
 
 // TODO Replace with actual CPD
-class cpd_heuristic : public warthog::euclidean_heuristic
+class cpd_heuristic : public euclidean_heuristic
 {
   public:
+    cpd_heuristic(warthog::graph::xy_graph* g)
+            : euclidean_heuristic(g) {}
+
     void
     h(warthog::sn_id_t id,
       warthog::sn_id_t id2,
