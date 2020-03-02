@@ -15,6 +15,7 @@
 #include "depth_first_search.h"
 #include "flexible_astar.h"
 #include "four_connected_jps_locator.h"
+#include "greedy_depth_first_search.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
 #include "jps_expansion_policy.h"
@@ -62,7 +63,7 @@ help()
     << "\nRecognised values for --alg:\n"
     << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, astar4c, sipp\n"
     << "\tsssp, jps, jps2, jps+, jps2+, jps, jps4c\n"
-    << "\tdfs\n";
+    << "\tdfs, gdfs\n";
 }
 
 bool
@@ -471,6 +472,25 @@ run_dfs(warthog::scenario_manager& scenmgr, std::string alg_name)
 	std::cerr << "done. total memory: "<< alg.mem() + scenmgr.mem() << "\n";
 }
 
+void
+run_gdfs(warthog::scenario_manager& scenmgr, std::string alg_name)
+{
+    warthog::gridmap map(scenmgr.get_experiment(0)->map().c_str());
+	warthog::gridmap_expansion_policy expander(&map);
+	warthog::octile_heuristic heuristic(map.width(), map.height());
+    warthog::pqueue_min open;
+
+    warthog::greedy_depth_first_search<
+        warthog::octile_heuristic, 
+        warthog::gridmap_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&heuristic, &expander, &open);
+
+    run_experiments(&alg, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
+	std::cerr << "done. total memory: "<< alg.mem() + scenmgr.mem() << "\n";
+}
+
 int 
 main(int argc, char** argv)
 {
@@ -585,6 +605,10 @@ main(int argc, char** argv)
     else if(alg == "dfs")
     {
         run_dfs(scenmgr, alg); 
+    }
+    else if(alg == "gdfs")
+    {
+        run_gdfs(scenmgr, alg); 
     }
     else
     {

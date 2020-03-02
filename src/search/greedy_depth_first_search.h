@@ -1,13 +1,10 @@
-#ifndef WARTHOG_DEPTH_FIRST_SEARCH_H
-#define WARTHOG_DEPTH_FIRST_SEARCH_H
+#ifndef WARTHOG_GREEDY_DEPTH_FIRST_SEARCH_H
+#define WARTHOG_GREEDY_DEPTH_FIRST_SEARCH_H
 
-// search/depth_first_search.h
+// search/greedy_depth_first_search.h
 //
-// An implementation of depth-first search with some extras including:
-// - cost cutoffs
-// - expansion cutoffs
-// - expansion event callbacks
-// - heuristic function support
+// Greedy depth-first search. The search is guided by a heuristic function
+// which ranks the set of successors and generates the most promising first.
 //
 // @author: dharabor
 // @created: 2020-03-02
@@ -35,12 +32,12 @@ namespace warthog
 template< class H, 
           class E, 
           class Q = warthog::pqueue_min >
-class depth_first_search : public warthog::search
+class greedy_depth_first_search : public warthog::search
 {
     typedef std::pair<warthog::search_node*, uint32_t> dfs_pair;
 
 	public:
-		depth_first_search(H* heuristic, E* expander, Q* queue)
+		greedy_depth_first_search(H* heuristic, E* expander, Q* queue)
             : heuristic_(heuristic), expander_(expander), succ_queue_(queue)
 		{
             cost_cutoff_ = warthog::COST_MAX;
@@ -51,7 +48,7 @@ class depth_first_search : public warthog::search
             stack_.reserve(4096);
 		}
 
-		virtual ~depth_first_search() { }
+		virtual ~greedy_depth_first_search() { }
 
         virtual void
 		get_distance(
@@ -182,11 +179,11 @@ class depth_first_search : public warthog::search
                 uint32_t edge_id)>* on_generate_fn_;
 
 		// no copy ctor
-		depth_first_search(const depth_first_search& other) { } 
+		greedy_depth_first_search(const greedy_depth_first_search& other) { } 
 
         // no assignment operator
-		depth_first_search& 
-		operator=(const depth_first_search& other) { return *this; }
+		greedy_depth_first_search& 
+		operator=(const greedy_depth_first_search& other) { return *this; }
 
 		warthog::search_node*
 		search(warthog::solution& sol)
@@ -235,9 +232,12 @@ class depth_first_search : public warthog::search
                 // terminate if we've reached the limit for expanded nodes
                 if(sol.nodes_expanded_ > exp_cutoff_) { break; }
 
-                // search continues; pop a node off the stack
                 dfs_pair& c_pair = stack_.back();
 				warthog::search_node* current = c_pair.first;
+                current->set_expanded(true);
+				sol.nodes_expanded_++;
+
+                if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
                 // goal test
                 if(expander_->is_target(current, &pi_))
@@ -245,14 +245,7 @@ class depth_first_search : public warthog::search
                     target = current;
                     break;
                 }
-
-                // we process successors in order, from first to last
-                // as they come out of the expansion policy
-				expander_->expand(current, &pi_);
-                current->set_expanded(true);
-				sol.nodes_expanded_++;
-                if(on_expand_fn_) { (*on_expand_fn_)(current); }
-
+                    
 				#ifndef NDEBUG
 				if(pi_.verbose_)
 				{
@@ -266,27 +259,31 @@ class depth_first_search : public warthog::search
 				}
 				#endif
 
+                // we process successors in order, from first to last
+                // as they come out of the expansion policy
+				expander_->expand(current, &pi_);
 
-                // enumerate successors
 				warthog::search_node* n = 0;
 				warthog::cost_t cost_to_n = 0;
                 expander_->nth(c_pair.second++, n, cost_to_n);
 
-                if(n == 0)
-                {
-                    // all successors exhausted. backtrack
-                    //current->set_expanded(false); // only in polynomial domains
-                    stack_.pop_back();
-                    continue;
-                }
-
+                // sort the successors by f-value
+                succ_queue_->clear();
                 for( ; n != 0; expander_->next(n, cost_to_n) )
                 {
+
                     // to avoid cycles we store some data that records whether
                     // or not the proposed successor appears on the current branch
                     if( n->get_expanded() && 
                         n->get_search_number() == current->get_search_number() )
                     {
+                        #ifndef NDEBUG
+                        if(pi_.verbose_)
+                        {
+                            std::cerr <<
+                                "pruned (cycle) ";
+                        }
+                        #endif
                         continue;
                     }
 
@@ -295,28 +292,67 @@ class depth_first_search : public warthog::search
                         gval, gval + heuristic_->h(n->get_id(),pi_.target_id_));
 
                     // only generate successors below the f-value threshold
-                    if(n->get_f() < cost_cutoff_) 
+                    if(n->get_f() > cost_cutoff_) 
                     { 
-                        stack_.push_back(dfs_pair(n, 0));
-                        sol.nodes_inserted_++;
-                        if(on_expand_fn_) { (*on_expand_fn_)(n); }
-
                         #ifndef NDEBUG
                         if(pi_.verbose_)
                         {
-                            int32_t nx, ny;
-                            expander_->get_xy(n->get_id(), nx, ny);
-                            std::cerr 
-                                << "  generating (edgecost=" 
-                                << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
-                            n->print(std::cerr);
-                            std::cerr << std::endl;
+                            std::cerr <<
+                                "pruned (bound) ";
                         }
                         #endif
-                        break;
+                    }
+                    #ifndef NDEBUG
+                    else
+                    {
+                        if(pi_.verbose_)
+                        {
+                            std::cerr <<
+                                "candidate  ";
+                        }
                     }
 
+                    if(pi_.verbose_)
+                    {
+                        int32_t nx, ny;
+                        expander_->get_xy(n->get_id(), nx, ny);
+                        std::cerr 
+                            << " (edgecost=" 
+                            << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
+                        n->print(std::cerr);
+                        std::cerr << std::endl;
+                    }
+                    #endif
+
+                    succ_queue_->push(n);
                 }
+
+                if(succ_queue_->size() == 0)
+                {
+                    // all successors exhausted. backtrack
+                    stack_.pop_back();
+                    //current->set_expanded(false);
+                    continue;
+                }
+
+
+                n = succ_queue_->pop();
+                stack_.push_back(dfs_pair(n, 0));
+                sol.nodes_inserted_++;
+                if(on_expand_fn_) { (*on_expand_fn_)(n); }
+
+                #ifndef NDEBUG
+                if(pi_.verbose_)
+                {
+                    int32_t nx, ny;
+                    expander_->get_xy(n->get_id(), nx, ny);
+                    std::cerr 
+                        << "  generating (edgecost=" 
+                        << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
+                    n->print(std::cerr);
+                    std::cerr << std::endl;
+                }
+                #endif
 			}
 
 			mytimer.stop();
@@ -344,7 +380,7 @@ class depth_first_search : public warthog::search
             return target;
 		}
 
-}; // depth_first_search
+}; // greedy_depth_first_search
 
 } // warthog
 
