@@ -294,10 +294,13 @@ class cpd_search : public warthog::search
             if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
             // goal test
+            //
+            // In this anytime version we only update the incumbent in case we
+            // find a better path to the target.
             if(expander_->is_target(current, &pi_))
             {
+                debug("New path to target:", *current);
                 incumbent = current;
-                break;
             }
 
             // early termination: in case we want bounded-cost
@@ -315,7 +318,7 @@ class cpd_search : public warthog::search
                 continue;
             }
 
-            trace(pi_.verbose_, sol.nodes_expanded_, "- Expanding:", *current);
+            trace(pi_.verbose_, sol.nodes_expanded_, "- Expanding:", current->get_id());
 
             // generate successors
             expander_->expand(current, &pi_);

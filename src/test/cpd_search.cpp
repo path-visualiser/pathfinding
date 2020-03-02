@@ -48,11 +48,13 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
         THEN("We can still search") {
             warthog::problem_instance pi(start, goal, true);
             warthog::solution sol;
+            // Cannot cut corners
+            warthog::cost_t cost = warthog::ONE *
+                    (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
 
-            astar.get_distance(pi, sol);
+            astar.get_path(pi, sol);
 
-            REQUIRE(sol.sum_of_edge_costs_ ==
-                    warthog::DBL_ONE * 4 + warthog::DBL_ROOT_TWO * 2);
+            REQUIRE(sol.sum_of_edge_costs_ == cost);
         }
     }
 }
