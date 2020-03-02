@@ -215,7 +215,6 @@ class cpd_search : public warthog::search
 
     // early termination limits
     warthog::cost_t cost_cutoff_;  // Fixed upper bound
-    warthog::cost_t upper_bound_;  // Dynamic upper bound (based on h-value)
     uint32_t exp_cutoff_;          // Number of iterations
     double time_lim_;              // Time limit in nanoseconds
     uint32_t max_k_move_;          // "Distance" from target
@@ -267,9 +266,11 @@ class cpd_search : public warthog::search
         warthog::cost_t start_h, start_ub;
         heuristic_->h(pi_.start_id_, pi_.target_id_, start_h, start_ub);
 
-        upper_bound_ = start_ub;
         // `hscale` is contained in the heuristic
         start->init(pi_.instance_id_, warthog::SN_ID_MAX, 0, start_h, start_ub);
+
+        // In CPD search the start is always an incumbent
+        incumbent = start;
 
         open_->push(start);
         sol.nodes_inserted_++;
@@ -279,13 +280,12 @@ class cpd_search : public warthog::search
 
         // info(pi_.verbose_, pi_);
         info(pi_.verbose_, "cut-off =", cost_cutoff_, "- tlim =", time_lim_,
-             "UB =", upper_bound_, "- k-move =", max_k_move_);
+             "UB =", incumbent->get_ub(), "- k-move =", max_k_move_);
 
         // begin expanding
         while(open_->size())
         {
             warthog::search_node* current = open_->pop();
-            warthog::cost_t fval = current->get_f();
 
             current->set_expanded(true); // NB: set before generating
             assert(current->get_expanded());
@@ -299,26 +299,26 @@ class cpd_search : public warthog::search
             // find a better path to the target.
             if(expander_->is_target(current, &pi_))
             {
-                debug("New path to target:", *current);
+                debug(pi_.verbose_, "New path to target:", *current);
                 incumbent = current;
+                incumbent->set_ub(current->get_g());
             }
 
             // early termination: in case we want bounded-cost
             // search or if we want to impose some memory limit
-            if(fval > cost_cutoff_) { break; }
+            if(current->get_f() > cost_cutoff_) { break; }
             if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
-            // Early stopping criterion: the heuristic has found a, possibly
-            // pertubed, path to the destination which is acceptable.
-            if(current->get_ub() <= fval) { break; }
 
-            if (fval > upper_bound_)
+            // !(if f(n) < f(incumbent))
+            if (current->get_f() > incumbent->get_ub())
             {
                 debug(pi_.verbose_, "Pruning:", *current);
 
                 continue;
             }
 
-            trace(pi_.verbose_, sol.nodes_expanded_, "- Expanding:", current->get_id());
+            trace(pi_.verbose_, sol.nodes_expanded_, "- Expanding:",
+                  current->get_id());
 
             // generate successors
             expander_->expand(current, &pi_);
@@ -329,15 +329,17 @@ class cpd_search : public warthog::search
                 n != nullptr;
                 expander_->next(n, cost_to_n))
             {
+                warthog::cost_t gval = current->get_g() + cost_to_n;
                 sol.nodes_touched_++;
 
                 if(on_generate_fn_)
                 { (*on_generate_fn_)(n, current, cost_to_n, edge_id++); }
 
                 // add new nodes to the fringe
+                //
+                // else
                 if(n->get_search_number() != current->get_search_number())
                 {
-                    warthog::cost_t gval = current->get_g() + cost_to_n;
                     warthog::cost_t hval;
                     warthog::cost_t ub;
 
@@ -346,14 +348,6 @@ class cpd_search : public warthog::search
                     if (ub < warthog::COST_MAX)
                     {
                         ub += gval;
-
-                        if (ub < upper_bound_)
-                        {
-                            debug(pi_.verbose_, "Updating UB to", ub);
-
-                            upper_bound_ = ub;
-                            incumbent = current;
-                        }
                     }
 
                     // Should we check for overflow here?
@@ -367,43 +361,40 @@ class cpd_search : public warthog::search
 
                     if(on_relax_fn_) { (*on_relax_fn_)(n); }
                 }
-                // The neighbour may have been expanded on the way to the target
-                // following an inflated heuristic
-                else if(n->get_expanded())
+                // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
+                else if (gval < n->get_g())
                 {
-                    warthog::cost_t gval = current->get_g() + cost_to_n;
-                    warthog::cost_t ub = n->get_ub();
+                    n->relax(gval, current->get_id());
 
-                    // We need to check whether `n` actually improves the UB
-                    if (gval < n->get_g() && ub < warthog::COST_MAX &&
-                        gval + ub < upper_bound_)
+                    if(on_relax_fn_) { (*on_relax_fn_)(n); }
+                    // The neighbour may have been expanded on the way to the
+                    // target following an inflated heuristic
+                    //
+                    // n_i \in CLOSED
+                    if(n->get_expanded())
                     {
                         open_->push(n);
+                        sol.nodes_inserted_++;
                         debug(pi_.verbose_, "Reinsert:", *n);
                     }
-                    else
+                    // else
+                    else if(open_->contains(n))
                     {
-                        debug(pi_.verbose_, "Closed:", *n);
-                    }
-                }
-                // update a node from the fringe
-                else if(open_->contains(n))
-                {
-                    warthog::cost_t gval = current->get_g() + cost_to_n;
-                    if(gval < n->get_g())
-                    {
-                        n->relax(gval, current->get_id());
                         open_->decrease_key(n);
                         sol.nodes_updated_++;
-
                         debug(pi_.verbose_, "Updating:", *n);
+                    }
 
-                        if(on_relax_fn_) { (*on_relax_fn_)(n); }
-                    }
-                    else
+                    // We need to check whether `n` actually improves the UB
+                    if (n->get_ub() < incumbent->get_ub())
                     {
-                        debug(pi_.verbose_, "Not updating:", *n);
+                        debug(pi_.verbose_, "Update UB:", *n);
+                        incumbent = n;
                     }
+                }
+                else
+                {
+                    debug(pi_.verbose_, "Skip:", *n);
                 }
             }
         }
