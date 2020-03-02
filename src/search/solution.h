@@ -9,6 +9,9 @@
 //
 
 #include <vector>
+#include <iostream>
+
+#include "constants.h"
 
 namespace warthog
 {
@@ -84,5 +87,7 @@ class solution
 };
 
 }
+
+std::ostream& operator<<(std::ostream& str, warthog::solution& sol);
 
 #endif
