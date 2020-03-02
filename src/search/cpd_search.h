@@ -293,29 +293,18 @@ class cpd_search : public warthog::search
 
             if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
-            // goal test
-            //
-            // In this anytime version we only update the incumbent in case we
-            // find a better path to the target.
-            if(expander_->is_target(current, &pi_))
-            {
-                debug(pi_.verbose_, "New path to target:", *current);
-                incumbent = current;
-                incumbent->set_ub(current->get_g());
-            }
-
             // early termination: in case we want bounded-cost
             // search or if we want to impose some memory limit
             if(current->get_f() > cost_cutoff_) { break; }
             if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
 
             // !(if f(n) < f(incumbent))
-            if (current->get_f() > incumbent->get_ub())
-            {
-                debug(pi_.verbose_, "Pruning:", *current);
+            // if (current->get_f() > incumbent->get_ub())
+            // {
+            //     debug(pi_.verbose_, "Pruning:", *current);
 
-                continue;
-            }
+            //     continue;
+            // }
 
             trace(pi_.verbose_, sol.nodes_expanded_, "- Expanding:",
                   current->get_id());
@@ -361,40 +350,50 @@ class cpd_search : public warthog::search
 
                     if(on_relax_fn_) { (*on_relax_fn_)(n); }
                 }
-                // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
-                else if (gval < n->get_g())
+                // such that g(n) + c(n, n_i)+ h(n_i) < f(incumbent)
+                else if (n->get_f() < incumbent->get_ub())
                 {
-                    n->relax(gval, current->get_id());
-
-                    if(on_relax_fn_) { (*on_relax_fn_)(n); }
-                    // The neighbour may have been expanded on the way to the
-                    // target following an inflated heuristic
-                    //
-                    // n_i \in CLOSED
-                    if(n->get_expanded())
+                    // if n_i is a goal node
+                    if(expander_->is_target(current, &pi_))
                     {
-                        open_->push(n);
-                        sol.nodes_inserted_++;
-                        debug(pi_.verbose_, "Reinsert:", *n);
+                        debug(pi_.verbose_, "New path to target:", *current);
+                        incumbent = current;
+                        incumbent->set_ub(current->get_g());
                     }
-                    // else
-                    else if(open_->contains(n))
+                    // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
+                    else if (gval < n->get_g())
                     {
-                        open_->decrease_key(n);
-                        sol.nodes_updated_++;
-                        debug(pi_.verbose_, "Updating:", *n);
-                    }
+                        n->relax(gval, current->get_id());
 
-                    // We need to check whether `n` actually improves the UB
-                    if (n->get_ub() < incumbent->get_ub())
-                    {
-                        debug(pi_.verbose_, "Update UB:", *n);
-                        incumbent = n;
+                        if(on_relax_fn_) { (*on_relax_fn_)(n); }
+                        // n_i \in CLOSED
+                        if(n->get_expanded())
+                        {
+                            open_->push(n);
+                            sol.nodes_inserted_++;
+                            debug(pi_.verbose_, "Reinsert:", *n);
+                        }
+                        // else
+                        else if(open_->contains(n))
+                        {
+                            open_->decrease_key(n);
+                            sol.nodes_updated_++;
+                            debug(pi_.verbose_, "Updating:", *n);
+                        }
+
+                        // We need to check whether `n` actually improves the UB
+                        if (n->get_ub() < incumbent->get_ub())
+                        {
+                            debug(pi_.verbose_, "Update UB:", *n);
+                            incumbent = n;
+
+                            // TODO rebuild path or at least update target?
+                        }
                     }
                 }
                 else
                 {
-                    debug(pi_.verbose_, "Skip:", *n);
+                    debug(pi_.verbose_, "Pruning:", *n);
                 }
             }
         }
@@ -423,7 +422,7 @@ class cpd_search : public warthog::search
 
             if (n == warthog::SN_ID_MAX)
             {
-                return nullptr;
+                incumbent = nullptr;
             }
 
             incumbent = expander_->generate(n);
