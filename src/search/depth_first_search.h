@@ -9,6 +9,13 @@
 // - expansion event callbacks
 // - heuristic function support
 //
+// NB: This search is intended for POLYNOMIAL DOMAINS. where the total
+// number of nodes in the search space does not grow exponentially
+// with the size of the problem instance.
+// For exponential domains, the memory allocator needs to be different
+// and we need a hashing container to track which nodes are on the 
+// current branch (i.e. to avoid cycles).
+//
 // @author: dharabor
 // @created: 2020-03-02
 //
@@ -275,7 +282,7 @@ class depth_first_search : public warthog::search
                 if(n == 0)
                 {
                     // all successors exhausted. backtrack
-                    //current->set_expanded(false); // only in polynomial domains
+                    //current->set_expanded(false); 
                     stack_.pop_back();
                     continue;
                 }

@@ -6,6 +6,13 @@
 // Greedy depth-first search. The search is guided by a heuristic function
 // which ranks the set of successors and generates the most promising first.
 //
+// NB: This search is intended for POLYNOMIAL DOMAINS. where the total
+// number of nodes in the search space does not grow exponentially
+// with the size of the problem instance.
+// For exponential domains, the memory allocator needs to be different
+// and we need a hashing container to track which nodes are on the 
+// current branch (i.e. to avoid cycles).
+//
 // @author: dharabor
 // @created: 2020-03-02
 //
@@ -330,8 +337,8 @@ class greedy_depth_first_search : public warthog::search
                 if(succ_queue_->size() == 0)
                 {
                     // all successors exhausted. backtrack
-                    stack_.pop_back();
                     //current->set_expanded(false);
+                    stack_.pop_back();
                     continue;
                 }
 
