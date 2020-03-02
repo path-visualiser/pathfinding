@@ -78,7 +78,7 @@ class graph_expansion_policy
                 warthog::graph::edge *e = 
                     current_graph_node_->outgoing_begin() + edge_index_;
                 ret = (this->*fn_generate_successor)
-                         (e->node_id_, edge_index_, e);
+                         (e->node_id_, edge_index_, *e);
                 cost = e->wt_;
             }
             else
@@ -87,6 +87,24 @@ class graph_expansion_policy
                 cost = 0;
             }
 		}
+
+        // return the nth successor 
+        // NB: also adjust the current neighbour index such that the 
+        // subsequent call to ::next will return the nth+1 neighbour.
+        inline void
+        nth(uint32_t nth_index, warthog::search_node*& ret, double& cost)
+        {
+            if(nth_index < current_graph_node_->out_degree())
+            {
+                edge_index_ = nth_index;
+                this->n(ret, cost);
+            }
+            else
+            {
+                ret = 0;
+                cost = 0;
+            }
+        }
 
 		inline void
 		next(warthog::search_node*& ret, double& cost)

@@ -116,6 +116,15 @@ class cpd_heuristic
             return warthog::COST_MAX;
         }
 
+        inline size_t
+        mem()
+        {
+            return 
+                cpd_->mem() + 
+                sizeof(warthog::cpd_heuristic_cache_entry)*cache_.capacity() +
+                sizeof(stack_pair) * stack_.size();
+        }
+
     private:
         warthog::cpd::graph_oracle* cpd_;
         std::vector<warthog::cpd_heuristic_cache_entry> cache_;

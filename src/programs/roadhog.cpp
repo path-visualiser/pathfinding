@@ -12,13 +12,15 @@
 #include "bbaf_filter.h"
 #include "bb_filter.h"
 #include "bch_search.h"
+#include "bch_expansion_policy.h"
+#include "bch_bb_expansion_policy.h"
 #include "bidirectional_graph_expansion_policy.h"
 #include "bidirectional_search.h"
 #include "cfg.h"
-#include "bch_expansion_policy.h"
-#include "bch_bb_expansion_policy.h"
 #include "constants.h"
 #include "contraction.h"
+#include "cpd_heuristic.h"
+#include "depth_first_search.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "fch_bb_expansion_policy.h"
@@ -69,7 +71,7 @@ help()
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf\n"
     << "\tfch, fch-af, fch-bb, fch-bbaf, fch-dfs\n"
-    << "\tcpd-search\n"
+    << "\tdfs, cpd, cpd-search\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at runtime\n";
 }
@@ -674,6 +676,86 @@ run_cpd_search(warthog::util::cfg& cfg,
 }
 
 void
+run_cpd(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    std::string cpd_filename = cfg.get_param_value("cpd");
+    if(cpd_filename == "")
+    {
+        cpd_filename = xy_filename + ".cpd";
+    }
+
+    warthog::graph::xy_graph g;
+
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    warthog::cpd::graph_oracle oracle(&g);
+    ifs.open(cpd_filename);
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        oracle.precompute();
+        std::ofstream ofs(cpd_filename);
+        ofs << oracle;
+        std::cerr << "writing " << cpd_filename << std::endl;
+    }
+
+    warthog::simple_graph_expansion_policy expander(&g);
+    warthog::cpd_heuristic h(&oracle);
+    warthog::pqueue_min open;
+
+    warthog::depth_first_search<
+        warthog::cpd_heuristic, 
+        warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_dfs(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    warthog::graph::xy_graph g;
+
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    warthog::simple_graph_expansion_policy expander(&g);
+    warthog::zero_heuristic h;
+    warthog::pqueue_min open;
+
+    warthog::depth_first_search<
+        warthog::zero_heuristic, 
+        warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
 run_dimacs(warthog::util::cfg& cfg)
 {
     std::string alg_name = cfg.get_param_value("alg");
@@ -753,6 +835,14 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "cpd-search")
     {
         run_cpd_search(cfg, parser, alg_name);
+    }
+    else if(alg_name == "cpd")
+    {
+        run_cpd(cfg, parser, alg_name);
+    }
+    else if(alg_name == "dfs")
+    {
+        run_dfs(cfg, parser, alg_name);
     }
     else
     {

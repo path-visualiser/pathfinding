@@ -74,6 +74,22 @@ class graph_oracle
         inline warthog::graph::xy_graph* 
         get_graph() { return g_; } 
 
+        inline size_t
+        mem()
+        {
+            size_t retval = 
+                g_->mem() + 
+                sizeof(uint32_t) * order_.size() + 
+                sizeof(std::vector<warthog::cpd::rle_run32>) * fm_.size();
+
+            for(uint32_t i = 0; i < fm_.size(); i++)
+            {
+                retval += sizeof(warthog::cpd::rle_run32) * fm_.at(i).size();
+            }
+
+            return retval; 
+        }
+
         friend std::ostream&
         operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
 

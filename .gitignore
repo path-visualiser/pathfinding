@@ -2,6 +2,7 @@
 *.o
 ./.*/*.d
 ./.*/*.o
+./.gdb_history
 .DS_Store
 hog/apps/hog/objs/
 hog/apps/libs/
@@ -24,6 +25,7 @@ maps/sc1/
 maps/subgoal_graphs/
 scenarios/scenarios
 src.current/
+src/.gdb_history
 src/.RData
 src/.Rhistory
 src/.exrc

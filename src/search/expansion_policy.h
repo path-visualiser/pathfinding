@@ -67,6 +67,24 @@ class expansion_policy
             }
 		}
 
+        // return the nth successor 
+        // NB: also adjust the current neighbour index such that the 
+        // subsequent call to ::next will return the nth+1 neighbour.
+        inline void
+        nth(uint32_t nth_index, warthog::search_node*& ret, double& cost)
+        {
+            if(nth_index < neis_->size())
+            {
+                current_ = nth_index;
+                n(ret, cost);
+            }
+            else
+            {
+                ret = 0;
+                cost = 0;
+            }
+        }
+
 		inline void
 		next(warthog::search_node*& ret, double& cost)
 		{
