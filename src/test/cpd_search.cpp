@@ -5,9 +5,9 @@
 #include "xy_graph.h"
 #include "cpd_search.h"
 #include "dimacs_parser.h"
+#include "cpd_heuristic.h"
 
 using namespace std;
-using namespace warthog;
 
 int main(int argv, char* args[]) {
 	Catch::Session session;
@@ -18,26 +18,41 @@ int main(int argv, char* args[]) {
 SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 {
     string map_name = "square01.map";
-    graph::xy_graph g;
-    dimacs_parser d(map_name.c_str());
+    warthog::graph::xy_graph g;
+    warthog::gridmap d(map_name.c_str());
 
-    graph::dimacs_to_xy_graph(d, g, false, false, false);
+    warthog::graph::gridmap_to_xy_graph(&d, &g, false);
     warthog::simple_graph_expansion_policy expander(&g);
 
+    warthog::sn_id_t start = 0;
+    warthog::sn_id_t goal = 19;
+    // For some reason cannot use `warthog::sn_id_t`
+    int32_t x, y;
+
+    g.get_xy(start, x, y);
+    REQUIRE(x == 0);
+    REQUIRE(y == 0);
+    g.get_xy(goal, x, y);
+    REQUIRE(x == 400000);  // (5 - 1) * GRID_TO_GRAPH_SCALE_FACTOR
+    REQUIRE(y == 400000);
+
     GIVEN("No CPD heuristic") {
-        warthog::euclidean_heuristic h(&g);
+        warthog::cpd_heuristic h(&g);
         warthog::pqueue_min open;
 
         warthog::cpd_search<
-            warthog::euclidean_heuristic,
+            warthog::cpd_heuristic,
             warthog::simple_graph_expansion_policy>
                 astar(&h, &expander, &open);
 
         THEN("We can still search") {
-            warthog::problem_instance pi(0, 19, true);
+            warthog::problem_instance pi(start, goal, true);
             warthog::solution sol;
 
-            astar.get_path(pi, sol);
+            astar.get_distance(pi, sol);
+
+            REQUIRE(sol.sum_of_edge_costs_ ==
+                    warthog::DBL_ONE * 4 + warthog::DBL_ROOT_TWO * 2);
         }
     }
 }
