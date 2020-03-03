@@ -55,6 +55,29 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
             astar.get_path(pi, sol);
 
             REQUIRE(sol.sum_of_edge_costs_ == cost);
+
+        WHEN("We do not have time to search")
+        {
+            astar.set_max_time_cutoff(0);
+
+            THEN("We do not find a solution")
+            {
+                astar.get_path(pi, sol);
+
+                REQUIRE(sol.path_.empty());
+            }
+        }
+
+        WHEN("We have a bit of time to search")
+        {
+            astar.set_max_ms_cutoff(1);
+
+            THEN("We explore some of the tree")
+            {
+                astar.get_path(pi, sol);
+
+                REQUIRE(sol.nodes_expanded_ > 0);
+            }
         }
     }
 }

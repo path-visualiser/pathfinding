@@ -45,7 +45,7 @@ class cpd_search : public warthog::search
         open_ = queue;
         cost_cutoff_ = DBL_MAX;
         exp_cutoff_ = UINT32_MAX;
-        time_lim_ = DBL_MAX;
+        time_cutoff_ = DBL_MAX;
         max_k_move_ = UINT32_MAX;
         on_relax_fn_ = 0;
         on_generate_fn_ = 0;
@@ -191,6 +191,22 @@ class cpd_search : public warthog::search
     inline uint32_t
     get_max_expansions_cutoff() { return exp_cutoff_; }
 
+    // Set a time limit cutoff
+    inline void
+    set_max_time_cutoff(uint32_t cutoff) { time_cutoff_ = cutoff; }
+
+    inline void
+    set_max_us_cutoff(uint32_t cutoff) { set_max_time_cutoff(cutoff * 1e3); }
+
+    inline void
+    set_max_ms_cutoff(uint32_t cutoff) { set_max_time_cutoff(cutoff * 1e6); }
+
+    inline void
+    set_max_s_cutoff(uint32_t cutoff) { set_max_time_cutoff(cutoff * 1e9); }
+
+    inline uint32_t
+    get_max_time_cutoff() { return time_cutoff_; }
+
     virtual inline size_t
     mem()
     {
@@ -216,7 +232,7 @@ class cpd_search : public warthog::search
     // early termination limits
     warthog::cost_t cost_cutoff_;  // Fixed upper bound
     uint32_t exp_cutoff_;          // Number of iterations
-    double time_lim_;              // Time limit in nanoseconds
+    double time_cutoff_;           // Time limit in nanoseconds
     uint32_t max_k_move_;          // "Distance" from target
 
     // callback for when a node is relaxed
@@ -330,7 +346,7 @@ class cpd_search : public warthog::search
         { (*on_generate_fn_)(start, 0, 0, UINT32_MAX); }
 
         user(pi_.verbose_, pi_);
-        info(pi_.verbose_, "cut-off =", cost_cutoff_, "- tlim =", time_lim_,
+        info(pi_.verbose_, "cut-off =", cost_cutoff_, "- tlim =", time_cutoff_,
              "- k-move =", max_k_move_);
 
         if (start_ub < warthog::COST_MAX)
@@ -357,7 +373,8 @@ class cpd_search : public warthog::search
             // search or if we want to impose some memory limit
             if(current->get_f() > cost_cutoff_) { break; }
             if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
-
+            // Exceeded time limit
+            if (mytimer.elapsed_time_nano() > time_cutoff_) { break; }
             // Extra early-stopping criteria when we have an upper bound; in
             // CPD terms, we have an "unperturbed path."
             if (current->get_f() == current->get_ub()) { break; }
