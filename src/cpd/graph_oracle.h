@@ -42,10 +42,25 @@ class graph_oracle
         virtual ~graph_oracle() { } 
 
         inline uint32_t 
+        get_distance(warthog::sn_id_t source_id, 
+                 warthog::sn_id_t target_id)
+        {
+            warthog::cost_t retval = 0;
+            while(source_id != target_id)
+            {
+                uint32_t move = get_move(source_id, target_id);
+                warthog::graph::node* n = g_->get_node(source_id);
+                warthog::graph::edge* e = (n->outgoing_begin() + move);
+                retval += e->wt_;
+                source_id = e->node_id_;
+            }
+            return retval;
+        }
+
+        inline uint32_t 
         get_move(warthog::sn_id_t source_id, 
                  warthog::sn_id_t target_id)
         {
-            assert(source_id < g_->get_num_nodes());
             if(fm_.at(source_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
 
             std::vector<warthog::cpd::rle_run32>& row = fm_.at(source_id);
@@ -58,6 +73,11 @@ class graph_oracle
                 if(target_index < row.at(mid).get_index()) { end = mid ;  }
                 else { begin = mid; }
             }
+            //if(source_id == 433 && target_id == 480)
+            //{
+            //    std::cerr << "order id of target 480 " << order_.at(480) << std::endl;
+            //    std::cerr << "run head index " << row.at(begin).get_index() << std::endl;
+            //}
             return row.at(begin).get_move();
         }
 

@@ -272,7 +272,7 @@ class greedy_depth_first_search : public warthog::search
 
 				warthog::search_node* n = 0;
 				warthog::cost_t cost_to_n = 0;
-                expander_->nth(c_pair.second++, n, cost_to_n);
+                expander_->get_successor(c_pair.second++, n, cost_to_n);
 
                 // sort the successors by f-value
                 succ_queue_->clear();

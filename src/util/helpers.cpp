@@ -120,3 +120,23 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
     return 0;
 }
 
+void
+warthog::helpers::value_index_swap_array(
+        std::vector<uint32_t>& vec)
+{
+    // re-maps @param vec s.t. for each x and i
+    // v[i] = x becomes v[x] = i
+    std::vector<uint32_t> tmp;
+    tmp.resize(vec.size());
+    for(uint32_t i = 0; i < vec.size(); i++)
+    {
+        tmp.at(i) = vec.at(i);
+    }
+
+    assert( (*std::min_element(tmp.begin(), tmp.end())) == 0);
+    assert( (*std::max_element(tmp.begin(), tmp.end())) == vec.size()-1);
+    for(uint32_t i = 0; i < tmp.size(); i++)
+    {
+        vec.at(tmp.at(i)) = i;
+    }
+}

@@ -277,7 +277,7 @@ class depth_first_search : public warthog::search
                 // enumerate successors
 				warthog::search_node* n = 0;
 				warthog::cost_t cost_to_n = 0;
-                expander_->nth(c_pair.second++, n, cost_to_n);
+                expander_->get_successor(c_pair.second++, n, cost_to_n);
 
                 if(n == 0)
                 {

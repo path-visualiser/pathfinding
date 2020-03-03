@@ -71,11 +71,11 @@ class expansion_policy
         // NB: also adjust the current neighbour index such that the 
         // subsequent call to ::next will return the nth+1 neighbour.
         inline void
-        nth(uint32_t nth_index, warthog::search_node*& ret, double& cost)
+        get_successor(uint32_t which, warthog::search_node*& ret, double& cost)
         {
-            if(nth_index < neis_->size())
+            if(which < neis_->size())
             {
-                current_ = nth_index;
+                current_ = which;
                 n(ret, cost);
             }
             else
@@ -92,14 +92,8 @@ class expansion_policy
             n(ret, cost);
 		}
 
-        //inline warthog::search_node* 
-        //last()
-        //{
-        //    return (neis_->back()).node_;
-        //}
-
         inline size_t 
-        get_num_neighbours() { return neis_->size(); } 
+        num_successors() { return neis_->size(); } 
 
 		virtual size_t
 		mem()

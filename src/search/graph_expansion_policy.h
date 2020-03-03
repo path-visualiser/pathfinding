@@ -43,9 +43,9 @@ class graph_expansion_policy
                                         <FILTER>::fn_generate_with_filter;
             }
 
-            nodes_pool_size_ = g_->get_num_nodes();
-            nodepool_ = new warthog::search_node[nodes_pool_size_];
-            for(uint32_t i = 0; i < nodes_pool_size_; i++)
+            node_pool_size_ = g_->get_num_nodes();
+            nodepool_ = new warthog::search_node[node_pool_size_];
+            for(uint32_t i = 0; i < node_pool_size_; i++)
             {
                 nodepool_[i].set_id(i);
             }
@@ -92,11 +92,11 @@ class graph_expansion_policy
         // NB: also adjust the current neighbour index such that the 
         // subsequent call to ::next will return the nth+1 neighbour.
         inline void
-        nth(uint32_t nth_index, warthog::search_node*& ret, double& cost)
+        get_successor(uint32_t which, warthog::search_node*& ret, double& cost)
         {
-            if(nth_index < current_graph_node_->out_degree())
+            if(which < current_graph_node_->out_degree())
             {
-                edge_index_ = nth_index;
+                edge_index_ = which;
                 this->n(ret, cost);
             }
             else
@@ -180,13 +180,13 @@ class graph_expansion_policy
         }
 
         size_t
-        get_nodes_pool_size() { return nodes_pool_size_; } 
+        get_node_pool_size() { return node_pool_size_; } 
 
         size_t
 		mem() 
         {
             return 
-                sizeof(warthog::search_node)*nodes_pool_size_ +
+                sizeof(warthog::search_node)*node_pool_size_ +
                 sizeof(this); 
         }
 
@@ -198,7 +198,7 @@ class graph_expansion_policy
         warthog::graph::node* current_graph_node_;
 
         warthog::search_node* nodepool_;
-        size_t nodes_pool_size_;
+        size_t node_pool_size_;
 
         typedef 
             warthog::search_node*
