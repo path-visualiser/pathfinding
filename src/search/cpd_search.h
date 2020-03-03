@@ -386,8 +386,8 @@ class cpd_search : public warthog::search
                 continue;
             }
 
-            trace(pi_.verbose_, sol.nodes_expanded_, "- Expanding:",
-                  current->get_id());
+            trace(pi_.verbose_, "[", mytimer.elapsed_time_micro(),"]",
+                  sol.nodes_expanded_, "- Expanding:", current->get_id());
 
             // generate successors
             expander_->expand(current, &pi_);
