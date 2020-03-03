@@ -746,17 +746,7 @@ run_cpd(warthog::util::cfg& cfg,
     warthog::graph::read_xy(ifs, g);
     ifs.close();
 
-
-    warthog::graph::node* n = g.get_node(433);
-    for(uint32_t i = 0; i < n->out_degree(); i++)
-    {
-        warthog::graph::edge* e = n->outgoing_begin() + i;
-        e->print(std::cerr);
-        std::cerr << std::endl;
-    }
-
     warthog::cpd::graph_oracle oracle(&g);
-
     std::string cpd_filename = cfg.get_param_value("cpd");
     if(cpd_filename == "")
     {
@@ -842,6 +832,57 @@ run_dfs(warthog::util::cfg& cfg,
     warthog::depth_first_search<
         warthog::zero_heuristic, 
         warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_cpd_dfs(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    warthog::graph::xy_graph g;
+
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    warthog::cpd::graph_oracle oracle(&g);
+    std::string cpd_filename = cfg.get_param_value("cpd");
+    if(cpd_filename == "")
+    {
+        cpd_filename = xy_filename + ".cpd";
+    }
+
+    ifs.open(cpd_filename);
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        std::cerr << "precomputing... " <<std::endl;
+        oracle.precompute();
+        std::ofstream ofs(cpd_filename);
+        ofs << oracle;
+        std::cerr << "writing " << cpd_filename << std::endl;
+    }
+
+    warthog::cpd_graph_expansion_policy expander(&oracle);
+    warthog::zero_heuristic h;
+    warthog::pqueue_min open;
+
+    warthog::depth_first_search<
+        warthog::zero_heuristic, 
+        warthog::cpd_graph_expansion_policy, 
         warthog::pqueue_min> 
             alg(&h, &expander, &open);
 
@@ -936,6 +977,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "dfs")
     {
         run_dfs(cfg, parser, alg_name);
+    }
+    else if(alg_name == "cpd-dfs")
+    {
+        run_cpd_dfs(cfg, parser, alg_name);
     }
     else
     {

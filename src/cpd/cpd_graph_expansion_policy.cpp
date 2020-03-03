@@ -5,6 +5,7 @@ void
 warthog::cpd_graph_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* pi)
 {
+    reset();
     warthog::graph::xy_graph* g = oracle_->get_graph();
     warthog::graph::node* graph_node = g->get_node(current->get_id());
 
