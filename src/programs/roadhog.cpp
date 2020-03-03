@@ -690,19 +690,20 @@ run_cpd_search(warthog::util::cfg& cfg,
         return;
     }
 
+    // read the graph
+    warthog::graph::xy_graph g;
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    // read the cpd (create from scratch if one doesn't exist)
+    warthog::cpd::graph_oracle oracle(&g);
     std::string cpd_filename = cfg.get_param_value("cpd");
     if(cpd_filename == "")
     {
         cpd_filename = xy_filename + ".cpd";
     }
 
-    warthog::graph::xy_graph g;
-
-    std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
-    ifs.close();
-
-    warthog::cpd::graph_oracle oracle(&g);
     ifs.open(cpd_filename);
     if(ifs.is_open())
     {
@@ -710,23 +711,24 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
     else
     {
+        std::cerr << "precomputing... " <<std::endl;
         oracle.precompute();
         std::ofstream ofs(cpd_filename);
         ofs << oracle;
         std::cerr << "writing " << cpd_filename << std::endl;
     }
 
-//    warthog::simple_graph_expansion_policy expander(&g);
-//    warthog::euclidean_heuristic h(&g);
-//    warthog::pqueue_min open;
-//
-//    warthog::flexible_astar<
-//        warthog::euclidean_heuristic, 
-//        warthog::simple_graph_expansion_policy, 
-//        warthog::pqueue_min> 
-//            alg(&h, &expander, &open);
-//
-//    run_experiments(&alg, alg_name, parser, std::cout);
+    warthog::simple_graph_expansion_policy expander(&g);
+    warthog::cpd_heuristic h(&oracle);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar<
+        warthog::cpd_heuristic, 
+        warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
