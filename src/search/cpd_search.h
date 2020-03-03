@@ -259,6 +259,37 @@ class cpd_search : public warthog::search
         return warthog::COST_MAX;
     }
 
+    /**
+     * Determine whether we should be pruning a node or adding it to the open
+     * list.
+     */
+    bool
+    should_prune_(warthog::search_node *incumbent,
+                  warthog::search_node *n,
+                  std::string stage)
+    {
+        bool prune = false;
+
+        // if not [incumbent = nil or f(n) < f(incumbent)]
+        if (incumbent != nullptr)
+        {
+            if (n->get_f() < incumbent->get_f())
+            {
+                debug(pi_.verbose_, stage, "f-val pruning:", *n);
+                prune = true;
+            }
+
+            if (n->get_ub() < warthog::COST_MAX &&
+                n->get_ub() >= incumbent->get_ub())
+            {
+                debug(pi_.verbose_, stage, "UB pruning:", *n);
+                prune = true;
+            }
+        }
+
+        return prune;
+    }
+
     // TODO refactor node information inside Stats
     warthog::search_node*
     search(warthog::solution& sol)
@@ -327,10 +358,10 @@ class cpd_search : public warthog::search
             if(current->get_f() > cost_cutoff_) { break; }
             if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
 
-            // if not [incumbent = nil or f(n) < f(incumbent)]
-            if (incumbent != nullptr && current->get_f() < incumbent->get_f())
+            // The incumbent may have been updated after this node was
+            // generated, so we need to prune again.
+            if (should_prune_(incumbent, current, "Late"))
             {
-                debug(pi_.verbose_, "Pruning:", *current);
                 continue;
             }
 
@@ -376,18 +407,10 @@ class cpd_search : public warthog::search
                     if(on_relax_fn_) { (*on_relax_fn_)(n); }
                 }
 
-                // Pruning using the incumbent
-                if (incumbent != nullptr && n->get_ub() < warthog::COST_MAX &&
-                    n->get_ub() >= incumbent->get_ub())
+                // It is technically more efficient to prevent adding nodes to
+                // the queue, but harder to follow.
+                if (should_prune_(incumbent, current, "Early"))
                 {
-                    debug(pi_.verbose_, "UB pruning:", *n);
-                    continue;
-                }
-
-                // not [such that g(n) + c(n, n_i)+ h(n_i) < f(incumbent)]
-                if (incumbent != nullptr && n->get_f() >= incumbent->get_f())
-                {
-                    debug(pi_.verbose_, "f-val pruning:", *n);
                     continue;
                 }
 
