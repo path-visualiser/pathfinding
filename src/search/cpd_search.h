@@ -306,6 +306,47 @@ class cpd_search : public warthog::search
         return prune;
     }
 
+    bool
+    early_stop_(warthog::search_node* current,
+                warthog::solution* sol,
+                warthog::timer* mytimer)
+    {
+        bool stop = false;
+
+        mytimer->stop();
+        // early termination: in case we want bounded-cost
+        // search or if we want to impose some memory limit
+        if(current->get_f() > cost_cutoff_)
+        {
+            debug(pi_.verbose_, "Cost cutoff", current->get_f(), ">",
+                  cost_cutoff_);
+            stop = true;
+        }
+        if(sol->nodes_expanded_ >= exp_cutoff_)
+        {
+            debug(pi_.verbose_, "Expanded cutoff", sol->nodes_expanded_, ">",
+                  exp_cutoff_);
+            stop = true;
+        }
+        // Exceeded time limit
+        if (mytimer->elapsed_time_nano() > time_cutoff_)
+        {
+            debug(pi_.verbose_, "Time cutoff", mytimer->elapsed_time_nano(),
+                  ">", time_cutoff_);
+            stop = true;
+        }
+        // Extra early-stopping criteria when we have an upper bound; in
+        // CPD terms, we have an "unperturbed path."
+        if (current->get_f() == current->get_ub())
+        {
+            debug(pi_.verbose_, "Early stop");
+            stop = true;
+        }
+
+        // A bit of a travestite use here.
+        return stop;
+    }
+
     // TODO refactor node information inside Stats
     warthog::search_node*
     search(warthog::solution& sol)
@@ -369,15 +410,10 @@ class cpd_search : public warthog::search
 
             if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
-            // early termination: in case we want bounded-cost
-            // search or if we want to impose some memory limit
-            if(current->get_f() > cost_cutoff_) { break; }
-            if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
-            // Exceeded time limit
-            if (mytimer.elapsed_time_nano() > time_cutoff_) { break; }
-            // Extra early-stopping criteria when we have an upper bound; in
-            // CPD terms, we have an "unperturbed path."
-            if (current->get_f() == current->get_ub()) { break; }
+            if (early_stop_(current, &sol, &mytimer))
+            {
+                break;
+            }
 
             // The incumbent may have been updated after this node was
             // generated, so we need to prune again.
