@@ -430,7 +430,7 @@ class cpd_search : public warthog::search
 
                 // It is technically more efficient to prevent adding nodes to
                 // the queue, but harder to follow.
-                if (should_prune_(incumbent, current, "Early"))
+                if (should_prune_(incumbent, n, "Early"))
                 {
                     continue;
                 }
