@@ -438,9 +438,12 @@ class cpd_search : public warthog::search
                 // if n_i is a goal node
                 if(expander_->is_target(n, &pi_))
                 {
-                    trace(pi_.verbose_, "New path to target:", *n);
                     incumbent = n;
+                    incumbent->relax(gval, current->get_id());
                     incumbent->set_ub(n->get_g());
+                    trace(pi_.verbose_, "New path to target:", *n);
+
+                    // TODO on_relax_fn_?
                 }
                 else
                 {
