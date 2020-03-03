@@ -31,7 +31,7 @@
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
 #include "graph_oracle.h"
-#include "graph_oracle_expansion_policy.h"
+#include "cpd_graph_expansion_policy.h"
 #include "lazy_graph_contraction.h"
 #include "xy_graph.h"
 #include "solution.h"
@@ -777,7 +777,7 @@ run_cpd(warthog::util::cfg& cfg,
         std::cerr << "writing " << cpd_filename << std::endl;
     }
 
-    warthog::graph_oracle_expansion_policy expander(&oracle);
+    warthog::cpd_graph_expansion_policy expander(&oracle);
     warthog::zero_heuristic h;
     warthog::pqueue_min open;
 
