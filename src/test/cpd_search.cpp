@@ -36,18 +36,19 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
     REQUIRE(x == 400000);  // (5 - 1) * GRID_TO_GRAPH_SCALE_FACTOR
     REQUIRE(y == 400000);
 
-    GIVEN("No CPD heuristic") {
+    GIVEN("No CPD heuristic")
+    {
         warthog::cpd_heuristic h(&g);
         warthog::pqueue_min open;
-
+        warthog::problem_instance pi(start, goal, true);
+        warthog::solution sol;
         warthog::cpd_search<
             warthog::cpd_heuristic,
             warthog::simple_graph_expansion_policy>
                 astar(&h, &expander, &open);
 
-        THEN("We can still search") {
-            warthog::problem_instance pi(start, goal, true);
-            warthog::solution sol;
+        THEN("We can still search")
+        {
             // Cannot cut corners
             warthog::cost_t cost = warthog::ONE *
                     (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
@@ -55,6 +56,9 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
             astar.get_path(pi, sol);
 
             REQUIRE(sol.sum_of_edge_costs_ == cost);
+            // But we have to expand all nodes but the target
+            REQUIRE(sol.nodes_expanded_ == g.get_num_nodes() - 1);
+        }
 
         WHEN("We do not have time to search")
         {
