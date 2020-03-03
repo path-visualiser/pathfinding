@@ -42,22 +42,6 @@ class graph_oracle
         virtual ~graph_oracle() { } 
 
         inline uint32_t 
-        get_distance(warthog::sn_id_t source_id, 
-                 warthog::sn_id_t target_id)
-        {
-            warthog::cost_t retval = 0;
-            while(source_id != target_id)
-            {
-                uint32_t move = get_move(source_id, target_id);
-                warthog::graph::node* n = g_->get_node(source_id);
-                warthog::graph::edge* e = (n->outgoing_begin() + move);
-                retval += e->wt_;
-                source_id = e->node_id_;
-            }
-            return retval;
-        }
-
-        inline uint32_t 
         get_move(warthog::sn_id_t source_id, 
                  warthog::sn_id_t target_id)
         {

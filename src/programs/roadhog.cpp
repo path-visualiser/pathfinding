@@ -781,12 +781,37 @@ run_cpd(warthog::util::cfg& cfg,
     warthog::zero_heuristic h;
     warthog::pqueue_min open;
 
+    // the "algorithm"
     std::function<void(warthog::problem_instance*, warthog::solution*)> 
             cpd_extract = 
-    [&oracle] (warthog::problem_instance* pi, warthog::solution* sol) -> void
+    [&oracle, &g] (warthog::problem_instance* pi, warthog::solution* sol) -> void
     {
-        sol->sum_of_edge_costs_ = 
-            oracle.get_distance(pi->start_id_, pi->target_id_);
+        warthog::timer mytimer;
+        mytimer.start();
+        
+        warthog::sn_id_t source_id = pi->start_id_;
+        warthog::sn_id_t target_id = pi->target_id_;
+
+        // NB: we store the actual path in addition to simply extracting it
+        sol->sum_of_edge_costs_ = 0;
+        if(source_id != target_id)
+        {
+            while(source_id != target_id)
+            {
+                sol->path_.push_back(warthog::state(source_id, sol->sum_of_edge_costs_));
+
+                uint32_t move = oracle.get_move(source_id, target_id);
+                warthog::graph::node* n = g.get_node(source_id);
+                warthog::graph::edge* e = (n->outgoing_begin() + move);
+                source_id = e->node_id_;
+                sol->sum_of_edge_costs_ += e->wt_;
+                sol->nodes_touched_++;
+            }
+        }
+        sol->path_.push_back(warthog::state(source_id, sol->sum_of_edge_costs_));
+
+        mytimer.stop();
+        sol->time_elapsed_nano_ = mytimer.elapsed_time_nano();
     };
 
     run_experiments(cpd_extract, alg_name, parser, std::cout);
