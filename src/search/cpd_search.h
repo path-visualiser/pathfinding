@@ -358,6 +358,10 @@ class cpd_search : public warthog::search
             if(current->get_f() > cost_cutoff_) { break; }
             if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
 
+            // Extra early-stopping criteria when we have an upper bound; in
+            // CPD terms, we have an "unperturbed path."
+            if (current->get_f() == current->get_ub()) { break; }
+
             // The incumbent may have been updated after this node was
             // generated, so we need to prune again.
             if (should_prune_(incumbent, current, "Late"))
