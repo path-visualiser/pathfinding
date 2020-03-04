@@ -33,10 +33,12 @@ warthog::mapf::operator>>(std::istream& in, warthog::mapf::plan& theplan)
 
         if(in.eof()) { break; }
 
+        // NB: each location is a time indexed location
+        // the time is in the upper 4 bytes, the location
+        // is in the lower 4 bytes.
         warthog::sn_id_t node_id;
-        warthog::cost_t cost;
-        in >> node_id >> cost;
-        theplan.paths_.back().path_.push_back(warthog::state(node_id, cost));
+        in >> node_id;
+        theplan.paths_.back().path_.push_back(node_id);
     }
     return in;
 }

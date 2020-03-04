@@ -91,8 +91,7 @@ class depth_first_search : public warthog::search
                 warthog::search_node* current = target;
 				while(true)
                 {
-                    sol.path_.push_back(
-                        warthog::state(current->get_id(), current->get_g()));
+                    sol.path_.push_back(current->get_id());
                     if(current->get_parent() == warthog::SN_ID_MAX) break;
                     current = expander_->generate(current->get_parent());
 				}
@@ -104,11 +103,10 @@ class depth_first_search : public warthog::search
                     for(auto& state : sol.path_)
                     {
                         int32_t x, y;
-                        expander_->get_xy(state.node_id_, x, y);
+                        expander_->get_xy(state, x, y);
                         std::cerr 
                             << "final path: (" << x << ", " << y << ")...";
-                        warthog::search_node* n = 
-                            expander_->generate(state.node_id_);
+                        warthog::search_node* n = expander_->generate(state);
                         assert(n->get_search_number() == pi_.instance_id_);
                         n->print(std::cerr);
                         std::cerr << std::endl;

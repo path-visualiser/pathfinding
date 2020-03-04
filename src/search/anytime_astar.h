@@ -100,8 +100,7 @@ class anytime_astar : public warthog::search
                 warthog::search_node* current = incumbent;
 				while(true)
                 {
-                    sol.path_.push_back(
-                        warthog::state(current->get_id(), current->get_g()));
+                    sol.path_.push_back(current->get_id());
                     if(current->get_parent() == warthog::SN_ID_MAX) break;
                     current = expander_->generate(current->get_parent());
 				}
@@ -113,11 +112,10 @@ class anytime_astar : public warthog::search
                     for(auto& state : sol.path_)
                     {
                         int32_t x, y;
-                        expander_->get_xy(state.node_id_, x, y);
+                        expander_->get_xy(state, x, y);
                         std::cerr 
                             << "final path: (" << x << ", " << y << ")...";
-                        warthog::search_node* n = 
-                            expander_->generate(state.node_id_);
+                        warthog::search_node* n = expander_->generate(state);
                         assert(n->get_search_number() == pi_.instance_id_);
                         n->print(std::cerr);
                         std::cerr << std::endl;
@@ -128,12 +126,12 @@ class anytime_astar : public warthog::search
 
             while(true)
             {
-                uint32_t tmp_id = sol.path_.back().node_id_;
-                warthog::state next = 
+                uint32_t tmp_id = sol.path_.back();
+                warthog::sn_id_t next_id = 
                     heuristic_->get_move(tmp_id, pi_.target_id_);
-                if(next.node_id_ == warthog::SN_ID_MAX) 
+                if(next_id == warthog::SN_ID_MAX) 
                 { break; }
-                sol.path_.push_back(warthog::state(next));
+                sol.path_.push_back(next_id);
             }
 		}
         

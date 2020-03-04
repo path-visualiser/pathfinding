@@ -121,15 +121,15 @@ class cpd_heuristic
         // @param from_id to the node specified by @param target_id
         // @return the first edge on the path if one is cached, else
         // returns 0.
-        warthog::state
+        warthog::sn_id_t
         get_move(warthog::sn_id_t from_id, warthog::sn_id_t target_id)
         {
             if(cache_.at(from_id).target_id_ == target_id)
             {
                 cpd_heuristic_cache_entry & entry = cache_.at(from_id);
-                return warthog::state(entry.fm_->node_id_, (warthog::cost_t)entry.fm_->label_);
+                return entry.fm_->node_id_;
             }
-            return warthog::state(warthog::SN_ID_MAX, warthog::COST_MAX);
+            return warthog::SN_ID_MAX;
         }
         
         inline size_t

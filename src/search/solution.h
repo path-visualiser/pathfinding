@@ -14,30 +14,6 @@
 namespace warthog
 {
 
-// a solution is made up of a sequence of states
-// each of which is achieved with some cost from
-// the start node
-// another way to look at this: we store the nodes 
-// on a given path along with their g-values
-struct state
-{
-    state(warthog::sn_id_t id, warthog::cost_t cost)
-    {
-        node_id_ = id;
-        cost_ = cost;
-    }
-
-    warthog::sn_id_t node_id_;
-    warthog::cost_t cost_;
-};
-
-inline std::ostream&
-operator<<(std::ostream& out, warthog::state s)
-{
-   out << s.node_id_ << " " << s.cost_; 
-   return out;
-}
-
 class solution
 {
     public:
@@ -108,7 +84,7 @@ class solution
 
         // the sequence of states that comprise 
         // a solution path
-        std::vector<warthog::state> path_;
+        std::vector<warthog::sn_id_t> path_;
 };
 
 }

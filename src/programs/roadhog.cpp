@@ -804,7 +804,7 @@ run_cpd(warthog::util::cfg& cfg,
         {
             while(source_id != target_id)
             {
-                sol->path_.push_back(warthog::state(source_id, sol->sum_of_edge_costs_));
+                sol->path_.push_back(source_id);
 
                 uint32_t move = oracle.get_move(source_id, target_id);
                 warthog::graph::node* n = g.get_node(source_id);
@@ -814,7 +814,7 @@ run_cpd(warthog::util::cfg& cfg,
                 sol->nodes_touched_++;
             }
         }
-        sol->path_.push_back(warthog::state(source_id, sol->sum_of_edge_costs_));
+        sol->path_.push_back(source_id);
 
         mytimer.stop();
         sol->time_elapsed_nano_ = mytimer.elapsed_time_nano();

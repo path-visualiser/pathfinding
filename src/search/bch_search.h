@@ -168,7 +168,7 @@ class bch_search : public warthog::search
             warthog::search_node* current = v_;
             while(true)
             {
-               sol.path_.push_back(warthog::state(current->get_id(), current->get_g()));
+               sol.path_.push_back(current->get_id());
                if(current->get_parent() == warthog::SN_ID_MAX) break;
                current = fexpander_->generate(current->get_parent());
             }
@@ -177,7 +177,7 @@ class bch_search : public warthog::search
             current = w_;
             while(current->get_parent() != warthog::SN_ID_MAX)
             {  
-               sol.path_.push_back(warthog::state(current->get_parent(), current->get_g()));
+               sol.path_.push_back(current->get_parent());
                current = bexpander_->generate(current->get_parent());
             }
 
