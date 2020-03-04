@@ -347,6 +347,24 @@ class cpd_search : public warthog::search
         return stop;
     }
 
+    /**
+     * Differentiate between nodes that need relaxation and newly generated
+     * nodes (cf. KLUDGE).
+     */
+    void
+    relax_node_(warthog::search_node* n,
+                warthog::cost_t gval,
+                warthog::sn_id_t pid)
+    {
+        if (n->get_g() < warthog::COST_MAX)
+        {
+            n->relax(gval, pid);
+            if(on_relax_fn_) { (*on_relax_fn_)(n); }
+        } else {
+            n->set_g(gval);
+        }
+    }
+
     // TODO refactor node information inside Stats
     warthog::search_node*
     search(warthog::solution& sol)
@@ -473,17 +491,12 @@ class cpd_search : public warthog::search
                 if(expander_->is_target(n, &pi_))
                 {
                     incumbent = n;
-                    if (n->get_g() == warthog::COST_MAX)
+                    if (gval < n->get_g())
                     {
-                        incumbent->set_g(gval);
-                    }
-                    else if (gval < n->get_g())
-                    {
-                        incumbent->relax(gval, current->get_id());
+                        relax_node_(incumbent, gval, current->get_id());
                     }
                     incumbent->set_ub(n->get_g());
                     trace(pi_.verbose_, "New path to target:", *incumbent);
-                    // TODO on_relax_fn_?
                 }
                 // Found a new incumbent
                 else if (incumbent == nullptr && n->get_ub() < warthog::COST_MAX)
@@ -513,16 +526,8 @@ class cpd_search : public warthog::search
                 // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
                 if (gval < n->get_g())
                 {
-                    // Handle newly generated nodes (see KLUDGE above).
-                    if (n->get_g() < warthog::COST_MAX)
-                    {
-                        n->relax(gval, current->get_id());
-                        if(on_relax_fn_) { (*on_relax_fn_)(n); }
-                    }
-                    else
-                    {
-                        n->set_g(gval);
-                    }
+                    relax_node_(n, gval, current->get_id());
+
                     // g(n_i) <- g(n) + c(n, n_i)
                     if(open_->contains(n))
                     {
