@@ -5,8 +5,8 @@
 // 
 // Compressed Path Database heuristics compute lower-bound estimates
 // by extracting a concrete path between any given pair of nodes.
-// If the graph is sta
-//
+// If the graph is static the estimate is perfect. If the graph has
+// dynamic costs the CPD path is a tentative upperbound solution.
 //
 // @author: amaheo, dharabor
 // @created: 27/02/2020
@@ -110,12 +110,28 @@ class cpd_heuristic
         inline warthog::cost_t
         ub(warthog::sn_id_t start_id, warthog::sn_id_t target_id)
         {
-            if(cache_.at(start_id).target_id_ == target_id)
-            { return cache_.at(start_id).ub_; }
-
-            return warthog::COST_MAX;
+            if(cache_.at(start_id).target_id_ != target_id)
+            { 
+                h(start_id, target_id);
+            }
+            return cache_.at(start_id).ub_;
         }
 
+        // return the cached first move for the node specified by 
+        // @param from_id to the node specified by @param target_id
+        // @return the first edge on the path if one is cached, else
+        // returns 0.
+        warthog::state
+        get_move(warthog::sn_id_t from_id, warthog::sn_id_t target_id)
+        {
+            if(cache_.at(from_id).target_id_ == target_id)
+            {
+                cpd_heuristic_cache_entry & entry = cache_.at(from_id);
+                return warthog::state(entry.fm_->node_id_, (warthog::cost_t)entry.fm_->label_);
+            }
+            return warthog::state(warthog::SN_ID_MAX, warthog::COST_MAX);
+        }
+        
         inline size_t
         mem()
         {

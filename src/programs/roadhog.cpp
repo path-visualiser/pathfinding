@@ -8,6 +8,7 @@
 //
 
 #include "af_filter.h"
+#include "anytime_astar.h"
 #include "apex_filter.h"
 #include "bbaf_filter.h"
 #include "bb_filter.h"
@@ -696,6 +697,19 @@ run_cpd_search(warthog::util::cfg& cfg,
     warthog::graph::read_xy(ifs, g);
     ifs.close();
 
+    // apply some default upperbound costs
+    // (ub == lb)
+    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        warthog::graph::node* n = g.get_node(i);
+        for(uint32_t j = 0; j < n->out_degree(); j++)
+        {
+            warthog::graph::edge* e = (n->outgoing_begin() + j);
+            e->label_ = e->wt_;
+        }
+    }
+
+
     // read the cpd (create from scratch if one doesn't exist)
     warthog::cpd::graph_oracle oracle(&g);
     std::string cpd_filename = cfg.get_param_value("cpd");
@@ -722,7 +736,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     warthog::cpd_heuristic h(&oracle);
     warthog::pqueue_min open;
 
-    warthog::flexible_astar<
+    warthog::anytime_astar<
         warthog::cpd_heuristic, 
         warthog::simple_graph_expansion_policy, 
         warthog::pqueue_min> 
