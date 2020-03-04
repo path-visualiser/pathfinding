@@ -128,6 +128,7 @@ class search_node
 			assert(g < g_);
 			f_ = (f_ - g_) + g;
 			g_ = g;
+			if (ub_ < warthog::COST_MAX) { ub_ = (ub_ - g_) + g; }
 			parent_id_ = parent_id;
 		}
 
@@ -225,10 +226,10 @@ class search_node
 			out << "search_node id:" << get_id();
             out << " p_id: ";
             out << parent_id_;
-            out << " g: "<<g_ <<" f: "<<this->get_f()
-            << " expanded: " << get_expanded() << " "
-            << " search_number_: " << search_number_
-            << " pdir: "<< get_pdir() << " ";
+            out << " g: "<<g_ <<" f: "<<this->get_f() << " ub: " << ub_
+                << " expanded: " << get_expanded() << " "
+                << " search_number_: " << search_number_
+                << " pdir: "<< get_pdir() << " ";
 		}
 
 		uint32_t
@@ -289,5 +290,7 @@ struct cmp_less_search_node_f_only
 };
 
 }
+
+std::ostream& operator<<(std::ostream& str, const warthog::search_node& sn);
 
 #endif
