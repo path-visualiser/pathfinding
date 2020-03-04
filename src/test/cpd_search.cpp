@@ -40,7 +40,6 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
     {
         warthog::cpd_heuristic h(&g);
         warthog::pqueue_min open;
-        warthog::problem_instance pi(start, goal, true);
         warthog::solution sol;
         warthog::cpd_search<
             warthog::cpd_heuristic,
@@ -49,6 +48,7 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 
         THEN("We can still search")
         {
+            warthog::problem_instance pi(start, goal, true);
             // Cannot cut corners
             warthog::cost_t cost = warthog::ONE *
                     (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
@@ -66,6 +66,7 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 
             THEN("We do not find a solution")
             {
+                warthog::problem_instance pi(start, goal, true);
                 astar.get_path(pi, sol);
 
                 REQUIRE(sol.path_.empty());
@@ -78,6 +79,7 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 
             THEN("We explore some of the tree")
             {
+                warthog::problem_instance pi(start, goal, true);
                 astar.get_path(pi, sol);
 
                 REQUIRE(sol.nodes_expanded_ > 0);
