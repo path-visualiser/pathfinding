@@ -22,6 +22,9 @@
 namespace warthog
 {
 
+namespace cpd
+{
+
 // tracks upper and lower bound costs, and the identity of the first move; 
 // from a node associated with each entry to a specific node specified 
 // by ::target_id. 
@@ -137,15 +140,16 @@ class cpd_heuristic
         {
             return 
                 cpd_->mem() + 
-                sizeof(warthog::cpd_heuristic_cache_entry)*cache_.capacity() +
+                sizeof(warthog::cpd::cpd_heuristic_cache_entry)*cache_.capacity() +
                 sizeof(stack_pair) * stack_.size();
         }
 
     private:
         warthog::cpd::graph_oracle* cpd_;
-        std::vector<warthog::cpd_heuristic_cache_entry> cache_;
+        std::vector<warthog::cpd::cpd_heuristic_cache_entry> cache_;
         std::vector<stack_pair> stack_;
 };
+}
 
 }
 
