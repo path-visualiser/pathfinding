@@ -214,7 +214,7 @@ class search_node
             out << parent_id_;
             out << " g: "<<g_ <<" f: "<<this->get_f() << " ub: " << ub_
                 << " expanded: " << get_expanded() << " "
-                << " search_number_: " << search_number_
+                << " search_number_: " << search_number_;
 		}
 
 		uint32_t

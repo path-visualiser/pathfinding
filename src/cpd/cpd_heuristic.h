@@ -153,6 +153,4 @@ class cpd_heuristic
 
 }
 
-}
-
 #endif
