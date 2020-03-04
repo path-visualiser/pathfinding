@@ -51,6 +51,9 @@ class jps4c_expansion_policy : public expansion_policy
 	private:
 		warthog::gridmap* map_;
 		warthog::four_connected_jps_locator* jpl_;
+
+        warthog::jps::direction
+        compute_direction(uint32_t n1_id, uint32_t n2_id);
 };
 
 }

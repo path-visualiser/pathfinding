@@ -433,3 +433,4 @@ warthog::online_jump_point_locator::jump_southwest(uint32_t node_id,
 	jumpnode_id = next_id;
 	jumpcost = num_steps*warthog::DBL_ROOT_TWO;
 }
+

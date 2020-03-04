@@ -166,12 +166,8 @@ run_jps2plus(warthog::scenario_manager& scenmgr, std::string alg_name)
 	   	warthog::jps2plus_expansion_policy,
         warthog::pqueue_min> astar(&heuristic, &expander, &open);
 
-    std::function<void(warthog::search_node*)> relax_fn = 
-            [&](warthog::search_node* n)
-            {
-                expander.update_parent_direction(n);
-            };
-    astar.apply_on_relax(relax_fn);
+    run_experiments(&astar, alg_name, scenmgr, 
+            verbose, checkopt, std::cout);
 
 	std::cerr << "done. total memory: "<< astar.mem() + scenmgr.mem() << "\n";
 }
@@ -189,13 +185,6 @@ run_jps2(warthog::scenario_manager& scenmgr, std::string alg_name)
 	   	warthog::jps2_expansion_policy,
         warthog::pqueue_min> 
             astar(&heuristic, &expander, &open);
-
-    std::function<void(warthog::search_node*)> relax_fn = 
-            [&](warthog::search_node* n)
-            {
-                expander.update_parent_direction(n);
-            };
-    astar.apply_on_relax(relax_fn);
 
     run_experiments(&astar, alg_name, scenmgr, 
             verbose, checkopt, std::cout);

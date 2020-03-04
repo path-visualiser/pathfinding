@@ -134,7 +134,7 @@ warthog::offline_jump_point_locator2::save(const char* filename)
 	fwrite(&dbsize_, sizeof(dbsize_), 1, f);
 	fwrite(db_, sizeof(*db_), dbsize_, f);
 	fclose(f);
-	std::cerr << "jump-point graph saved to disk. file="<<fname<<std::endl;
+	std::cerr << "jump table saved to disk. file="<<fname<<std::endl;
 }
 
 void

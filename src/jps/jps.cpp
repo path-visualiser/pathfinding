@@ -276,44 +276,44 @@ warthog::jps::create_corner_map(warthog::gridmap* gm)
     return corner_map;
 }
 
-warthog::jps::direction
-warthog::jps::compute_direction(
-        uint32_t px, uint32_t py, uint32_t x, uint32_t y)
-{
-    warthog::jps::direction dir = warthog::jps::NONE;
-    if(y == py)
-    {
-        if(x > px)
-            dir = warthog::jps::EAST;
-        else
-            dir = warthog::jps::WEST;
-    }
-    else if(y < py)
-    {
-        if(x == px)
-            dir = warthog::jps::NORTH;
-        else if(x < px)
-        {
-            dir = warthog::jps::NORTHWEST;
-            //dir = warthog::jps::WEST;
-        }
-        else 
-            dir = warthog::jps::NORTHEAST;
-            //dir = warthog::jps::EAST;
-    }
-    else // y > py
-    {
-        if(x == px)
-            dir = warthog::jps::SOUTH;
-        else if(x < px)
-        {
-            dir = warthog::jps::SOUTHWEST;
-           // dir = warthog::jps::WEST;
-        }
-        else // x > px
-            dir = warthog::jps::SOUTHEAST;
-            //dir = warthog::jps::EAST;
-    }
-    assert(dir != warthog::jps::NONE);
-    return dir;
-}
+//warthog::jps::direction
+//warthog::jps::compute_direction(
+//        uint32_t px, uint32_t py, uint32_t x, uint32_t y)
+//{
+//    warthog::jps::direction dir = warthog::jps::NONE;
+//    if(y == py)
+//    {
+//        if(x > px)
+//            dir = warthog::jps::EAST;
+//        else
+//            dir = warthog::jps::WEST;
+//    }
+//    else if(y < py)
+//    {
+//        if(x == px)
+//            dir = warthog::jps::NORTH;
+//        else if(x < px)
+//        {
+//            dir = warthog::jps::NORTHWEST;
+//            //dir = warthog::jps::WEST;
+//        }
+//        else 
+//            dir = warthog::jps::NORTHEAST;
+//            //dir = warthog::jps::EAST;
+//    }
+//    else // y > py
+//    {
+//        if(x == px)
+//            dir = warthog::jps::SOUTH;
+//        else if(x < px)
+//        {
+//            dir = warthog::jps::SOUTHWEST;
+//           // dir = warthog::jps::WEST;
+//        }
+//        else // x > px
+//            dir = warthog::jps::SOUTHEAST;
+//            //dir = warthog::jps::EAST;
+//    }
+//    assert(dir != warthog::jps::NONE);
+//    return dir;
+//}

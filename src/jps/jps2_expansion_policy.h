@@ -53,14 +53,21 @@ class jps2_expansion_policy : public expansion_policy
         // point we set the node currently being expanded (==current) as the 
         // parent of n and label node n with the direction of travel, 
         // from current to n
-        void
-        update_parent_direction(warthog::search_node* n);
+        //void
+        //update_parent_direction(warthog::search_node* n);
 
 	private:
 		warthog::gridmap* map_;
         warthog::jps::online_jump_point_locator2* jpl_;
 		std::vector<uint32_t> jp_ids_;
         std::vector<double> jp_costs_;
+
+		// computes the direction of travel; from a node n1
+		// to a node n2.
+        // NB: since JPS2 prunes intermediate diagonals the parent
+        // directions are always cardinal.
+		inline warthog::jps::direction
+		compute_direction(uint32_t n1_id, uint32_t n2_id);
 };
 
 }

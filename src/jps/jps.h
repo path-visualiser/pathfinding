@@ -47,8 +47,8 @@ const uint32_t JPS_ID_MASK = (1 << 24)-1;
 
 // compute the diagonal-first direction of travel, 
 // from (px, py) to (x, y)
-warthog::jps::direction
-compute_direction(uint32_t px, uint32_t py, uint32_t x, uint32_t y);
+//warthog::jps::direction
+//compute_direction(uint32_t px, uint32_t py, uint32_t x, uint32_t y);
 
 // compute the 4-connected canonical direction of travel, 
 // from (px, py) to (x, y)

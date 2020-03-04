@@ -149,6 +149,7 @@ class cpd_heuristic
         std::vector<warthog::cpd::cpd_heuristic_cache_entry> cache_;
         std::vector<stack_pair> stack_;
 };
+}
 
 }
 
