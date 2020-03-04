@@ -1,5 +1,5 @@
-#ifndef WARTHOG_CPD_HEURISTIC_H
-#define WARTHOG_CPD_HEURISTIC_H
+#ifndef WARTHOG_CPD_CPD_HEURISTIC_H
+#define WARTHOG_CPD_CPD_HEURISTIC_H
 
 // cpd_heuristic.h
 // 
@@ -20,6 +20,9 @@
 #include <stack>
 
 namespace warthog
+{
+
+namespace cpd
 {
 
 // tracks upper and lower bound costs, and the identity of the first move; 
@@ -137,15 +140,17 @@ class cpd_heuristic
         {
             return 
                 cpd_->mem() + 
-                sizeof(warthog::cpd_heuristic_cache_entry)*cache_.capacity() +
+                sizeof(warthog::cpd::cpd_heuristic_cache_entry)*cache_.capacity() +
                 sizeof(stack_pair) * stack_.size();
         }
 
     private:
         warthog::cpd::graph_oracle* cpd_;
-        std::vector<warthog::cpd_heuristic_cache_entry> cache_;
+        std::vector<warthog::cpd::cpd_heuristic_cache_entry> cache_;
         std::vector<stack_pair> stack_;
 };
+
+}
 
 }
 
