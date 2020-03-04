@@ -46,6 +46,11 @@ bool
 load_integer_labels_dimacs(const char* filename, 
         std::vector<uint32_t>& labels);
 
+// re-maps @param vec s.t. for each x and i
+// v[i] = x becomes v[x] = i
+void
+value_index_swap_array(std::vector<uint32_t>& vec);
+
 struct thread_params
 {
     // thread data

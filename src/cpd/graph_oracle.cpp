@@ -1,5 +1,6 @@
 #include "cpd.h"
 #include "cpd/graph_oracle.h"
+#include "helpers.h"
 
 struct shared_data
 {
@@ -68,6 +69,11 @@ warthog::cpd::graph_oracle::precompute()
                     s_row.at(succ_id) |= s_row.at(from_id); 
                     assert(s_row.at(succ_id) >= s_row.at(from_id));
                 }
+
+            }
+            if(source_id == 433 && succ->get_id() == 480)
+            {
+                std::cerr << "parent " << from->get_id() << " fm: " << s_row.at(succ->get_id()) << std::endl;
             }
         };
 
@@ -128,11 +134,14 @@ warthog::cpd::graph_oracle::precompute()
             thread_compute_fn, &shared, 
             (uint32_t)source_nodes.size());
             
-    t.stop();
+    // convert the column order into a map: from vertex id to its ordered index
+    warthog::helpers::value_index_swap_array(order_);
 
+    t.stop();
     std::cerr 
         << "total preproc time (seconds): "
         << t.elapsed_time_micro() / 1000000 << "\n";
+
 }
 
 void
@@ -143,26 +152,25 @@ warthog::cpd::graph_oracle::add_row(uint32_t source_id,
     row.at(source_id) = warthog::cpd::CPD_FM_NONE;
 
     // greedily compress the row w.r.t. the current column order
-    warthog::cpd::fm_coll current = row.at(order_.at(0));
+    warthog::cpd::fm_coll moveset = row.at(order_.at(0));
     uint32_t head = 0;
     for(uint32_t index = 0; index < row.size(); index++)
     {
-        assert(current > 0);
-        uint32_t next_id = order_.at(index);
-        if(!(current & row.at(next_id)))
+        assert(moveset > 0);
+        if((moveset & row.at(order_.at(index))) == 0)
         {
-            uint32_t firstmove = __builtin_ffsl(current) - 1;
+            uint32_t firstmove = __builtin_ffsl(moveset) - 1;
             assert(firstmove < warthog::cpd::CPD_FM_MAX);
             fm_.at(source_id).push_back(
                     warthog::cpd::rle_run32{ (head << 4) | firstmove} );
-            current = row.at(next_id);
+            moveset = row.at(order_.at(index));
             head = index;
         }
-        current = current & row.at(next_id);
+        moveset = moveset & row.at(order_.at(index));
     } 
     
     // add the last run
-    uint32_t firstmove = __builtin_ffsl(current) - 1;
+    uint32_t firstmove = __builtin_ffsl(moveset) - 1;
     assert(firstmove < warthog::cpd::CPD_FM_MAX);
     fm_.at(source_id).push_back(
             warthog::cpd::rle_run32{ (head << 4) | firstmove} );
@@ -189,7 +197,7 @@ warthog::cpd::operator>>(std::istream& in,
     lab.fm_.clear();
     lab.order_.resize(lab.g_->get_num_nodes());
 
-    // read the node ordering data
+    // read the vertex-to-column-order mapping
     for(uint32_t i = 0; i < num_nodes; i++)
     {
         uint32_t n_id; 
@@ -197,30 +205,12 @@ warthog::cpd::operator>>(std::istream& in,
         lab.order_.at(i) = n_id;
     }
 
-    // read the compressed data
+    // read the RLE data
+    uint32_t run_count = 0;
     lab.fm_.resize(lab.g_->get_num_nodes());
-    uint32_t num_rows;
-    in.read((char*)(&num_rows), 4);
-
-    for(uint32_t row = 0; row < num_rows; row++)
+    for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
     {
-        uint32_t row_id; 
-        in.read((char*)(&row_id), 4);
-
-        if(row_id > lab.g_->get_num_nodes())
-        {
-            std::cerr << "err; " << row_id 
-                << " is aninvalid row identifier. aborting.\n";
-            break;
-        }
-
-        if(lab.fm_.at(row_id).size() != 0)
-        {
-            std::cerr << "err; row id "<< row_id 
-                << " appears more than once. aborting.\n";
-            break;
-        }
-
+        // number of runs for this row
         uint32_t num_runs;
         in.read((char*)(&num_runs), 4);
 
@@ -230,21 +220,24 @@ warthog::cpd::operator>>(std::istream& in,
             warthog::cpd::rle_run32 tmp;
             in >> tmp;
             lab.fm_.at(row_id).push_back(tmp);
-
-            assert(in.good());
+            run_count++;
 
             if(!in.good())
             {
                 std::cerr << "err; while reading firstmove labels\n";
                 std::cerr 
-                    << "[debug info] row# " << row
+                    << "[debug info] "
                     << " row_id " << row_id 
-                    << " run# " << i << " of " << num_runs 
+                    << " run# " << i << " of " << lab.fm_.size()
                     << ". aborting.\n";
                 return in;
             }
         }
     }
+    std::cerr 
+        << "read from disk " << lab.fm_.size() 
+        << " rows and "
+        << run_count << " runs \n";
     return in;
 }
 
@@ -264,44 +257,35 @@ warthog::cpd::operator<<(std::ostream& out,
         out.write((char*)(&n_id), 4);
     }
 
-    uint32_t num_rows = 0;
-    for(uint32_t n_id = 0; n_id < lab.g_->get_num_nodes(); n_id++)
-    {
-        if(lab.fm_.at(n_id).size() > 0) { num_rows++; }
-    }
-    out.write((char*)(&num_rows), 4);
-
-    //uint32_t row_count = 0;
-    //uint32_t run_count = 0;
+    // write the runs for each row
+    uint32_t run_count = 0;
     for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
     {
-        if(lab.fm_.at(row_id).size() == 0) { continue; }
-        out.write((char*)(&row_id), 4);
-
+        // write the number of runs
         uint32_t num_runs = (uint32_t)lab.fm_.at(row_id).size();
         out.write((char*)(&num_runs), 4);
 
         for(uint32_t run = 0; run < num_runs; run++)
         {
             out << lab.fm_.at(row_id).at(run);
-//            run_count++;
+            run_count++;
             if(!out.good())
             {
                 std::cerr << "err; while writing labels\n";
                 std::cerr 
                     << "[debug info] "
                     << " row_id " << row_id 
-                    << " run# " << run 
+                    << " run# " << lab.fm_.at(row_id).size()
                     << ". aborting.\n";
                 return out;
             }
         }
-//        row_count++;
+        
     }
-//    std::cerr 
-//        << "wrote to disk " << row_count 
-//        << " rows and "
-//        << run_count << " runs \n";
+    std::cerr 
+        << "wrote to disk " << lab.fm_.size()
+        << " rows and "
+        << run_count << " runs \n";
     return out;
 }
 

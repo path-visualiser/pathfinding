@@ -8,17 +8,20 @@
 //
 
 #include "af_filter.h"
+#include "anytime_astar.h"
 #include "apex_filter.h"
 #include "bbaf_filter.h"
 #include "bb_filter.h"
 #include "bch_search.h"
+#include "bch_expansion_policy.h"
+#include "bch_bb_expansion_policy.h"
 #include "bidirectional_graph_expansion_policy.h"
 #include "bidirectional_search.h"
 #include "cfg.h"
-#include "bch_expansion_policy.h"
-#include "bch_bb_expansion_policy.h"
 #include "constants.h"
 #include "contraction.h"
+#include "cpd_heuristic.h"
+#include "depth_first_search.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "fch_bb_expansion_policy.h"
@@ -29,6 +32,7 @@
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
 #include "graph_oracle.h"
+#include "cpd_graph_expansion_policy.h"
 #include "lazy_graph_contraction.h"
 #include "xy_graph.h"
 #include "solution.h"
@@ -69,7 +73,7 @@ help()
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf\n"
     << "\tfch, fch-af, fch-bb, fch-bbaf, fch-dfs\n"
-    << "\tcpd-search\n"
+    << "\tdfs, cpd, cpd-search\n"
     << "\nRecognised values for --input:\n "
     << "\ttoo many to list. missing input files will be listed at runtime\n";
 }
@@ -153,6 +157,59 @@ run_experiments( warthog::search* algo, std::string alg_name,
         {
             sol.reset();
             algo->get_distance(pi, sol);
+
+            expanded += sol.nodes_expanded_;
+            inserted += sol.nodes_inserted_;
+            touched += sol.nodes_touched_;
+            updated += sol.nodes_updated_;
+            nano_time = nano_time < sol.time_elapsed_nano_ 
+                            ?  nano_time : sol.time_elapsed_nano_;
+        }
+
+        out
+            << exp_id++ <<"\t" 
+            << alg_name << "\t" 
+            << expanded / nruns << "\t" 
+            << inserted / nruns << "\t"
+            << updated / nruns << "\t"
+            << touched / nruns << "\t"
+            << nano_time << "\t" /// (double)nruns << "\t"
+            << sol.sum_of_edge_costs_ << "\t" 
+            << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t" 
+            << parser.get_problemfile() 
+            << std::endl;
+    }
+}
+
+void
+run_experiments( std::function<void(warthog::problem_instance*, warthog::solution*)>& algo_fn, 
+        std::string alg_name, warthog::dimacs_parser& parser, std::ostream& out)
+{
+    std::cerr << "running experiments\n";
+    std::cerr << "(averaging over " << nruns << " runs per instance)\n";
+
+    if(!suppress_header)
+    {
+        std::cout 
+            << "id\talg\texpanded\tinserted\tupdated\ttouched"
+            << "\tnanos\tpcost\tplen\tmap\n";
+    }
+    uint32_t exp_id = 0;
+    for(auto it = parser.experiments_begin(); 
+            it != parser.experiments_end(); 
+            it++)
+    {
+        warthog::dimacs_parser::experiment exp = (*it);
+        warthog::solution sol;
+        uint32_t start_id = exp.source;
+        uint32_t target_id = exp.p2p ? exp.target : warthog::INF32;
+        warthog::problem_instance pi(start_id, target_id, verbose);
+        uint32_t expanded=0, inserted=0, updated=0, touched=0;
+        double nano_time = DBL_MAX;
+        for(uint32_t i = 0; i < nruns; i++)
+        {
+            sol.reset();
+            algo_fn(&pi, &sol);
 
             expanded += sol.nodes_expanded_;
             inserted += sol.nodes_inserted_;
@@ -634,10 +691,178 @@ run_cpd_search(warthog::util::cfg& cfg,
         return;
     }
 
+    // read the graph
+    warthog::graph::xy_graph g;
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    // apply some default upperbound costs
+    // (ub == lb)
+    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        warthog::graph::node* n = g.get_node(i);
+        for(uint32_t j = 0; j < n->out_degree(); j++)
+        {
+            warthog::graph::edge* e = (n->outgoing_begin() + j);
+            e->label_ = e->wt_;
+        }
+    }
+
+
+    // read the cpd (create from scratch if one doesn't exist)
+    warthog::cpd::graph_oracle oracle(&g);
     std::string cpd_filename = cfg.get_param_value("cpd");
     if(cpd_filename == "")
     {
         cpd_filename = xy_filename + ".cpd";
+    }
+
+    ifs.open(cpd_filename);
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        std::cerr << "precomputing... " <<std::endl;
+        oracle.precompute();
+        std::ofstream ofs(cpd_filename);
+        ofs << oracle;
+        std::cerr << "writing " << cpd_filename << std::endl;
+    }
+
+    warthog::simple_graph_expansion_policy expander(&g);
+    warthog::cpd_heuristic h(&oracle);
+    warthog::pqueue_min open;
+
+    warthog::anytime_astar<
+        warthog::cpd_heuristic, 
+        warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_cpd(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+
+    warthog::graph::xy_graph g;
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    warthog::cpd::graph_oracle oracle(&g);
+    std::string cpd_filename = cfg.get_param_value("cpd");
+    if(cpd_filename == "")
+    {
+        cpd_filename = xy_filename + ".cpd";
+    }
+
+    ifs.open(cpd_filename);
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        std::cerr << "precomputing... " <<std::endl;
+        oracle.precompute();
+        std::ofstream ofs(cpd_filename);
+        ofs << oracle;
+        std::cerr << "writing " << cpd_filename << std::endl;
+    }
+
+    warthog::cpd_graph_expansion_policy expander(&oracle);
+    warthog::zero_heuristic h;
+    warthog::pqueue_min open;
+
+    // the "algorithm"
+    std::function<void(warthog::problem_instance*, warthog::solution*)> 
+            cpd_extract = 
+    [&oracle, &g] (warthog::problem_instance* pi, warthog::solution* sol) -> void
+    {
+        warthog::timer mytimer;
+        mytimer.start();
+        
+        warthog::sn_id_t source_id = pi->start_id_;
+        warthog::sn_id_t target_id = pi->target_id_;
+
+        // NB: we store the actual path in addition to simply extracting it
+        sol->sum_of_edge_costs_ = 0;
+        if(source_id != target_id)
+        {
+            while(source_id != target_id)
+            {
+                sol->path_.push_back(source_id);
+
+                uint32_t move = oracle.get_move(source_id, target_id);
+                warthog::graph::node* n = g.get_node(source_id);
+                warthog::graph::edge* e = (n->outgoing_begin() + move);
+                source_id = e->node_id_;
+                sol->sum_of_edge_costs_ += e->wt_;
+                sol->nodes_touched_++;
+            }
+        }
+        sol->path_.push_back(source_id);
+
+        mytimer.stop();
+        sol->time_elapsed_nano_ = mytimer.elapsed_time_nano();
+    };
+
+    run_experiments(cpd_extract, alg_name, parser, std::cout);
+
+}
+
+void
+run_dfs(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    warthog::graph::xy_graph g;
+
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    warthog::simple_graph_expansion_policy expander(&g);
+    warthog::zero_heuristic h;
+    warthog::pqueue_min open;
+
+    warthog::depth_first_search<
+        warthog::zero_heuristic, 
+        warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_cpd_dfs(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
     }
 
     warthog::graph::xy_graph g;
@@ -647,6 +872,12 @@ run_cpd_search(warthog::util::cfg& cfg,
     ifs.close();
 
     warthog::cpd::graph_oracle oracle(&g);
+    std::string cpd_filename = cfg.get_param_value("cpd");
+    if(cpd_filename == "")
+    {
+        cpd_filename = xy_filename + ".cpd";
+    }
+
     ifs.open(cpd_filename);
     if(ifs.is_open())
     {
@@ -654,23 +885,24 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
     else
     {
+        std::cerr << "precomputing... " <<std::endl;
         oracle.precompute();
         std::ofstream ofs(cpd_filename);
         ofs << oracle;
         std::cerr << "writing " << cpd_filename << std::endl;
     }
 
-//    warthog::simple_graph_expansion_policy expander(&g);
-//    warthog::euclidean_heuristic h(&g);
-//    warthog::pqueue_min open;
-//
-//    warthog::flexible_astar<
-//        warthog::euclidean_heuristic, 
-//        warthog::simple_graph_expansion_policy, 
-//        warthog::pqueue_min> 
-//            alg(&h, &expander, &open);
-//
-//    run_experiments(&alg, alg_name, parser, std::cout);
+    warthog::cpd_graph_expansion_policy expander(&oracle);
+    warthog::zero_heuristic h;
+    warthog::pqueue_min open;
+
+    warthog::depth_first_search<
+        warthog::zero_heuristic, 
+        warthog::cpd_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
@@ -753,6 +985,18 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "cpd-search")
     {
         run_cpd_search(cfg, parser, alg_name);
+    }
+    else if(alg_name == "cpd")
+    {
+        run_cpd(cfg, parser, alg_name);
+    }
+    else if(alg_name == "dfs")
+    {
+        run_dfs(cfg, parser, alg_name);
+    }
+    else if(alg_name == "cpd-dfs")
+    {
+        run_cpd_dfs(cfg, parser, alg_name);
     }
     else
     {

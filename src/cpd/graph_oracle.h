@@ -45,7 +45,6 @@ class graph_oracle
         get_move(warthog::sn_id_t source_id, 
                  warthog::sn_id_t target_id)
         {
-            assert(source_id < g_->get_num_nodes());
             if(fm_.at(source_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
 
             std::vector<warthog::cpd::rle_run32>& row = fm_.at(source_id);
@@ -58,6 +57,11 @@ class graph_oracle
                 if(target_index < row.at(mid).get_index()) { end = mid ;  }
                 else { begin = mid; }
             }
+            //if(source_id == 433 && target_id == 480)
+            //{
+            //    std::cerr << "order id of target 480 " << order_.at(480) << std::endl;
+            //    std::cerr << "run head index " << row.at(begin).get_index() << std::endl;
+            //}
             return row.at(begin).get_move();
         }
 
@@ -73,6 +77,22 @@ class graph_oracle
 
         inline warthog::graph::xy_graph* 
         get_graph() { return g_; } 
+
+        inline size_t
+        mem()
+        {
+            size_t retval = 
+                g_->mem() + 
+                sizeof(uint32_t) * order_.size() + 
+                sizeof(std::vector<warthog::cpd::rle_run32>) * fm_.size();
+
+            for(uint32_t i = 0; i < fm_.size(); i++)
+            {
+                retval += sizeof(warthog::cpd::rle_run32) * fm_.at(i).size();
+            }
+
+            return retval; 
+        }
 
         friend std::ostream&
         operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);

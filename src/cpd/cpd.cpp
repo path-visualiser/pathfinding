@@ -8,8 +8,9 @@ warthog::cpd::compute_dfs_preorder(
         std::vector<uint32_t>* column_order)
 {
     assert(g->get_num_nodes() < UINT32_MAX);
-    column_order->assign(g->get_num_nodes(), UINT32_MAX);
 
+    // label each vertex with an number to tell when it was processed by DFS
+    std::vector<uint32_t> dfs_labeling(g->get_num_nodes(), UINT32_MAX);
     typedef std::pair<uint32_t, uint32_t> dfs_pair;
     std::vector<dfs_pair> dfs_stack;
 
@@ -23,10 +24,10 @@ warthog::cpd::compute_dfs_preorder(
         dfs_pair& dfs_node = dfs_stack.back();
 
         warthog::graph::node* n = g->get_node(dfs_node.first);
-        if(column_order->at(dfs_node.first) == UINT32_MAX)
+        if(dfs_labeling.at(dfs_node.first) == UINT32_MAX)
         { 
             // first time we reach this node. assign it an id
-            column_order->at(dfs_node.first) = postorder_id++;
+            dfs_labeling.at(dfs_node.first) = postorder_id++;
         }
 
         while(true)
@@ -40,7 +41,7 @@ warthog::cpd::compute_dfs_preorder(
             }
 
             assert(begin->node_id_ < g->get_num_nodes());
-            if(column_order->at(begin->node_id_) == UINT32_MAX)
+            if(dfs_labeling.at(begin->node_id_) == UINT32_MAX)
             {
                 // otherwise, traverse down the next branch
                 dfs_stack.push_back(dfs_pair(begin->node_id_, 0));
@@ -48,19 +49,29 @@ warthog::cpd::compute_dfs_preorder(
             }
         }
     }
+
+    std::cerr << "vertex 480 has dfs label " << dfs_labeling.at(480) << std::endl;
+
+    // sort the columns by their dfs labels (smallest to largest)
+    column_order->reserve(g->get_num_nodes());
+    for(uint32_t i = 0; i < g->get_num_nodes(); i++)
+    {
+        column_order->at(dfs_labeling.at(i)) = i;
+    }
+    std::cerr << "order index 2013 has vertex id " << column_order->at(2013) << std::endl;
 }
 
 std::istream&
 warthog::cpd::operator>>(std::istream& in, warthog::cpd::rle_run32& the_run)
 {
-    in >> the_run.data_;
+    in.read((char*)(&the_run.data_), sizeof(&the_run.data_));
     return in;
 }
 
 std::ostream&
 warthog::cpd::operator<<(std::ostream& out, warthog::cpd::rle_run32& the_run)
 {
-    out << the_run.data_;
+    out.write((char*)(&the_run.data_), sizeof(&the_run.data_));
     return out;
 }
 
