@@ -430,11 +430,13 @@ class cpd_search : public warthog::search
             warthog::cost_t cost_to_n = 0;
             uint32_t edge_id = 0;
             warthog::search_node* n;
+
+            // The first loop over the neighbours is used to update the
+            // incumbent.
             for(expander_->first(n, cost_to_n);
                 n != nullptr;
                 expander_->next(n, cost_to_n))
             {
-                bool generated = false;
                 warthog::cost_t gval = current->get_g() + cost_to_n;
                 sol.nodes_touched_++;
 
@@ -455,76 +457,90 @@ class cpd_search : public warthog::search
                     }
 
                     // Should we check for overflow here?
+                    //
+                    // KLUDGE We set the $g$ value of newly generated nodes to
+                    // infinity so we can pick them up when deciding whether to
+                    // prune.
                     n->init(current->get_search_number(), current->get_id(),
-                            gval, gval + hval, ub);
+                            warthog::COST_MAX, gval + hval, ub);
 
                     debug(pi_.verbose_, "Generating:", *n);
-                    generated = true;
 
                     if(on_relax_fn_) { (*on_relax_fn_)(n); }
-                }
-
-                // It is technically more efficient to prevent adding nodes to
-                // the queue, but harder to follow.
-                if (should_prune_(incumbent, n, "Early"))
-                {
-                    continue;
                 }
 
                 // if n_i is a goal node
                 if(expander_->is_target(n, &pi_))
                 {
                     incumbent = n;
-                    if (n->get_g() < gval)
+                    if (n->get_g() == warthog::COST_MAX)
+                    {
+                        incumbent->set_g(gval);
+                    }
+                    else if (gval < n->get_g())
                     {
                         incumbent->relax(gval, current->get_id());
                     }
                     incumbent->set_ub(n->get_g());
-                    trace(pi_.verbose_, "New path to target:", *n);
+                    trace(pi_.verbose_, "New path to target:", *incumbent);
                     // TODO on_relax_fn_?
                 }
-                else
+                // Found a new incumbent
+                else if (incumbent == nullptr && n->get_ub() < warthog::COST_MAX)
                 {
-                    // Always update the UB if we have one, otherwise this node
-                    // would have been pruned already.
-                    if (n->get_ub() < warthog::COST_MAX)
-                    {
-                        debug(pi_.verbose_, "Update UB:", *n);
-                        incumbent = n;
-                    }
+                    debug(pi_.verbose_, "Found UB:", *n);
+                    incumbent = n;
+                }
+                // Better incumbent
+                else if (incumbent != nullptr && n->get_ub() < incumbent->get_ub())
+                {
+                    debug(pi_.verbose_, "Update UB:", *n);
+                    incumbent = n;
+                }
+            }
 
-                    // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
-                    if (gval < n->get_g())
+            // Second loop over neighbours to decide whether to prune or not.
+            for(expander_->first(n, cost_to_n);
+                n != nullptr;
+                expander_->next(n, cost_to_n))
+            {
+                warthog::cost_t gval = current->get_g() + cost_to_n;
+
+                if (should_prune_(incumbent, n, "Early"))
+                {
+                    continue;
+                }
+                // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
+                if (gval < n->get_g())
+                {
+                    // Handle newly generated nodes (see KLUDGE above).
+                    if (n->get_g() < warthog::COST_MAX)
                     {
                         n->relax(gval, current->get_id());
                         if(on_relax_fn_) { (*on_relax_fn_)(n); }
-
-                        // g(n_i) <- g(n) + c(n, n_i)
-                        if(open_->contains(n))
-                        {
-                            open_->decrease_key(n);
-                            sol.nodes_updated_++;
-                            debug(pi_.verbose_, "Updating:", *n);
-                        }
-                        // if n_i \in CLOSED
-                        else
-                        {
-                            open_->push(n);
-                            sol.nodes_inserted_++;
-                            debug(pi_.verbose_, "Reinsert:", *n);
-                        }
                     }
-                    // else
-                    else if (generated)
+                    else
+                    {
+                        n->set_g(gval);
+                    }
+                    // g(n_i) <- g(n) + c(n, n_i)
+                    if(open_->contains(n))
+                    {
+                        open_->decrease_key(n);
+                        sol.nodes_updated_++;
+                        debug(pi_.verbose_, "Updating:", *n);
+                    }
+                    // if n_i \in CLOSED
+                    else
                     {
                         open_->push(n);
                         sol.nodes_inserted_++;
                         debug(pi_.verbose_, "Insert:", *n);
                     }
-                    else
-                    {
-                        debug(pi_.verbose_, "Skip:", *n);
-                    }
+                }
+                else
+                {
+                    debug(pi_.verbose_, "Skip:", *n);
                 }
             }
         }
