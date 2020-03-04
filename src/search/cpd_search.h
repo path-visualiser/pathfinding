@@ -289,7 +289,7 @@ class cpd_search : public warthog::search
         // if not [incumbent = nil or f(n) < f(incumbent)]
         if (incumbent != nullptr)
         {
-            if (n->get_f() < incumbent->get_f())
+            if (n->get_f() >= incumbent->get_f())
             {
                 debug(pi_.verbose_, stage, "f-val pruning:", *n);
                 prune = true;
