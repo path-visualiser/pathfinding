@@ -475,10 +475,12 @@ class cpd_search : public warthog::search
                 if(expander_->is_target(n, &pi_))
                 {
                     incumbent = n;
-                    incumbent->relax(gval, current->get_id());
+                    if (n->get_g() < gval)
+                    {
+                        incumbent->relax(gval, current->get_id());
+                    }
                     incumbent->set_ub(n->get_g());
                     trace(pi_.verbose_, "New path to target:", *n);
-
                     // TODO on_relax_fn_?
                 }
                 else
