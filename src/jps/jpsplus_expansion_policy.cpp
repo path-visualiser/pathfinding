@@ -19,8 +19,8 @@ warthog::jpsplus_expansion_policy::expand(
     reset();
 
 	// compute the direction of travel used to reach the current node.
-	warthog::jps::direction dir_c =
-	   	this->compute_direction((uint32_t)current->get_parent(), (uint32_t)current->get_id());
+	warthog::jps::direction dir_c = this->compute_direction(
+            (uint32_t)current->get_parent(), (uint32_t)current->get_id());
 
 	// get the tiles around the current node c
 	uint32_t c_tiles;

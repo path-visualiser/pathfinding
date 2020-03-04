@@ -80,3 +80,42 @@ warthog::jps_expansion_policy::generate_target_node(
     if(map_->get_label(padded_id) == 0) { return 0; }
     return generate(padded_id);
 }
+
+inline warthog::jps::direction
+warthog::jps_expansion_policy::compute_direction(
+        uint32_t n1_id, uint32_t n2_id)
+{
+    if(n1_id == warthog::GRID_ID_MAX) { return warthog::jps::NONE; }
+
+    int32_t x, y, x2, y2;
+    warthog::helpers::index_to_xy(n1_id, map_->width(), x, y);
+    warthog::helpers::index_to_xy(n2_id, map_->width(), x2, y2);
+    warthog::jps::direction dir = warthog::jps::NONE;
+    if(y2 == y)
+    {
+        if(x2 > x)
+            dir = warthog::jps::EAST;
+        else
+            dir = warthog::jps::WEST;
+    }
+    else if(y2 < y)
+    {
+        if(x2 == x)
+            dir = warthog::jps::NORTH;
+        else if(x2 < x)
+            dir = warthog::jps::NORTHWEST;
+        else // x2 > x
+            dir = warthog::jps::NORTHEAST;
+    }
+    else // y2 > y 
+    {
+        if(x2 == x)
+            dir = warthog::jps::SOUTH;
+        else if(x2 < x)
+            dir = warthog::jps::SOUTHWEST;
+        else // x2 > x
+            dir = warthog::jps::SOUTHEAST;
+    }
+    assert(dir != warthog::jps::NONE);
+    return dir;
+}

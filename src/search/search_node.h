@@ -24,7 +24,6 @@ class search_node
             g_(warthog::COST_MAX), f_(warthog::COST_MAX), 
             status_(0), priority_(warthog::INF32), search_number_(0)
 		{
-            set_pdir(warthog::jps::direction::NONE);
 			refcount_++;
 		}
 
@@ -63,19 +62,6 @@ class search_node
 		{ 
 			id_ = id;
 		} 
-
-		inline warthog::jps::direction
-		get_pdir() const
-		{
-			return (warthog::jps::direction)jps_parent_direction_;
-			   	
-		}
-
-		inline void
-		set_pdir(warthog::jps::direction d)
-		{
-			jps_parent_direction_ = d;
-		}
 
 		inline bool
 		get_expanded() const { return status_; }
@@ -215,8 +201,7 @@ class search_node
             out << parent_id_;
             out << " g: "<<g_ <<" f: "<<this->get_f() 
             << " expanded: " << get_expanded() << " " 
-            << " search_number_: " << search_number_ 
-            << " pdir: "<< get_pdir() << " ";
+            << " search_number_: " << search_number_;
 		}
 
 		uint32_t
@@ -229,16 +214,15 @@ class search_node
         get_refcount() { return refcount_; }
 
 	private:
-		warthog::sn_id_t id_; // bit 0 is expansion status; 1-63 are id
+		warthog::sn_id_t id_; 
         warthog::sn_id_t parent_id_;
+
 		double g_;
 		double f_;
         uint8_t status_; // open or closed
 		uint32_t priority_; // expansion priority
 
 		uint32_t search_number_;
-        uint8_t jps_parent_direction_; // hack
-
         static uint32_t refcount_;
 };
 
