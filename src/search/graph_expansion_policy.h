@@ -167,7 +167,7 @@ class graph_expansion_policy
         }
 
         inline uint32_t 
-        get_num_neighbours() 
+        get_num_successors() 
         { 
             return
                 current_graph_node_ ?  current_graph_node_->out_degree() : 0; 
