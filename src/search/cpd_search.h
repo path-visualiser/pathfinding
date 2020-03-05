@@ -280,9 +280,9 @@ class cpd_search : public warthog::search
      * list.
      */
     bool
-    should_prune_(warthog::search_node *incumbent,
-                  warthog::search_node *n,
-                  std::string stage)
+    check_incumbent_(warthog::search_node *incumbent,
+                     warthog::search_node *n,
+                     std::string stage)
     {
         bool prune = false;
 
@@ -291,14 +291,14 @@ class cpd_search : public warthog::search
         {
             if (n->get_f() >= incumbent->get_f())
             {
-                debug(pi_.verbose_, stage, "f-val pruning:", *n);
+                debug(pi_.verbose_, stage, "by f-val:", *n);
                 prune = true;
             }
 
             if (n->get_ub() < warthog::COST_MAX &&
                 n->get_ub() >= incumbent->get_ub())
             {
-                debug(pi_.verbose_, stage, "UB pruning:", *n);
+                debug(pi_.verbose_, stage, "by UB:", *n);
                 prune = true;
             }
         }
@@ -428,16 +428,12 @@ class cpd_search : public warthog::search
 
             if(on_expand_fn_) { (*on_expand_fn_)(current); }
 
-            if (early_stop_(current, &sol, &mytimer))
+            if (early_stop_(current, &sol, &mytimer) ||
+                // Stop if the $f$ value of UB of the best candidate node is
+                // worse than the incumbent.
+                check_incumbent_(incumbent, current, "Stop"))
             {
                 break;
-            }
-
-            // The incumbent may have been updated after this node was
-            // generated, so we need to prune again.
-            if (should_prune_(incumbent, current, "Late"))
-            {
-                continue;
             }
 
             trace(pi_.verbose_, "[", mytimer.elapsed_time_micro(),"]",
@@ -519,7 +515,7 @@ class cpd_search : public warthog::search
             {
                 warthog::cost_t gval = current->get_g() + cost_to_n;
 
-                if (should_prune_(incumbent, n, "Early"))
+                if (check_incumbent_(incumbent, n, "Prune"))
                 {
                     continue;
                 }
