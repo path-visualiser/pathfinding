@@ -483,30 +483,35 @@ class cpd_search : public warthog::search
                     if(on_relax_fn_) { (*on_relax_fn_)(n); }
                 }
 
+                // such that g(n) + c(n, n_i) + h(n_i) < f(incumbent)
+                if (check_incumbent_(incumbent, n, "Ignore"))
+                {
+                    continue;
+                }
+
                 // if n_i is a goal node
                 if(expander_->is_target(n, &pi_))
                 {
                     incumbent = n;
-                    if (gval < n->get_g())
-                    {
-                        relax_node_(incumbent, gval, current->get_id());
-                    }
+                    relax_node_(incumbent, gval, current->get_id());
                     incumbent->set_ub(n->get_g());
                     trace(pi_.verbose_, "New path to target:", *incumbent);
                 }
-                // Found a new incumbent
-                else if (incumbent == nullptr && n->get_ub() < warthog::COST_MAX)
+                else if (n->get_ub() < warthog::COST_MAX)
                 {
-                    debug(pi_.verbose_, "Found UB:", *n);
+                    // Found a new incumbent
+                    if (incumbent == nullptr)
+                    {
+                        debug(pi_.verbose_, "Found UB:", *n);
+                    }
+                    // Better incumbent
+                    else
+                    {
+                        debug(pi_.verbose_, "Update UB:", *n);
+                    }
                     incumbent = n;
                 }
-                // Better incumbent
-                else if (incumbent != nullptr && n->get_ub() < incumbent->get_ub())
-                {
-                    debug(pi_.verbose_, "Update UB:", *n);
-                    incumbent = n;
-                }
-            }
+           }
 
             // Second loop over neighbours to decide whether to prune or not.
             for(expander_->first(n, cost_to_n);
