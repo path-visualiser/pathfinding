@@ -1,7 +1,7 @@
 Submission source codes and evaluation benchamarks from the 2013 Grid-based Path Planning Competition.
 All codes are copyrights of their respective authors. 
 
-Please note the data hosted here a partial clone of a GitHub repository maintained by Max Renke.
+Please note the data hosted here is a partial clone of a GitHub repository maintained by Max Renke.
 You can find Max's repository here:
 https://github.com/maxrenke/gppc-2013
 
