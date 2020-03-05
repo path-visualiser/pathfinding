@@ -28,7 +28,7 @@ If you find these implementations useful, please cite the associated competition
 
 
 
-[== NOTE ==] 
+### NOTE
 The SOURCE CODES hosted here are cloned from a GitHub repository maintained by Max Renke.
 You can find Max's repository here:
 https://github.com/maxrenke/gppc-2014
