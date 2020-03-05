@@ -329,6 +329,7 @@ class bch_search : public warthog::search
 
 			mytimer.stop();
 			sol.time_elapsed_nano_ = mytimer.elapsed_time_nano();
+            sol.nodes_surplus_ = fopen_->size() + bopen_->size();
         }
 
         void

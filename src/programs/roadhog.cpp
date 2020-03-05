@@ -138,7 +138,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
     if(!suppress_header)
     {
         std::cout 
-            << "id\talg\texpanded\tinserted\tupdated\ttouched"
+            << "id\talg\texpanded\tinserted\tupdated\ttouched\tsurplus"
             << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
@@ -151,7 +151,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         uint32_t start_id = exp.source;
         uint32_t target_id = exp.p2p ? exp.target : warthog::INF32;
         warthog::problem_instance pi(start_id, target_id, verbose);
-        uint32_t expanded=0, inserted=0, updated=0, touched=0;
+        uint32_t expanded=0, inserted=0, updated=0, touched=0, surplus=0;
         double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
         {
@@ -162,6 +162,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
+            surplus += sol.nodes_surplus_;
             nano_time = nano_time < sol.time_elapsed_nano_ 
                             ?  nano_time : sol.time_elapsed_nano_;
         }
@@ -173,6 +174,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
+            << surplus / nruns << "\t"
             << nano_time << "\t" /// (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t" 
@@ -191,7 +193,7 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
     if(!suppress_header)
     {
         std::cout 
-            << "id\talg\texpanded\tinserted\tupdated\ttouched"
+            << "id\talg\texpanded\tinserted\tupdated\ttouched\tsurplus"
             << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
@@ -204,7 +206,7 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
         uint32_t start_id = exp.source;
         uint32_t target_id = exp.p2p ? exp.target : warthog::INF32;
         warthog::problem_instance pi(start_id, target_id, verbose);
-        uint32_t expanded=0, inserted=0, updated=0, touched=0;
+        uint32_t expanded=0, inserted=0, updated=0, touched=0, surplus=0;
         double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
         {
@@ -215,6 +217,7 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
+            surplus += sol.nodes_surplus_;
             nano_time = nano_time < sol.time_elapsed_nano_ 
                             ?  nano_time : sol.time_elapsed_nano_;
         }
@@ -226,6 +229,7 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
+            << surplus / nruns << "\t"
             << nano_time << "\t" /// (double)nruns << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t" 
