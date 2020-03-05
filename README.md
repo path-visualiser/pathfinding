@@ -13,7 +13,7 @@ Some things that are hosted in this repository:
 | └ [hog](https://bitbucket.org/dharabor/pathfinding/src/master/other/hog/) | A highly modified implementation of Hierarchical Open Graph v1. |
 | gppc
 | ├ [gppc-2013](https://bitbucket.org/dharabor/pathfinding/src/master/gppc/gppc-2013/) | Codes and instances from the 2013 Grid-based Path Planning Competition.
-| └ [gppc-2014](https://bitbucket.org/dharabor/pathfinding/src/master/gppc/gppc-2013/) | Codes and instances from the 2014 Grid-based Path Planning Competition.
+| └ [gppc-2014](https://bitbucket.org/dharabor/pathfinding/src/master/gppc/gppc-2014/) | Codes and instances from the 2014 Grid-based Path Planning Competition.
 | [maps](https://bitbucket.org/dharabor/pathfinding/src/master/maps/)| Benchmark gridmaps that I often use in experiments. |
 | [scenarios](https://bitbucket.org/dharabor/pathfinding/src/master/scenarios/) | Benchmark instances (point-to-point problems) that I use in experiments. |
 
