@@ -30,6 +30,7 @@ class solution
             nodes_inserted_(other.nodes_inserted_),
             nodes_updated_(other.nodes_updated_), 
             nodes_touched_(other.nodes_updated_),
+            nodes_surplus_(other.nodes_updated_),
             path_(other.path_)
         { }
 
@@ -52,7 +53,8 @@ class solution
                 << "nodes expanded=" << nodes_expanded_ 
                 << "inserted=" << nodes_inserted_ 
                 << "updated=" << nodes_updated_ 
-                << "touched= " << nodes_touched_;
+                << "touched= " << nodes_touched_
+                << "surplus= " << nodes_surplus_;
         }
 
         inline void
@@ -71,6 +73,7 @@ class solution
             nodes_inserted_ = 0; 
             nodes_updated_ = 0;
             nodes_touched_ = 0;
+            nodes_surplus_ = 0;
             path_.clear();
         }
 
@@ -81,6 +84,7 @@ class solution
         uint32_t nodes_inserted_;
         uint32_t nodes_updated_;
         uint32_t nodes_touched_;
+        uint32_t nodes_surplus_;
 
         // the sequence of states that comprise 
         // a solution path

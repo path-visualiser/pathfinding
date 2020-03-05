@@ -102,7 +102,7 @@ run_experiments(warthog::search* algo, std::string alg_name,
         std::ostream& out)
 {
 	std::cout 
-        << "id\talg\texpanded\tinserted\tupdated\ttouched"
+        << "id\talg\texpanded\tinserted\tupdated\ttouched\tsurplus"
         << "\tnanos\tpcost\tplen\tmap\n";
 	for(unsigned int i=0; i < scenmgr.num_experiments(); i++)
 	{
@@ -122,6 +122,7 @@ run_experiments(warthog::search* algo, std::string alg_name,
             << sol.nodes_inserted_ << "\t"
             << sol.nodes_updated_ << "\t"
             << sol.nodes_touched_ << "\t"
+            << sol.nodes_surplus_ << "\t"
             << sol.time_elapsed_nano_ << "\t"
             << sol.sum_of_edge_costs_ << "\t" 
             << (sol.path_.size()-1) << "\t" 
