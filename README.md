@@ -6,8 +6,8 @@ Some things that are hosted in this repository:
 
 | Path | Description |
 | :--- | :---------- |
-| [warthog] (https://bitbucket.org/dharabor/pathfinding/src/master/warthog/) | Fast implementations of various pathfinding algorithms including Jump Point Search and JPS+. |
-| [anyangle] (https://bitbucket.org/dharabor/pathfinding/src/master/anyangle/) | Fast implementations of Anya and Polyanya, two techniques for optimal any-angle pathfinding |
+| [warthog](https://bitbucket.org/dharabor/pathfinding/src/master/warthog/) | Fast implementations of various pathfinding algorithms including Jump Point Search and JPS+. |
+| [anyangle](https://bitbucket.org/dharabor/pathfinding/src/master/anyangle/) | Fast implementations of Anya and Polyanya, two techniques for optimal any-angle pathfinding |
 | other | |
 | ├ [jump_point_graphs](https://bitbucket.org/dharabor/pathfinding/src/master/other/jump_point_graphs/) | A graph-specific reinterpretation of Jump Point Search.  |
 | └ [hog](https://bitbucket.org/dharabor/pathfinding/src/master/other/hog/) | A highly modified implementation of Hierarchical Open Graph v1. |
