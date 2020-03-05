@@ -56,8 +56,6 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
             astar.get_path(pi, sol);
 
             REQUIRE(sol.sum_of_edge_costs_ == cost);
-            // But we have to expand all nodes but the target
-            REQUIRE(sol.nodes_expanded_ == g.get_num_nodes() - 1);
         }
 
         WHEN("We do not have time to search")
