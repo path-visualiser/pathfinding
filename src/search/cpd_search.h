@@ -434,6 +434,8 @@ class cpd_search : public warthog::search
                 continue;
             }
 
+            // Incumbent handling
+
             // if n_i is a goal node
             if(expander_->is_target(n, &pi_))
             {
@@ -456,19 +458,9 @@ class cpd_search : public warthog::search
                 }
                 incumbent = n;
             }
-        }
 
-        // Second loop over neighbours to decide whether to prune or not.
-        for(expander_->first(n, cost_to_n);
-            n != nullptr;
-            expander_->next(n, cost_to_n))
-        {
-            warthog::cost_t gval = current->get_g() + cost_to_n;
+            // Add nodes to queue
 
-            if (check_incumbent_(incumbent, n, "Prune"))
-            {
-                continue;
-            }
             // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
             if (gval < n->get_g())
             {
