@@ -590,6 +590,7 @@ class cpd_search : public warthog::search
 
         mytimer.stop();
         sol.time_elapsed_nano_ = mytimer.elapsed_time_nano();
+        sol.nodes_surplus_ = open_->size();
 
         DO_ON_DEBUG_IF(pi_.verbose_)
         {
