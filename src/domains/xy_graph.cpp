@@ -255,37 +255,33 @@ warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool stor
     {
         // read nodes data
         in >> std::ws;
-        while(in.peek() == 'v')
+        char c = in.get();
+
+        if(c == 'v')
         {
             uint32_t id;
             int32_t x, y;
-            in.get(); // eat the 'v' char
             in >> id >> x >> y;
             xy[id] = std::pair<int32_t, int32_t>(x, y);
             in >> std::ws; // trailing whitespace
             n_added++;
         }
 
-        while(in.peek() == 'e')
+        if(c == 'e')
         {
             uint32_t from_id, to_id;
             warthog::graph::edge_cost_t cost;
 
-            in.get(); // eat the 'e' char
             in >> from_id >> to_id >> cost;
-            {
-                // up edges are added to the outgoing list
-                edges[e_added] = 
-                    std::pair<uint32_t, warthog::graph::edge>
-                        (from_id, warthog::graph::edge(to_id, cost));
+            edges[e_added] = 
+                std::pair<uint32_t, warthog::graph::edge>
+                    (from_id, warthog::graph::edge(to_id, cost));
 
-                assert(out_degree[from_id] != warthog::graph::ECAP_MAX);
-                assert(out_degree[to_id] != warthog::graph::ECAP_MAX);
-                out_degree[from_id]++;
-                in_degree[to_id]++;
-            }
+            assert(out_degree[from_id] != warthog::graph::ECAP_MAX);
+            assert(out_degree[to_id] != warthog::graph::ECAP_MAX);
+            out_degree[from_id]++;
+            in_degree[to_id]++;
             e_added++;
-            in >> std::ws;
         }
     }
     assert(n_added == num_nodes);
