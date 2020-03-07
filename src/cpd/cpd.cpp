@@ -61,14 +61,14 @@ warthog::cpd::compute_dfs_preorder(
 std::istream&
 warthog::cpd::operator>>(std::istream& in, warthog::cpd::rle_run32& the_run)
 {
-    in.read((char*)(&the_run.data_), sizeof(&the_run.data_));
+    in.read((char*)(&the_run.data_), sizeof(the_run.data_));
     return in;
 }
 
 std::ostream&
 warthog::cpd::operator<<(std::ostream& out, warthog::cpd::rle_run32& the_run)
 {
-    out.write((char*)(&the_run.data_), sizeof(&the_run.data_));
+    out.write((char*)(&the_run.data_), sizeof(the_run.data_));
     return out;
 }
 
