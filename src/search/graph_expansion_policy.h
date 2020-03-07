@@ -96,8 +96,11 @@ class graph_expansion_policy
         {
             if(which < current_graph_node_->out_degree())
             {
-                edge_index_ = which;
-                this->n(ret, cost);
+                warthog::graph::edge *e = 
+                    current_graph_node_->outgoing_begin() + which;
+                ret = (this->*fn_generate_successor)
+                         (e->node_id_, edge_index_, *e);
+                cost = e->wt_;
             }
             else
             {
