@@ -35,11 +35,12 @@ contract_graph()
 {
     warthog::ch::ch_data chd(0, warthog::ch::UP_DOWN);
     std::string outfile;
+    std::string xy_file;
 
     // load up the input graph/grid
-    if(cfg.get_num_values("input") != 1)
+    if(cfg.get_num_values("input") <= 1)
     {
-        std::string xy_file = cfg.get_param_value("input");
+        xy_file = cfg.get_param_value("input");
         std::ifstream ifs(xy_file);
         warthog::graph::read_xy(ifs, *chd.g_, true);
     }
@@ -80,13 +81,6 @@ contract_graph()
         {
             chd.level_->at(node_order.at(i)) = i;
         }
-
-        // save the result
-        std::cerr << "saving contracted graph to file " << outfile << std::endl;
-        if(!warthog::ch::save_ch_data(outfile.c_str(), &chd))
-        {
-            std::cerr << "\nerror writing to file " << outfile << std::endl;
-        }
     }
     else if(order_type == "lazy")
     {
@@ -98,11 +92,13 @@ contract_graph()
     }
     else
     {
-        std::cerr << "unknown parameter for --order\n";
+        std::cerr << "``" << order_type << "''" << "is an unrecognised parameter for --order\n";
         return;
     }
 
     // save the result
+    chd.g_->set_filename(xy_file.c_str());
+    outfile = xy_file + ".ch";
     std::cerr << "saving contracted graph to file " << outfile << std::endl;
     if(!warthog::ch::save_ch_data(outfile.c_str(), &chd))
     {
