@@ -54,16 +54,27 @@ int print_help = 0;
 void
 help()
 {
-	std::cerr << "valid parameters:\n"
-	<< "\t--alg []\n"
-	<< "\t--scen [scenario filename]\n"
-	<< "\t--gen [map filename] \n"
-	<< "\t--checkopt (optional)\n"
-	<< "\t--verbose (optional)\n"
-    << "\nRecognised values for --alg:\n"
+    std::cerr 
+        << "==> manual <==\n"
+        << "This program solves/generates grid-based pathfinding problems using the\n"
+        << "map/scenario format from the 2014 Grid-based Path Planning Competition\n\n";
+
+	std::cerr 
+    << "The following are valid parameters for SOLVING instances:\n"
+	<< "\t--alg [alg] (required)\n"
+    << "\t--scen [scen file] (required) \n"
+	<< "\t--checkopt (optional; compare solution costs against values in the scen file)\n"
+	<< "\t--verbose (optional; prints debugging info when compiled with debug symbols)\n"
+    << "Invoking the program this way solves all instances in [scen file] with algorithm [alg]\n"
+    << "Currently recognised values for [alg]:\n"
     << "\tcbs_ll, cbs_ll_w, dijkstra, astar, astar_wgm, astar4c, sipp\n"
     << "\tsssp, jps, jps2, jps+, jps2+, jps, jps4c\n"
-    << "\tdfs, gdfs\n";
+    << "\tdfs, gdfs\n\n"
+    << ""
+    << "The following are valid parameters for GENERATING instances:\n"
+    << "\t --gen [map file (required)]\n"
+    << "Invoking the program this way generates at random 1000 valid problems for \n"
+    << "gridmap [map file]\n";
 }
 
 bool
@@ -493,11 +504,11 @@ main(int argc, char** argv)
 		{"help", no_argument, &print_help, 1},
 		{"checkopt",  no_argument, &checkopt, 1},
 		{"verbose",  no_argument, &verbose, 1},
-		{"format",  required_argument, 0, 1},
+		{0,  0, 0, 0}
 	};
 
 	warthog::util::cfg cfg;
-	cfg.parse_args(argc, argv, "-f", valid_args);
+	cfg.parse_args(argc, argv, "a:b:c:def", valid_args);
 
     if(argc == 1 || print_help)
     {
@@ -520,7 +531,6 @@ main(int argc, char** argv)
 
 	if(alg == "" || sfile == "")
 	{
-        std::cerr << "Err. Must specify a scenario file and search algorithm. Try --help for options.\n";
 		exit(0);
 	}
 

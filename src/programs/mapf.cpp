@@ -520,6 +520,7 @@ main(int argc, char** argv)
 		{"checkopt",  no_argument, &checkopt, 1},
 		{"verbose",  no_argument, &verbose, 1},
 		{"format",  required_argument, 0, 1},
+		{0,  0, 0, 0}
 	};
 
 	warthog::util::cfg cfg;
