@@ -63,15 +63,44 @@ class cbs_ll_heuristic
 
     private:
 
+        // callback listener used to construct a perfect 2D heuristic
+        struct listener
+        {
+            listener(cbs_ll_heuristic* ptr)
+            { this->ptr = ptr; }
+
+            inline void
+            generate_node(warthog::search_node* child, 
+                          warthog::search_node* parent, 
+                          warthog::cost_t edge_cost,
+                          uint32_t edge_id) { } 
+
+            inline void
+            expand_node(warthog::search_node* current) 
+            {
+                ptr->h_[ptr->t_index_][(uint32_t)current->get_id()] = 
+                    current->get_g();
+            }
+
+            inline void
+            relax_node(warthog::search_node* current) { }
+
+            cbs_ll_heuristic* ptr;
+        };
+
+
         // things we need to compute a perfect heuristic
         warthog::solution* sol_;
         warthog::pqueue_min* open_;
         warthog::zero_heuristic* zh_;
         warthog::gridmap_expansion_policy* expander_;
-        warthog::flexible_astar<
+        warthog::cbs_ll_heuristic::listener* listener_;
+
+        warthog::flexible_astar< 
             warthog::zero_heuristic, 
             warthog::gridmap_expansion_policy,
-            warthog::pqueue_min>* alg_;
+            warthog::pqueue_min, 
+            warthog::cbs_ll_heuristic::listener >* alg_;
 
         // things we need to store perfect heuristic values
         std::vector<std::vector<warthog::cost_t>> h_;

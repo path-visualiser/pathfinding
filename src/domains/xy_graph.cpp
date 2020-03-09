@@ -1,4 +1,5 @@
-#include "xy_graph.h"
+#include "domains/xy_graph.h"
+#include "util/timer.h"
 
 void
 warthog::graph::gridmap_to_xy_graph(
@@ -184,6 +185,9 @@ warthog::graph::dimacs_to_xy_graph(
 void
 warthog::graph::write_xy(std::ostream& out, warthog::graph::xy_graph& g)
 {
+    warthog::timer mytimer; 
+    mytimer.start();
+
     // comments
     out << "# warthog xy graph\n"
         << "# this file is formatted as follows: [header data] [node data] [edge data]\n"
@@ -222,11 +226,20 @@ warthog::graph::write_xy(std::ostream& out, warthog::graph::xy_graph& g)
             out << "e " << i << " " << e->node_id_ << " " << e->wt_ << std::endl;
         }
     }
+
+    mytimer.stop();
+    std::cerr 
+        << "wrote xy_graph; time " 
+        << ((double)mytimer.elapsed_time_nano() / 1e9) 
+        << " s" << std::endl;
 }
 
 void
 warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming)
 {
+    warthog::timer mytimer;
+    mytimer.start();
+
     uint32_t num_nodes=0, num_edges=0;
     while(in.good())
     {
@@ -313,16 +326,21 @@ warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool stor
         }
     }
 
+    mytimer.stop();
     std::cerr << "graph, loaded.\n";
     std::cerr 
         << "read " << n_added << " nodes (total " << num_nodes << ")"
         << " and read " << e_added << " outgoing edges (total "<< num_edges << ")"
+        << ". total time " << (double)mytimer.elapsed_time_nano() / 1e9 << " s"
         << std::endl;
 }
 
 void 
 warthog::graph::write_dimacs(std::ostream& out, warthog::graph::xy_graph& g)
 {
+    warthog::timer mytimer;
+    mytimer.start();
+
     uint32_t first_id = 0;
     uint32_t last_id = g.get_num_nodes();
     uint32_t offset = 1;
@@ -360,4 +378,10 @@ warthog::graph::write_dimacs(std::ostream& out, warthog::graph::xy_graph& g)
                 << " " << (uint32_t)((*it).wt_) << std::endl;
         }
     }
+
+    mytimer.stop();
+    std::cerr 
+        << "wrote xy_graph; time " 
+        << ((double)mytimer.elapsed_time_nano() / 1e9) 
+        << " s" << std::endl;
 }

@@ -7,10 +7,8 @@
 // @created: 2016-11-24
 //
 
-#include "af_filter.h"
 #include "anytime_astar.h"
 #include "apex_filter.h"
-#include "bbaf_filter.h"
 #include "bb_filter.h"
 #include "bch_search.h"
 #include "bch_expansion_policy.h"
@@ -27,7 +25,6 @@
 #include "fch_bb_expansion_policy.h"
 #include "fch_dfs_expansion_policy.h"
 #include "fch_expansion_policy.h"
-#include "firstmove_labelling.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
@@ -594,29 +591,42 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         alg_name += std::to_string(pct_dijkstra);
     }
 
-    warthog::util::workload_manager workload(chd.get()->g_->get_num_nodes());
-    for(size_t i = 0; i < chd.get()->g_->get_num_nodes(); i++)
-    {
-        if(chd.get()->level_->at(i) >= (uint32_t)(chd.get()->level_->size()*cutoff))
-        { workload.set_flag((uint32_t)i, true); }
-    }
+    warthog::label::dfs_labelling lab(chd->g_, chd->level_);
 
-    // load up the labelling
+    // load up the edge label data (or else precompute it)
     std::string arclab_file =  chd_file + "." + alg_name + "." + "label";
-    warthog::label::dfs_labelling* lab = warthog::label::dfs_labelling::load(
-            arclab_file.c_str(), chd.get()->g_, chd.get()->level_);
-
-    if(lab == 0)
+    std::ifstream ifs(arclab_file);
+    if(ifs.is_open())
     {
-        lab = warthog::label::dfs_labelling::compute(
-                chd.get()->g_, chd.get()->level_, &workload);
+        ifs >> lab;
+        ifs.close();
+    }
+    else
+    {
+        warthog::util::workload_manager workload(chd.get()->g_->get_num_nodes());
+        for(size_t i = 0; i < chd.get()->g_->get_num_nodes(); i++)
+        {
+            if(chd.get()->level_->at(i) >= (uint32_t)(chd.get()->level_->size()*cutoff))
+            { workload.set_flag((uint32_t)i, true); }
+        }
+
+        lab.precompute(chd.get()->g_, chd.get()->level_, &workload);
         std::cerr << "precompute finished. saving result to " 
             << arclab_file << "...";
-        warthog::label::dfs_labelling::save(arclab_file.c_str(), *lab);
+
+        std::ofstream out(arclab_file, 
+                std::ios_base::out|std::ios_base::binary);
+        out << lab;
+        if(!out.good())
+        {
+            std::cerr << "\nerror trying to write to file " 
+                << arclab_file << std::endl;
+        }
+        out.close();
         std::cerr << "done.\n";
     }
 
-    warthog::fch_dfs_expansion_policy fexp(chd.get()->g_, chd.get()->level_, lab);
+    warthog::fch_dfs_expansion_policy fexp(chd.get()->g_, chd.get()->level_, &lab);
     warthog::euclidean_heuristic h(chd.get()->g_);
     warthog::pqueue_min open;
 
@@ -641,7 +651,6 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     };
 
     run_experiments(&alg, alg_name, parser, std::cout);
-    delete lab;
 }
 
 void
@@ -726,14 +735,14 @@ run_cpd_search(warthog::util::cfg& cfg,
     if(ifs.is_open())
     {
         ifs >> oracle;
+        ifs.close();
     }
     else
     {
-        std::cerr << "precomputing... " <<std::endl;
         oracle.precompute();
         std::ofstream ofs(cpd_filename);
         ofs << oracle;
-        std::cerr << "writing " << cpd_filename << std::endl;
+        ofs.close();
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
@@ -777,14 +786,14 @@ run_cpd(warthog::util::cfg& cfg,
     if(ifs.is_open())
     {
         ifs >> oracle;
+        ifs.close();
     }
     else
     {
-        std::cerr << "precomputing... " <<std::endl;
         oracle.precompute();
         std::ofstream ofs(cpd_filename);
         ofs << oracle;
-        std::cerr << "writing " << cpd_filename << std::endl;
+        ofs.close();
     }
 
     warthog::cpd_graph_expansion_policy expander(&oracle);
@@ -824,7 +833,7 @@ run_cpd(warthog::util::cfg& cfg,
         sol->time_elapsed_nano_ = mytimer.elapsed_time_nano();
     };
 
-    run_experiments(cpd_extract, alg_name, parser, std::cout);
+    //run_experiments(cpd_extract, alg_name, parser, std::cout);
 
 }
 
@@ -889,11 +898,9 @@ run_cpd_dfs(warthog::util::cfg& cfg,
     }
     else
     {
-        std::cerr << "precomputing... " <<std::endl;
         oracle.precompute();
         std::ofstream ofs(cpd_filename);
         ofs << oracle;
-        std::cerr << "writing " << cpd_filename << std::endl;
     }
 
     warthog::cpd_graph_expansion_policy expander(&oracle);

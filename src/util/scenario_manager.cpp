@@ -1,3 +1,4 @@
+#include "dummy_listener.h"
 #include "flexible_astar.h"
 #include "scenario_manager.h"
 #include "problem_instance.h"
@@ -71,11 +72,12 @@ warthog::scenario_manager::generate_single_experiment(warthog::gridmap* map)
 	warthog::gridmap_expansion_policy expander(map);
 	warthog::octile_heuristic heuristic(map->width(), map->height());
     warthog::pqueue_min open;
+    warthog::dummy_listener listener;
 	warthog::flexible_astar<
 		warthog::octile_heuristic,
 	   	warthog::gridmap_expansion_policy, 
-        warthog::pqueue_min>
-            astar(&heuristic, &expander, &open);
+        warthog::pqueue_min, warthog::dummy_listener>
+            astar(&heuristic, &expander, &open, &listener);
 
 	warthog::experiment* newexp;
 	uint32_t raw_mapsize = map->header_height() * map->header_width();
