@@ -1,4 +1,5 @@
 #include "cbs_ll_heuristic.h"
+#include "dummy_listener.h"
 #include "flexible_astar.h"
 #include "gridmap.h"
 #include "gridmap_expansion_policy.h"
@@ -15,6 +16,7 @@ warthog::cbs_ll_heuristic::cbs_ll_heuristic(warthog::gridmap* gm)
     sol_ = new warthog::solution();
     open_ = new warthog::pqueue_min();
     zh_ = new warthog::zero_heuristic();
+    listener_ = new warthog::cbs_ll_heuristic::listener(this);
     gm_sz_ = gm->width() * gm->height();
 
     bool manhattan = true;
@@ -23,14 +25,16 @@ warthog::cbs_ll_heuristic::cbs_ll_heuristic(warthog::gridmap* gm)
     alg_ = new warthog::flexible_astar<
         warthog::zero_heuristic, 
         warthog::gridmap_expansion_policy,
-        warthog::pqueue_min> 
-            (zh_, expander_, open_);
+        warthog::pqueue_min, 
+        warthog::cbs_ll_heuristic::listener > 
+            (zh_, expander_, open_, listener_);
 }
 
 warthog::cbs_ll_heuristic::~cbs_ll_heuristic() 
 {
     delete alg_;
     delete expander_;
+    delete listener_;
     delete zh_;
     delete open_;
     delete sol_;
@@ -54,13 +58,6 @@ warthog::cbs_ll_heuristic::set_current_target(warthog::sn_id_t target_id)
     t_map_[(uint32_t)target_id] = t_index_;
     h_.push_back(std::vector<warthog::cost_t>());
     h_[t_index_].resize(gm_sz_, warthog::INF32);
-
-    std::function<void(warthog::search_node*)> on_expand_fn = 
-        [&] (warthog::search_node* current) -> void
-        {
-            h_[t_index_][(uint32_t)current->get_id()] = current->get_g();
-        };
-    alg_->apply_on_expand(on_expand_fn);
 
     sol_->reset();
     warthog::problem_instance problem(target_id);

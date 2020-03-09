@@ -17,6 +17,7 @@ class apex_filter;
 class bb_filter;
 class cbs_ll_heuristic;
 class dummy_filter;
+class dummy_listener;
 class expansion_policy;
 class euclidean_heuristic;
 class gridmap;
@@ -26,7 +27,7 @@ class search_node;
 class solution;
 class zero_heuristic;
 
-template<typename H, typename E, typename Q>
+template<typename H, typename E, typename Q, typename L>
 class flexible_astar;
 
 template<typename FILTER>
@@ -59,8 +60,6 @@ class firstmove_labelling;
 namespace jps
 {
 
-class corner_point_locator;
-
 }
 
 namespace mem
@@ -69,6 +68,13 @@ namespace mem
 
 namespace cbs
 {
+}
+
+namespace util
+{
+
+class workload_manager;
+
 }
 
 }

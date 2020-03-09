@@ -5,8 +5,65 @@
 struct shared_data
 {
     warthog::cpd::graph_oracle* cpd_;
-    warthog::simple_graph_expansion_policy* expander_;
     std::vector<uint32_t>* sources_;
+};
+
+// helps to precompute first-move data
+struct graph_oracle_listener
+{
+    inline void
+    generate_node(warthog::search_node* succ, 
+                  warthog::search_node* from, 
+                  warthog::cost_t edge_cost,
+                  uint32_t edge_id) 
+    {
+        if(from == 0) { return; } // start node 
+
+        if(from->get_id() == *source_id_) // start node successors
+        { 
+            //assert(s_row_.at(succ->get_id()) == 0);
+            assert(edge_id < 
+                     oracle_->get_graph()->get_node(
+                        (uint32_t)*source_id_)->out_degree());
+            s_row_->at(succ->get_id()) = (1 << edge_id);
+            assert(s_row_->at(succ->get_id()));
+        }
+        else // all other nodes
+        {
+            warthog::sn_id_t succ_id = succ->get_id();
+            warthog::sn_id_t from_id = from->get_id();
+            double alt_g = from->get_g() + edge_cost;
+            double g_val = 
+                succ->get_search_number() == from->get_search_number() ? 
+                succ->get_g() : DBL_MAX;
+
+            //  update first move
+            if(alt_g < g_val) 
+            { 
+                s_row_->at(succ_id) = s_row_->at(from_id);
+                assert(s_row_->at(succ_id) == s_row_->at(from_id));
+            }
+            
+            // add to the list of optimal first moves
+            if(alt_g == g_val) 
+            { 
+                s_row_->at(succ_id) |= s_row_->at(from_id); 
+                assert(s_row_->at(succ_id) >= s_row_->at(from_id));
+            }
+
+        }
+    }
+
+    inline void
+    expand_node(warthog::search_node* current) { }
+
+    inline void
+    relax_node(warthog::search_node* current) { }
+
+    warthog::cpd::graph_oracle* oracle_;
+    warthog::sn_id_t* source_id_;
+    std::vector<warthog::cpd::fm_coll>* s_row_;
+
 };
 
 void
@@ -24,64 +81,29 @@ warthog::cpd::graph_oracle::precompute()
         shared_data* shared = (shared_data*) par->shared_;
         warthog::cpd::graph_oracle* cpd = shared->cpd_;
         warthog::graph::xy_graph* g = cpd->get_graph();
-        std::vector<warthog::cpd::fm_coll> s_row(g->get_num_nodes());
 
+        std::vector<warthog::cpd::fm_coll> s_row(g->get_num_nodes());
         warthog::sn_id_t source_id;
 
-        // callback function used to record the optimal first move 
-        std::function<void(
-                warthog::search_node*, 
-                warthog::search_node*, double, uint32_t)>  
-            on_generate_fn = [&source_id, &s_row, shared]
-        (warthog::search_node* succ, warthog::search_node* from,
-             double edge_cost, uint32_t edge_id) -> void
-        {
-            if(from == 0) { return; } // start node 
-
-            if(from->get_id() == source_id) // start node successors
-            { 
-                //assert(s_row.at(succ->get_id()) == 0);
-                assert(edge_id < 
-                         shared->cpd_->get_graph()->get_node(
-                            (uint32_t)source_id)->out_degree());
-                s_row.at(succ->get_id()) = (1 << edge_id);
-                assert(s_row.at(succ->get_id()));
-            }
-            else // all other nodes
-            {
-                warthog::sn_id_t succ_id = succ->get_id();
-                warthog::sn_id_t from_id = from->get_id();
-                double alt_g = from->get_g() + edge_cost;
-                double g_val = 
-                    succ->get_search_number() == from->get_search_number() ? 
-                    succ->get_g() : DBL_MAX;
-
-                //  update first move
-                if(alt_g < g_val) 
-                { 
-                    s_row.at(succ_id) = s_row.at(from_id);
-                    assert(s_row.at(succ_id) == s_row.at(from_id));
-                }
-                
-                // add to the list of optimal first moves
-                if(alt_g == g_val) 
-                { 
-                    s_row.at(succ_id) |= s_row.at(from_id); 
-                    assert(s_row.at(succ_id) >= s_row.at(from_id));
-                }
-
-            }
-        };
 
         // each thread has its own copy of Dijkstra and each
         // copy has a separate memory pool
         warthog::simple_graph_expansion_policy expander(g);
         warthog::zero_heuristic h;
         warthog::pqueue_min queue;
+        graph_oracle_listener listener;
+
         warthog::flexible_astar 
-            <warthog::zero_heuristic, warthog::simple_graph_expansion_policy> 
-                dijk(&h, &expander, &queue);
-        dijk.apply_on_generate(on_generate_fn);
+            <warthog::zero_heuristic, 
+            warthog::simple_graph_expansion_policy,
+            warthog::pqueue_min,
+            graph_oracle_listener>
+                dijk(&h, &expander, &queue, &listener);
+
+        listener.oracle_ = cpd;
+        listener.source_id_ = &source_id;
+        listener.s_row_ = &s_row;
+        dijk.set_listener(&listener);
 
         for(uint32_t i = 0; i < shared->sources_->size(); i++)
         {
@@ -180,6 +202,9 @@ warthog::cpd::operator>>(std::istream& in,
         warthog::cpd::graph_oracle& lab)
 {
     // read the graph size data
+    warthog::timer mytimer;
+    mytimer.start();
+
     uint32_t num_nodes;
     in.read((char*)(&num_nodes), 4);
     if(num_nodes != lab.g_->get_num_nodes())
@@ -230,10 +255,13 @@ warthog::cpd::operator>>(std::istream& in,
             }
         }
     }
+    mytimer.stop();
+
     std::cerr 
         << "read from disk " << lab.fm_.size() 
         << " rows and "
-        << run_count << " runs \n";
+        << run_count << " runs. "
+        << " time: " << (double)mytimer.elapsed_time_nano() / 1e9 << " s\n";
     return in;
 }
 
@@ -241,6 +269,9 @@ std::ostream&
 warthog::cpd::operator<<(std::ostream& out,
         warthog::cpd::graph_oracle& lab)
 {
+    warthog::timer mytimer;
+    mytimer.start();
+
     // write graph size 
     uint32_t num_nodes = lab.g_->get_num_nodes();
     out.write((char*)(&num_nodes), 4);
@@ -278,10 +309,13 @@ warthog::cpd::operator<<(std::ostream& out,
         }
         
     }
+    mytimer.stop();
+
     std::cerr 
         << "wrote to disk " << lab.fm_.size()
         << " rows and "
-        << run_count << " runs \n";
+        << run_count << " runs. "
+        << " time: " << (double)mytimer.elapsed_time_nano() / 1e9 << " s \n";
     return out;
 }
 

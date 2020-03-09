@@ -17,13 +17,11 @@
 // @created: 2017-12-06
 // 
 
-#include "bbaf_labelling.h"
-#include "fch_expansion_policy.h"
-#include "geom.h"
-#include "solution.h"
-#include "timer.h"
-#include "forward.h"
+#include "util/geom.h"
+#include "util/timer.h"
+#include "sys/forward.h"
 
+#include <cassert>
 #include <fstream>
 #include <vector>
 #include <cstdint>
@@ -33,52 +31,6 @@ namespace warthog
 
 namespace label
 {
-
-struct id_range_label
-{
-    id_range_label() { left = INT32_MAX; right = INT32_MIN; } 
-
-    id_range_label&
-    operator=(const id_range_label& other)
-    {
-        left = other.left; right = other.right; 
-        return *this;
-    }
-
-    void
-    print(std::ostream& out)
-    {
-        out << "id-range " << left << " " << right;
-    }
-
-    void
-    grow(int32_t val)
-    {
-        left = val < left  ? val : left;
-        right = val > right ? val : right;
-    }
-
-    void
-    grow(const id_range_label& other)
-    {
-        left = left < other.left ? left : other.left;
-        right = right > other.right ? right : other.right;
-    }
-
-    inline bool
-    contains(int32_t val)
-    {
-        return (right - val) + left >= left;
-    }
-
-    int32_t left, right;
-};
-
-std::istream&
-operator>>(std::istream& in, warthog::label::id_range_label& label);
-
-std::ostream& 
-operator<<(std::ostream& out, warthog::label::id_range_label& label);
 
 struct dfs_label
 {
@@ -122,6 +74,8 @@ class dfs_labelling
     operator>>(std::istream& in, warthog::label::dfs_labelling& lab);
 
     public:
+    
+        dfs_labelling(warthog::graph::xy_graph* g, std::vector<uint32_t>* rank);
 
         ~dfs_labelling();
 
@@ -154,269 +108,13 @@ class dfs_labelling
             return retval;
         }
 
-        static warthog::label::dfs_labelling*
-        load(const char* filename, warthog::graph::xy_graph* g, 
-            std::vector<uint32_t>* rank)
-        {
-            std::cerr << "loading dfs_labelling from file " 
-                << filename << std::endl;
-            std::ifstream ifs(filename, 
-                    std::ios_base::in|std::ios_base::binary);
-
-            if(!ifs.good())
-            {
-                std::cerr << "load failed (no such file?)" << std::endl;
-                ifs.close();
-                return 0;
-            }
-
-            warthog::label::dfs_labelling* lab = 
-                new warthog::label::dfs_labelling(g, rank);
-
-            ifs >> *lab;
-
-            if(!ifs.good())
-            {
-                std::cerr << "load failed" << std::endl;
-                delete lab;
-                lab = 0;
-            }
-
-            ifs.close();
-            return lab;
-        }
-        
-        static void
-        save(const char* filename, warthog::label::dfs_labelling& lab)
-        {
-            std::cerr << "writing labels to file " << filename << "\n";
-            std::ofstream out(filename, 
-                    std::ios_base::out|std::ios_base::binary);
-
-            out << lab;
-
-            if(!out.good())
-            {
-                std::cerr << "\nerror trying to write to file " 
-                    << filename << std::endl;
-            }
-            out.close();
-        }
-
         // compute labels for all nodes specified by the given workload
-        static warthog::label::dfs_labelling*
-        compute(warthog::graph::xy_graph* g, 
+        warthog::label::dfs_labelling*
+        precompute(warthog::graph::xy_graph* g, 
                 std::vector<uint32_t>* rank,
-                warthog::util::workload_manager* workload)
-        {
-            warthog::timer t;
-            t.start();
-
-            if(g == 0 || rank == 0 ) { return 0; } 
-
-            std::function<fch_expansion_policy*(void)> expander_fn = 
-            [g, rank] (void) -> fch_expansion_policy*
-            { return new warthog::fch_expansion_policy(g, rank); };
-
-            struct shared_data
-            {
-                std::function<fch_expansion_policy*(void)> fn_new_expander_;
-                warthog::label::dfs_labelling* lab_;
-                warthog::util::workload_manager* workload_;
-                std::vector<uint32_t>* rank_;
-            };
-
-            // The actual precompute function. We construct a 
-            // Dijkstra-based preprocessing to improve the labels for 
-            // selected sets of nodes
-            void*(*thread_compute_fn)(void*) = 
-            [] (void* args_in) -> void*
-            {
-                warthog::helpers::thread_params* par = 
-                    (warthog::helpers::thread_params*) args_in;
-                shared_data* shared = (shared_data*) par->shared_;
-
-                warthog::label::dfs_labelling* lab = shared->lab_;
-                warthog::util::workload_manager* workload = shared->workload_;
-
-                // variable used to track the node currently being processed
-                uint32_t source_id;
-                
-                // alocate memory for the first moves
-                std::vector<uint32_t> first_move(lab->g_->get_num_nodes());
-
-                // callback function used to record the optimal first move 
-                std::function<void(
-                        warthog::search_node*, 
-                        warthog::search_node*,
-                        double, uint32_t)> on_generate_fn = 
-                [ & ] (warthog::search_node* succ, warthog::search_node* from,
-                            double edge_cost, uint32_t edge_id) -> void
-                {
-                    if(from == 0) { return; } // start node 
-
-                    if((uint32_t)from->get_id() == source_id) // start node successors
-                    { 
-                        assert(edge_id < 
-                        lab->g_->get_node(source_id)->out_degree());
-                        first_move.at((uint32_t)succ->get_id()) = edge_id; 
-                    }
-                    else // all other nodes
-                    {
-                        uint32_t s_id = (uint32_t)succ->get_id();
-                        uint32_t f_id = (uint32_t)from->get_id();
-                        double alt_g = from->get_g() + edge_cost;
-                        double g_val = 
-                            succ->get_search_number() == from->get_search_number() ? 
-                            succ->get_g() : warthog::INF32; 
-
-                        assert(first_move.at(f_id) < 
-                        lab->g_->get_node(source_id)->out_degree());
-
-                        //  update first move
-                        if(alt_g < g_val) 
-                        { first_move.at(s_id) = first_move.at(f_id); }
-                    }
-                };
-
-
-                std::function<void(warthog::search_node*)> on_expand_fn =
-                [&source_id, &first_move, lab]
-                (warthog::search_node* current) -> void
-                {
-                    if((uint32_t)current->get_id() == source_id) { return; }
-
-                    uint32_t node_id = (uint32_t)current->get_id();
-                    assert(node_id < first_move.size());
-
-                    uint32_t edge_idx = first_move.at(node_id);
-                    assert(edge_idx < lab->lab_->at(source_id).size());
-                    dfs_label& s_lab = 
-                        lab->lab_->at(source_id).at(edge_idx);
-
-                    int32_t x, y;
-                    lab->g_->get_xy(node_id, x, y);
-                    s_lab.bbox_.grow(x, y);
-                };
-
-                warthog::zero_heuristic h;
-                std::shared_ptr<warthog::fch_expansion_policy> 
-                    expander(shared->fn_new_expander_());
-                warthog::pqueue_min open;
-                warthog::flexible_astar 
-                    <warthog::zero_heuristic, 
-                    warthog::fch_expansion_policy,
-                    warthog::pqueue_min>
-                        dijk(&h, expander.get(), &open);
-                dijk.apply_on_generate(on_generate_fn);
-                dijk.apply_on_expand(on_expand_fn);
-
-                for(uint32_t i = 0; i < lab->g_->get_num_nodes(); i++)
-                {
-                    // skip any nodes not part of the precomputation workload
-                    if(!workload->get_flag(i))
-                    { continue; }
-
-                    // source nodes are evenly divided among all threads;
-                    // skip any source nodes not intended for current thread
-                    if((i % par->max_threads_) != par->thread_id_) 
-                    { continue; }
-
-                    source_id = i;
-                    uint32_t ext_source_id = 
-                        lab->g_->to_external_id(source_id);
-                    warthog::problem_instance problem(ext_source_id, 
-                            warthog::INF32);
-                    //problem.verbose_ = true;
-                    warthog::solution sol;
-                    dijk.get_path(problem, sol);
-                    par->nprocessed_++;
-                }
-                return 0;
-            };
-
-            warthog::label::dfs_labelling* lab = 
-                new warthog::label::dfs_labelling(g, rank);
-
-            shared_data shared;
-            shared.fn_new_expander_ = expander_fn;
-            shared.lab_ = lab;
-            shared.workload_ = workload;
-            shared.lab_ = lab;
-
-            std::cerr << "computing dijkstra labels\n";
-            warthog::helpers::parallel_compute(
-                    thread_compute_fn, &shared, 
-                    workload->num_flags_set());
-
-            std::cerr << "computing dfs labels...\n";
-            workload->set_all_flags_complement();
-            lab->compute_dfs_labels(workload); // single threaded
-            t.stop();
-
-            std::cerr 
-                << "total preproc time (seconds): "
-                << t.elapsed_time_micro() / 1000000 << "\n";
-
-            return lab;
-        }
-
-        // Computes a DFS post-order id for every node in a contraction
-        // hierarchy (i.e. a top-down traversal)
-        // @param id of the highest node in the contraction hierarchy
-        static uint32_t
-        compute_dfs_ids(
-                warthog::graph::xy_graph* g, 
-                std::vector<uint32_t>* rank, 
-                std::vector<uint32_t>* dfs_ids)
-        {
-            // find the apex of the hierarchy
-            uint32_t apex_id = 0;
-            for(uint32_t i = 0; i < rank->size(); i++)
-            { 
-                if(rank->at(i) > rank->at(apex_id)) 
-                { apex_id = i; } 
-            }
-
-            uint32_t next_id = 0;
-            dfs_ids->resize(g->get_num_nodes(), INT32_MAX);
-            std::function<void(uint32_t)> dfs_id_fn =
-            [dfs_ids, rank, &next_id, &dfs_id_fn, g] (uint32_t source_id) 
-            -> void
-            {
-                warthog::graph::node* source = g->get_node(source_id);
-                warthog::graph::edge_iter begin = source->outgoing_begin();
-                for( warthog::graph::edge_iter it = begin; 
-                        it != source->outgoing_end();
-                        it++)
-                {
-                    // skip up edges
-                    if(rank->at(it->node_id_) > rank->at(source_id)) 
-                    { continue; }
-
-                    // recurse
-                    if(dfs_ids->at(it->node_id_) == INT32_MAX)
-                    { dfs_id_fn(it->node_id_); }
-                }
-                if(dfs_ids->at(source_id) == INT32_MAX)
-                { dfs_ids->at(source_id) = next_id++; }
-            };
-
-            // gogogo
-            dfs_id_fn(apex_id);
-            return apex_id;
-        }
+                warthog::util::workload_manager* workload);
 
     private:
-        // only via ::compute or ::load please
-        dfs_labelling(
-            warthog::graph::xy_graph* g, 
-            std::vector<uint32_t>* rank);
-
-        // DFS-based preprocessing computes labels for every edge 
-        // @param contraction order of every node in the graph
-        void 
-        compute_dfs_labels(warthog::util::workload_manager* workload);
 
         warthog::graph::xy_graph* g_;
         std::vector<uint32_t>* rank_;
@@ -424,6 +122,26 @@ class dfs_labelling
 
         std::vector<uint32_t>* dfs_order_;
         std::vector< std::vector< dfs_label >>* lab_;
+        
+        // Computes a DFS post-order id for every node in a contraction
+        // hierarchy (i.e. a top-down traversal)
+        // @param id of the highest node in the contraction hierarchy
+        uint32_t
+        compute_dfs_postorder_ids_ch(
+                warthog::graph::xy_graph* g, 
+                std::vector<uint32_t>* rank, 
+                std::vector<uint32_t>* dfs_ids);
+
+        // Perform a DFS traversal through the contraction hierarchy
+        // and compute a bounding box for each up and down edge. 
+        // For down edges, the box contains all nodes in the down closure.
+        // For up edges, the box contains all nodes in the up closure C
+        // PLUS for every node n \in C, the set of nodes found in the down 
+        // closure for n.
+        //
+        // @param workload specifies which nodes to
+        void
+        compute_dfs_labels(warthog::util::workload_manager* workload);
 };
 
 std::istream&

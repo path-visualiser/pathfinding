@@ -17,9 +17,9 @@ D_LIBS = -L./lib -L/usr/local/lib
 
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion -Wno-unused-result -Wno-unused-but-set-variable
 FAST_CFLAGS = -O3 -DNDEBUG 
-DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 
+DEV_CFLAGS = -ggdb -O0 -gdwarf-4 -DSINGLE_THREADED
 #DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
-PROFILE_CFLAGS = $(DEV_CFLAGS) -DNDEBUG 
+PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG 
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
   CC = g++
@@ -83,7 +83,6 @@ main: makedirs warthog
 extras__: makedirs warthog 
 	@echo "linking..."
 	$(CC) programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/labelmaker.cpp -o ./bin/labelmaker -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/dimacs2xy.cpp -o ./bin/dimacs2xy -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/grid2graph.cpp -o ./bin/grid2graph -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)

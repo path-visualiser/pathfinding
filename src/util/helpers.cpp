@@ -54,13 +54,17 @@ void*
 warthog::helpers::parallel_compute(void*(*fn_worker)(void*), 
         void* shared_data, uint32_t task_total)
 {
-    std::cerr << "parallel compute; begin\n";
-    std::cerr << "tasks to process: " << task_total << "\n";
+    std::cerr << "parallel compute begin. tasks to process: " << task_total << "\n";
     if(task_total == 0) { return 0; }
 
     // OK, let's fork some threads
     // TODO: detect cores with std::thread::hardware_concurrency();
+    #ifdef SINGLE_THREADED
+    const uint32_t NUM_THREADS = 1;
+    #else
     const uint32_t NUM_THREADS = (uint32_t)std::thread::hardware_concurrency(); 
+    #endif
+
     std::vector<pthread_t> threads(NUM_THREADS);
     std::vector<thread_params> task_data(NUM_THREADS);
 
@@ -116,7 +120,7 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
         if(nfinished == NUM_THREADS) { break; }
         else { sleep(5); }
     }
-    std::cerr << "\nparallel compute; end\n"<< std::endl;
+    std::cerr << "\nparallel compute; end\n";
     return 0;
 }
 

@@ -57,11 +57,6 @@ class graph_oracle
                 if(target_index < row.at(mid).get_index()) { end = mid ;  }
                 else { begin = mid; }
             }
-            //if(source_id == 433 && target_id == 480)
-            //{
-            //    std::cerr << "order id of target 480 " << order_.at(480) << std::endl;
-            //    std::cerr << "run head index " << row.at(begin).get_index() << std::endl;
-            //}
             return row.at(begin).get_move();
         }
 
