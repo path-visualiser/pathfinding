@@ -11,21 +11,23 @@
 
 int verbose=false;
 int verify=false;
+int has_input=0;
+int has_order=0;
 warthog::util::cfg cfg;
 
 void
 help()
 {
-    std::cerr << 
-        "create a contraction hierarchy from " <<
-        "a input graph (in the 9th DIMACS format) or a gridmap (in GPPC format)\n";
-	std::cerr << "valid parameters:\n"
+    std::cerr 
+        << "=>  manual <== \n"
+        << "This program creates a contraction hierarchy from an xy input graph \n"
+        << "(a custom format, similar to that used at the 9th DIMACS challenge)\n";
+	std::cerr << "The following are valid program parameters:\n"
 	<< "\t--order [ fixed | lazy ]\n"
-    << "\t--partial [1-100] (optional; percentage of nodes to contract)\n"
-    << "\t--dimacs [gr file] [co file] (IN THIS ORDER!!)\n"
-    << "\t--gridmap [map file] \n"
-	<< "\t--verbose (optional)\n"
-	<< "\t--verify (verify lazy node priorities before contraction)\n";
+    << "\t--input [xy graph file]\n"
+	<< "\t--verbose (optional; prints debugging info when compiled with debug symbols)\n"
+	<< "\t--verify (optional; verify lazy priorities before contraction.\n"
+    << "\t          slow but can produce less shortcut edges)\n";
 }
 
 void 
@@ -35,31 +37,16 @@ contract_graph()
     std::string outfile;
 
     // load up the input graph/grid
-    if(cfg.get_num_values("xy") == 1)
+    if(cfg.get_num_values("input") != 1)
     {
-        std::string xy_file = cfg.get_param_value("xy");
+        std::string xy_file = cfg.get_param_value("input");
         std::ifstream ifs(xy_file);
         warthog::graph::read_xy(ifs, *chd.g_, true);
     }
-    else if(cfg.get_num_values("gridmap") == 1)
-    {
-        std::string mapfile = cfg.get_param_value("gridmap");
-        warthog::gridmap gm(mapfile.c_str());
-        warthog::graph::gridmap_to_xy_graph(&gm, chd.g_, true);
-        outfile = mapfile + ".chd";
-    }
     else
     {
-        std::cerr << "err; input graph (--xy [file]) or gridmap (--gridmap [file]) not specified\n";
+        std::cerr << "err; input graph (--input [xy graph file]) not specified\n";
         return;
-    }
-
-    // partial contraction means we process only the first k% of nodes
-    std::string partial = cfg.get_param_value("partial");
-    int32_t pct_nodes_to_contract = 100;
-    if(partial != "")
-    {
-        pct_nodes_to_contract = atoi(partial.c_str());
     }
 
     // use an existing node order for contraction operations
@@ -85,7 +72,7 @@ contract_graph()
 
         warthog::ch::fixed_graph_contraction contractor;
         contractor.set_verbose(verbose);
-        contractor.contract(chd.g_, &node_order, (uint32_t)pct_nodes_to_contract);
+        contractor.contract(chd.g_, &node_order);
 
         // assign a level to every node based on its contraction order
         chd.level_->resize(chd.g_->get_num_nodes(), chd.g_->get_num_nodes()-1);
@@ -106,7 +93,7 @@ contract_graph()
         // create a new contraction hierarchy with dynamic node ordering
         warthog::ch::lazy_graph_contraction contractor;
         contractor.set_verbose(verbose);
-        contractor.contract(&chd, verify, (uint32_t)pct_nodes_to_contract);
+        contractor.contract(&chd, verify);
 
     }
     else
@@ -132,14 +119,13 @@ int main(int argc, char** argv)
 	{
 		{"verbose", no_argument, &verbose, 1},
 		{"verify", no_argument, &verify, 1},
-		{"dimacs",  required_argument, 0, 2},
-		{"gridmap",  required_argument, 0, 1},
-		{"order",  required_argument, 0, 3},
-		{"partial",  required_argument, 0, 4}
+		{"input",  required_argument, &has_input, 1},
+		{"order",  required_argument, &has_order, 1},
+		{0,  0, 0, 0}
 	};
-	cfg.parse_args(argc, argv, "-hvd:o:", valid_args);
+	cfg.parse_args(argc, argv, "abc:d:", valid_args);
 
-    if(argc == 1)
+    if(!(has_input && has_order))
     {
 		help();
         exit(0);

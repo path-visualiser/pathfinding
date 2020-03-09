@@ -60,7 +60,18 @@ long nruns = 1;
 void
 help()
 {
-	std::cerr << "Valid parameters:\n"
+	std::cerr 
+    << "==> manual <==\n"
+    << "This program solves point-to-point pathfinding problems on road networks.\n"
+    << "Road networks are specified as xy-graphs and collections of instances are \n"
+    << "specified as p2pz. Both formats are similar to that used at the 9th DIMACS \n"
+    << "challenge. The main differences are: \n"
+    << "(i) a single file format (cf. gr/co files); \n"
+    << "(ii) node/arc ids are zero indexed (cf. 1-indexed) and; \n"
+    << "(iii) the enforcement of the triangle inequality for all arc costs \n"
+    << "(cf. not, as was the case at the competition)\n\n"
+    << ""
+    << "The following are valid program parameters:\n"
     << "\t--alg [ algorithm name (required) ]\n"
     << "\t--input [ algorithm-specific input files (omit to show options) ] \n"
     << "\t--problem [ ss or p2p problem file (required) ]\n"
@@ -68,11 +79,8 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tbch, bch-astar, bch-af, bch-bb, bch-bbaf\n"
-    << "\tfch, fch-af, fch-bb, fch-bbaf, fch-dfs\n"
-    << "\tdfs, cpd, cpd-search\n"
-    << "\nRecognised values for --input:\n "
-    << "\ttoo many to list. missing input files will be listed at runtime\n";
+    << "\tbch, bch-astar, bch-bb, fch, fch-dfs\n"
+    << "\tdfs, cpd, cpd-search\n";
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -1030,6 +1038,7 @@ main(int argc, char** argv)
 		{"noheader",  no_argument, &suppress_header, 1},
 		{"input",  required_argument, 0, 1},
 		{"problem",  required_argument, 0, 1},
+		{0,  0, 0, 0}
 	};
 
 	warthog::util::cfg cfg;

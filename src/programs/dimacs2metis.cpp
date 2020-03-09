@@ -25,6 +25,7 @@ main(int argc, char** argv)
 	{
 		{"core",  required_argument, 0, 2},
 		{"input",  required_argument, 0, 2},
+		{0,  0, 0, 0}
 	};
 
     warthog::util::cfg cfg;
