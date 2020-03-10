@@ -1,5 +1,5 @@
 #include "cpd.h"
-#include "cpd/graph_oracle.h"
+#include "graph_oracle.h"
 #include "helpers.h"
 
 struct shared_data

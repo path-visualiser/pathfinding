@@ -5,17 +5,18 @@
 #include "xy_graph.h"
 #include "cpd_search.h"
 #include "dimacs_parser.h"
+#include "graph_oracle.h"
 #include "cpd_heuristic.h"
 
 using namespace std;
 
 int main(int argv, char* args[]) {
-	Catch::Session session;
-	int res = session.run(argv, args);
+    Catch::Session session;
+    int res = session.run(argv, args);
     return res;
 }
 
-SCENARIO("Test CPD A* on a square matrix", "[h][square][astar]")
+SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 {
     string map_name = "square01.map";
     warthog::graph::xy_graph g;
@@ -23,11 +24,30 @@ SCENARIO("Test CPD A* on a square matrix", "[h][square][astar]")
 
     warthog::graph::gridmap_to_xy_graph(&d, &g, false);
     warthog::simple_graph_expansion_policy expander(&g);
+    warthog::cpd::graph_oracle oracle(&g);
+    std::string cpd_filename = "square01.cpd";
+    std::ifstream ifs(cpd_filename);
+
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        std::cerr << "precomputing... " <<std::endl;
+        oracle.precompute();
+        std::ofstream ofs(cpd_filename);
+        ofs << oracle;
+        std::cerr << "writing " << cpd_filename << std::endl;
+    }
 
     warthog::sn_id_t start = 0;
     warthog::sn_id_t goal = 19;
     // For some reason cannot use `warthog::sn_id_t`
     int32_t x, y;
+    // Cannot cut corners
+    warthog::cost_t cost = warthog::ONE *
+        (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
 
     g.get_xy(start, x, y);
     REQUIRE(x == 0);
@@ -36,9 +56,9 @@ SCENARIO("Test CPD A* on a square matrix", "[h][square][astar]")
     REQUIRE(x == 400000);  // (5 - 1) * GRID_TO_GRAPH_SCALE_FACTOR
     REQUIRE(y == 400000);
 
-    GIVEN("No CPD heuristic")
+    GIVEN("A CPD heuristic")
     {
-        warthog::cpd_heuristic h(&g);
+        warthog::cpd_heuristic h(&oracle);
         warthog::pqueue_min open;
         warthog::solution sol;
         warthog::cpd_search<
@@ -46,12 +66,9 @@ SCENARIO("Test CPD A* on a square matrix", "[h][square][astar]")
             warthog::simple_graph_expansion_policy>
                 astar(&h, &expander, &open);
 
-        THEN("We can still search")
+        THEN("We should be searching quite fast")
         {
             warthog::problem_instance pi(start, goal, true);
-            // Cannot cut corners
-            warthog::cost_t cost = warthog::ONE *
-                    (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
 
             astar.get_path(pi, sol);
 
@@ -62,12 +79,13 @@ SCENARIO("Test CPD A* on a square matrix", "[h][square][astar]")
         {
             astar.set_max_time_cutoff(0);
 
-            THEN("We do not find a solution")
+            THEN("We should still find a solution because the start node " +
+                 "has an incumbent.")
             {
                 warthog::problem_instance pi(start, goal, true);
                 astar.get_path(pi, sol);
 
-                REQUIRE(sol.path_.empty());
+                REQUIRE(sol.sum_of_edge_costs_ == cost);
             }
         }
 

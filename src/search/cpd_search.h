@@ -628,7 +628,7 @@ class cpd_search : public warthog::search
         while (incumbent != nullptr && !expander_->is_target(incumbent, &pi_))
         {
             warthog::sn_id_t pid = incumbent->get_id();
-            warthog::sn_id_t nid = heuristic_->next(pid, pi_.target_id_);
+            warthog::sn_id_t nid = heuristic_->get_move(pid, pi_.target_id_);
 
             if (nid == warthog::SN_ID_MAX)
             {

@@ -20,7 +20,7 @@
 #include "cfg.h"
 #include "constants.h"
 #include "contraction.h"
-#include "cpd/cpd_heuristic.h"
+#include "cpd_heuristic.h"
 #include "depth_first_search.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
@@ -737,13 +737,13 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
-    warthog::cpd::cpd_heuristic h(&oracle);
+    warthog::cpd_heuristic h(&oracle);
     warthog::pqueue_min open;
 
     warthog::anytime_astar<
-        warthog::cpd::cpd_heuristic, 
-        warthog::simple_graph_expansion_policy, 
-        warthog::pqueue_min> 
+        warthog::cpd_heuristic,
+        warthog::simple_graph_expansion_policy,
+        warthog::pqueue_min>
             alg(&h, &expander, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
