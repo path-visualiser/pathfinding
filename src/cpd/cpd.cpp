@@ -50,15 +50,12 @@ warthog::cpd::compute_dfs_preorder(
         }
     }
 
-    std::cerr << "vertex 480 has dfs label " << dfs_labeling.at(480) << std::endl;
-
     // sort the columns by their dfs labels (smallest to largest)
     column_order->reserve(g->get_num_nodes());
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {
         column_order->at(dfs_labeling.at(i)) = i;
     }
-    std::cerr << "order index 2013 has vertex id " << column_order->at(2013) << std::endl;
 }
 
 std::istream&

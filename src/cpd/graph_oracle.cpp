@@ -71,10 +71,6 @@ warthog::cpd::graph_oracle::precompute()
                 }
 
             }
-            if(source_id == 433 && succ->get_id() == 480)
-            {
-                std::cerr << "parent " << from->get_id() << " fm: " << s_row.at(succ->get_id()) << std::endl;
-            }
         };
 
         // each thread has its own copy of Dijkstra and each
