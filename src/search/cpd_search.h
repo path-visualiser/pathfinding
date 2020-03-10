@@ -46,11 +46,13 @@ class cpd_search : public warthog::search
         cost_cutoff_ = DBL_MAX;
         exp_cutoff_ = UINT32_MAX;
         time_cutoff_ = DBL_MAX;
-        max_k_move_ = UINT32_MAX;
         on_relax_fn_ = 0;
         on_generate_fn_ = 0;
+        max_k_moves_ = UINT32_MAX;
         on_expand_fn_ = 0;
         pi_.instance_id_ = UINT32_MAX;
+        // Check whether this is the number of nodes
+        k_moves_ = std::vector<uint32_t>(expander_->get_node_pool_size(), 0);
     }
 
     virtual ~cpd_search() { }
@@ -114,7 +116,7 @@ class cpd_search : public warthog::search
     void
     closed_list(std::vector<warthog::search_node*>& coll)
     {
-        for(size_t i = 0; i < expander_->get_nodes_pool_size(); i++)
+        for(size_t i = 0; i < expander_->get_node_pool_size(); i++)
         {
             warthog::search_node* current = expander_->generate(i);
             if(current->get_search_number() == pi_.instance_id_)
@@ -207,6 +209,12 @@ class cpd_search : public warthog::search
     inline uint32_t
     get_max_time_cutoff() { return time_cutoff_; }
 
+    inline void
+    set_max_k_moves(uint32_t k_moves) { max_k_moves_ = k_moves; }
+
+    inline uint32_t
+    get_max_k_moves() { return max_k_moves_; }
+
     virtual inline size_t
     mem()
     {
@@ -230,10 +238,11 @@ class cpd_search : public warthog::search
     warthog::problem_instance pi_;
 
     // early termination limits
-    warthog::cost_t cost_cutoff_;  // Fixed upper bound
-    uint32_t exp_cutoff_;          // Number of iterations
-    double time_cutoff_;           // Time limit in nanoseconds
-    uint32_t max_k_move_;          // "Distance" from target
+    warthog::cost_t cost_cutoff_;   // Fixed upper bound
+    uint32_t exp_cutoff_;           // Number of iterations
+    double time_cutoff_;            // Time limit in nanoseconds
+    uint32_t max_k_moves_;          // Max "distance" from target
+    std::vector<uint32_t> k_moves_; // "Distance" from target
 
     // callback for when a node is relaxed
     std::function<void(warthog::search_node*)>* on_relax_fn_;
@@ -280,9 +289,9 @@ class cpd_search : public warthog::search
      * list.
      */
     bool
-    check_incumbent_(warthog::search_node *incumbent,
-                     warthog::search_node *n,
-                     std::string stage)
+    should_prune_(warthog::search_node *incumbent,
+                  warthog::search_node *n,
+                  std::string stage)
     {
         bool prune = false;
 
@@ -301,6 +310,12 @@ class cpd_search : public warthog::search
                 debug(pi_.verbose_, stage, "by UB:", *n);
                 prune = true;
             }
+        }
+
+        if (k_moves_.at(n->get_id()) >= max_k_moves_)
+        {
+            debug(pi_.verbose_, stage, "by maximum k.");
+            prune = true;
         }
 
         return prune;
@@ -429,7 +444,7 @@ class cpd_search : public warthog::search
             }
 
             // such that g(n) + c(n, n_i) + h(n_i) < f(incumbent)
-            if (check_incumbent_(incumbent, n, "Ignore"))
+            if (should_prune_(incumbent, n, "Ignore"))
             {
                 continue;
             }
@@ -497,6 +512,19 @@ class cpd_search : public warthog::search
                 warthog::cost_t gval,
                 warthog::sn_id_t pid)
     {
+        if (pid == warthog::SN_ID_MAX)
+        {
+            // Start node has no parent
+            k_moves_.at(n->get_id()) = 0;
+        }
+        else
+        {
+            k_moves_.at(n->get_id()) = k_moves_.at(pid) + 1;
+        }
+
+        debug(pi_.verbose_, "Node", n->get_id(), "set to k=",
+              k_moves_.at(n->get_id()));
+
         if (n->get_g() < warthog::COST_MAX)
         {
             n->relax(gval, pid);
@@ -545,7 +573,7 @@ class cpd_search : public warthog::search
 
         user(pi_.verbose_, pi_);
         info(pi_.verbose_, "cut-off =", cost_cutoff_, "- tlim =", time_cutoff_,
-             "- k-move =", max_k_move_);
+             "- k-move =", max_k_moves_);
         debug(pi_.verbose_, "Start node:", *start);
 
         if (start_ub < warthog::COST_MAX)
@@ -571,7 +599,7 @@ class cpd_search : public warthog::search
             if (early_stop_(current, &sol, &mytimer) ||
                  // Stop if the $f$ value of UB of the best candidate node is
                  // worse than the incumbent.
-                 check_incumbent_(incumbent, current, "Stop"))
+                 should_prune_(incumbent, current, "Stop"))
             {
                 break;
             }

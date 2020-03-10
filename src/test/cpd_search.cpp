@@ -15,7 +15,7 @@ int main(int argv, char* args[]) {
     return res;
 }
 
-SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
+SCENARIO("Test CPD A* on a square matrix", "[h][square][astar]")
 {
     string map_name = "square01.map";
     warthog::graph::xy_graph g;
@@ -76,6 +76,19 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
             astar.set_max_ms_cutoff(1);
 
             THEN("We explore some of the tree")
+            {
+                warthog::problem_instance pi(start, goal, true);
+                astar.get_path(pi, sol);
+
+                REQUIRE(sol.nodes_expanded_ > 0);
+            }
+        }
+
+        WHEN ("We limit the number of k moves")
+        {
+            astar.set_max_k_moves(2);
+
+            THEN("We can still explore some")
             {
                 warthog::problem_instance pi(start, goal, true);
                 astar.get_path(pi, sol);
