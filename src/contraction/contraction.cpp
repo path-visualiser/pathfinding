@@ -363,3 +363,45 @@ warthog::ch::sod_pruning(
     //        }
     //}
 }
+
+void
+warthog::ch::sort_successors(warthog::ch::ch_data* chd)
+{
+    warthog::graph::xy_graph* g_ = chd->g_;
+    for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
+    {
+        // sort the list of outgoing edges for each node. 
+        // down edges will appear appear first, then up edges
+        warthog::graph::node* n = g_->get_node(i);
+        std::sort(
+                n->outgoing_begin(), n->outgoing_end(), 
+                [chd](warthog::graph::edge& e1, warthog::graph::edge& e2)
+                {
+                    return 
+                    chd->level_->at(e1.node_id_) >
+                    chd->level_->at(e2.node_id_);
+                } 
+                );
+
+        // count the number of up edges
+        uint32_t n_level = chd->level_->at(i);
+        for(uint32_t j = 0; j < n->out_degree(); j++)
+        {
+            warthog::graph::edge* e = n->outgoing_begin() + j;
+            if(n_level > chd->level_->at(e->node_id_))
+            {
+                break; 
+            }
+            chd->up_degree_->at(i) = chd->up_degree_->at(i) + 1;
+        }
+
+        // verify that all subsequent edges are down edges
+        for(    uint32_t j = chd->up_degree_->at(i); 
+                j < n->out_degree(); 
+                j++ ) 
+        {
+            warthog::graph::edge* e = n->outgoing_begin() + j;
+            assert(n_level > chd->level_->at(e->node_id_));
+        }
+    }
+}

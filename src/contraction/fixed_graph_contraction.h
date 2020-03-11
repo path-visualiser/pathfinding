@@ -32,7 +32,7 @@ class fixed_graph_contraction
 
         void
         contract(
-                warthog::graph::xy_graph* g,
+                warthog::ch::ch_data* ret,
                 std::vector<uint32_t>* order,
                 uint32_t c_pct = 100);
 
@@ -61,8 +61,8 @@ class fixed_graph_contraction
 
     private:
         void 
-        init( warthog::graph::xy_graph* g, std::vector<uint32_t>* order, 
-              uint32_t c_pct );
+        preliminaries( warthog::graph::xy_graph* g, 
+                std::vector<uint32_t>* order, uint32_t c_pct );
         
         uint32_t
         next();

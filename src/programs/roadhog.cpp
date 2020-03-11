@@ -79,7 +79,7 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tbch, bch-astar, bch-bb, fch, fch-dfs\n"
+    << "\tbch, bch-astar, bch-bb, fch, fch-bb-dfs\n"
     << "\tdfs, cpd, cpd-search\n";
 }
 
@@ -366,12 +366,21 @@ run_bch(warthog::util::cfg& cfg,
         return;
     }
 
-    std::shared_ptr<warthog::ch::ch_data> 
-        chd(warthog::ch::load_ch_data(chd_file.c_str(), warthog::ch::UP_ONLY));
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_ONLY;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
 
     std::cerr << "preparing to search\n";
-    warthog::bch_expansion_policy fexp(chd.get()->g_);
-    warthog::bch_expansion_policy bexp (chd.get()->g_, true);
+    warthog::bch_expansion_policy fexp(chd.g_);
+    warthog::bch_expansion_policy bexp (chd.g_, true);
     warthog::zero_heuristic h;
     warthog::bch_search<
         warthog::zero_heuristic, 
@@ -392,11 +401,20 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    std::shared_ptr<warthog::ch::ch_data> 
-        chd(warthog::ch::load_ch_data(chd_file.c_str(), warthog::ch::UP_ONLY));
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_ONLY;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
 
     std::cerr << "preparing to search\n";
-    warthog::bch_expansion_policy bexp (chd.get()->g_, true);
+    warthog::bch_expansion_policy bexp (chd.g_, true);
     warthog::zero_heuristic h;
     warthog::pqueue_min open;
 
@@ -464,8 +482,17 @@ run_bch_astar(warthog::util::cfg& cfg,
         return;
     }
 
-    warthog::ch::ch_data& chd = 
-        *(warthog::ch::load_ch_data(chd_file.c_str(), warthog::ch::UP_ONLY));
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_ONLY;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
 
     std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(chd.g_);
@@ -491,8 +518,18 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "err; require --input [chd file] [arclabels file]\n";
         return;
     }
-    warthog::ch::ch_data& chd = 
-        *(warthog::ch::load_ch_data(chd_file.c_str(), warthog::ch::UP_ONLY));
+
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_ONLY;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
 
     // load up the edge labels
     warthog::label::bb_labelling *fwd_lab_ptr=0, *bwd_lab_ptr=0;
@@ -535,12 +572,20 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    warthog::ch::ch_data& chd = 
-        *(warthog::ch::load_ch_data(
-            chd_file.c_str(), warthog::ch::UP_DOWN));
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_DOWN;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
 
     std::cerr << "preparing to search\n";
-    warthog::fch_expansion_policy fexp(chd.g_, chd.level_); 
+    warthog::fch_expansion_policy fexp(&chd); 
     warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
 
@@ -580,8 +625,17 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::ch::ch_data> 
-        chd(warthog::ch::load_ch_data(chd_file.c_str(), warthog::ch::UP_DOWN));
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_DOWN;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
 
     std::cerr << "preparing to search\n";
     // define the workload
@@ -599,11 +653,11 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         alg_name += std::to_string(pct_dijkstra);
     }
 
-    warthog::label::dfs_labelling lab(chd->g_, chd->level_);
+    warthog::label::dfs_labelling lab(&chd);
 
     // load up the edge label data (or else precompute it)
     std::string arclab_file =  chd_file + "." + alg_name + "." + "label";
-    std::ifstream ifs(arclab_file);
+    ifs.open(arclab_file);
     if(ifs.is_open())
     {
         ifs >> lab;
@@ -611,14 +665,14 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
     else
     {
-        warthog::util::workload_manager workload(chd.get()->g_->get_num_nodes());
-        for(size_t i = 0; i < chd.get()->g_->get_num_nodes(); i++)
+        warthog::util::workload_manager workload(chd.g_->get_num_nodes());
+        for(size_t i = 0; i < chd.g_->get_num_nodes(); i++)
         {
-            if(chd.get()->level_->at(i) >= (uint32_t)(chd.get()->level_->size()*cutoff))
+            if(chd.level_->at(i) >= (uint32_t)(chd.level_->size()*cutoff))
             { workload.set_flag((uint32_t)i, true); }
         }
 
-        lab.precompute(chd.get()->g_, chd.get()->level_, &workload);
+        lab.precompute(&workload);
         std::cerr << "precompute finished. saving result to " 
             << arclab_file << "...";
 
@@ -634,8 +688,8 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "done.\n";
     }
 
-    warthog::fch_dfs_expansion_policy fexp(chd.get()->g_, chd.get()->level_, &lab);
-    warthog::euclidean_heuristic h(chd.get()->g_);
+    warthog::fch_dfs_expansion_policy fexp(&chd, &lab);
+    warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
 
     warthog::flexible_astar<
@@ -651,11 +705,11 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         while(true)
         {
             warthog::search_node* p = fexp.generate(n->get_parent());
-            if(!p || chd.get()->level_->at(p->get_id()) < chd.get()->level_->at(n->get_id()))
+            if(!p || chd.level_->at(p->get_id()) < chd.level_->at(n->get_id()))
             { break; }
             n = p;
         }
-        return chd.get()->level_->at(n->get_id());
+        return chd.level_->at(n->get_id());
     };
 
     run_experiments(&alg, alg_name, parser, std::cout);
@@ -674,12 +728,21 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
 
     // load up the graph 
-    std::shared_ptr<warthog::ch::ch_data> 
-        chd(warthog::ch::load_ch_data(chd_file.c_str(), warthog::ch::UP_DOWN));
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_DOWN;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
 
     // load up the arc labels
     std::shared_ptr<warthog::label::bb_labelling> bbl
-        (warthog::label::bb_labelling::load(arclabels_file.c_str(), chd.get()->g_));
+        (warthog::label::bb_labelling::load(arclabels_file.c_str(), chd.g_));
     if(!bbl.get())
     {
         std::cerr << "err; could not load arcflags file\n";
@@ -687,8 +750,8 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     }
     warthog::bb_filter filter(bbl.get());
 
-    warthog::euclidean_heuristic h(chd.get()->g_);
-    warthog::fch_bb_expansion_policy fexp(chd.get()->g_, chd.get()->level_, &filter);
+    warthog::euclidean_heuristic h(chd.g_);
+    warthog::fch_bb_expansion_policy fexp(chd.g_, chd.level_, &filter);
     warthog::pqueue_min open;
 
     warthog::flexible_astar< 
@@ -992,10 +1055,6 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "fch")
     {
         run_fch(cfg, parser, alg_name);
-    }
-    else if(alg_name == "fch-bb")
-    {
-        run_fch_bb(cfg, parser, alg_name);
     }
     else if(alg_name == "fch-bb-dfs")
     {

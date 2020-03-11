@@ -7,7 +7,7 @@
 // search in contraction hiearchies.
 //
 // The idea is simple:
-// When expanding a node, look at the rank
+// When expanding a node, look at the level
 // of the parent relative to the current node.
 //
 // If the parent is smaller the search is traveling up in the hierarchy and 
@@ -32,9 +32,7 @@ namespace warthog
 class fch_expansion_policy : public expansion_policy
 {
     public:
-        fch_expansion_policy(
-                warthog::graph::xy_graph* graph,
-                std::vector<uint32_t>* rank);
+        fch_expansion_policy(warthog::ch::ch_data* chd);
 
         virtual 
         ~fch_expansion_policy() { }
@@ -58,22 +56,16 @@ class fch_expansion_policy : public expansion_policy
                 sizeof(this);
         }
 
-        ////////////////////// FCH specific stuff ////////////////////
-        warthog::graph::xy_graph*
-        get_graph() { return g_; } 
-
-        std::vector<uint32_t>*
-        get_rank_labels() { return rank_; }
-
+        warthog::ch::ch_data*
+        get_ch_data() { return chd_; } 
 
     private:
-        std::vector<uint32_t>* rank_;
-        warthog::graph::xy_graph* g_;
+        warthog::ch::ch_data* chd_;
 
         inline uint32_t
-        get_rank(warthog::sn_id_t id)
+        get_level(warthog::sn_id_t id)
         {
-            return rank_->at(id);
+            return chd_->level_->at(id);
         }
 };
 }

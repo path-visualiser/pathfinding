@@ -22,10 +22,9 @@ warthog::ch::fixed_graph_contraction::~fixed_graph_contraction()
 
 
 void
-warthog::ch::fixed_graph_contraction::init(
-                warthog::graph::xy_graph* g,
-                std::vector<uint32_t>* order,
-                uint32_t c_pct)
+warthog::ch::fixed_graph_contraction::preliminaries(
+        warthog::graph::xy_graph* g, 
+        std::vector<uint32_t>* order, uint32_t c_pct)
 {
     g_ = g;
     order_ = order;
@@ -55,11 +54,11 @@ warthog::ch::fixed_graph_contraction::init(
 
 void
 warthog::ch::fixed_graph_contraction::contract(
-                warthog::graph::xy_graph* g,
-                std::vector<uint32_t>* order, 
-                uint32_t c_pct)
+        warthog::ch::ch_data* ret, 
+        std::vector<uint32_t>* order, uint32_t c_pct)
 {
-    init(g, order, c_pct);
+    ret->type_ = warthog::ch::ch_type::UP_DOWN;
+    preliminaries(ret->g_, order, c_pct);
 
     if(c_pct_ < 100)
     {
@@ -185,6 +184,11 @@ warthog::ch::fixed_graph_contraction::contract(
                 t_last = mytimer.get_time_micro();
         }
     }
+
+    *ret->level_ = *order;
+    warthog::helpers::value_index_swap_array(*ret->level_);
+
+    warthog::ch::sort_successors(ret);
 
     std::cerr 
         << "\ngraph, contracted. " << std::endl

@@ -95,11 +95,9 @@ unpack(uint32_t from_id,
         std::set<uint32_t>& intermediate);
 
 // sorts the list of successors in descending contraction order
-// (the highest successor appears first)
+// (the highest-level successor appears first)
 void
-fch_sort_successors(
-        warthog::graph::xy_graph* g, 
-        std::vector<uint32_t>* rank);
+sort_successors(warthog::ch::ch_data* chd);
 
 // stall-on-demand as preprocessing
 // performs a k-hop search (k is a tunable parameter) from every source node 
