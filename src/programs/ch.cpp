@@ -33,7 +33,7 @@ help()
 void 
 contract_graph()
 {
-    warthog::ch::ch_data chd(0, warthog::ch::UP_DOWN);
+    warthog::ch::ch_data chd;
     std::string outfile;
     std::string xy_file;
 
@@ -43,6 +43,8 @@ contract_graph()
         xy_file = cfg.get_param_value("input");
         std::ifstream ifs(xy_file);
         warthog::graph::read_xy(ifs, *chd.g_, true);
+        chd.g_->set_filename(xy_file.c_str());
+        chd.up_degree_->resize(chd.g_->get_num_nodes(), 0);
     }
     else
     {
@@ -73,9 +75,13 @@ contract_graph()
 
         warthog::ch::fixed_graph_contraction contractor;
         contractor.set_verbose(verbose);
-        contractor.contract(chd.g_, &node_order);
+        contractor.contract(&chd, &node_order);
 
         // assign a level to every node based on its contraction order
+        // NB: we need to swap the index/value pairs s.t. we end up with
+        // the level of each node rather than a sequential list that 
+        // specifies the order in which each node was contracted
+        // i.e. level[order[i]] = i;
         chd.level_->resize(chd.g_->get_num_nodes(), chd.g_->get_num_nodes()-1);
         for(uint32_t i = 0; i < node_order.size(); i++)
         {
@@ -97,13 +103,12 @@ contract_graph()
     }
 
     // save the result
-    chd.g_->set_filename(xy_file.c_str());
-    outfile = xy_file + ".ch";
+    outfile = chd.g_->get_filename();
+    outfile += ".ch";
     std::cerr << "saving contracted graph to file " << outfile << std::endl;
-    if(!warthog::ch::save_ch_data(outfile.c_str(), &chd))
-    {
-        std::cerr << "error exporting ch to file " << outfile << std::endl;
-    }
+    std::ofstream ofs(outfile.c_str());
+    ofs << chd;
+    ofs.close();
     std::cerr << "all done!\n";
 }
 

@@ -12,6 +12,7 @@
 // @created: 2017-12-02
 //
 
+#include "contraction.h"
 #include "dfs_labelling.h"
 #include "expansion_policy.h"
 #include "forward.h"
@@ -26,8 +27,7 @@ class fch_dfs_expansion_policy : public expansion_policy
 {
     public:
         fch_dfs_expansion_policy(
-                warthog::graph::xy_graph* graph,
-                std::vector<uint32_t>* rank, 
+                warthog::ch::ch_data* chd,
                 warthog::label::dfs_labelling* lab);
 
         virtual 
@@ -49,20 +49,19 @@ class fch_dfs_expansion_policy : public expansion_policy
         mem()
         {
             size_t retval = sizeof(this);
-            retval += g_->get_num_nodes() * sizeof(uint8_t);
+            retval += chd_->mem(); 
             retval += expansion_policy::mem();
             return retval;
         }
 
     private:
-        std::vector<uint32_t>* rank_;
-        warthog::graph::xy_graph* g_;
+        warthog::ch::ch_data* chd_;
 
         warthog::label::dfs_labelling* lab_;
         uint32_t s_label, t_label;
         int32_t tx_, ty_;
         uint32_t t_graph_id;
-        uint32_t t_rank;
+        uint32_t t_level;
 
         typedef bool
                 (warthog::fch_dfs_expansion_policy::*filter_fn)
@@ -89,9 +88,9 @@ class fch_dfs_expansion_policy : public expansion_policy
         }
 
         inline uint32_t
-        get_rank(uint32_t id)
+        get_level(uint32_t id)
         {
-            return rank_->at(id);
+            return chd_->level_->at(id);
         }
 };
 }

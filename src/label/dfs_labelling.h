@@ -17,6 +17,7 @@
 // @created: 2017-12-06
 // 
 
+#include "contraction/contraction.h"
 #include "util/geom.h"
 #include "util/timer.h"
 #include "sys/forward.h"
@@ -75,14 +76,14 @@ class dfs_labelling
 
     public:
     
-        dfs_labelling(warthog::graph::xy_graph* g, std::vector<uint32_t>* rank);
+        dfs_labelling(warthog::ch::ch_data*);
 
         ~dfs_labelling();
 
-        inline warthog::graph::xy_graph*
-        get_graph() 
+        inline warthog::ch::ch_data*
+        get_ch_data() 
         { 
-            return g_;
+            return chd_;
         }
 
         dfs_label&
@@ -109,15 +110,17 @@ class dfs_labelling
         }
 
         // compute labels for all nodes specified by the given workload
-        warthog::label::dfs_labelling*
-        precompute(warthog::graph::xy_graph* g, 
-                std::vector<uint32_t>* rank,
-                warthog::util::workload_manager* workload);
+        void
+        precompute(warthog::util::workload_manager* workload);
 
     private:
 
+        warthog::ch::ch_data* chd_;
+
+        // these two pointers are populated from ::chd_
         warthog::graph::xy_graph* g_;
-        std::vector<uint32_t>* rank_;
+        std::vector<uint32_t>* level_;
+
         uint32_t apex_id_; 
 
         std::vector<uint32_t>* dfs_order_;

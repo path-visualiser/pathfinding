@@ -100,7 +100,7 @@ class xy_graph_base
         }
 
         // grow the graph so that the number of vertices is equal to 
-        // @param num_nodes. if @param num_nodes is less thna the current
+        // @param num_nodes. if @param num_nodes is less than the current
         // number of nodes, this function does nothing.
         void
         grow(size_t num_nodes)

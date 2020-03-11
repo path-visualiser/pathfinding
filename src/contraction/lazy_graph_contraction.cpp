@@ -27,8 +27,10 @@ warthog::ch::lazy_graph_contraction::contract(
     warthog::timer mytimer;
     double t_begin = mytimer.get_time_micro();
     std::cerr << "contracting graph " << ret->g_->get_filename() << std::endl;
-    preliminaries(ret);
 
+    ret->type_ = warthog::ch::ch_type::UP_DOWN;
+
+    preliminaries(ret);
     if(c_pct < 100)
     { std::cerr << "partial contraction " << "(first "<<c_pct<<"% of nodes only)\n"; }
     uint32_t edges_before = ret->g_->get_num_edges_out();
@@ -114,11 +116,17 @@ warthog::ch::lazy_graph_contraction::contract(
             std::cerr << std::endl;
         }
     }
-
+    
     // until now we kept track of the _order_ in which nodes were
     // contracted. but for online search we need to know each node's _level_
     // here we convert from one to the other
     warthog::ch::value_index_swap_dimacs(*ret->level_);
+
+    // sort successors in descending contraction order 
+    // (the highest-level successor appears first)
+    warthog::ch::sort_successors(ret);
+
+    // cleanup
     postliminaries();
 
     std::cerr 
