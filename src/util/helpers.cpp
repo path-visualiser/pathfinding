@@ -118,7 +118,7 @@ warthog::helpers::parallel_compute(void*(*fn_worker)(void*),
         }
 
         if(nfinished == NUM_THREADS) { break; }
-        else { sleep(5); }
+        else { sleep(0.5); }
     }
     std::cerr << "\nparallel compute; end\n";
     return 0;

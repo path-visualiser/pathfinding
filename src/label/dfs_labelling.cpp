@@ -79,16 +79,15 @@ warthog::label::dfs_labelling::dfs_labelling(warthog::ch::ch_data* chd)
     : chd_(chd), g_(chd->g_), level_(chd->level_)
 {
     dfs_order_ = new std::vector< uint32_t >();
-    apex_id_ = compute_dfs_postorder_ids_ch(g_, level_, dfs_order_);
+    apex_id_ = compute_dfs_postorder_ids_ch(dfs_order_);
    
     // allocate memory for edge labels
     lab_ = new std::vector< std::vector < dfs_label > >();
     lab_->resize(g_->get_num_nodes());
-    dfs_label dummy;
     for(uint32_t n_id = 0; n_id < g_->get_num_nodes(); n_id++)
     {
         warthog::graph::node* n = this->g_->get_node(n_id);
-        lab_->at(n_id).resize(n->out_degree(), dummy);
+        lab_->at(n_id).resize(n->out_degree());
     }   
 }
 
@@ -135,7 +134,7 @@ warthog::label::dfs_labelling::precompute(
 
         listener.first_move = &first_move;
         listener.lab = lab;
-        for(uint32_t i = 0; i < workload->num_flags_set(); i++)
+        for(uint32_t i = 0; i < lab->g_->get_num_nodes(); i++)
         {
             // skip any nodes not part of the precomputation workload
             if(!workload->get_flag(i))
@@ -171,15 +170,14 @@ warthog::label::dfs_labelling::precompute(
     warthog::helpers::parallel_compute(
             thread_compute_fn, &shared, 
             workload->num_flags_set());
-
-    std::cerr << "computing dfs labels...\n";
-    workload->set_all_flags_complement();
-    this->compute_dfs_labels(workload); // single threaded
     t.stop();
+    std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
 
-    std::cerr 
-        << "total preproc time (seconds): "
-        << t.elapsed_time_micro() / 1000000 << "\n";
+    t.start();
+    std::cerr << "computing dfs labels...\n";
+    this->compute_dfs_labels(workload); // single threaded
+    std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
+    t.stop();
 }
 
 void
@@ -216,7 +214,7 @@ warthog::label::dfs_labelling::compute_dfs_labels(
                 { label_fn(it->node_id_); }
 
                 // grow the label of the down edge at hand
-                if(workload->get_flag(source_id))
+                if(!workload->get_flag(source_id))
                 {
                     lab_->at(source_id).at((size_t)(it - begin)) = 
                         closure.at(it->node_id_);
@@ -263,7 +261,7 @@ warthog::label::dfs_labelling::compute_dfs_labels(
                 { up_label_fn(it->node_id_); }
 
                 // grow the label for the up edge at hand
-                if(workload->get_flag(source_id))
+                if(!workload->get_flag(source_id))
                 {
                     dfs_label& e_lab = lab_->at(source_id).at((size_t)(it-begin));
                     e_lab.merge(up_closure.at(it->node_id_)); 
@@ -294,32 +292,32 @@ warthog::label::dfs_labelling::compute_dfs_labels(
 // @param id of the highest node in the contraction hierarchy
 uint32_t
 warthog::label::dfs_labelling::compute_dfs_postorder_ids_ch(
-        warthog::graph::xy_graph* g, 
-        std::vector<uint32_t>* rank, 
         std::vector<uint32_t>* dfs_ids)
 {
     // find the apex of the hierarchy
     uint32_t apex_id = 0;
-    for(uint32_t i = 0; i < rank->size(); i++)
+    for(uint32_t i = 0; i < chd_->level_->size(); i++)
     { 
-        if(rank->at(i) > rank->at(apex_id)) 
+        if(chd_->level_->at(i) > chd_->level_->at(apex_id)) 
         { apex_id = i; } 
     }
 
     uint32_t next_id = 0;
-    dfs_ids->resize(g->get_num_nodes(), INT32_MAX);
+    dfs_ids->resize(chd_->g_->get_num_nodes(), INT32_MAX);
+
     std::function<void(uint32_t)> dfs_id_fn =
-    [dfs_ids, rank, &next_id, &dfs_id_fn, g] (uint32_t source_id) 
-    -> void
+    [dfs_ids, this, &next_id, &dfs_id_fn] 
+    (uint32_t source_id) -> void
     {
-        warthog::graph::node* source = g->get_node(source_id);
+        warthog::graph::node* source = this->chd_->g_->get_node(source_id);
         warthog::graph::edge_iter begin = source->outgoing_begin();
         for( warthog::graph::edge_iter it = begin; 
                 it != source->outgoing_end();
                 it++)
         {
             // skip up edges
-            if(rank->at(it->node_id_) > rank->at(source_id)) 
+            if(this->chd_->level_->at(it->node_id_) > 
+                    this->chd_->level_->at(source_id)) 
             { continue; }
 
             // recurse

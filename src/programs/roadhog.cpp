@@ -378,7 +378,6 @@ run_bch(warthog::util::cfg& cfg,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy fexp(chd.g_);
     warthog::bch_expansion_policy bexp (chd.g_, true);
     warthog::zero_heuristic h;
@@ -413,7 +412,6 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy bexp (chd.g_, true);
     warthog::zero_heuristic h;
     warthog::pqueue_min open;
@@ -494,7 +492,6 @@ run_bch_astar(warthog::util::cfg& cfg,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(chd.g_);
     warthog::bch_expansion_policy fexp(chd.g_);
     warthog::bch_expansion_policy bexp (chd.g_, true);
@@ -548,7 +545,6 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     warthog::bb_filter fwd_filter(fwd_lab.get());
     warthog::bb_filter bwd_filter(bwd_lab.get());
 
-    std::cerr << "preparing to search\n";
     warthog::bch_bb_expansion_policy fexp(chd.g_, &fwd_filter);
     warthog::bch_bb_expansion_policy bexp (chd.g_, &bwd_filter, true);
     warthog::zero_heuristic h;
@@ -584,7 +580,6 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     warthog::fch_expansion_policy fexp(&chd); 
     warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
@@ -637,7 +632,6 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     // define the workload
 
     // the "cutoff" tells what percentage of nodes from the hierarchy
@@ -681,8 +675,11 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         }
 
         lab.precompute(&workload);
-        std::cerr << "precompute finished. saving result to " 
-            << arclab_file << "...";
+
+        warthog::timer t;
+        t.start();
+        std::cerr << "saving precompute data to " 
+            << arclab_file << "...\n";
 
         std::ofstream out(arclab_file, 
                 std::ios_base::out|std::ios_base::binary);
@@ -693,7 +690,9 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
                 << arclab_file << std::endl;
         }
         out.close();
-        std::cerr << "done.\n";
+        t.stop();
+        std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
+
     }
 
     warthog::fch_dfs_expansion_policy fexp(&lab);

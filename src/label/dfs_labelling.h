@@ -130,10 +130,7 @@ class dfs_labelling
         // hierarchy (i.e. a top-down traversal)
         // @param id of the highest node in the contraction hierarchy
         uint32_t
-        compute_dfs_postorder_ids_ch(
-                warthog::graph::xy_graph* g, 
-                std::vector<uint32_t>* rank, 
-                std::vector<uint32_t>* dfs_ids);
+        compute_dfs_postorder_ids_ch(std::vector<uint32_t>* dfs_ids);
 
         // Perform a DFS traversal through the contraction hierarchy
         // and compute a bounding box for each up and down edge. 
