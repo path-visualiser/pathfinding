@@ -1,105 +1,99 @@
 #include "contraction.h"
-#include "bb_filter.h"
-#include "euclidean_heuristic.h"
 #include "fch_bb_expansion_policy.h"
 #include "xy_graph.h"
 #include "search_node.h"
 
-warthog::fch_bb_expansion_policy::fch_bb_expansion_policy(
-        warthog::graph::xy_graph* g, 
-        std::vector<uint32_t>* rank,
-        warthog::bb_filter* nf)
-    : expansion_policy(g->get_num_nodes()), g_(g) 
+warthog::fch_bb_expansion_policy::fch_bb_expansion_policy(warthog::label::dfs_labelling* lab)
+    : expansion_policy(lab->get_ch_data()->g_->get_num_nodes()), 
+      chd_(lab->get_ch_data()), lab_(lab)
 {
-    rank_ = rank;
-    nf_ = nf;
-    apex_ = warthog::INF32;
-    apex_reached_ = false;
-}
-
-warthog::fch_bb_expansion_policy::~fch_bb_expansion_policy()
-{
+    t_label = s_label = INT32_MAX;
+    filter = &warthog::fch_bb_expansion_policy::filter_bb_only;
 }
 
 void
 warthog::fch_bb_expansion_policy::expand(
         warthog::search_node* current, warthog::problem_instance* instance)
 {
+    // TODO store one extra bit with each search node to indicate 
+    // its parent-edge direction in the hierarchy (up or down)
+    // the extra bit is used as an address offset for the 
+    // appropriate successor generating function
+    // this optimisation removes the need to compare the
+    // level of the current node with the parent which 
+    // currently costs three branching instructions and one 
+    // read instruction with the possibility of a cache miss
     reset();
 
-    warthog::search_node* pn = generate(current->get_parent());
     uint32_t current_id = (uint32_t)current->get_id();
-    uint32_t current_rank = get_rank(current_id);
+    uint32_t current_level = get_level(current_id);
+    warthog::graph::node* n = chd_->g_->get_node(current_id);
+    warthog::search_node* pn = generate(current->get_parent());
 
-    if(rank_->at(current_id) == apex_)
+    // traveling up the hierarchy we generate all neighbours;
+    // traveling down, we generate only "down" neighbours
+    bool up_travel = !pn || (current_level > get_level((uint32_t)pn->get_id()));
+    if(up_travel)
     {
-        apex_reached_ = true;
-    }
-
-    warthog::graph::node* n = g_->get_node(current_id);
-    warthog::graph::edge_iter begin, end;
-    begin = n->outgoing_begin();
-    end = n->outgoing_end();
-
-    // determine whether current was reached via an up edge or a down edge
-    bool up_travel = !pn || (current_rank > get_rank((uint32_t)pn->get_id()));
-    //std::cerr << (up_travel ? "(UPTRAVEL) " : "(DNTRAVEL) ");
-    for(warthog::graph::edge_iter it = begin; it != end; it++)
-    {
-        warthog::graph::edge& e = *it;
-        assert(e.node_id_ < g_->get_num_nodes());
-
-        // try to prune every down successor, regardless of 
-        // wheter the parent was reached by an up edge or a
-        // down edge
-        bool down_succ = get_rank(e.node_id_) < current_rank;
-        if(down_succ && !nf_->filter(current_id, (uint32_t)(it - begin)))
+        // generate outgoing up edges
+        for(uint32_t i = 0; i < chd_->up_degree_->at(current_id); i++)
         {
-            // prune down successors before the apex is reached
-            if(apex_ != warthog::INF32 && !apex_reached_) { continue; }
-            
-            // prune down successors below the goal
-            if(rank_->at(e.node_id_) < rank_->at(instance->target_id_)) 
-            { continue; }
-
-            //std::cerr << " (D) ";
-
-            warthog::search_node* tmp = this->generate(e.node_id_);
-            this->add_neighbour(tmp, e.wt_);
-            continue;
+            warthog::graph::edge& e = *(n->outgoing_begin() + i);
+            assert(e.node_id_ < chd_->g_->get_num_nodes());
+            if(!(this->*filter)(current_id, i))
+            {
+                this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            }
         }
-
-        // generate up successors only when traveling up
-        // (the rest are implicitly pruned)
-        else if(up_travel && !down_succ)
+        // generate outgoing down edges
+        for(uint32_t i = chd_->up_degree_->at(current_id);
+                i < n->out_degree(); 
+                i++)
         {
-            // prune up successors after the apex is reached
-            if(apex_ != warthog::INF32 && apex_reached_) { continue; }
-            // prune up successors above the apex
-            if(rank_->at(e.node_id_) > apex_) { continue; }
+            warthog::graph::edge& e = *(n->outgoing_begin() + i);
+            assert(e.node_id_ < chd_->g_->get_num_nodes());
+            if(!(this->*filter)(current_id, i))
+            {
+                // prune down successors below the goal
+                if(chd_->level_->at(e.node_id_) < t_level)
+                { continue; }
 
-            //std::cerr << " (U) ";
-
-            this->add_neighbour(this->generate(e.node_id_), e.wt_);
-            continue;
+                this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            }
         }
     }
-    //std::cerr << "\n";
+    else
+    {
+        for(uint32_t i = chd_->up_degree_->at(current_id); 
+                i < n->out_degree();
+                i++)
+        {
+            warthog::graph::edge& e = *(n->outgoing_begin() + i);
+            assert(e.node_id_ < chd_->g_->get_num_nodes());
+            if(!(this->*filter)(current_id, i))
+            {
+                this->add_neighbour(this->generate(e.node_id_), e.wt_);
+            }
+        }
+    }
 }
 
 void
 warthog::fch_bb_expansion_policy::get_xy(
-        warthog::sn_id_t id, int32_t& x, int32_t& y)
+        warthog::sn_id_t nid, int32_t& x, int32_t& y)
 {
-    g_->get_xy((uint32_t)id, x, y);
+    chd_->g_->get_xy((uint32_t)nid, x, y);
 }
 
 warthog::search_node* 
 warthog::fch_bb_expansion_policy::generate_start_node(
         warthog::problem_instance* pi)
 {
-    uint32_t s_graph_id = g_->to_graph_id((uint32_t)pi->start_id_);
+    uint32_t s_graph_id = chd_->g_->to_graph_id((uint32_t)pi->start_id_);
     if(s_graph_id == warthog::INF32) { return 0; }
+
+    s_label = lab_->get_dfs_index(s_graph_id);
+
     return generate(s_graph_id);
 }
 
@@ -107,16 +101,13 @@ warthog::search_node*
 warthog::fch_bb_expansion_policy::generate_target_node(
         warthog::problem_instance* pi)
 {
-    uint32_t t_graph_id = g_->to_graph_id((uint32_t)pi->target_id_);
+    t_graph_id = chd_->g_->to_graph_id((uint32_t)pi->target_id_);
     if(t_graph_id == warthog::INF32) { return 0; }
 
-    // update the filter with the new target location
-    {
-        int32_t tx, ty;
-        g_->get_xy(t_graph_id, tx, ty);
-        nf_->set_target_xy(tx, ty);
-    }
+    t_level = get_level(t_graph_id);
+    t_label = lab_->get_dfs_index(t_graph_id);
     
-    // finally, generate the inserted target node
+    get_xy(t_graph_id, tx_, ty_);
+
     return generate(t_graph_id);
 }

@@ -23,7 +23,6 @@
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "fch_bb_expansion_policy.h"
-#include "fch_dfs_expansion_policy.h"
 #include "fch_expansion_policy.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
@@ -79,7 +78,7 @@ help()
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tbch, bch-astar, bch-bb, fch, fch-bb-dfs\n"
+    << "\tbch, bch-astar, bch-bb, fch, fch-bb\n"
     << "\tdfs, cpd, cpd-search\n";
 }
 
@@ -608,7 +607,7 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
         std::string alg_name)
 {
     std::string alg_params = cfg.get_param_value("alg");
@@ -640,25 +639,25 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     // in the hierarchy and preprocesses the remaining 90%.
     // With a cutoff of 1, we preprocess all nodes. With a
     // cutoff of 0, we preprocess none and use DFS labels only.
-    double cutoff = 1;
+    int pct_dijkstra = 0;
+    std::string label_filename = "label.bb-dfs";
     if(alg_params != "")
     {
-        int32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        pct_dijkstra = std::stoi(alg_params.c_str());
         if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
         {
             std::cerr << "dijkstra percentage must be in range 0-100\n";
             return;
         }
-        cutoff = pct_dijkstra > 0 ? (((double)pct_dijkstra)/100) : 0;
-        alg_name += "-dijk-";
-        alg_name += std::to_string(pct_dijkstra);
     }
+    label_filename += "-dijk-";
+    label_filename += std::to_string(pct_dijkstra);
 
     warthog::label::dfs_labelling lab(&chd);
 
     // load up the edge label data (or else precompute it)
-    std::string arclab_file =  chd_file + "." + alg_name + "." + "label";
-    ifs.open(arclab_file);
+    label_filename =  chd_file + "." + label_filename;
+    ifs.open(label_filename);
     if(ifs.is_open())
     {
         ifs >> lab;
@@ -667,6 +666,7 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     else
     {
         warthog::util::workload_manager workload(chd.g_->get_num_nodes());
+        double cutoff = (((double)pct_dijkstra)/100);
         uint32_t min_level = (uint32_t)(chd.level_->size()*(1-cutoff));
         for(size_t i = 0; i < chd.g_->get_num_nodes(); i++)
         {
@@ -679,15 +679,15 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         warthog::timer t;
         t.start();
         std::cerr << "saving precompute data to " 
-            << arclab_file << "...\n";
+            << label_filename << "...\n";
 
-        std::ofstream out(arclab_file, 
+        std::ofstream out(label_filename, 
                 std::ios_base::out|std::ios_base::binary);
         out << lab;
         if(!out.good())
         {
             std::cerr << "\nerror trying to write to file " 
-                << arclab_file << std::endl;
+                << label_filename << std::endl;
         }
         out.close();
         t.stop();
@@ -695,13 +695,13 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     }
 
-    warthog::fch_dfs_expansion_policy fexp(&lab);
+    warthog::fch_bb_expansion_policy fexp(&lab);
     warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
 
     warthog::flexible_astar<
         warthog::euclidean_heuristic, 
-        warthog::fch_dfs_expansion_policy,
+        warthog::fch_bb_expansion_policy,
         warthog::pqueue_min> 
             alg(&h, &fexp, &open);
     
@@ -720,55 +720,6 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     //};
 
     run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name)
-{
-    std::string chd_file = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    if(chd_file == "" || arclabels_file == "")
-    {
-        std::cerr << "err; require --input [chd file] [arclabels file]\n";
-        return;
-    }
-
-    // load up the graph 
-    warthog::ch::ch_data chd;
-    chd.type_ = warthog::ch::UP_DOWN;
-    std::ifstream ifs(chd_file.c_str());
-    if(!ifs.is_open())
-    {
-        std::cerr << "err; invalid path to chd input file\n";
-        return;
-    }
-
-    ifs >> chd;
-    ifs.close();
-
-    // load up the arc labels
-    std::shared_ptr<warthog::label::bb_labelling> bbl
-        (warthog::label::bb_labelling::load(arclabels_file.c_str(), chd.g_));
-    if(!bbl.get())
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-    warthog::bb_filter filter(bbl.get());
-
-    warthog::euclidean_heuristic h(chd.g_);
-    warthog::fch_bb_expansion_policy fexp(chd.g_, chd.level_, &filter);
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
-        warthog::fch_bb_expansion_policy,
-        warthog::pqueue_min>
-            alg(&h, &fexp, &open);
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-
 }
 
 void
@@ -1063,9 +1014,9 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_fch(cfg, parser, alg_name);
     }
-    else if(alg_name == "fch-bb-dfs")
+    else if(alg_name == "fch-bb")
     {
-        run_fch_bb_dfs(cfg, parser, alg_name);
+        run_fch_bb(cfg, parser, alg_name);
     }
     else if(alg_name == "cpd-search")
     {
