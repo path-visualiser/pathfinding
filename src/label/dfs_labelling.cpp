@@ -151,8 +151,7 @@ warthog::label::dfs_labelling::precompute(
 
             uint32_t ext_source_id = 
                 lab->g_->to_external_id(source_id);
-            warthog::problem_instance problem(ext_source_id, 
-                    warthog::INF32);
+            warthog::problem_instance problem(ext_source_id,warthog::SN_ID_MAX);
             //problem.verbose_ = true;
             warthog::solution sol;
             dijk.get_path(problem, sol);

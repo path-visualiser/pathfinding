@@ -639,6 +639,13 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     std::cerr << "preparing to search\n";
     // define the workload
+
+    // the "cutoff" tells what percentage of nodes from the hierarchy
+    // will have exact labels computed by Dijkstra SSSP search.
+    // a cutoff of 0.9 for example omits the bottom 10% of nodes 
+    // in the hierarchy and preprocesses the remaining 90%.
+    // With a cutoff of 1, we preprocess all nodes. With a
+    // cutoff of 0, we preprocess none and use DFS labels only.
     double cutoff = 1;
     if(alg_params != "")
     {
@@ -648,7 +655,7 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             std::cerr << "dijkstra percentage must be in range 0-100\n";
             return;
         }
-        cutoff = pct_dijkstra > 0 ? (1 - ((double)pct_dijkstra)/100) : 0;
+        cutoff = pct_dijkstra > 0 ? (((double)pct_dijkstra)/100) : 0;
         alg_name += "-dijk-";
         alg_name += std::to_string(pct_dijkstra);
     }
@@ -666,9 +673,10 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     else
     {
         warthog::util::workload_manager workload(chd.g_->get_num_nodes());
+        uint32_t min_level = (uint32_t)(chd.level_->size()*(1-cutoff));
         for(size_t i = 0; i < chd.g_->get_num_nodes(); i++)
         {
-            if(chd.level_->at(i) >= (uint32_t)(chd.level_->size()*cutoff))
+            if(chd.level_->at(i) >= min_level)
             { workload.set_flag((uint32_t)i, true); }
         }
 

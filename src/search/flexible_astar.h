@@ -234,7 +234,7 @@ class flexible_astar: public warthog::search
 			open_->push(start);
             sol.nodes_inserted_++;
             
-            listener_->generate_node(start, 0, 0, UINT32_MAX);
+            listener_->generate_node(0, start, 0, UINT32_MAX);
 
 			#ifndef NDEBUG
 			if(pi_.verbose_) { pi_.print(std::cerr); std:: cerr << "\n";}
@@ -285,7 +285,7 @@ class flexible_astar: public warthog::search
 					   	expander_->next(n, cost_to_n))
 				{
                     sol.nodes_touched_++;
-                    listener_->generate_node(n, current, cost_to_n, edge_id++);
+                    listener_->generate_node(current, n, cost_to_n, edge_id++);
                     
                     // add new nodes to the fringe
                     if(n->get_search_number() != current->get_search_number())
