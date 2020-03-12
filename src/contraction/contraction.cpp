@@ -396,6 +396,7 @@ warthog::ch::sort_successors(warthog::ch::ch_data* chd)
         }
 
         // verify that all subsequent edges are down edges
+        #ifndef NDEBUG
         for(    uint32_t j = chd->up_degree_->at(i); 
                 j < n->out_degree(); 
                 j++ ) 
@@ -403,5 +404,6 @@ warthog::ch::sort_successors(warthog::ch::ch_data* chd)
             warthog::graph::edge* e = n->outgoing_begin() + j;
             assert(n_level > chd->level_->at(e->node_id_));
         }
+        #endif
     }
 }

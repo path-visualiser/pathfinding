@@ -153,8 +153,8 @@ run_experiments( warthog::search* algo, std::string alg_name,
     {
         warthog::dimacs_parser::experiment exp = (*it);
         warthog::solution sol;
-        uint32_t start_id = exp.source;
-        uint32_t target_id = exp.p2p ? exp.target : warthog::INF32;
+        warthog::sn_id_t start_id = exp.source;
+        warthog::sn_id_t target_id = exp.p2p ? exp.target : warthog::SN_ID_MAX;
         warthog::problem_instance pi(start_id, target_id, verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0, surplus=0;
         double nano_time = DBL_MAX;
@@ -208,8 +208,8 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
     {
         warthog::dimacs_parser::experiment exp = (*it);
         warthog::solution sol;
-        uint32_t start_id = exp.source;
-        uint32_t target_id = exp.p2p ? exp.target : warthog::INF32;
+        warthog::sn_id_t start_id = exp.source;
+        warthog::sn_id_t target_id = exp.p2p ? exp.target : warthog::INF32;
         warthog::problem_instance pi(start_id, target_id, verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0, surplus=0;
         double nano_time = DBL_MAX;
@@ -688,7 +688,7 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::cerr << "done.\n";
     }
 
-    warthog::fch_dfs_expansion_policy fexp(&chd, &lab);
+    warthog::fch_dfs_expansion_policy fexp(&lab);
     warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
 
@@ -699,18 +699,18 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             alg(&h, &fexp, &open);
     
     // extra metric; how many nodes do we expand above the apex?
-    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
-    [chd, &fexp] (warthog::search_node* n) -> uint32_t
-    {
-        while(true)
-        {
-            warthog::search_node* p = fexp.generate(n->get_parent());
-            if(!p || chd.level_->at(p->get_id()) < chd.level_->at(n->get_id()))
-            { break; }
-            n = p;
-        }
-        return chd.level_->at(n->get_id());
-    };
+    //std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+    //[&chd, &fexp] (warthog::search_node* n) -> uint32_t
+    //{
+    //    while(true)
+    //    {
+    //        warthog::search_node* p = fexp.generate(n->get_parent());
+    //        if(!p || chd.level_->at(p->get_id()) < chd.level_->at(n->get_id()))
+    //        { break; }
+    //        n = p;
+    //    }
+    //    return chd.level_->at(n->get_id());
+    //};
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }

@@ -55,14 +55,16 @@ public:
 
     virtual ~ch_data()
     {
+        up_degree_->clear();
+        delete up_degree_;
+        up_degree_ = 0;
+
         level_->clear();
         delete level_;
         level_ = 0;
 
         delete g_;
         g_ = 0;
-
-        delete up_degree_;
     }
 
     size_t

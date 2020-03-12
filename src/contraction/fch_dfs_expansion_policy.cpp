@@ -3,9 +3,9 @@
 #include "xy_graph.h"
 #include "search_node.h"
 
-warthog::fch_dfs_expansion_policy::fch_dfs_expansion_policy(
-        warthog::ch::ch_data* chd, warthog::label::dfs_labelling* lab)
-    : expansion_policy(chd->g_->get_num_nodes()), chd_(chd), lab_(lab)
+warthog::fch_dfs_expansion_policy::fch_dfs_expansion_policy(warthog::label::dfs_labelling* lab)
+    : expansion_policy(lab->get_ch_data()->g_->get_num_nodes()), 
+      chd_(lab->get_ch_data()), lab_(lab)
 {
     t_label = s_label = INT32_MAX;
     filter = &warthog::fch_dfs_expansion_policy::filter_bb_only;
@@ -50,7 +50,7 @@ warthog::fch_dfs_expansion_policy::expand(
                 i < n->out_degree(); 
                 i++)
         {
-            warthog::graph::edge& e = *(n->incoming_begin() + i);
+            warthog::graph::edge& e = *(n->outgoing_begin() + i);
             assert(e.node_id_ < chd_->g_->get_num_nodes());
             if(!(this->*filter)(current_id, i))
             {

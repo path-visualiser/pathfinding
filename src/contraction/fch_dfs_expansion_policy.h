@@ -26,9 +26,7 @@ namespace warthog
 class fch_dfs_expansion_policy : public expansion_policy
 {
     public:
-        fch_dfs_expansion_policy(
-                warthog::ch::ch_data* chd,
-                warthog::label::dfs_labelling* lab);
+        fch_dfs_expansion_policy(warthog::label::dfs_labelling* lab);
 
         virtual 
         ~fch_dfs_expansion_policy() { }

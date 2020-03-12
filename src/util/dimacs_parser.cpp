@@ -348,7 +348,7 @@ warthog::dimacs_parser::load_instance(const char* dimacs_file)
         }
 
         char* tok = strtok(buf, " \t\n");
-        if(strcmp(tok, "q") == 0)
+        if(strcmp(tok, "q") == 0 || strcmp(tok, "s") == 0)
         {
             warthog::dimacs_parser::experiment exp;
 
