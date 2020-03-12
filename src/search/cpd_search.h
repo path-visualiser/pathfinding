@@ -21,6 +21,7 @@
 #include "timer.h"
 #include "vec_io.h"
 #include "log.h"
+#include "dummy_listener.h"
 
 #include <functional>
 #include <iostream>
@@ -32,26 +33,25 @@ namespace warthog
 
 // H is a heuristic function
 // E is an expansion policy
-// S is a stats class
+// Q is the open list
+// L is a "listener" which is used for callbacks
 template< class H,
           class E,
-          class Q = warthog::pqueue_min >
+          class Q = warthog::pqueue_min,
+          class L = warthog::dummy_listener >
 class cpd_search : public warthog::search
 {
   public:
-    cpd_search(H* heuristic, E* expander, Q* queue) :
-            heuristic_(heuristic), expander_(expander)
+    cpd_search(H* heuristic, E* expander, Q* queue, L* listener = 0) :
+        heuristic_(heuristic), expander_(expander), open_(queue),
+        listener_(listener)
     {
-        open_ = queue;
         cost_cutoff_ = DBL_MAX;
         exp_cutoff_ = UINT32_MAX;
         time_cutoff_ = DBL_MAX;
-        on_relax_fn_ = 0;
-        on_generate_fn_ = 0;
         max_k_moves_ = UINT32_MAX;
-        on_expand_fn_ = 0;
         pi_.instance_id_ = UINT32_MAX;
-        // Check whether this is the number of nodes
+        // TODO Check whether this is the number of nodes
         k_moves_ = std::vector<uint32_t>(expander_->get_node_pool_size(), 0);
     }
 
@@ -148,33 +148,6 @@ class cpd_search : public warthog::search
         }
     }
 
-    // apply @param fn every time a node is successfully relaxed
-    void
-    apply_on_relax(std::function<void(warthog::search_node*)>& fn)
-    {
-        on_relax_fn_ = &fn;
-    }
-
-    // apply @param fn every time a node is generated (equiv, reached)
-    void
-    apply_on_generate(
-        std::function<void(
-            warthog::search_node* succ,
-            warthog::search_node* from,
-            warthog::cost_t edge_cost,
-            uint32_t edge_id)>& fn)
-    {
-        on_generate_fn_ = &fn;
-    }
-
-    // apply @param fn when a node is popped off the open list for
-    // expansion
-    void
-    apply_on_expand(std::function<void(warthog::search_node*)>& fn)
-    {
-        on_expand_fn_ = &fn;
-    }
-
     // set a cost-cutoff to run a bounded-cost A* search.
     // the search terminates when the target is found or the f-cost
     // limit is reached.
@@ -215,6 +188,10 @@ class cpd_search : public warthog::search
     inline uint32_t
     get_max_k_moves() { return max_k_moves_; }
 
+    void
+    set_listener(L* listener)
+    { listener_ = listener; }
+
     virtual inline size_t
     mem()
     {
@@ -235,6 +212,7 @@ class cpd_search : public warthog::search
     H* heuristic_;
     E* expander_;
     Q* open_;
+    L* listener_;
     warthog::problem_instance pi_;
 
     // early termination limits
@@ -243,19 +221,6 @@ class cpd_search : public warthog::search
     double time_cutoff_;            // Time limit in nanoseconds
     uint32_t max_k_moves_;          // Max "distance" from target
     std::vector<uint32_t> k_moves_; // "Distance" from target
-
-    // callback for when a node is relaxed
-    std::function<void(warthog::search_node*)>* on_relax_fn_;
-
-    // callback for when a node is reached / generated
-    std::function<void(
-        warthog::search_node*,
-        warthog::search_node*,
-        warthog::cost_t edge_cost,
-        uint32_t edge_id)>* on_generate_fn_;
-
-    // callback for when a node is expanded
-    std::function<void(warthog::search_node*)>* on_expand_fn_;
 
     // no copy ctor
     cpd_search(const cpd_search& other) { }
@@ -391,7 +356,7 @@ class cpd_search : public warthog::search
 
         debug(pi_.verbose_, "Generating:", *n);
 
-        if(on_relax_fn_) { (*on_relax_fn_)(n); }
+        listener_->relax_node(n);
     }
 
     /**
@@ -412,7 +377,8 @@ class cpd_search : public warthog::search
         assert(current->get_expanded());
         sol->nodes_expanded_++;
 
-        if(on_expand_fn_) { (*on_expand_fn_)(current); }
+        expander_->expand(current, &pi_);
+        listener_->expand_node(current);
 
         // Incorrect timings reported otherwise
         DO_ON_DEBUG
@@ -423,8 +389,6 @@ class cpd_search : public warthog::search
                   sol->nodes_expanded_, "- Expanding:", current->get_id());
         }
 
-        expander_->expand(current, &pi_);
-
         // The first loop over the neighbours is used to update the
         // incumbent.
         for(expander_->first(n, cost_to_n);
@@ -434,8 +398,7 @@ class cpd_search : public warthog::search
             warthog::cost_t gval = current->get_g() + cost_to_n;
             sol->nodes_touched_++;
 
-            if(on_generate_fn_)
-            { (*on_generate_fn_)(n, current, cost_to_n, edge_id++); }
+            listener_->generate_node(n, current, gval, edge_id);
 
             // Generate new search nodes
             if(n->get_search_number() != current->get_search_number())
@@ -528,7 +491,7 @@ class cpd_search : public warthog::search
         if (n->get_g() < warthog::COST_MAX)
         {
             n->relax(gval, pid);
-            if(on_relax_fn_) { (*on_relax_fn_)(n); }
+            listener_->relax_node(n);
         } else {
             n->set_g(gval);
         }
@@ -568,8 +531,7 @@ class cpd_search : public warthog::search
         // `hscale` is contained in the heuristic
         start->init(pi_.instance_id_, warthog::SN_ID_MAX, 0, start_h, start_ub);
 
-        if(on_generate_fn_)
-        { (*on_generate_fn_)(start, 0, 0, UINT32_MAX); }
+        listener_->generate_node(start, 0, 0, UINT32_MAX);
 
         user(pi_.verbose_, pi_);
         info(pi_.verbose_, "cut-off =", cost_cutoff_, "- tlim =", time_cutoff_,
