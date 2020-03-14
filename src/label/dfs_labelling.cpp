@@ -84,11 +84,6 @@ warthog::label::dfs_labelling::dfs_labelling(warthog::ch::ch_data* chd)
     // allocate memory for edge labels
     lab_ = new std::vector< std::vector < dfs_label > >();
     lab_->resize(g_->get_num_nodes());
-    for(uint32_t n_id = 0; n_id < g_->get_num_nodes(); n_id++)
-    {
-        warthog::graph::node* n = this->g_->get_node(n_id);
-        lab_->at(n_id).resize(n->out_degree());
-    }   
 }
 
 warthog::label::dfs_labelling::~dfs_labelling()
@@ -165,6 +160,13 @@ warthog::label::dfs_labelling::precompute(
     shared_data shared;
     shared.lab_ = this;
     shared.workload_ = workload;
+    
+    // every egde gets allocated a (dummy, invalid) label
+    for(uint32_t n_id = 0; n_id < g_->get_num_nodes(); n_id++)
+    {
+        warthog::graph::node* n = this->g_->get_node(n_id);
+        lab_->at(n_id).resize(n->out_degree());
+    }   
 
     std::cerr << "computing dijkstra labels\n";
     warthog::helpers::parallel_compute(
@@ -351,15 +353,19 @@ warthog::label::operator<<(std::ostream& out, warthog::label::dfs_label& label)
 std::istream&
 warthog::label::operator>>(std::istream& in, warthog::label::dfs_labelling& lab)
 {
+    //warthog::ch::ch_data* chd = lab.get_ch_data();
     for(uint32_t n_id = 0; n_id < lab.g_->get_num_nodes(); n_id++)
     {
         warthog::graph::node* n = lab.g_->get_node(n_id);
         warthog::graph::edge_iter begin = n->outgoing_begin();
-        warthog::graph::edge_iter end = n->outgoing_end();
-        for(warthog::graph::edge_iter it = begin; it != end; it++)
+        //warthog::graph::edge_iter end = n->outgoing_end();
+        for(    warthog::graph::edge_iter it = begin; 
+                in.peek() != ';'; 
+                it++)
         {
-            in >> lab.lab_->at(n_id).at((size_t)(it - begin));
-            assert(in.good());
+            dfs_label bbox;
+            in >> bbox; 
+            lab.lab_->at(n_id).push_back(bbox);
 
             if(!in.good())
             {
@@ -370,6 +376,7 @@ warthog::label::operator>>(std::istream& in, warthog::label::dfs_labelling& lab)
                 return in;
             }
         }
+        in.get(); // eat the terminator character ';'
     }
     return in;
 }
@@ -394,6 +401,7 @@ warthog::label::operator<<(std::ostream& out,warthog::label::dfs_labelling& lab)
                 return out;
             }
         }
+        out << ';'; // terminator to indicate end-of-label-set for node n
     }
     return out;
 }

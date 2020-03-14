@@ -508,10 +508,10 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 {
     // load up the contraction hierarchy
     std::string chd_file = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    if(chd_file == "" || arclabels_file == "")
+    std::string alg_params = cfg.get_param_value("alg");
+    if(chd_file == "")
     {
-        std::cerr << "err; require --input [chd file] [arclabels file]\n";
+        std::cerr << "err; require --input [chd file]\n";
         return;
     }
 
@@ -527,25 +527,77 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    // load up the edge labels
-    warthog::label::bb_labelling *fwd_lab_ptr=0, *bwd_lab_ptr=0;
-    bool result = warthog::label::bb_labelling::load_bch_labels(
-            arclabels_file.c_str(), chd.g_, chd.level_,
-            fwd_lab_ptr, bwd_lab_ptr);
-    if(!result)
+    // the "cutoff" tells what percentage of nodes from the hierarchy
+    // will have exact labels computed by Dijkstra SSSP search.
+    // a cutoff of 0.9 for example omits the bottom 10% of nodes 
+    // in the hierarchy and preprocesses the remaining 90%.
+    // With a cutoff of 1, we preprocess all nodes. With a
+    // cutoff of 0, we preprocess none and use DFS labels only.
+    int pct_dijkstra = 0;
+    std::string label_filename = "label.bb-dfs";
+    if(alg_params != "")
     {
-        std::cerr << "err; could not load arc labels\n";
+        pct_dijkstra = std::stoi(alg_params.c_str());
+        if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
+        {
+            std::cerr << "dijkstra percentage must be in range 0-100\n";
+            return;
+        }
+    }
+    label_filename += "-dijk-";
+    label_filename += std::to_string(pct_dijkstra);
+
+    warthog::label::dfs_labelling lab(&chd);
+
+    // load up the edge label data (or else precompute it)
+    label_filename =  chd_file + "." + label_filename;
+    ifs.open(label_filename);
+    if(ifs.is_open())
+    {
+        ifs >> lab;
+        ifs.close();
+    }
+    else
+    {
+        std::cerr 
+            << "err; label file does not exist: " 
+            << label_filename << std::endl
+            << "you could try to generate it with "
+            << "--alg fch-bb " << pct_dijkstra << "\n";
         return;
+
+        //warthog::util::workload_manager workload(chd.g_->get_num_nodes());
+        //double cutoff = (((double)pct_dijkstra)/100);
+        //uint32_t min_level = (uint32_t)(chd.level_->size()*(1-cutoff));
+        //for(size_t i = 0; i < chd.g_->get_num_nodes(); i++)
+        //{
+        //    if(chd.level_->at(i) >= min_level)
+        //    { workload.set_flag((uint32_t)i, true); }
+        //}
+
+        //lab.precompute(&workload);
+
+        //warthog::timer t;
+        //t.start();
+        //std::cerr << "saving precompute data to " 
+        //    << label_filename << "...\n";
+
+        //std::ofstream out(label_filename, 
+        //        std::ios_base::out|std::ios_base::binary);
+        //out << lab;
+        //if(!out.good())
+        //{
+        //    std::cerr << "\nerror trying to write to file " 
+        //        << label_filename << std::endl;
+        //}
+        //out.close();
+        //t.stop();
+        //std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
+
     }
 
-    std::shared_ptr<warthog::label::bb_labelling> fwd_lab(fwd_lab_ptr);
-    std::shared_ptr<warthog::label::bb_labelling> bwd_lab(bwd_lab_ptr);
-
-    warthog::bb_filter fwd_filter(fwd_lab.get());
-    warthog::bb_filter bwd_filter(bwd_lab.get());
-
-    warthog::bch_bb_expansion_policy fexp(chd.g_, &fwd_filter);
-    warthog::bch_bb_expansion_policy bexp (chd.g_, &bwd_filter, true);
+    warthog::bch_bb_expansion_policy fexp(&lab, false);
+    warthog::bch_bb_expansion_policy bexp (&lab, true);
     warthog::zero_heuristic h;
     warthog::bch_search<
         warthog::zero_heuristic,

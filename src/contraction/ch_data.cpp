@@ -131,11 +131,12 @@ warthog::ch::operator>>(std::ifstream& fs_in, warthog::ch::ch_data& chd)
             else
             {
                 up_edges_finished = true;
-                switch(chd.type_)
-                {
+                //switch(chd.type_)
+                //{
                     // when the graph is "up only" (e.g. as per the algorithm BCH)
                     // we treat every outgoing down edge as incoming up edge
-                    case warthog::ch::UP_ONLY:
+                    //case warthog::ch::UP_ONLY:
+                    if(chd.type_ == warthog::ch::UP_ONLY)
                     {
                         warthog::graph::node* to = chd.g_->get_node(to_id);
                         to->add_incoming(warthog::graph::edge(from_id, cost));
@@ -145,14 +146,14 @@ warthog::ch::operator>>(std::ifstream& fs_in, warthog::ch::ch_data& chd)
                     // when the graph is up/down (e.g. as per algorithm FCH)
                     // we add every outgoing down edge to the outgoing list
                     // but we always add to the front of the list
-                    case warthog::ch::UP_DOWN:
-                    default:
+                    //case warthog::ch::UP_DOWN:
+                    //default:
                     {
                         warthog::graph::node* from = chd.g_->get_node(from_id);
                         from->add_outgoing(warthog::graph::edge(to_id, cost));
                         break;
                     }
-                }
+                //}
             }
             e_added++;
             fs_in >> std::ws;
