@@ -10,6 +10,7 @@
 #include "anytime_astar.h"
 #include "apex_filter.h"
 #include "bb_filter.h"
+#include "bb_labelling.h"
 #include "bch_search.h"
 #include "bch_expansion_policy.h"
 #include "bch_bb_expansion_policy.h"
@@ -33,6 +34,7 @@
 #include "xy_graph.h"
 #include "solution.h"
 #include "timer.h"
+#include "workload_manager.h"
 #include "zero_heuristic.h"
 
 #include "getopt.h"
@@ -77,7 +79,7 @@ help()
 	<< "\t--verbose (print debug info; omitting this param means no)\n"
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
-    << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
+    << "\tastar, astar-bb, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tbch, bch-astar, bch-bb, fch, fch-bb\n"
     << "\tdfs, cpd, cpd-search\n";
 }
@@ -264,6 +266,70 @@ run_astar(warthog::util::cfg& cfg,
     warthog::flexible_astar<
         warthog::euclidean_heuristic, 
         warthog::simple_graph_expansion_policy, 
+        warthog::pqueue_min> 
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_astar_bb(warthog::util::cfg& cfg, 
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    warthog::graph::xy_graph g;
+    std::ifstream ifs(xy_filename);
+    warthog::graph::read_xy(ifs, g);
+    ifs.close();
+
+    warthog::label::bb_labelling lab(&g);
+    std::string label_filename = xy_filename + ".label.bb";
+
+    ifs.open(label_filename.c_str());
+    if(ifs.is_open())
+    {
+        ifs >> lab;
+        ifs.close();
+    }
+    else
+    {
+        warthog::util::workload_manager workload(g.get_num_nodes());
+        workload.set_all_flags(true);
+        lab.precompute(&workload);
+
+        warthog::timer t;
+        t.start();
+        std::cerr << "saving precompute data to " 
+            << label_filename << "...\n";
+
+        std::ofstream ofs(label_filename, 
+                std::ios_base::out|std::ios_base::binary);
+        ofs << lab;
+        if(!ofs.good())
+        {
+            std::cerr << "\nerror trying to write to file " 
+                << label_filename << std::endl;
+        }
+        ofs.close();
+        t.stop();
+        std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
+
+    }
+
+    warthog::bb_filter bbf(&lab);
+    warthog::graph_expansion_policy<warthog::bb_filter> expander(&g, &bbf);
+    warthog::euclidean_heuristic h(&g);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar<
+        warthog::euclidean_heuristic, 
+        warthog::graph_expansion_policy<warthog::bb_filter>, 
         warthog::pqueue_min> 
             alg(&h, &expander, &open);
 
@@ -1037,6 +1103,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "astar")
     {
         run_astar(cfg, parser, alg_name);
+    }
+    else if(alg_name == "astar-bb")
+    {
+        run_astar_bb(cfg, parser, alg_name);
     }
     else if(alg_name == "bi-dijkstra")
     {
