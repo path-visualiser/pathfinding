@@ -25,35 +25,35 @@ namespace graph
 // smaller values make node manipulation operations more cache friendly
 typedef uint16_t ECAP_T;
 const uint16_t ECAP_MAX = UINT16_MAX;
-typedef uintptr_t ELABEL_T;
 
 typedef double edge_cost_t;
 const double EDGE_COST_MAX = DBL_MAX;
 
-class edge
+template<typename LABEL_T>
+class edge_base
 {
     public:
-        edge() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = UINTPTR_MAX;}
+        edge_base() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = UINTPTR_MAX;}
 
-        edge(uint32_t node_id, edge_cost_t wt, uintptr_t label)
+        edge_base(uint32_t node_id, edge_cost_t wt, uintptr_t label)
         {
             node_id_ = node_id;
             wt_ = wt;
             label_ = label;
         }
 
-        edge(uint32_t node_id, edge_cost_t wt)
+        edge_base(uint32_t node_id, edge_cost_t wt)
         {
             node_id_ = node_id;
             wt_ = wt;
             label_ = UINTPTR_MAX;
         }
 
-        edge(const warthog::graph::edge& other) 
+        edge_base(const warthog::graph::edge_base<LABEL_T>& other) 
         { node_id_ = other.node_id_; wt_ = other.wt_; label_ = other.label_; }
 
-        edge&
-        operator=(const warthog::graph::edge& other) 
+        edge_base&
+        operator=(const warthog::graph::edge_base<LABEL_T>& other) 
         { 
             node_id_ = other.node_id_; wt_ = other.wt_; label_ = other.label_;
             return *this;
@@ -70,8 +70,9 @@ class edge
         // the id of the other node is derived contextually
         uint32_t node_id_;
         edge_cost_t wt_;
-        ELABEL_T label_;
+        LABEL_T label_;
 };
+typedef edge_base<uintptr_t> edge;
 typedef edge* edge_iter;
 
 inline bool
