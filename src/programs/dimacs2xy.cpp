@@ -54,7 +54,7 @@ main(int argc, char** argv)
     warthog::graph::dimacs_to_xy_graph(parser, g_xy);
 
     // dump
-    warthog::graph::write_xy(std::cout, g_xy);
+    std::cout << g_xy;
     return 0;
 }
 

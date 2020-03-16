@@ -349,34 +349,6 @@ class node
             }
         }
 
-        inline  void
-        load(std::istream& in_s)
-        {
-            //in_s.read((char*)&(in_deg_), sizeof(in_deg_));
-            in_s.read( (char*)&(out_deg_), sizeof(out_deg_));
-
-            // allocate memory
-            capacity(in_deg_, out_deg_);
-
-            //in_s.read((char*)&incoming_,
-            //          sizeof(warthog::graph::edge) * in_deg_);
-            in_s.read((char*)outgoing_, 
-                      sizeof(warthog::graph::edge) * out_deg_);
-        }
-
-        inline void
-        save(std::ostream& out_s)
-        {
-            //out_s.write((char*)&(in_deg_), sizeof(in_deg_));
-            out_s.write( (char*)&(out_deg_), sizeof(out_deg_));
-
-            //out_s.write((char*)&incoming_,
-            //          sizeof(warthog::graph::edge) * in_deg_);
-            out_s.write((char*)outgoing_, 
-                      sizeof(warthog::graph::edge) * out_deg_);
-        }
-
-
     private:
         edge* incoming_;
         ECAP_T in_deg_;
@@ -394,18 +366,6 @@ class node
             incoming_ = 0;
             in_deg_ = in_cap_ = 0;
             capacity(in_capacity, out_capacity);
-
-            //if(in_capacity > 0)
-            //{
-            //    incoming_ = new edge[in_capacity];
-            //    in_cap_ = in_capacity;
-            //}
-
-            //if(out_capacity > 0)
-            //{
-            //    outgoing_ = new edge[out_capacity];
-            //    out_cap_ = out_capacity;
-            //}
         }
 
         // increase max (incoming or outgoing) edges that can be 
@@ -480,29 +440,6 @@ class node
 
 };
 typedef node* node_iter;
-
-// a node having a weight label
-class w_node : warthog::graph::node
-{
-    w_node() : warthog::graph::node()
-    {
-        wt_ = 0;
-    }
-    virtual ~w_node() { }
-
-    w_node(const w_node& other) : warthog::graph::node(other)
-    {
-        wt_ = other.wt_;
-    }
-
-    w_node(w_node&& other) : node(other)
-    {
-        wt_ = other.wt_;
-    }
-
-    double wt_;
-};
-typedef w_node* w_node_iter;
 
 inline bool
 operator==(const warthog::graph::node& n1, const warthog::graph::node& n2)

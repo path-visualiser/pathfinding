@@ -36,7 +36,7 @@ main(int argc, char** argv)
         warthog::gridmap gm(argv[2]);
         warthog::graph::xy_graph g;
         warthog::graph::gridmap_to_xy_graph(&gm, &g);
-        warthog::graph::write_xy(std::cout, g);
+        std::cout << g;
     }
     else if(strcmp(argv[1], "scen") == 0)
     {

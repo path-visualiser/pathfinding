@@ -45,9 +45,9 @@ class ch_data
 {
 
 public:
-    ch_data() 
+    ch_data(bool store_incoming_edges=false)
     {
-        g_ = new warthog::graph::xy_graph();
+        g_ = new warthog::graph::xy_graph(0,"",store_incoming_edges);
         level_ = new std::vector<uint32_t>();
         up_degree_ = new std::vector<uint32_t>();
         type_ = warthog::ch::ch_type::UP_DOWN;

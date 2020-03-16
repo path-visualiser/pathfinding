@@ -33,7 +33,7 @@ help()
 void 
 contract_graph()
 {
-    warthog::ch::ch_data chd;
+    warthog::ch::ch_data chd(true);
     std::string outfile;
     std::string xy_file;
 
@@ -42,7 +42,7 @@ contract_graph()
     {
         xy_file = cfg.get_param_value("input");
         std::ifstream ifs(xy_file);
-        warthog::graph::read_xy(ifs, *chd.g_, true);
+        ifs >> *chd.g_;
         chd.g_->set_filename(xy_file.c_str());
         chd.up_degree_->resize(chd.g_->get_num_nodes(), 0);
     }

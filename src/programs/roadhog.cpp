@@ -257,7 +257,7 @@ run_astar(warthog::util::cfg& cfg,
 
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
 
     warthog::simple_graph_expansion_policy expander(&g);
     warthog::euclidean_heuristic h(&g);
@@ -285,7 +285,7 @@ run_astar_bb(warthog::util::cfg& cfg,
 
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     warthog::label::bb_labelling lab(&g);
@@ -349,7 +349,7 @@ run_dijkstra(warthog::util::cfg& cfg,
     }
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
 
     warthog::simple_graph_expansion_policy expander(&g);
     warthog::zero_heuristic h;
@@ -377,7 +377,8 @@ run_bi_astar( warthog::util::cfg& cfg,
 
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g, true);
+    ifs >> g;
+    ifs.close();
 
     warthog::bidirectional_graph_expansion_policy fexp(&g, false);
     warthog::bidirectional_graph_expansion_policy bexp(&g, true);
@@ -404,7 +405,7 @@ run_bi_dijkstra( warthog::util::cfg& cfg,
 
     std::ifstream ifs(xy_filename);
     warthog::graph::xy_graph g;
-    warthog::graph::read_xy(ifs, g, true);
+    ifs >> g;
     ifs.close();
 
     warthog::bidirectional_graph_expansion_policy fexp(&g, false);
@@ -854,7 +855,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     // read the graph
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     // apply some default upperbound costs
@@ -919,7 +920,7 @@ run_cpd(warthog::util::cfg& cfg,
 
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     warthog::cpd::graph_oracle oracle(&g);
@@ -998,7 +999,7 @@ run_dfs(warthog::util::cfg& cfg,
     warthog::graph::xy_graph g;
 
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     warthog::simple_graph_expansion_policy expander(&g);
@@ -1028,7 +1029,7 @@ run_cpd_dfs(warthog::util::cfg& cfg,
     warthog::graph::xy_graph g;
 
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     warthog::cpd::graph_oracle oracle(&g);

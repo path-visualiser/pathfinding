@@ -18,12 +18,13 @@
 //
 
 
+#include "constants.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "forward.h"
 #include "graph.h"
 #include "gridmap_expansion_policy.h"
-#include "constants.h"
+#include "util/timer.h"
 
 #include <ostream>
 #include <unordered_map>
@@ -35,13 +36,22 @@ namespace warthog
 namespace graph
 {
 
+//template<typename T_NODE, T_EDGE>
+//warthog::graph::operator<< (
+//        std::ofstream& ofs, const warthog::graph::xy_graph_base<T_NODE, T_EDGE>& g)
+//
+//friend std::ifstream& 
+//warthog::graph::operator<< <> (
+//        std::ifstream& ofs, const warthog::graph::xy_graph_base<T_NODE, T_EDGE>& g);
+
 template<class T_NODE, class T_EDGE>
 class xy_graph_base
 {
     public:
         // create an empty graph
-        xy_graph_base(uint32_t num_nodes=0, std::string filename = "") 
-            : verbose_(false), filename_(filename)
+        xy_graph_base(uint32_t num_nodes=0, 
+                      std::string filename = "", bool incoming=false)
+            : verbose_(false), filename_(filename), store_incoming_(incoming)
         {
             grow(num_nodes);
         }
@@ -376,6 +386,165 @@ class xy_graph_base
         //    }
         //}
 
+    friend std::istream& 
+    warthog::graph::operator>> (
+            std::istream& in, warthog::graph::xy_graph_base<T_NODE, T_EDGE>& g)
+    {
+        warthog::timer mytimer;
+        mytimer.start();
+
+        uint32_t num_nodes=0, num_edges=0;
+        while(in.good())
+        {
+            in >> std::ws;
+            if(in.peek() == '#') 
+            { 
+                while(in.get() != '\n'); 
+                continue;
+            }
+
+            if(in.peek() == 'n') { while(in.get() != ' '); } // "nodes" keyword
+            in >> num_nodes;
+            in >> std::ws;
+            if(in.peek() == 'e') { while(in.get() != ' '); } // "edges" keyword
+            in >> num_edges;
+            in >> std::ws;
+            break;
+        }
+        std::vector<std::pair<uint32_t, warthog::graph::edge>> edges(num_edges);
+        std::vector<std::pair<int32_t, int32_t>> xy(num_nodes);
+        std::vector<warthog::graph::ECAP_T> in_degree(num_nodes, 0);
+        std::vector<warthog::graph::ECAP_T> out_degree(num_nodes, 0);
+
+        uint32_t n_added = 0, e_added=0;
+        while(in.good())
+        {
+            // read nodes data
+            in >> std::ws;
+            char c = in.get();
+
+            if(c == 'v')
+            {
+                uint32_t id;
+                int32_t x, y;
+                in >> id >> x >> y;
+                xy[id] = std::pair<int32_t, int32_t>(x, y);
+                in >> std::ws; // trailing whitespace
+                n_added++;
+            }
+
+            if(c == 'e')
+            {
+                uint32_t from_id, to_id;
+                warthog::graph::edge_cost_t cost;
+
+                in >> from_id >> to_id >> cost;
+                edges[e_added] = 
+                    std::pair<uint32_t, warthog::graph::edge>
+                        (from_id, warthog::graph::edge(to_id, cost));
+
+                assert(out_degree[from_id] != warthog::graph::ECAP_MAX);
+                assert(out_degree[to_id] != warthog::graph::ECAP_MAX);
+                out_degree[from_id]++;
+                in_degree[to_id]++;
+                e_added++;
+            }
+        }
+        assert(n_added == num_nodes);
+        assert(e_added == num_edges);
+
+        // allocate memory for nodes
+        g.clear();
+        g.grow(num_nodes);
+
+        // allocate memory for edges and set xy coordinates
+        for(uint32_t i = 0; i < n_added; i++)
+        {
+            g.set_xy(i, xy[i].first, xy[i].second);
+            g.get_node(i)->capacity(out_degree[i], in_degree[i]);
+        }
+
+        // add edges
+        for(std::pair<uint32_t, warthog::graph::edge> e : edges)
+        {
+            uint32_t from_id = e.first;
+            warthog::graph::node* from = g.get_node(from_id);
+            from->add_outgoing(e.second);
+            if(g.store_incoming_)
+            {
+                uint32_t to_id = e.second.node_id_;
+                warthog::graph::node* to = g.get_node(to_id);
+                e.second.node_id_ = from_id;
+                to->add_incoming(e.second);
+            }
+        }
+
+        mytimer.stop();
+        std::cerr << "graph, loaded.\n";
+        std::cerr 
+            << "read " << n_added << " nodes (total " << num_nodes << ")"
+            << " and read " << e_added << " outgoing edges (total "<< num_edges << ")"
+            << ". total time " << (double)mytimer.elapsed_time_nano() / 1e9 << " s"
+            << std::endl;
+
+        return in;
+    }
+
+    friend std::ostream& 
+    warthog::graph::operator<< (
+            std::ostream& out, warthog::graph::xy_graph_base<T_NODE, T_EDGE>& g)
+    {
+        warthog::timer mytimer; 
+        mytimer.start();
+
+        // comments
+        out << "# warthog xy graph\n"
+            << "# this file is formatted as follows: [header data] [node data] [edge data]\n"
+            << "# header format: nodes [number of nodes] edges [number of edges] \n"
+            << "# node data format: v [id] [x] [y]\n"
+            << "# edge data format: e [from_node_id] [to_node_id] [cost]\n"
+            << "#\n" 
+            << "# 32bit integer values are used throughout.\n"
+            << "# Identifiers are all zero indexed.\n"
+            << std::endl;
+
+        // header stuff
+        //out << "chd 1.0" << std::endl;
+        out 
+            << "nodes " << g.get_num_nodes() << " "
+            << "edges " << g.get_num_edges_out() << std::endl;
+
+        // node data
+        for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+        {
+            int32_t x, y; 
+            g.get_xy(i, x, y);
+            out 
+                << "v " << i << " " 
+                << x << " " 
+                << y << " "
+                << std::endl;
+        }
+
+        for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+        {
+            warthog::graph::node* n = g.get_node(i);
+            for(uint32_t edge_idx = 0; edge_idx < n->out_degree(); edge_idx++)
+            {
+                warthog::graph::edge* e = n->outgoing_begin()+edge_idx;
+                out << "e " << i << " " << e->node_id_ << " " << e->wt_ << std::endl;
+            }
+        }
+
+        mytimer.stop();
+        std::cerr 
+            << "wrote xy_graph; time " 
+            << ((double)mytimer.elapsed_time_nano() / 1e9) 
+            << " s" << std::endl;
+
+        return out;
+    }
+
     private:
         // the set of nodes that comprise the graph
         std::vector<T_NODE> nodes_;
@@ -385,6 +554,7 @@ class xy_graph_base
 
         bool verbose_;
         std::string filename_;
+        bool store_incoming_;
 };
 typedef xy_graph_base<warthog::graph::node, warthog::graph::edge> xy_graph;
 
@@ -416,12 +586,6 @@ dimacs_to_xy_graph(
         bool reverse_arcs=false,
         bool store_incoming_edges = false, 
         bool enforce_euclidean=true);
-
-void
-write_xy(std::ostream& out, warthog::graph::xy_graph& g);
-
-void
-read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming=false);
 
 void 
 write_dimacs(std::ostream& out, warthog::graph::xy_graph& g);
