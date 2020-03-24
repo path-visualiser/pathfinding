@@ -10,6 +10,7 @@
 // @created: 2016-06-15
 //
 
+#include "bidirectional_search.h"
 #include "contraction.h"
 #include "flexible_astar.h"
 
@@ -86,12 +87,19 @@ class fixed_graph_contraction
         // witness search stuff
         warthog::zero_heuristic* heuristic_;
         warthog::apriori_filter* filter_;
-        warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
-        warthog::pqueue_min* open_;
-        warthog::flexible_astar<
-           warthog::zero_heuristic,
-           warthog::graph_expansion_policy<warthog::apriori_filter>,
-           warthog::pqueue_min>* alg_;
+//        warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
+//        warthog::pqueue_min* open_;
+//        warthog::flexible_astar<
+//           warthog::zero_heuristic,
+//           warthog::graph_expansion_policy<warthog::apriori_filter>,
+//           warthog::pqueue_min>* alg_;
+
+        warthog::graph_expansion_policy<warthog::apriori_filter>* fexpander_;
+        warthog::graph_expansion_policy<warthog::apriori_filter>* bexpander_;
+        warthog::bidirectional_search<
+            warthog::zero_heuristic,
+            warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
+
         uint32_t total_expansions_;
         uint32_t total_searches_;
 };

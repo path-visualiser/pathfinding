@@ -54,7 +54,7 @@ class flexible_astar: public warthog::search
 		virtual ~flexible_astar() { }
 
         virtual void
-		get_distance(
+		get_pathcost(
                 warthog::problem_instance& instance, warthog::solution& sol)
         {
 
@@ -225,6 +225,7 @@ class flexible_astar: public warthog::search
             // initialise and push the start node
             if(pi_.start_id_ == warthog::SN_ID_MAX) { return 0; }
             start = expander_->generate_start_node(&pi_);
+            assert(start->get_search_number() != pi_.instance_id_);
             if(!start) { return 0; } // invalid start location
             pi_.start_id_ = start->get_id();
 
@@ -243,6 +244,11 @@ class flexible_astar: public warthog::search
             // begin expanding
 			while(open_->size())
 			{
+                // early termination: in case we want bounded-cost 
+                // search or if we want to impose some memory limit
+                if(open_->peek()->get_f() > cost_cutoff_) { break; } 
+                if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
+                
 				warthog::search_node* current = open_->pop();
 				current->set_expanded(true); // NB: set before generating
 				assert(current->get_expanded());
@@ -256,12 +262,6 @@ class flexible_astar: public warthog::search
                     break;
                 }
                     
-                // early termination: in case we want bounded-cost 
-                // search or if we want to impose some memory limit
-                if(current->get_f() > cost_cutoff_) { break; } 
-                if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
-
-
 				#ifndef NDEBUG
 				if(pi_.verbose_)
 				{

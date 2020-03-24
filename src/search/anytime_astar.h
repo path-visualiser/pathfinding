@@ -66,7 +66,7 @@ class anytime_astar : public warthog::search
 		virtual ~anytime_astar() { }
 
         virtual void
-		get_distance(
+		get_pathcost(
                 warthog::problem_instance& instance, warthog::solution& sol)
         {
 

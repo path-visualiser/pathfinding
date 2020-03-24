@@ -1,10 +1,11 @@
 #include "apriori_filter.h"
+#include "euclidean_heuristic.h"
 #include "flexible_astar.h"
 #include "graph_expansion_policy.h"
 #include "heap.h"
+#include "helpers.h"
 #include "lazy_graph_contraction.h"
 #include "zero_heuristic.h"
-#include "euclidean_heuristic.h"
 
 #include <algorithm>
 #include <functional>
@@ -61,9 +62,9 @@ warthog::ch::lazy_graph_contraction::contract(
         out_shorts.clear();
         terms_[best_id] = contract_node(best_id, false);
 
-        for(uint32_t i = 0; i < uc_neis_.size(); i++)
+        for(auto uc_iter : uc_neis_)
         {
-            uint32_t neighbour_id = uc_neis_.at(i);
+            uint32_t neighbour_id = uc_iter;
             if(!u_filter_->get_flag(neighbour_id)) { continue; } // updated 
 
             // re-compute importance metrics
@@ -97,8 +98,8 @@ warthog::ch::lazy_graph_contraction::contract(
         num_searches = total_searches_ - num_searches;
         num_lazy = total_lazy_updates_ - num_lazy;
 
-        if((mytimer.get_time_micro() - t_last) > 1000000)
-        {
+        //if((mytimer.get_time_micro() - t_last) > 1000000)
+        //{
             t_last = mytimer.get_time_micro();
             std::cerr 
                 //<< "\r " 
@@ -114,13 +115,13 @@ warthog::ch::lazy_graph_contraction::contract(
                 << "; micros: " << (int32_t)mytimer.elapsed_time_micro();
             terms_[best_id].print(std::cerr);
             std::cerr << std::endl;
-        }
+        //}
     }
     
     // until now we kept track of the _order_ in which nodes were
     // contracted. but for online search we need to know each node's _level_
     // here we convert from one to the other
-    warthog::ch::value_index_swap_dimacs(*ret->level_);
+    warthog::helpers::value_index_swap_array(*ret->level_);
 
     // sort successors in descending contraction order 
     // (the highest-level successor appears first)
@@ -148,17 +149,29 @@ warthog::ch::lazy_graph_contraction::preliminaries(warthog::ch::ch_data* chd)
 {
     order_ = chd->level_;
     g_ = chd->g_;
-    heuristic_ = new warthog::euclidean_heuristic(g_);
-    c_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
-    u_filter_ = new warthog::apriori_filter((uint32_t)g_->get_num_nodes());
+    //heuristic_ = new warthog::euclidean_heuristic(g_);
+    heuristic_ = new warthog::zero_heuristic();
+    c_filter_ = new warthog::apriori_filter(g_);
+    u_filter_ = new warthog::apriori_filter(g_);
     fexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
                 g_, c_filter_);
     bexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
                 g_, c_filter_);
 
-    alg_ = new bidirectional_search< warthog::euclidean_heuristic,
+    //alg_ = new bidirectional_search< warthog::euclidean_heuristic,
+    alg_ = new bidirectional_search< warthog::zero_heuristic,
                  warthog::graph_expansion_policy<warthog::apriori_filter>>(
                          fexpander_, bexpander_, heuristic_);
+
+    open_ = new warthog::pqueue_min();
+    expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
+        (g_, c_filter_);
+    alg2_ = new warthog::flexible_astar<
+                    warthog::zero_heuristic,
+                    warthog::graph_expansion_policy<warthog::apriori_filter>,
+                    warthog::pqueue_min>
+                        (heuristic_, expander_, open_);
+
 
     size_t sz_g = g_->get_num_nodes();
     heap_ = new warthog::heap<ch_pair>((uint32_t)sz_g, true);
@@ -275,7 +288,8 @@ warthog::ch::lazy_graph_contraction::next(
 // (and will thus not be expanded)
 warthog::cost_t
 warthog::ch::lazy_graph_contraction::witness_search(
-        uint32_t from_id, uint32_t to_id, warthog::cost_t via_len)
+        uint32_t from_id, uint32_t to_id, warthog::cost_t via_len,
+        bool resume)
 {
     // only search for witness paths between uncontracted neighbours
     //if(c_filter_->get_flag(from_id) || c_filter_->get_flag(to_id)) { return 0; }
@@ -289,12 +303,57 @@ warthog::ch::lazy_graph_contraction::witness_search(
     warthog::problem_instance pi(
             g->to_external_id(from_id), 
             g->to_external_id(to_id));
+
     sol_.reset();
+    sol_.path_.clear();
+    pi.extra_params_ = (void*)resume;
 
     // gogogo
-    alg_->get_distance(pi, sol_);
+    alg_->get_path(pi, sol_);
     total_expansions_ += sol_.nodes_expanded_;
     total_searches_++;
+
+    //warthog::problem_instance pi2 = pi;
+    //warthog::solution sol2;
+    //sol2.reset();
+
+    //alg2_->set_cost_cutoff(via_len);
+    //alg2_->set_max_expansions_cutoff(ws_max_expansions_);
+    //alg2_->get_pathcost(pi, sol2);
+
+    //if(sol_.sum_of_edge_costs_ != warthog::COST_MAX && 
+    //   sol2.sum_of_edge_costs_ == warthog::COST_MAX)
+    //{
+    //    sol2.reset();
+    //    pi.verbose_ = true;
+    //    pi2.verbose_ = true;
+    //    alg2_->get_pathcost(pi, sol2);
+
+    //    std::cerr << " \nbidirectional path: \n";
+    //    sol_.print_path(std::cerr);
+    //    std::cerr << " bidirectional path cost " << sol_.sum_of_edge_costs_
+    //        << " via_len " << via_len << std::endl;
+    //    sol_.reset();
+    //    alg_->get_path(pi, sol_);
+    //}
+
+    //if(    sol_.sum_of_edge_costs_ == warthog::COST_MAX && 
+    //       sol2.sum_of_edge_costs_ != warthog::COST_MAX)
+    //{
+    //    assert( sol_.nodes_expanded_ == ws_max_expansions_ || false );
+    //}
+    //else if(    sol2.sum_of_edge_costs_ == warthog::COST_MAX && 
+    //       sol_.sum_of_edge_costs_ != warthog::COST_MAX)
+    //{
+    //    assert( sol2.nodes_expanded_ == ws_max_expansions_ || false );
+    //}
+
+    //std::cerr 
+    //    << "witn; " 
+    //    << pi.start_id_ << " to " << pi.target_id_
+    //    << " vialen " << via_len 
+    //    << " witlen " << sol_.sum_of_edge_costs_
+    //    << std::endl;
     return sol_.sum_of_edge_costs_;
 }
 
@@ -323,20 +382,48 @@ warthog::ch::lazy_graph_contraction::contract_node(
     c_filter_->set_flag_true(node_id);
     ws_max_expansions_ = 500; // as recommended by RoutingKit's implementation
     //ws_max_expansions_ = (metrics_only ? 1000 : warthog::INF32); // ddh
+
+    // mark uncontracted incoming neighbours that will need to be reprioritised
     for(uint32_t i = 0; i < n->in_degree(); i++)
     {
         warthog::graph::edge& e_in = *(n->incoming_begin()+i);
         if(c_filter_->get_flag(e_in.node_id_)) { niv.nc_++; continue; }
 
-        // mark uncontracted neighbours that will need to be reprioritised
         if(!metrics_only) 
         { 
-            uc_neis_.push_back(e_in.node_id_); 
+            uc_neis_.insert(e_in.node_id_); 
+            u_filter_->set_flag_true(e_in.node_id_);
+        }
+    }
+    
+    // mark uncontracted outgoing neighbours that will need to be reprioritised
+    for(uint32_t j = 0; j < n->out_degree(); j++)
+    {
+        warthog::graph::edge& e_out = *(n->outgoing_begin()+j);
+        if(c_filter_->get_flag(e_out.node_id_)) { niv.nc_++; continue; }
+
+        if(!metrics_only) 
+        { 
+            uc_neis_.insert(e_out.node_id_); 
+            u_filter_->set_flag_true(e_out.node_id_);
+        }
+    }
+
+    for(uint32_t i = 0; i < n->in_degree(); i++)
+    {
+        warthog::graph::edge& e_in = *(n->incoming_begin()+i);
+        if(c_filter_->get_flag(e_in.node_id_)) { niv.nc_++; continue; }
+
+        // mark uncontracted incoming neighbours that will need to be reprioritised
+        if(!metrics_only) 
+        { 
+            uc_neis_.insert(e_in.node_id_); 
             u_filter_->set_flag_true(e_in.node_id_);
         }
         niv.edel_++;
         niv.hops_removed_ += e_in.label_;
 
+        bool resume = false;
         for(uint32_t j = 0; j < n->out_degree(); j++)
         {
             warthog::graph::edge& e_out = *(n->outgoing_begin()+j);
@@ -344,18 +431,13 @@ warthog::ch::lazy_graph_contraction::contract_node(
 
             if(c_filter_->get_flag(e_out.node_id_)) { niv.nc_++; continue; }
 
-            // mark uncontracted neighbours that will need to be reprioritised
-            if(!metrics_only) 
-            { 
-                uc_neis_.push_back(e_out.node_id_); 
-                u_filter_->set_flag_true(e_out.node_id_);
-            }
             niv.edel_++;
             niv.hops_removed_ += e_in.label_;
 
             warthog::cost_t cost_cutoff = e_in.wt_ + e_out.wt_;
             warthog::cost_t witness_len = 
-                witness_search(e_in.node_id_, e_out.node_id_, cost_cutoff);
+                witness_search(e_in.node_id_, e_out.node_id_, cost_cutoff, resume);
+            resume = true;
 
             // contraction will introduce a shortcut edge only if
             // the path <in, n, out> is the only shortest path
@@ -394,6 +476,19 @@ warthog::ch::lazy_graph_contraction::contract_node(
                                     niv.hops_added_)));
                 }
             }
+        }
+    }
+
+    // mark uncontracted outgoing neighbours that will need to be reprioritised
+    for(uint32_t j = 0; j < n->out_degree(); j++)
+    {
+        warthog::graph::edge& e_out = *(n->outgoing_begin()+j);
+        if(c_filter_->get_flag(e_out.node_id_)) { continue; }
+
+        if(!metrics_only) 
+        { 
+            uc_neis_.insert(e_out.node_id_); 
+            u_filter_->set_flag_true(e_out.node_id_);
         }
     }
 

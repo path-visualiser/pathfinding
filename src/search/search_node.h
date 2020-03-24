@@ -20,7 +20,7 @@ class search_node
 {
 	public:
 		search_node(warthog::sn_id_t id = warthog::SN_ID_MAX) : 
-            id_(id), parent_id_(warthog::SN_ID_MAX), 
+            id_(id), parent_id_(warthog::NO_PARENT), 
             g_(warthog::COST_MAX), f_(warthog::COST_MAX), 
             status_(0), priority_(warthog::INF32), search_number_(0)
 		{

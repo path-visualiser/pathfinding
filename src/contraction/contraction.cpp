@@ -1,11 +1,12 @@
 #include "contraction.h"
 #include "fch_expansion_policy.h"
 #include "flexible_astar.h"
-#include "xy_graph.h"
+#include "helpers.h"
 #include "problem_instance.h"
 #include "search_node.h"
 #include "solution.h"
 #include "zero_heuristic.h"
+#include "xy_graph.h"
 #include <algorithm>
 #include <stack>
 #include <vector>
@@ -60,7 +61,7 @@ warthog::ch::load_node_order(const char* filename,
 
     if(lex_order)
     {
-        warthog::ch::value_index_swap_dimacs(order);
+        warthog::helpers::value_index_swap_array(order);
     }
     return true;
 }
@@ -133,27 +134,6 @@ warthog::ch::compute_down_closure(uint32_t source,
                 }
             }
         }
-    }
-}
-
-void
-warthog::ch::value_index_swap_dimacs(
-        std::vector<uint32_t>& vec)
-{
-    // re-maps @param vec s.t. for each x and i
-    // v[i] = x becomes v[x] = i
-    std::vector<uint32_t> tmp;
-    tmp.resize(vec.size());
-    for(uint32_t i = 0; i < vec.size(); i++)
-    {
-        tmp.at(i) = vec.at(i);
-    }
-
-    assert( (*std::min_element(tmp.begin(), tmp.end())) == 0);
-    assert( (*std::max_element(tmp.begin(), tmp.end())) == vec.size()-1);
-    for(uint32_t i = 0; i < tmp.size(); i++)
-    {
-        vec.at(tmp.at(i)) = i;
     }
 }
 

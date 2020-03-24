@@ -1,10 +1,12 @@
 #include "apriori_filter.h"
 #include "search_node.h"
+#include "xy_graph.h"
 #include <cassert>
 
-warthog::apriori_filter::apriori_filter(uint32_t num_elements) 
+warthog::apriori_filter::apriori_filter(warthog::graph::xy_graph* g) 
 {
-    filter_sz_ = num_elements;
+    g_ = g;
+    filter_sz_ = g->get_num_nodes();
     filter_ = new uint8_t[filter_sz_];
     reset_filter();
 }
@@ -36,9 +38,11 @@ warthog::apriori_filter::reset_filter()
 }
 
 bool
-warthog::apriori_filter::filter(uint32_t node_id, uint32_t edge_idx)
+warthog::apriori_filter::filter(uint32_t node_id, uint32_t edge_id)
 {
-    return get_flag(node_id);
+    assert(node_id < g_->get_num_nodes());
+    assert(edge_id < g_->get_node(node_id)->out_degree());
+    return get_flag((g_->get_node(node_id)->outgoing_begin()+edge_id)->node_id_);
 }
 
 bool

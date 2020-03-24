@@ -18,6 +18,7 @@
 // @created: 2016-07-19
 
 #include "constants.h"
+#include "forward.h"
 #include <cstdint>
 #include <cstring>
 
@@ -27,7 +28,7 @@ namespace warthog
 class apriori_filter 
 {
     public:
-        apriori_filter(uint32_t num_nodes);
+        apriori_filter(warthog::graph::xy_graph* g);
         virtual ~apriori_filter();
 
         // returns true if the successor node specified by @param edge_idx
@@ -61,6 +62,7 @@ class apriori_filter
         }
 
     private:
+        warthog::graph::xy_graph* g_;
         uint8_t* filter_;
         uint32_t filter_sz_;
 };

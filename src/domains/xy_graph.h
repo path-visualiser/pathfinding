@@ -552,7 +552,7 @@ class xy_graph_base
         // xy coordinates stored as adjacent pairs (x, then y)
         std::vector<int32_t> xy_;
 
-        bool verbose_;
+       bool verbose_;
         std::string filename_;
         bool store_incoming_;
 };

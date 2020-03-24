@@ -162,7 +162,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
         for(uint32_t i = 0; i < nruns; i++)
         {
             sol.reset();
-            algo->get_distance(pi, sol);
+            algo->get_path(pi, sol);
 
             expanded += sol.nodes_expanded_;
             inserted += sol.nodes_inserted_;
@@ -403,8 +403,8 @@ run_bi_dijkstra( warthog::util::cfg& cfg,
         return;
     }
 
+    warthog::graph::xy_graph g(0, "", true);
     std::ifstream ifs(xy_filename);
-    warthog::graph::xy_graph g;
     ifs >> g;
     ifs.close();
 

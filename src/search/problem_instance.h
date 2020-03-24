@@ -34,7 +34,8 @@ class problem_instance
         { 
             this->start_id_ = other.start_id_;
             this->target_id_ = other.target_id_;
-            this->instance_id_ = other.instance_id_;
+            //this->instance_id_ = other.instance_id_;
+            this->instance_id_ = instance_counter_++;
             this->verbose_ = other.verbose_;
             this->extra_params_ = other.extra_params_;
         }
@@ -52,7 +53,8 @@ class problem_instance
         { 
             this->start_id_ = other.start_id_;
             this->target_id_ = other.target_id_;
-            this->instance_id_ = other.instance_id_;
+            //this->instance_id_ = other.instance_id_;
+            this->instance_id_ = instance_counter_++;
             this->verbose_ = other.verbose_;
             this->extra_params_ = other.extra_params_;
             return *this; 
