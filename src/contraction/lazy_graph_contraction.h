@@ -178,12 +178,12 @@ class lazy_graph_contraction
             warthog::zero_heuristic,
             warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
 
-        warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
-        warthog::pqueue_min* open_;
-        warthog::flexible_astar<
-           warthog::zero_heuristic,
-           warthog::graph_expansion_policy<warthog::apriori_filter>,
-           warthog::pqueue_min>* alg2_;
+//        warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
+//        warthog::pqueue_min* open_;
+//        warthog::flexible_astar<
+//           warthog::zero_heuristic,
+//           warthog::graph_expansion_policy<warthog::apriori_filter>,
+//           warthog::pqueue_min>* alg2_;
 
 
 

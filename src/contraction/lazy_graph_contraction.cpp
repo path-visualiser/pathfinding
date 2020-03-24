@@ -163,15 +163,15 @@ warthog::ch::lazy_graph_contraction::preliminaries(warthog::ch::ch_data* chd)
                  warthog::graph_expansion_policy<warthog::apriori_filter>>(
                          fexpander_, bexpander_, heuristic_);
 
-    open_ = new warthog::pqueue_min();
-    expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
-        (g_, c_filter_);
-    alg2_ = new warthog::flexible_astar<
-                    warthog::zero_heuristic,
-                    warthog::graph_expansion_policy<warthog::apriori_filter>,
-                    warthog::pqueue_min>
-                        (heuristic_, expander_, open_);
-
+//    open_ = new warthog::pqueue_min();
+//    expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
+//        (g_, c_filter_);
+//    alg2_ = new warthog::flexible_astar<
+//                    warthog::zero_heuristic,
+//                    warthog::graph_expansion_policy<warthog::apriori_filter>,
+//                    warthog::pqueue_min>
+//                        (heuristic_, expander_, open_);
+//
 
     size_t sz_g = g_->get_num_nodes();
     heap_ = new warthog::heap<ch_pair>((uint32_t)sz_g, true);
