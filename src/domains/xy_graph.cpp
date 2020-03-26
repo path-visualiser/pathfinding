@@ -235,12 +235,15 @@ warthog::graph::write_xy(std::ostream& out, warthog::graph::xy_graph& g)
 }
 
 void
-warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming)
+warthog::graph::parse_xy(
+    std::istream &in,
+    uint32_t &num_nodes,
+    uint32_t &num_edges,
+    std::vector<std::pair<uint32_t, warthog::graph::edge>> &edges,
+    std::vector<std::pair<int32_t, int32_t>> &xy,
+    std::vector<warthog::graph::ECAP_T> &in_degree,
+    std::vector<warthog::graph::ECAP_T> &out_degree)
 {
-    warthog::timer mytimer;
-    mytimer.start();
-
-    uint32_t num_nodes=0, num_edges=0;
     while(in.good())
     {
         in >> std::ws;
@@ -258,10 +261,11 @@ warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool stor
         in >> std::ws;
         break;
     }
-    std::vector<std::pair<uint32_t, warthog::graph::edge>> edges(num_edges);
-    std::vector<std::pair<int32_t, int32_t>> xy(num_nodes);
-    std::vector<warthog::graph::ECAP_T> in_degree(num_nodes, 0);
-    std::vector<warthog::graph::ECAP_T> out_degree(num_nodes, 0);
+
+    edges.resize(num_edges);
+    xy.resize(num_nodes);
+    in_degree.assign(num_nodes, 0);
+    out_degree.assign(num_nodes, 0);
 
     uint32_t n_added = 0, e_added=0;
     while(in.good())
@@ -300,12 +304,33 @@ warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool stor
     assert(n_added == num_nodes);
     assert(e_added == num_edges);
 
+    std::cerr << "graph read: "
+              << n_added << " nodes and "
+              << e_added << " edges.";
+}
+
+void
+warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming)
+{
+    uint32_t num_nodes;
+    uint32_t num_edges;
+    std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
+    std::vector<std::pair<int32_t, int32_t>> xy;
+    std::vector<warthog::graph::ECAP_T> in_degree;
+    std::vector<warthog::graph::ECAP_T> out_degree;
+
+    warthog::timer mytimer;
+    mytimer.start();
+
+    warthog::graph::parse_xy(
+        in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
+
     // allocate memory for nodes
     g.clear();
     g.grow(num_nodes);
 
     // allocate memory for edges and set xy coordinates
-    for(uint32_t i = 0; i < n_added; i++)
+    for(uint32_t i = 0; i < num_nodes; i++)
     {
         g.set_xy(i, xy[i].first, xy[i].second);
         g.get_node(i)->capacity(out_degree[i], in_degree[i]);
@@ -329,8 +354,8 @@ warthog::graph::read_xy(std::istream& in, warthog::graph::xy_graph& g, bool stor
     mytimer.stop();
     std::cerr << "graph, loaded.\n";
     std::cerr 
-        << "read " << n_added << " nodes (total " << num_nodes << ")"
-        << " and read " << e_added << " outgoing edges (total "<< num_edges << ")"
+        << "read " << num_nodes << " nodes"
+        << " and read " << num_edges << " outgoing edges"
         << ". total time " << (double)mytimer.elapsed_time_nano() / 1e9 << " s"
         << std::endl;
 }

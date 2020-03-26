@@ -423,6 +423,16 @@ write_xy(std::ostream& out, warthog::graph::xy_graph& g);
 void
 read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming=false);
 
+void
+parse_xy(
+    std::istream &in,
+    uint32_t &num_nodes,
+    uint32_t &num_edges,
+    std::vector<std::pair<uint32_t, warthog::graph::edge>> &edges,
+    std::vector<std::pair<int32_t, int32_t>> &xy,
+    std::vector<warthog::graph::ECAP_T> &in_degree,
+    std::vector<warthog::graph::ECAP_T> &out_degree);
+
 void 
 write_dimacs(std::ostream& out, warthog::graph::xy_graph& g);
 
