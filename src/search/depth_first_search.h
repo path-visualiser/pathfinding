@@ -61,7 +61,7 @@ class depth_first_search : public warthog::search
 		virtual ~depth_first_search() { }
 
         virtual void
-		get_distance(
+		get_pathcost(
                 warthog::problem_instance& instance, warthog::solution& sol)
         {
 

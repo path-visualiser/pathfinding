@@ -83,7 +83,7 @@ class bch_search : public warthog::search
         }
 
         virtual void
-        get_distance(warthog::problem_instance& pi, warthog::solution& sol)
+        get_pathcost(warthog::problem_instance& pi, warthog::solution& sol)
         {
             pi_ = pi;
             this->search(sol);

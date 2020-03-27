@@ -16,6 +16,7 @@ namespace warthog
 {
     typedef uint64_t sn_id_t; // address space for state identifiers
     static const sn_id_t SN_ID_MAX = UINT64_MAX;
+    static const sn_id_t NO_PARENT = SN_ID_MAX;
 
 	// each node in a weighted grid map uses sizeof(dbword) memory.
 	// in a uniform-cost grid map each dbword is a contiguous set

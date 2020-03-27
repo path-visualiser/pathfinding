@@ -60,6 +60,7 @@ class graph_expansion_policy
 		expand(warthog::search_node* current, warthog::problem_instance* pi)
         {
             edge_index_ = 0;
+            current_id_ = (uint32_t)current->get_id();
             current_graph_node_ = g_->get_node((uint32_t)current->get_id()) ;
         }
 
@@ -126,7 +127,7 @@ class graph_expansion_policy
                 warthog::graph::edge& e = *(begin+edge_index_);
                 assert(e.node_id_ < g_->get_num_nodes());
                 ret = (this->*fn_generate_successor)
-                        (e.node_id_, edge_index_, e);
+                        (current_id_, edge_index_, e);
                 if(ret)
                 {
                     cost = e.wt_;
@@ -151,7 +152,8 @@ class graph_expansion_policy
             if(t_graph_id == warthog::INF32) { return 0; }
             
             // also update the filter with the new target location
-            filter_->set_target((uint32_t)pi->target_id_-1);
+            if(filter_)
+            { filter_->set_target((uint32_t)pi->target_id_); }
 
             // generate the search node
             return &nodepool_[t_graph_id];
@@ -197,6 +199,7 @@ class graph_expansion_policy
         FILTER* filter_;
         warthog::graph::xy_graph* g_;
 
+        uint32_t current_id_;
         uint32_t edge_index_;
         warthog::graph::node* current_graph_node_;
 
@@ -216,7 +219,7 @@ class graph_expansion_policy
                 uint32_t edge_idx, 
                 warthog::graph::edge& e)
         {
-            if(!filter_->filter(current_id, edge_idx))
+            if(!filter_->filter(current_id_, edge_idx))
             {
                 return &nodepool_[e.node_id_];
             }

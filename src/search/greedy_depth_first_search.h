@@ -58,7 +58,7 @@ class greedy_depth_first_search : public warthog::search
 		virtual ~greedy_depth_first_search() { }
 
         virtual void
-		get_distance(
+		get_pathcost(
                 warthog::problem_instance& instance, warthog::solution& sol)
         {
 

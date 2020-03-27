@@ -30,7 +30,7 @@ class search
         get_path(warthog::problem_instance&, warthog::solution&) = 0;
 
         virtual void
-        get_distance(warthog::problem_instance&, warthog::solution&) = 0;
+        get_pathcost(warthog::problem_instance&, warthog::solution&) = 0;
 
         virtual size_t
         mem() = 0;

@@ -25,35 +25,35 @@ namespace graph
 // smaller values make node manipulation operations more cache friendly
 typedef uint16_t ECAP_T;
 const uint16_t ECAP_MAX = UINT16_MAX;
-typedef uintptr_t ELABEL_T;
 
 typedef double edge_cost_t;
 const double EDGE_COST_MAX = DBL_MAX;
 
-class edge
+template<typename LABEL_T>
+class edge_base
 {
     public:
-        edge() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = UINTPTR_MAX;}
+        edge_base() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = UINTPTR_MAX;}
 
-        edge(uint32_t node_id, edge_cost_t wt, uintptr_t label)
+        edge_base(uint32_t node_id, edge_cost_t wt, uintptr_t label)
         {
             node_id_ = node_id;
             wt_ = wt;
             label_ = label;
         }
 
-        edge(uint32_t node_id, edge_cost_t wt)
+        edge_base(uint32_t node_id, edge_cost_t wt)
         {
             node_id_ = node_id;
             wt_ = wt;
             label_ = UINTPTR_MAX;
         }
 
-        edge(const warthog::graph::edge& other) 
+        edge_base(const warthog::graph::edge_base<LABEL_T>& other) 
         { node_id_ = other.node_id_; wt_ = other.wt_; label_ = other.label_; }
 
-        edge&
-        operator=(const warthog::graph::edge& other) 
+        edge_base&
+        operator=(const warthog::graph::edge_base<LABEL_T>& other) 
         { 
             node_id_ = other.node_id_; wt_ = other.wt_; label_ = other.label_;
             return *this;
@@ -70,8 +70,9 @@ class edge
         // the id of the other node is derived contextually
         uint32_t node_id_;
         edge_cost_t wt_;
-        ELABEL_T label_;
+        LABEL_T label_;
 };
+typedef edge_base<uintptr_t> edge;
 typedef edge* edge_iter;
 
 inline bool
@@ -349,34 +350,6 @@ class node
             }
         }
 
-        inline  void
-        load(std::istream& in_s)
-        {
-            //in_s.read((char*)&(in_deg_), sizeof(in_deg_));
-            in_s.read( (char*)&(out_deg_), sizeof(out_deg_));
-
-            // allocate memory
-            capacity(in_deg_, out_deg_);
-
-            //in_s.read((char*)&incoming_,
-            //          sizeof(warthog::graph::edge) * in_deg_);
-            in_s.read((char*)outgoing_, 
-                      sizeof(warthog::graph::edge) * out_deg_);
-        }
-
-        inline void
-        save(std::ostream& out_s)
-        {
-            //out_s.write((char*)&(in_deg_), sizeof(in_deg_));
-            out_s.write( (char*)&(out_deg_), sizeof(out_deg_));
-
-            //out_s.write((char*)&incoming_,
-            //          sizeof(warthog::graph::edge) * in_deg_);
-            out_s.write((char*)outgoing_, 
-                      sizeof(warthog::graph::edge) * out_deg_);
-        }
-
-
     private:
         edge* incoming_;
         ECAP_T in_deg_;
@@ -394,18 +367,6 @@ class node
             incoming_ = 0;
             in_deg_ = in_cap_ = 0;
             capacity(in_capacity, out_capacity);
-
-            //if(in_capacity > 0)
-            //{
-            //    incoming_ = new edge[in_capacity];
-            //    in_cap_ = in_capacity;
-            //}
-
-            //if(out_capacity > 0)
-            //{
-            //    outgoing_ = new edge[out_capacity];
-            //    out_cap_ = out_capacity;
-            //}
         }
 
         // increase max (incoming or outgoing) edges that can be 
@@ -480,29 +441,6 @@ class node
 
 };
 typedef node* node_iter;
-
-// a node having a weight label
-class w_node : warthog::graph::node
-{
-    w_node() : warthog::graph::node()
-    {
-        wt_ = 0;
-    }
-    virtual ~w_node() { }
-
-    w_node(const w_node& other) : warthog::graph::node(other)
-    {
-        wt_ = other.wt_;
-    }
-
-    w_node(w_node&& other) : node(other)
-    {
-        wt_ = other.wt_;
-    }
-
-    double wt_;
-};
-typedef w_node* w_node_iter;
 
 inline bool
 operator==(const warthog::graph::node& n1, const warthog::graph::node& n2)

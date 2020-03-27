@@ -12,24 +12,24 @@ warthog::ch::operator<<(std::ofstream& fs_out, warthog::ch::ch_data& chd)
 
     // header stuff
     //fs_out << "chd 1.0" << std::endl;
-    fs_out 
+    fs_out
         << "nodes " << chd.g_->get_num_nodes() << " "
         << "edges " << chd.g_->get_num_edges_out() << std::endl;
 
     // node data
     for(uint32_t i = 0; i < chd.g_->get_num_nodes(); i++)
     {
-        int32_t x, y; 
+        int32_t x, y;
         chd.g_->get_xy(i, x, y);
-        fs_out 
-            << "v " << i << " " 
-            << x << " " 
+        fs_out
+            << "v " << i << " "
+            << x << " "
             << y << " ";
 
          uint32_t level;
-         if(i >= chd.level_->size()) 
+         if(i >= chd.level_->size())
          { level = (uint32_t) chd.level_->size()-1; }
-         else 
+         else
          { level = chd.level_->at(i); }
          fs_out << level << std::endl;
     }
@@ -37,12 +37,12 @@ warthog::ch::operator<<(std::ofstream& fs_out, warthog::ch::ch_data& chd)
     // edge data. [===== NB ==== THIS NEXT BIT IS IMPORTANT ====]
     // contraction hierarchy data can be stored in two different
     // ways, depending on whether query algorithm is bidirectional
-    // or forward search. For the former, the CH is stored as an 
+    // or forward search. For the former, the CH is stored as an
     // "up only" graph where all outgoing edges go up and where
     // all incoming edges are from higher level nodes.
     // For the latter, the CH is stored as an "up/down" graph
     // where all outgoing edges go up and all down edges are
-    // stored in the incoming list 
+    // stored in the incoming list
     for(uint32_t i = 0; i < chd.g_->get_num_nodes(); i++)
     {
         // write out all outgoing edges
@@ -75,9 +75,9 @@ warthog::ch::operator>>(std::ifstream& fs_in, warthog::ch::ch_data& chd)
     while(fs_in.good())
     {
         fs_in >> std::ws;
-        if(fs_in.peek() == '#') 
-        { 
-            while(fs_in.get() != '\n'); 
+        if(fs_in.peek() == '#')
+        {
+            while(fs_in.get() != '\n');
             continue;
         }
 
@@ -131,11 +131,12 @@ warthog::ch::operator>>(std::ifstream& fs_in, warthog::ch::ch_data& chd)
             else
             {
                 up_edges_finished = true;
-                switch(chd.type_)
-                {
+                //switch(chd.type_)
+                //{
                     // when the graph is "up only" (e.g. as per the algorithm BCH)
                     // we treat every outgoing down edge as incoming up edge
-                    case warthog::ch::UP_ONLY:
+                    //case warthog::ch::UP_ONLY:
+                    if(chd.type_ == warthog::ch::UP_ONLY)
                     {
                         warthog::graph::node* to = chd.g_->get_node(to_id);
                         to->add_incoming(warthog::graph::edge(from_id, cost));
@@ -145,14 +146,14 @@ warthog::ch::operator>>(std::ifstream& fs_in, warthog::ch::ch_data& chd)
                     // when the graph is up/down (e.g. as per algorithm FCH)
                     // we add every outgoing down edge to the outgoing list
                     // but we always add to the front of the list
-                    case warthog::ch::UP_DOWN:
-                    default:
+                    //case warthog::ch::UP_DOWN:
+                    //default:
                     {
                         warthog::graph::node* from = chd.g_->get_node(from_id);
                         from->add_outgoing(warthog::graph::edge(to_id, cost));
                         break;
                     }
-                }
+                //}
             }
             e_added++;
             fs_in >> std::ws;
@@ -160,7 +161,7 @@ warthog::ch::operator>>(std::ifstream& fs_in, warthog::ch::ch_data& chd)
     }
 
     std::cerr << "ch graph, loaded.\n";
-    std::cerr 
+    std::cerr
         << "read " << n_added << " nodes (total " << num_nodes << ")"
         << " and read " << e_added << " edges (total "<< num_edges << ")"
         << std::endl;

@@ -4,7 +4,7 @@ WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
 			  $(wildcard contraction/*.cpp) $(wildcard label/*.cpp) \
 			  $(wildcard memory/*.cpp) $(wildcard mapf/*.cpp) $(wildcard sys/*.cpp) \
 			  $(wildcard sipp/*.cpp) $(wildcard cpd/*.cpp)
-			  
+
 
 WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 
@@ -12,14 +12,14 @@ D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
 					 -I./heuristics -I./jps -I./contraction -I./label \
 					 -I./memory -I./mapf -I./sys -I./sipp -I./cpd
 
-D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include 
-D_LIBS = -L./lib -L/usr/local/lib 
+D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include
+D_LIBS = -L./lib -L/usr/local/lib
 
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion -Wno-unused-result -Wno-unused-but-set-variable
-FAST_CFLAGS = -O3 -DNDEBUG 
+FAST_CFLAGS = -O3 -DNDEBUG -Wno-unused-variable
 DEV_CFLAGS = -ggdb -O0 -gdwarf-4 -DSINGLE_THREADED
 #DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
-PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG 
+PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
   CC = g++
@@ -36,24 +36,24 @@ endif
 all: dev
 
 .PHONY: fast
-fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
+fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES)
 fast: main extras__
 
-.PHONY: dev 
-dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
+.PHONY: dev
+dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES)
 dev: main extras__
     @echo "COMPILE FINISHED: DEBUG MODE. RUN MAKE FAST FOR PERFORMANCE"
 
 .PHONY: profile
-profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES) 
+profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES)
 profile: main extras__
 
 .PHONY: extras
-extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES) 
+extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES)
 extras: extras__
 
 .PHONY: release
-release: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES) 
+release: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES)
 release: fast extras__
 
 .PHONY: x
@@ -73,14 +73,14 @@ clean:
 	@-$(RM) $(WARTHOG_OBJ)
 
 .PHONY: main
-main: makedirs warthog 
+main: makedirs warthog
 	@echo "linking..."
 	$(CC) programs/warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/roadhog.cpp -o ./bin/roadhog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/mapf.cpp -o ./bin/mapf -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
 .PHONY: extras__
-extras__: makedirs warthog 
+extras__: makedirs warthog
 	@echo "linking..."
 	$(CC) programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
@@ -104,8 +104,7 @@ warthog: $(WARTHOG_OBJ)
 
 -include $(WARTHOG_OBJ:.o=.d)
 
-$(WARTHOG_OBJ): 
+$(WARTHOG_OBJ):
 	@echo "compiling..."
-	$(CC) -c $(@:.o=.cpp) $(CFLAGS) -MM -MP -MT $(dir $(@))$(notdir $(@)) -MF $(@:.o=.d) 
-	$(CC) -c $(@:.o=.cpp) -o $(@) $(CFLAGS) 
-
+	$(CC) -c $(@:.o=.cpp) $(CFLAGS) -MM -MP -MT $(dir $(@))$(notdir $(@)) -MF $(@:.o=.d)
+	$(CC) -c $(@:.o=.cpp) -o $(@) $(CFLAGS)

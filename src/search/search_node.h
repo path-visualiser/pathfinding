@@ -15,7 +15,7 @@
 
 namespace warthog
 {
-	
+
 class search_node
 {
 	public:
@@ -64,17 +64,17 @@ class search_node
 		get_id() const { return id_; }
 
 		inline void
-		set_id(warthog::sn_id_t id) 
-		{ 
+		set_id(warthog::sn_id_t id)
+		{
 			id_ = id;
-		} 
+		}
 
 		inline bool
 		get_expanded() const { return status_; }
 
 		inline void
-		set_expanded(bool expanded) 
-		{ 
+		set_expanded(bool expanded)
+		{
             status_ = expanded;
 		}
 
@@ -82,13 +82,13 @@ class search_node
 		get_parent() const { return parent_id_; }
 
 		inline void
-		set_parent(warthog::sn_id_t parent_id) { parent_id_ = parent_id; } 
+		set_parent(warthog::sn_id_t parent_id) { parent_id_ = parent_id; }
 
 		inline uint32_t
 		get_priority() const { return priority_; }
 
 		inline void
-		set_priority(uint32_t priority) { priority_ = priority; } 
+		set_priority(uint32_t priority) { priority_ = priority; }
 
 		inline double
 		get_g() const { return g_; }
@@ -96,7 +96,7 @@ class search_node
 		inline void
 		set_g(double g) { g_ = g; }
 
-		inline double 
+		inline double
 		get_f() const { return f_; }
 
 		inline void
@@ -227,7 +227,7 @@ class search_node
         get_refcount() { return refcount_; }
 
 	private:
-		warthog::sn_id_t id_; 
+		warthog::sn_id_t id_;
         warthog::sn_id_t parent_id_;
 
 		double g_;

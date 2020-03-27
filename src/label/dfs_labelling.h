@@ -3,8 +3,8 @@
 
 // label/dfs_labelling.h
 //
-// Collects a variety of different labels that we can compute for 
-// the down-closure of a node. Intended for use with forward-driven 
+// Collects a variety of different labels that we can compute for
+// the down-closure of a node. Intended for use with forward-driven
 // contraction hierarchies.
 //
 // Current edge labels:
@@ -12,10 +12,10 @@
 //
 //  - bounding box: a rectangular bounding box that contains every
 //  node in the down closure of each edge
-//  
+//
 // @author: dharabor
 // @created: 2017-12-06
-// 
+//
 
 #include "contraction/contraction.h"
 #include "util/geom.h"
@@ -36,7 +36,7 @@ namespace label
 struct dfs_label
 {
     typedef uint8_t T_FLAG;
-    dfs_label() { } 
+    dfs_label() { }
 
     dfs_label&
     operator=(const dfs_label& other)
@@ -66,7 +66,7 @@ operator>>(std::istream& in, warthog::label::dfs_label& label);
 std::ostream&
 operator<<(std::ostream& out, warthog::label::dfs_label& label);
 
-class dfs_labelling 
+class dfs_labelling
 {
     friend std::ostream&
     operator<<(std::ostream& out, dfs_labelling& lab);
@@ -75,14 +75,14 @@ class dfs_labelling
     operator>>(std::istream& in, warthog::label::dfs_labelling& lab);
 
     public:
-    
+
         dfs_labelling(warthog::ch::ch_data*);
 
         ~dfs_labelling();
 
         inline warthog::ch::ch_data*
-        get_ch_data() 
-        { 
+        get_ch_data()
+        {
             return chd_;
         }
 
@@ -102,7 +102,7 @@ class dfs_labelling
             size_t retval = sizeof(this);
             for(uint32_t i = 0; i < lab_->size(); i++)
             {
-                retval += (sizeof(dfs_label) ) 
+                retval += (sizeof(dfs_label) )
                     * lab_->at(i).size();
             }
             retval += sizeof(int32_t) * dfs_order_->size();
@@ -121,25 +121,22 @@ class dfs_labelling
         warthog::graph::xy_graph* g_;
         std::vector<uint32_t>* level_;
 
-        uint32_t apex_id_; 
+        uint32_t apex_id_;
 
         std::vector<uint32_t>* dfs_order_;
         std::vector< std::vector< dfs_label >>* lab_;
-        
+
         // Computes a DFS post-order id for every node in a contraction
         // hierarchy (i.e. a top-down traversal)
         // @param id of the highest node in the contraction hierarchy
         uint32_t
-        compute_dfs_postorder_ids_ch(
-                warthog::graph::xy_graph* g, 
-                std::vector<uint32_t>* rank, 
-                std::vector<uint32_t>* dfs_ids);
+        compute_dfs_postorder_ids_ch(std::vector<uint32_t>* dfs_ids);
 
         // Perform a DFS traversal through the contraction hierarchy
-        // and compute a bounding box for each up and down edge. 
+        // and compute a bounding box for each up and down edge.
         // For down edges, the box contains all nodes in the down closure.
         // For up edges, the box contains all nodes in the up closure C
-        // PLUS for every node n \in C, the set of nodes found in the down 
+        // PLUS for every node n \in C, the set of nodes found in the down
         // closure for n.
         //
         // @param workload specifies which nodes to
@@ -159,4 +156,3 @@ operator<<(std::ostream& in, warthog::label::dfs_labelling& lab);
 }
 
 #endif
-

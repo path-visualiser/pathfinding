@@ -7,7 +7,7 @@
 #include "xy_graph.h"
 
 warthog::ch::fixed_graph_contraction::fixed_graph_contraction()
-    :  heuristic_(0), filter_(0), expander_(0), open_(0), alg_(0)
+//    :  heuristic_(0), filter_(0), expander_(0), open_(0), alg_(0)
 {
 }
 
@@ -16,8 +16,10 @@ warthog::ch::fixed_graph_contraction::~fixed_graph_contraction()
     delete alg_;
     delete filter_;
     delete heuristic_;
-    delete expander_;
-    delete open_;
+    //delete expander_;
+    //delete open_;
+    delete fexpander_;
+    delete bexpander_;
 }
 
 
@@ -33,23 +35,33 @@ warthog::ch::fixed_graph_contraction::preliminaries(
 
     order_index_ = 0;
 
-    delete filter_;
-    filter_ = new warthog::apriori_filter((uint32_t)get_graph()->get_num_nodes());
+//    delete filter_;
+    filter_ = new warthog::apriori_filter(get_graph());
 
-    delete expander_;
-    expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
-        (get_graph(), filter_);
+//    delete expander_;
+//    expander_ = new warthog::graph_expansion_policy< warthog::apriori_filter >
+//        (get_graph(), filter_);
 
-    delete open_;
-    open_ = new warthog::pqueue_min();
+//    delete open_;
+//    open_ = new warthog::pqueue_min();
 
-    delete heuristic_;
+//    delete heuristic_;
     heuristic_ = new warthog::zero_heuristic();
-    alg_ = new flexible_astar<
-                    warthog::zero_heuristic,
-                    warthog::graph_expansion_policy<warthog::apriori_filter>,
-                    warthog::pqueue_min>
-                        (heuristic_, expander_, open_);
+
+//    alg_ = new flexible_astar<
+//                    warthog::zero_heuristic,
+//                    warthog::graph_expansion_policy<warthog::apriori_filter>,
+//                    warthog::pqueue_min>
+//                        (heuristic_, expander_, open_);
+
+    fexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
+                g_, filter_);
+    bexpander_ = new warthog::graph_expansion_policy<warthog::apriori_filter>(
+                g_, filter_);
+
+    alg_ = new bidirectional_search< warthog::zero_heuristic,
+                 warthog::graph_expansion_policy<warthog::apriori_filter>>(
+                         fexpander_, bexpander_, heuristic_);
 }
 
 void
@@ -119,7 +131,7 @@ warthog::ch::fixed_graph_contraction::contract(
             if(filter_->get_flag(e_in.node_id_)) { continue; }
 
             double max_cost = e_in.wt_ + max_outgoing_wt;
-            witness_search(e_in.node_id_, warthog::INF32, max_cost, max_expand);
+            //witness_search(e_in.node_id_, warthog::INF32, max_cost, max_expand);
 
             for(uint32_t j = 0; j < n->out_degree(); j++)
             {
@@ -127,11 +139,11 @@ warthog::ch::fixed_graph_contraction::contract(
                 if(e_in.node_id_ == e_out.node_id_) { continue; }
                 if(filter_->get_flag(e_out.node_id_)) { continue; }
 
-                //double witness_len = 
-                //    witness_search(e_in.node_id_,  e_out.node_id_, max_cost, max_expand);
-                warthog::search_node* nei = 
-                     alg_->get_generated_node(e_out.node_id_);
-                double witness_len = nei ? nei->get_g() : warthog::INF32;
+                double witness_len = 
+                    witness_search(e_in.node_id_,  e_out.node_id_, max_cost, max_expand);
+                //warthog::search_node* nei = 
+                //     alg_->get_generated_node(e_out.node_id_);
+                //double witness_len = nei ? nei->get_g() : warthog::INF32;
                 double via_len = e_in.wt_ + e_out.wt_;
 
                 if(witness_len > via_len)
@@ -140,7 +152,9 @@ warthog::ch::fixed_graph_contraction::contract(
                     {
                         std::cerr << "bypassing " << cid 
                         << "; " << e_in.node_id_ << " to "
-                        << e_out.node_id_ << " cost " << via_len << std::endl;
+                        << e_out.node_id_ 
+                        << "; bypass cost " << witness_len 
+                        << " via cost " << via_len << std::endl;
                     }
                     eadd++;
 
@@ -233,7 +247,7 @@ warthog::ch::fixed_graph_contraction::witness_search(
     alg_->set_max_expansions_cutoff(max_expand);
     warthog::problem_instance pi(ext_from_id, ext_to_id);
     warthog::solution sol;
-    alg_->get_distance(pi, sol);
+    alg_->get_pathcost(pi, sol);
 
     // metrics
     total_expansions_ += sol.nodes_expanded_;

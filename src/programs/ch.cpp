@@ -18,7 +18,7 @@ warthog::util::cfg cfg;
 void
 help()
 {
-    std::cerr 
+    std::cerr
         << "=>  manual <== \n"
         << "This program creates a contraction hierarchy from an xy input graph \n"
         << "(a custom format, similar to that used at the 9th DIMACS challenge)\n";
@@ -30,10 +30,10 @@ help()
     << "\t          slow but can produce less shortcut edges)\n";
 }
 
-void 
+void
 contract_graph()
 {
-    warthog::ch::ch_data chd;
+    warthog::ch::ch_data chd(true);
     std::string outfile;
     std::string xy_file;
 
@@ -42,7 +42,7 @@ contract_graph()
     {
         xy_file = cfg.get_param_value("input");
         std::ifstream ifs(xy_file);
-        warthog::graph::read_xy(ifs, *chd.g_, true);
+        ifs >> *chd.g_;
         chd.g_->set_filename(xy_file.c_str());
         chd.up_degree_->resize(chd.g_->get_num_nodes(), 0);
     }
@@ -59,7 +59,7 @@ contract_graph()
         std::string orderfile = cfg.get_param_value("order");
         if(orderfile == "")
         {
-            std::cerr 
+            std::cerr
                   << "err; fixed order requires input file."
                   << " syntax: --order fixed [node order file]\n";
             return;
@@ -79,7 +79,7 @@ contract_graph()
 
         // assign a level to every node based on its contraction order
         // NB: we need to swap the index/value pairs s.t. we end up with
-        // the level of each node rather than a sequential list that 
+        // the level of each node rather than a sequential list that
         // specifies the order in which each node was contracted
         // i.e. level[order[i]] = i;
         chd.level_->resize(chd.g_->get_num_nodes(), chd.g_->get_num_nodes()-1);
@@ -116,7 +116,7 @@ int main(int argc, char** argv)
 {
 
 	// parse arguments
-	warthog::util::param valid_args[] = 
+	warthog::util::param valid_args[] =
 	{
 		{"verbose", no_argument, &verbose, 1},
 		{"verify", no_argument, &verify, 1},

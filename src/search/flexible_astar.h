@@ -3,7 +3,7 @@
 
 // flexible_astar.h
 //
-// A* implementation that allows arbitrary combinations of 
+// A* implementation that allows arbitrary combinations of
 // (weighted) heuristic functions and node expansion policies.
 // This implementation uses a binary heap for the open_ list
 // and a bit array for the closed_ list.
@@ -11,7 +11,7 @@
 // TODO: is it better to store a separate closed list and ungenerate nodes
 // or use more memory and not ungenerate until the end of search??
 // 32bytes vs... whatever unordered_map overhead is a two integer key/value pair
-// 
+//
 // @author: dharabor
 // @created: 21/08/2012
 //
@@ -35,15 +35,15 @@ namespace warthog
 
 // H is a heuristic function
 // E is an expansion policy
-template< class H, 
-          class E, 
+template< class H,
+          class E,
           class Q = warthog::pqueue_min,
           class L = warthog::dummy_listener >
 class flexible_astar: public warthog::search
 {
 	public:
 		flexible_astar(H* heuristic, E* expander, Q* queue, L* listener = 0) :
-            heuristic_(heuristic), expander_(expander), open_(queue), 
+            heuristic_(heuristic), expander_(expander), open_(queue),
             listener_(listener)
 		{
             cost_cutoff_ = warthog::COST_MAX;
@@ -54,7 +54,7 @@ class flexible_astar: public warthog::search
 		virtual ~flexible_astar() { }
 
         virtual void
-		get_distance(
+		get_pathcost(
                 warthog::problem_instance& instance, warthog::solution& sol)
         {
 
@@ -97,9 +97,9 @@ class flexible_astar: public warthog::search
                     {
                         int32_t x, y;
                         expander_->get_xy(state, x, y);
-                        std::cerr 
+                        std::cerr
                             << "final path: (" << x << ", " << y << ")...";
-                        warthog::search_node* n = 
+                        warthog::search_node* n =
                             expander_->generate(state);
                         assert(n->get_search_number() == pi_.instance_id_);
                         n->print(std::cerr);
@@ -109,7 +109,7 @@ class flexible_astar: public warthog::search
                 #endif
             }
 		}
-        
+
         // return a list of the nodes expanded during the last search
         // @param coll: an empty list
         void
@@ -118,15 +118,15 @@ class flexible_astar: public warthog::search
             for(size_t i = 0; i < expander_->get_nodes_pool_size(); i++)
             {
                 warthog::search_node* current = expander_->generate(i);
-                if(current->get_search_number() == pi_.instance_id_) 
-                { 
+                if(current->get_search_number() == pi_.instance_id_)
+                {
                     coll.push_back(current);
                 }
             }
         }
 
         // return a pointer to the warthog::search_node object associated
-        // with node @param id. If this node was not generate during the 
+        // with node @param id. If this node was not generate during the
         // last search instance, 0 is returned instead
         warthog::search_node*
         get_generated_node(warthog::sn_id_t id)
@@ -148,7 +148,7 @@ class flexible_astar: public warthog::search
         }
 
         // set a cost-cutoff to run a bounded-cost A* search.
-        // the search terminates when the target is found or the f-cost 
+        // the search terminates when the target is found or the f-cost
         // limit is reached.
         inline void
         set_cost_cutoff(warthog::cost_t cutoff) { cost_cutoff_ = cutoff; }
@@ -162,19 +162,19 @@ class flexible_astar: public warthog::search
         inline void
         set_max_expansions_cutoff(uint32_t cutoff) { exp_cutoff_ = cutoff; }
 
-        inline uint32_t 
-        get_max_expansions_cutoff() { return exp_cutoff_; }  
+        inline uint32_t
+        get_max_expansions_cutoff() { return exp_cutoff_; }
 
         void
-        set_listener(L* listener) 
+        set_listener(L* listener)
         { listener_ = listener; }
 
 		virtual inline size_t
 		mem()
 		{
-			size_t bytes = 
+			size_t bytes =
 				// memory for the priority quete
-				open_->mem() + 
+				open_->mem() +
 				// gridmap size and other stuff needed to expand nodes
 				expander_->mem() +
                 // heuristic uses some memory too
@@ -194,12 +194,12 @@ class flexible_astar: public warthog::search
         warthog::problem_instance pi_;
 
         // early termination limits
-        warthog::cost_t cost_cutoff_; 
+        warthog::cost_t cost_cutoff_;
         uint32_t exp_cutoff_;
 
 		// no copy ctor
-		flexible_astar(const flexible_astar& other) { } 
-		flexible_astar& 
+		flexible_astar(const flexible_astar& other) { }
+		flexible_astar&
 		operator=(const flexible_astar& other) { return *this; }
 
 		warthog::search_node*
@@ -214,8 +214,8 @@ class flexible_astar: public warthog::search
 
             // get the internal target id
             if(pi_.target_id_ != warthog::SN_ID_MAX)
-            { 
-                warthog::search_node* target = 
+            {
+                warthog::search_node* target =
                     expander_->generate_target_node(&pi_);
                 if(!target) { return 0; } // invalid target location
                 pi_.target_id_ = target->get_id();
@@ -225,16 +225,17 @@ class flexible_astar: public warthog::search
             // initialise and push the start node
             if(pi_.start_id_ == warthog::SN_ID_MAX) { return 0; }
             start = expander_->generate_start_node(&pi_);
+            assert(start->get_search_number() != pi_.instance_id_);
             if(!start) { return 0; } // invalid start location
             pi_.start_id_ = start->get_id();
 
-			start->init(pi_.instance_id_, warthog::SN_ID_MAX, 
+			start->init(pi_.instance_id_, warthog::SN_ID_MAX,
                     0, heuristic_->h(pi_.start_id_, pi_.target_id_));
 
 			open_->push(start);
             sol.nodes_inserted_++;
-            
-            listener_->generate_node(start, 0, 0, UINT32_MAX);
+
+            listener_->generate_node(0, start, 0, UINT32_MAX);
 
 			#ifndef NDEBUG
 			if(pi_.verbose_) { pi_.print(std::cerr); std:: cerr << "\n";}
@@ -243,6 +244,11 @@ class flexible_astar: public warthog::search
             // begin expanding
 			while(open_->size())
 			{
+                // early termination: in case we want bounded-cost
+                // search or if we want to impose some memory limit
+                if(open_->peek()->get_f() > cost_cutoff_) { break; }
+                if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
+
 				warthog::search_node* current = open_->pop();
 				current->set_expanded(true); // NB: set before generating
 				assert(current->get_expanded());
@@ -255,19 +261,13 @@ class flexible_astar: public warthog::search
                     target = current;
                     break;
                 }
-                    
-                // early termination: in case we want bounded-cost 
-                // search or if we want to impose some memory limit
-                if(current->get_f() > cost_cutoff_) { break; } 
-                if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
-
 
 				#ifndef NDEBUG
 				if(pi_.verbose_)
 				{
 					int32_t x, y;
                     expander_->get_xy(current->get_id(), x, y);
-					std::cerr 
+					std::cerr
                         << sol.nodes_expanded_
                         << ". expanding ("<<x<<", "<<y<<")...";
 					current->print(std::cerr);
@@ -280,19 +280,19 @@ class flexible_astar: public warthog::search
 				warthog::search_node* n = 0;
 				warthog::cost_t cost_to_n = 0;
                 uint32_t edge_id = 0;
-				for(expander_->first(n, cost_to_n); 
+				for(expander_->first(n, cost_to_n);
 						n != 0;
 					   	expander_->next(n, cost_to_n))
 				{
                     sol.nodes_touched_++;
-                    listener_->generate_node(n, current, cost_to_n, edge_id++);
-                    
+                    listener_->generate_node(current, n, cost_to_n, edge_id++);
+
                     // add new nodes to the fringe
                     if(n->get_search_number() != current->get_search_number())
                     {
 						warthog::cost_t gval = current->get_g() + cost_to_n;
                         n->init(current->get_search_number(), current->get_id(),
-                            gval, 
+                            gval,
                             gval + heuristic_->h(n->get_id(),pi_.target_id_));
 
                         open_->push(n);
@@ -303,8 +303,8 @@ class flexible_astar: public warthog::search
                         {
                             int32_t nx, ny;
                             expander_->get_xy(n->get_id(), nx, ny);
-                            std::cerr 
-                                << "  generating (edgecost=" 
+                            std::cerr
+                                << "  generating (edgecost="
                                 << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
                             n->print(std::cerr);
                             std::cerr << std::endl;
@@ -323,7 +323,7 @@ class flexible_astar: public warthog::search
                         {
                             int32_t x, y;
                             expander_->get_xy(n->get_id(), x, y);
-                            std::cerr << "  closed; (edgecost=" 
+                            std::cerr << "  closed; (edgecost="
                                 << cost_to_n << ") ("<<x<<", "<<y<<")...";
                             n->print(std::cerr);
                             std::cerr << std::endl;
@@ -347,7 +347,7 @@ class flexible_astar: public warthog::search
 							{
 								int32_t x, y;
                                 expander_->get_xy(n->get_id(), x, y);
-								std::cerr 
+								std::cerr
                                     << "  open; updating (edgecost="
                                     << cost_to_n<<") ("<<x<<", "<<y<<")...";
 								n->print(std::cerr);
@@ -363,8 +363,8 @@ class flexible_astar: public warthog::search
 							{
 								int32_t x, y;
                                 expander_->get_xy(n->get_id(), x, y);
-								std::cerr 
-                                    << "  open; not updating (edgecost=" 
+								std::cerr
+                                    << "  open; not updating (edgecost="
                                     << cost_to_n<< ") ("<<x<<", "<<y<<")...";
 								n->print(std::cerr);
 								std::cerr << std::endl;
@@ -382,9 +382,9 @@ class flexible_astar: public warthog::search
             #ifndef NDEBUG
             if(pi_.verbose_)
             {
-                if(target == 0) 
+                if(target == 0)
                 {
-                    std::cerr 
+                    std::cerr
                         << "search failed; no solution exists " << std::endl;
                 }
                 else
@@ -405,4 +405,3 @@ class flexible_astar: public warthog::search
 }
 
 #endif
-

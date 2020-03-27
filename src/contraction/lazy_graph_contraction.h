@@ -34,6 +34,7 @@
 #include "ch_data.h"
 #include "constants.h"
 #include "contraction.h"
+#include "flexible_astar.h"
 #include "heap.h"
 #include "solution.h"
 #include "bidirectional_search.h"
@@ -112,7 +113,7 @@ class lazy_graph_contraction
 
         // these objects get recycled across all witness searches
         warthog::solution sol_;
-        std::vector<uint32_t> uc_neis_;
+        std::set<uint32_t> uc_neis_;
 
         // a variety of "node importance values" are computed for each node
         // in order to determine the order of contraction
@@ -166,14 +167,25 @@ class lazy_graph_contraction
 
         // witness search stuff
         uint32_t ws_max_expansions_; 
-        warthog::euclidean_heuristic* heuristic_;
+        //warthog::euclidean_heuristic* heuristic_;
+        warthog::zero_heuristic* heuristic_;
         warthog::graph_expansion_policy<warthog::apriori_filter>* fexpander_;
         warthog::graph_expansion_policy<warthog::apriori_filter>* bexpander_;
         warthog::apriori_filter* c_filter_; // track contractions 
         warthog::apriori_filter* u_filter_; // track updates
         warthog::bidirectional_search<
-            warthog::euclidean_heuristic,
+            //warthog::euclidean_heuristic,
+            warthog::zero_heuristic,
             warthog::graph_expansion_policy<warthog::apriori_filter>>* alg_;
+
+//        warthog::graph_expansion_policy<warthog::apriori_filter>* expander_;
+//        warthog::pqueue_min* open_;
+//        warthog::flexible_astar<
+//           warthog::zero_heuristic,
+//           warthog::graph_expansion_policy<warthog::apriori_filter>,
+//           warthog::pqueue_min>* alg2_;
+
+
 
         // metrics
         uint64_t total_expansions_;
@@ -190,7 +202,7 @@ class lazy_graph_contraction
         next(bool verify_priorities, uint32_t c_pct);
 
         double
-        witness_search(uint32_t from_id, uint32_t to_id, double via_len);
+        witness_search(uint32_t from_id, uint32_t to_id, double via_len, bool resume);
 
         int32_t
         compute_contraction_priority(niv_metrics& niv);

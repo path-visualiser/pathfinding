@@ -58,7 +58,7 @@ class cpd_search : public warthog::search
     virtual ~cpd_search() { }
 
     virtual void
-    get_distance(
+    get_pathcost(
         warthog::problem_instance& instance, warthog::solution& sol)
     {
         sol.reset();

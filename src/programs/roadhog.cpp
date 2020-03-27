@@ -1,6 +1,6 @@
-// programs/roadhog.cpp 
+// programs/roadhog.cpp
 //
-// Pulls together a variety of different algorithms for 
+// Pulls together a variety of different algorithms for
 // routing on road graphs.
 //
 // @author: dharabor
@@ -10,6 +10,7 @@
 #include "anytime_astar.h"
 #include "apex_filter.h"
 #include "bb_filter.h"
+#include "bb_labelling.h"
 #include "bch_search.h"
 #include "bch_expansion_policy.h"
 #include "bch_bb_expansion_policy.h"
@@ -23,7 +24,6 @@
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "fch_bb_expansion_policy.h"
-#include "fch_dfs_expansion_policy.h"
 #include "fch_expansion_policy.h"
 #include "fixed_graph_contraction.h"
 #include "flexible_astar.h"
@@ -34,6 +34,7 @@
 #include "xy_graph.h"
 #include "solution.h"
 #include "timer.h"
+#include "workload_manager.h"
 #include "zero_heuristic.h"
 
 #include "getopt.h"
@@ -60,7 +61,7 @@ long nruns = 1;
 void
 help()
 {
-	std::cerr 
+	std::cerr
     << "==> manual <==\n"
     << "This program solves point-to-point pathfinding problems on road networks.\n"
     << "Road networks are specified as xy-graphs and collections of instances are \n"
@@ -78,15 +79,15 @@ help()
 	<< "\t--verbose (print debug info; omitting this param means no)\n"
 	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
-    << "\tastar, dijkstra, bi-astar, bi-dijkstra\n"
-    << "\tbch, bch-astar, bch-bb, fch, fch-bb-dfs\n"
+    << "\tastar, astar-bb, dijkstra, bi-astar, bi-dijkstra\n"
+    << "\tbch, bch-astar, bch-bb, fch, fch-bb\n"
     << "\tdfs, cpd, cpd-search\n";
 }
 
 ////////////////////////////////////////////////////////////////////////////
-// ----- These two closures were useful once upon a time. Maybe again? --- 
+// ----- These two closures were useful once upon a time. Maybe again? ---
 ////////////////////////////////////////////////////////////////////////////
-//    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+//    std::function<uint32_t(warthog::search_node*)> fn_get_apex =
 //        [&order] (warthog::search_node* n) -> uint32_t
 //        {
 //            while(true)
@@ -99,7 +100,7 @@ help()
 //            return order.at(n->get_id());
 //        };
 //
-//    std::function<uint32_t(uint32_t)> fn_redundant_expansions = 
+//    std::function<uint32_t(uint32_t)> fn_redundant_expansions =
 //        [&fexp, &order, &alg] (uint32_t apex) -> uint32_t
 //        {
 //            std::set<uint32_t> tmp;
@@ -107,7 +108,7 @@ help()
 //            {
 //                warthog::search_node* n = fexp.get_ptr(i, alg.get_search_id());
 //                if(n && order.at(n->get_id()) > apex)
-//                { 
+//                {
 //                    tmp.insert(n->get_id());
 //                }
 //            }
@@ -134,7 +135,7 @@ help()
 //        };
 
 void
-run_experiments( warthog::search* algo, std::string alg_name, 
+run_experiments( warthog::search* algo, std::string alg_name,
         warthog::dimacs_parser& parser, std::ostream& out)
 {
     std::cerr << "running experiments\n";
@@ -142,54 +143,54 @@ run_experiments( warthog::search* algo, std::string alg_name,
 
     if(!suppress_header)
     {
-        std::cout 
+        std::cout
             << "id\talg\texpanded\tinserted\tupdated\ttouched\tsurplus"
             << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
-    for(auto it = parser.experiments_begin(); 
-            it != parser.experiments_end(); 
+    for(auto it = parser.experiments_begin();
+            it != parser.experiments_end();
             it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
         warthog::solution sol;
-        uint32_t start_id = exp.source;
-        uint32_t target_id = exp.p2p ? exp.target : warthog::INF32;
+        warthog::sn_id_t start_id = exp.source;
+        warthog::sn_id_t target_id = exp.p2p ? exp.target : warthog::SN_ID_MAX;
         warthog::problem_instance pi(start_id, target_id, verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0, surplus=0;
         double nano_time = DBL_MAX;
         for(uint32_t i = 0; i < nruns; i++)
         {
             sol.reset();
-            algo->get_distance(pi, sol);
+            algo->get_path(pi, sol);
 
             expanded += sol.nodes_expanded_;
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
             surplus += sol.nodes_surplus_;
-            nano_time = nano_time < sol.time_elapsed_nano_ 
+            nano_time = nano_time < sol.time_elapsed_nano_
                             ?  nano_time : sol.time_elapsed_nano_;
         }
 
         out
-            << exp_id++ <<"\t" 
-            << alg_name << "\t" 
-            << expanded / nruns << "\t" 
+            << exp_id++ <<"\t"
+            << alg_name << "\t"
+            << expanded / nruns << "\t"
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
             << surplus / nruns << "\t"
             << nano_time << "\t" /// (double)nruns << "\t"
-            << sol.sum_of_edge_costs_ << "\t" 
-            << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t" 
-            << parser.get_problemfile() 
+            << sol.sum_of_edge_costs_ << "\t"
+            << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t"
+            << parser.get_problemfile()
             << std::endl;
     }
 }
 
 void
-run_experiments( std::function<void(warthog::problem_instance*, warthog::solution*)>& algo_fn, 
+run_experiments( std::function<void(warthog::problem_instance*, warthog::solution*)>& algo_fn,
         std::string alg_name, warthog::dimacs_parser& parser, std::ostream& out)
 {
     std::cerr << "running experiments\n";
@@ -197,19 +198,19 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
 
     if(!suppress_header)
     {
-        std::cout 
+        std::cout
             << "id\talg\texpanded\tinserted\tupdated\ttouched\tsurplus"
             << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
-    for(auto it = parser.experiments_begin(); 
-            it != parser.experiments_end(); 
+    for(auto it = parser.experiments_begin();
+            it != parser.experiments_end();
             it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
         warthog::solution sol;
-        uint32_t start_id = exp.source;
-        uint32_t target_id = exp.p2p ? exp.target : warthog::INF32;
+        warthog::sn_id_t start_id = exp.source;
+        warthog::sn_id_t target_id = exp.p2p ? exp.target : warthog::INF32;
         warthog::problem_instance pi(start_id, target_id, verbose);
         uint32_t expanded=0, inserted=0, updated=0, touched=0, surplus=0;
         double nano_time = DBL_MAX;
@@ -223,28 +224,28 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
             surplus += sol.nodes_surplus_;
-            nano_time = nano_time < sol.time_elapsed_nano_ 
+            nano_time = nano_time < sol.time_elapsed_nano_
                             ?  nano_time : sol.time_elapsed_nano_;
         }
 
         out
-            << exp_id++ <<"\t" 
-            << alg_name << "\t" 
-            << expanded / nruns << "\t" 
+            << exp_id++ <<"\t"
+            << alg_name << "\t"
+            << expanded / nruns << "\t"
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
             << surplus / nruns << "\t"
             << nano_time << "\t" /// (double)nruns << "\t"
-            << sol.sum_of_edge_costs_ << "\t" 
-            << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t" 
-            << parser.get_problemfile() 
+            << sol.sum_of_edge_costs_ << "\t"
+            << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t"
+            << parser.get_problemfile()
             << std::endl;
     }
 }
 
 void
-run_astar(warthog::util::cfg& cfg, 
+run_astar(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string xy_filename = cfg.get_param_value("input");
@@ -256,23 +257,87 @@ run_astar(warthog::util::cfg& cfg,
 
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
 
     warthog::simple_graph_expansion_policy expander(&g);
     warthog::euclidean_heuristic h(&g);
     warthog::pqueue_min open;
 
     warthog::flexible_astar<
-        warthog::euclidean_heuristic, 
-        warthog::simple_graph_expansion_policy, 
-        warthog::pqueue_min> 
+        warthog::euclidean_heuristic,
+        warthog::simple_graph_expansion_policy,
+        warthog::pqueue_min>
             alg(&h, &expander, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
-run_dijkstra(warthog::util::cfg& cfg, 
+run_astar_bb(warthog::util::cfg& cfg,
+    warthog::dimacs_parser& parser, std::string alg_name)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    warthog::graph::xy_graph g;
+    std::ifstream ifs(xy_filename);
+    ifs >> g;
+    ifs.close();
+
+    warthog::label::bb_labelling lab(&g);
+    std::string label_filename = xy_filename + ".label.bb";
+
+    ifs.open(label_filename.c_str());
+    if(ifs.is_open())
+    {
+        ifs >> lab;
+        ifs.close();
+    }
+    else
+    {
+        warthog::util::workload_manager workload(g.get_num_nodes());
+        workload.set_all_flags(true);
+        lab.precompute(&workload);
+
+        warthog::timer t;
+        t.start();
+        std::cerr << "saving precompute data to "
+            << label_filename << "...\n";
+
+        std::ofstream ofs(label_filename,
+                std::ios_base::out|std::ios_base::binary);
+        ofs << lab;
+        if(!ofs.good())
+        {
+            std::cerr << "\nerror trying to write to file "
+                << label_filename << std::endl;
+        }
+        ofs.close();
+        t.stop();
+        std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
+
+    }
+
+    warthog::bb_filter bbf(&lab);
+    warthog::graph_expansion_policy<warthog::bb_filter> expander(&g, &bbf);
+    warthog::euclidean_heuristic h(&g);
+    warthog::pqueue_min open;
+
+    warthog::flexible_astar<
+        warthog::euclidean_heuristic,
+        warthog::graph_expansion_policy<warthog::bb_filter>,
+        warthog::pqueue_min>
+            alg(&h, &expander, &open);
+
+    run_experiments(&alg, alg_name, parser, std::cout);
+}
+
+void
+run_dijkstra(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name )
 {
     // load up the graph
@@ -284,23 +349,23 @@ run_dijkstra(warthog::util::cfg& cfg,
     }
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
 
     warthog::simple_graph_expansion_policy expander(&g);
     warthog::zero_heuristic h;
     warthog::pqueue<warthog::cmp_less_search_node_f_only, warthog::min_q> open;
 
     warthog::flexible_astar<
-        warthog::zero_heuristic, 
-        warthog::simple_graph_expansion_policy, 
-        warthog::pqueue<warthog::cmp_less_search_node_f_only, warthog::min_q>> 
+        warthog::zero_heuristic,
+        warthog::simple_graph_expansion_policy,
+        warthog::pqueue<warthog::cmp_less_search_node_f_only, warthog::min_q>>
             alg(&h, &expander, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
-run_bi_astar( warthog::util::cfg& cfg, 
+run_bi_astar( warthog::util::cfg& cfg,
         warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string xy_filename = cfg.get_param_value("input");
@@ -312,7 +377,8 @@ run_bi_astar( warthog::util::cfg& cfg,
 
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g, true);
+    ifs >> g;
+    ifs.close();
 
     warthog::bidirectional_graph_expansion_policy fexp(&g, false);
     warthog::bidirectional_graph_expansion_policy bexp(&g, true);
@@ -320,7 +386,7 @@ run_bi_astar( warthog::util::cfg& cfg,
     warthog::euclidean_heuristic h(&g);
     warthog::bidirectional_search<
         warthog::euclidean_heuristic,
-        warthog::bidirectional_graph_expansion_policy> 
+        warthog::bidirectional_graph_expansion_policy>
             alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
@@ -337,9 +403,9 @@ run_bi_dijkstra( warthog::util::cfg& cfg,
         return;
     }
 
+    warthog::graph::xy_graph g(0, "", true);
     std::ifstream ifs(xy_filename);
-    warthog::graph::xy_graph g;
-    warthog::graph::read_xy(ifs, g, true);
+    ifs >> g;
     ifs.close();
 
     warthog::bidirectional_graph_expansion_policy fexp(&g, false);
@@ -356,7 +422,7 @@ run_bi_dijkstra( warthog::util::cfg& cfg,
 
 
 void
-run_bch(warthog::util::cfg& cfg, 
+run_bch(warthog::util::cfg& cfg,
         warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string chd_file = cfg.get_param_value("input");
@@ -378,20 +444,19 @@ run_bch(warthog::util::cfg& cfg,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy fexp(chd.g_);
     warthog::bch_expansion_policy bexp (chd.g_, true);
     warthog::zero_heuristic h;
     warthog::bch_search<
-        warthog::zero_heuristic, 
-        warthog::bch_expansion_policy> 
+        warthog::zero_heuristic,
+        warthog::bch_expansion_policy>
             alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
-run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name)
 {
     std::string chd_file = cfg.get_param_value("input");
@@ -413,15 +478,14 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     warthog::bch_expansion_policy bexp (chd.g_, true);
     warthog::zero_heuristic h;
     warthog::pqueue_min open;
 
     warthog::flexible_astar<
-        warthog::zero_heuristic, 
+        warthog::zero_heuristic,
         warthog::bch_expansion_policy,
-        warthog::pqueue_min> 
+        warthog::pqueue_min>
             alg(&h, &bexp, &open);
 
     std::cerr << "running experiments\n";
@@ -429,13 +493,13 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 
     if(!suppress_header)
     {
-        std::cout 
+        std::cout
             << "id\talg\texpanded\tinserted\tupdated\ttouched"
             << "\tnanos\tpcost\tplen\tmap\n";
     }
     uint32_t exp_id = 0;
-    for(auto it = parser.experiments_begin(); 
-            it != parser.experiments_end(); 
+    for(auto it = parser.experiments_begin();
+            it != parser.experiments_end();
             it++)
     {
         warthog::dimacs_parser::experiment exp = (*it);
@@ -452,27 +516,27 @@ run_bch_backwards_only(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
             updated += sol.nodes_updated_;
-            nano_time = nano_time < sol.time_elapsed_nano_ 
+            nano_time = nano_time < sol.time_elapsed_nano_
                             ?  nano_time : sol.time_elapsed_nano_;
         }
 
         std::cout
-            << exp_id++ <<"\t" 
-            << alg_name << "\t" 
-            << expanded / nruns << "\t" 
+            << exp_id++ <<"\t"
+            << alg_name << "\t"
+            << expanded / nruns << "\t"
             << inserted / nruns << "\t"
             << updated / nruns << "\t"
             << touched / nruns << "\t"
             << nano_time << "\t" /// (double)nruns << "\t"
-            << sol.sum_of_edge_costs_ << "\t" 
-            << sol.path_.size() << "\t" 
-            << parser.get_problemfile() 
+            << sol.sum_of_edge_costs_ << "\t"
+            << sol.path_.size() << "\t"
+            << parser.get_problemfile()
             << std::endl;
     }
 }
 
 void
-run_bch_astar(warthog::util::cfg& cfg, 
+run_bch_astar(warthog::util::cfg& cfg,
               warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string chd_file = cfg.get_param_value("input");
@@ -494,7 +558,6 @@ run_bch_astar(warthog::util::cfg& cfg,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     warthog::euclidean_heuristic h(chd.g_);
     warthog::bch_expansion_policy fexp(chd.g_);
     warthog::bch_expansion_policy bexp (chd.g_, true);
@@ -507,15 +570,15 @@ run_bch_astar(warthog::util::cfg& cfg,
 }
 
 void
-run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name)
 {
     // load up the contraction hierarchy
     std::string chd_file = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    if(chd_file == "" || arclabels_file == "")
+    std::string alg_params = cfg.get_param_value("alg");
+    if(chd_file == "")
     {
-        std::cerr << "err; require --input [chd file] [arclabels file]\n";
+        std::cerr << "err; require --input [chd file]\n";
         return;
     }
 
@@ -531,37 +594,88 @@ run_bch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    // load up the edge labels
-    warthog::label::bb_labelling *fwd_lab_ptr=0, *bwd_lab_ptr=0;
-    bool result = warthog::label::bb_labelling::load_bch_labels(
-            arclabels_file.c_str(), chd.g_, chd.level_,
-            fwd_lab_ptr, bwd_lab_ptr);
-    if(!result)
+    // the "cutoff" tells what percentage of nodes from the hierarchy
+    // will have exact labels computed by Dijkstra SSSP search.
+    // a cutoff of 0.9 for example omits the bottom 10% of nodes
+    // in the hierarchy and preprocesses the remaining 90%.
+    // With a cutoff of 1, we preprocess all nodes. With a
+    // cutoff of 0, we preprocess none and use DFS labels only.
+    int pct_dijkstra = 0;
+    std::string label_filename = "label.bb-dfs";
+    if(alg_params != "")
     {
-        std::cerr << "err; could not load arc labels\n";
+        pct_dijkstra = std::stoi(alg_params.c_str());
+        if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
+        {
+            std::cerr << "dijkstra percentage must be in range 0-100\n";
+            return;
+        }
+    }
+    label_filename += "-dijk-";
+    label_filename += std::to_string(pct_dijkstra);
+
+    warthog::label::dfs_labelling lab(&chd);
+
+    // load up the edge label data (or else precompute it)
+    label_filename =  chd_file + "." + label_filename;
+    ifs.open(label_filename);
+    if(ifs.is_open())
+    {
+        ifs >> lab;
+        ifs.close();
+    }
+    else
+    {
+        std::cerr
+            << "err; label file does not exist: "
+            << label_filename << std::endl
+            << "you could try to generate it with "
+            << "--alg fch-bb " << pct_dijkstra << "\n";
         return;
+
+        //warthog::util::workload_manager workload(chd.g_->get_num_nodes());
+        //double cutoff = (((double)pct_dijkstra)/100);
+        //uint32_t min_level = (uint32_t)(chd.level_->size()*(1-cutoff));
+        //for(size_t i = 0; i < chd.g_->get_num_nodes(); i++)
+        //{
+        //    if(chd.level_->at(i) >= min_level)
+        //    { workload.set_flag((uint32_t)i, true); }
+        //}
+
+        //lab.precompute(&workload);
+
+        //warthog::timer t;
+        //t.start();
+        //std::cerr << "saving precompute data to "
+        //    << label_filename << "...\n";
+
+        //std::ofstream out(label_filename,
+        //        std::ios_base::out|std::ios_base::binary);
+        //out << lab;
+        //if(!out.good())
+        //{
+        //    std::cerr << "\nerror trying to write to file "
+        //        << label_filename << std::endl;
+        //}
+        //out.close();
+        //t.stop();
+        //std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
+
     }
 
-    std::shared_ptr<warthog::label::bb_labelling> fwd_lab(fwd_lab_ptr);
-    std::shared_ptr<warthog::label::bb_labelling> bwd_lab(bwd_lab_ptr);
-
-    warthog::bb_filter fwd_filter(fwd_lab.get());
-    warthog::bb_filter bwd_filter(bwd_lab.get());
-
-    std::cerr << "preparing to search\n";
-    warthog::bch_bb_expansion_policy fexp(chd.g_, &fwd_filter);
-    warthog::bch_bb_expansion_policy bexp (chd.g_, &bwd_filter, true);
+    warthog::bch_bb_expansion_policy fexp(&lab, false);
+    warthog::bch_bb_expansion_policy bexp (&lab, true);
     warthog::zero_heuristic h;
     warthog::bch_search<
         warthog::zero_heuristic,
-        warthog::bch_bb_expansion_policy> 
+        warthog::bch_bb_expansion_policy>
             alg(&fexp, &bexp, &h);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
-run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name)
 {
     std::string chd_file = cfg.get_param_value("input");
@@ -571,7 +685,7 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the graph 
+    // load up the graph
     warthog::ch::ch_data chd;
     chd.type_ = warthog::ch::UP_DOWN;
     std::ifstream ifs(chd_file.c_str());
@@ -584,19 +698,18 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
-    warthog::fch_expansion_policy fexp(&chd); 
+    warthog::fch_expansion_policy fexp(&chd);
     warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
 
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
+    warthog::flexible_astar<
+        warthog::euclidean_heuristic,
         warthog::fch_expansion_policy,
-        warthog::pqueue_min> 
+        warthog::pqueue_min>
             alg(&h, &fexp, &open);
-    
+
     // extra metric; how many nodes do we expand above the apex?
-    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
+    std::function<uint32_t(warthog::search_node*)> fn_get_apex =
     [&chd, &fexp] (warthog::search_node* n) -> uint32_t
     {
         while(true)
@@ -613,7 +726,7 @@ run_fch(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
 }
 
 void
-run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
+run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         std::string alg_name)
 {
     std::string alg_params = cfg.get_param_value("alg");
@@ -624,7 +737,7 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
         return;
     }
 
-    // load up the graph 
+    // load up the graph
     warthog::ch::ch_data chd;
     chd.type_ = warthog::ch::UP_DOWN;
     std::ifstream ifs(chd_file.c_str());
@@ -637,27 +750,33 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     ifs >> chd;
     ifs.close();
 
-    std::cerr << "preparing to search\n";
     // define the workload
-    double cutoff = 1;
+
+    // the "cutoff" tells what percentage of nodes from the hierarchy
+    // will have exact labels computed by Dijkstra SSSP search.
+    // a cutoff of 0.9 for example omits the bottom 10% of nodes
+    // in the hierarchy and preprocesses the remaining 90%.
+    // With a cutoff of 1, we preprocess all nodes. With a
+    // cutoff of 0, we preprocess none and use DFS labels only.
+    int pct_dijkstra = 0;
+    std::string label_filename = "label.bb-dfs";
     if(alg_params != "")
     {
-        int32_t pct_dijkstra = std::stoi(alg_params.c_str());
+        pct_dijkstra = std::stoi(alg_params.c_str());
         if(!(pct_dijkstra >= 0 && pct_dijkstra <= 100))
         {
             std::cerr << "dijkstra percentage must be in range 0-100\n";
             return;
         }
-        cutoff = pct_dijkstra > 0 ? (1 - ((double)pct_dijkstra)/100) : 0;
-        alg_name += "-dijk-";
-        alg_name += std::to_string(pct_dijkstra);
     }
+    label_filename += "-dijk-";
+    label_filename += std::to_string(pct_dijkstra);
 
     warthog::label::dfs_labelling lab(&chd);
 
     // load up the edge label data (or else precompute it)
-    std::string arclab_file =  chd_file + "." + alg_name + "." + "label";
-    ifs.open(arclab_file);
+    label_filename =  chd_file + "." + label_filename;
+    ifs.open(label_filename);
     if(ifs.is_open())
     {
         ifs >> lab;
@@ -666,106 +785,64 @@ run_fch_bb_dfs(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     else
     {
         warthog::util::workload_manager workload(chd.g_->get_num_nodes());
+        double cutoff = (((double)pct_dijkstra)/100);
+        uint32_t min_level = (uint32_t)(chd.level_->size()*(1-cutoff));
         for(size_t i = 0; i < chd.g_->get_num_nodes(); i++)
         {
-            if(chd.level_->at(i) >= (uint32_t)(chd.level_->size()*cutoff))
+            if(chd.level_->at(i) >= min_level)
             { workload.set_flag((uint32_t)i, true); }
         }
 
         lab.precompute(&workload);
-        std::cerr << "precompute finished. saving result to " 
-            << arclab_file << "...";
 
-        std::ofstream out(arclab_file, 
+        warthog::timer t;
+        t.start();
+        std::cerr << "saving precompute data to "
+            << label_filename << "...\n";
+
+        std::ofstream out(label_filename,
                 std::ios_base::out|std::ios_base::binary);
         out << lab;
         if(!out.good())
         {
-            std::cerr << "\nerror trying to write to file " 
-                << arclab_file << std::endl;
+            std::cerr << "\nerror trying to write to file "
+                << label_filename << std::endl;
         }
         out.close();
-        std::cerr << "done.\n";
+        t.stop();
+        std::cerr << "done. time " << t.elapsed_time_nano() / 1e9 << " s\n";
+
     }
 
-    warthog::fch_dfs_expansion_policy fexp(&chd, &lab);
+    warthog::fch_bb_expansion_policy fexp(&lab);
     warthog::euclidean_heuristic h(chd.g_);
     warthog::pqueue_min open;
 
     warthog::flexible_astar<
-        warthog::euclidean_heuristic, 
-        warthog::fch_dfs_expansion_policy,
-        warthog::pqueue_min> 
-            alg(&h, &fexp, &open);
-    
-    // extra metric; how many nodes do we expand above the apex?
-    std::function<uint32_t(warthog::search_node*)> fn_get_apex = 
-    [chd, &fexp] (warthog::search_node* n) -> uint32_t
-    {
-        while(true)
-        {
-            warthog::search_node* p = fexp.generate(n->get_parent());
-            if(!p || chd.level_->at(p->get_id()) < chd.level_->at(n->get_id()))
-            { break; }
-            n = p;
-        }
-        return chd.level_->at(n->get_id());
-    };
-
-    run_experiments(&alg, alg_name, parser, std::cout);
-}
-
-void
-run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser, 
-        std::string alg_name)
-{
-    std::string chd_file = cfg.get_param_value("input");
-    std::string arclabels_file = cfg.get_param_value("input");
-    if(chd_file == "" || arclabels_file == "")
-    {
-        std::cerr << "err; require --input [chd file] [arclabels file]\n";
-        return;
-    }
-
-    // load up the graph 
-    warthog::ch::ch_data chd;
-    chd.type_ = warthog::ch::UP_DOWN;
-    std::ifstream ifs(chd_file.c_str());
-    if(!ifs.is_open())
-    {
-        std::cerr << "err; invalid path to chd input file\n";
-        return;
-    }
-
-    ifs >> chd;
-    ifs.close();
-
-    // load up the arc labels
-    std::shared_ptr<warthog::label::bb_labelling> bbl
-        (warthog::label::bb_labelling::load(arclabels_file.c_str(), chd.g_));
-    if(!bbl.get())
-    {
-        std::cerr << "err; could not load arcflags file\n";
-        return;
-    }
-    warthog::bb_filter filter(bbl.get());
-
-    warthog::euclidean_heuristic h(chd.g_);
-    warthog::fch_bb_expansion_policy fexp(chd.g_, chd.level_, &filter);
-    warthog::pqueue_min open;
-
-    warthog::flexible_astar< 
-        warthog::euclidean_heuristic, 
+        warthog::euclidean_heuristic,
         warthog::fch_bb_expansion_policy,
         warthog::pqueue_min>
             alg(&h, &fexp, &open);
 
-    run_experiments(&alg, alg_name, parser, std::cout);
+    // extra metric; how many nodes do we expand above the apex?
+    //std::function<uint32_t(warthog::search_node*)> fn_get_apex =
+    //[&chd, &fexp] (warthog::search_node* n) -> uint32_t
+    //{
+    //    while(true)
+    //    {
+    //        warthog::search_node* p = fexp.generate(n->get_parent());
+    //        if(!p || chd.level_->at(p->get_id()) < chd.level_->at(n->get_id()))
+    //        { break; }
+    //        n = p;
+    //    }
+    //    return chd.level_->at(n->get_id());
+    //};
 
+    run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
-run_cpd_search(warthog::util::cfg& cfg, 
+run_cpd_search(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string xy_filename = cfg.get_param_value("input");
@@ -778,7 +855,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     // read the graph
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     // Check if we have a second parameter in the --input
@@ -803,7 +880,8 @@ run_cpd_search(warthog::util::cfg& cfg,
 
         if (!ifs.good())
         {
-            std::cerr << "cannot open diff: --diff [xy-graph file]\n";
+            std::cerr << "cannot open diff: --input [xy-graph file] "
+                      << "[diff-xy-graph file]\n";
             return;
         }
 
@@ -848,7 +926,7 @@ run_cpd_search(warthog::util::cfg& cfg,
 }
 
 void
-run_cpd(warthog::util::cfg& cfg, 
+run_cpd(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string xy_filename = cfg.get_param_value("input");
@@ -861,7 +939,7 @@ run_cpd(warthog::util::cfg& cfg,
 
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     warthog::cpd::graph_oracle oracle(&g);
@@ -890,13 +968,13 @@ run_cpd(warthog::util::cfg& cfg,
     warthog::pqueue_min open;
 
     // the "algorithm"
-    std::function<void(warthog::problem_instance*, warthog::solution*)> 
-            cpd_extract = 
+    std::function<void(warthog::problem_instance*, warthog::solution*)>
+            cpd_extract =
     [&oracle, &g] (warthog::problem_instance* pi, warthog::solution* sol) -> void
     {
         warthog::timer mytimer;
         mytimer.start();
-        
+
         warthog::sn_id_t source_id = pi->start_id_;
         warthog::sn_id_t target_id = pi->target_id_;
 
@@ -927,7 +1005,7 @@ run_cpd(warthog::util::cfg& cfg,
 }
 
 void
-run_dfs(warthog::util::cfg& cfg, 
+run_dfs(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string xy_filename = cfg.get_param_value("input");
@@ -940,7 +1018,7 @@ run_dfs(warthog::util::cfg& cfg,
     warthog::graph::xy_graph g;
 
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     warthog::simple_graph_expansion_policy expander(&g);
@@ -948,16 +1026,16 @@ run_dfs(warthog::util::cfg& cfg,
     warthog::pqueue_min open;
 
     warthog::depth_first_search<
-        warthog::zero_heuristic, 
-        warthog::simple_graph_expansion_policy, 
-        warthog::pqueue_min> 
+        warthog::zero_heuristic,
+        warthog::simple_graph_expansion_policy,
+        warthog::pqueue_min>
             alg(&h, &expander, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
 void
-run_cpd_dfs(warthog::util::cfg& cfg, 
+run_cpd_dfs(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
 {
     std::string xy_filename = cfg.get_param_value("input");
@@ -970,7 +1048,7 @@ run_cpd_dfs(warthog::util::cfg& cfg,
     warthog::graph::xy_graph g;
 
     std::ifstream ifs(xy_filename);
-    warthog::graph::read_xy(ifs, g);
+    ifs >> g;
     ifs.close();
 
     warthog::cpd::graph_oracle oracle(&g);
@@ -997,9 +1075,9 @@ run_cpd_dfs(warthog::util::cfg& cfg,
     warthog::pqueue_min open;
 
     warthog::depth_first_search<
-        warthog::zero_heuristic, 
-        warthog::cpd_graph_expansion_policy, 
-        warthog::pqueue_min> 
+        warthog::zero_heuristic,
+        warthog::cpd_graph_expansion_policy,
+        warthog::pqueue_min>
             alg(&h, &expander, &open);
 
     run_experiments(&alg, alg_name, parser, std::cout);
@@ -1046,6 +1124,10 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_astar(cfg, parser, alg_name);
     }
+    else if(alg_name == "astar-bb")
+    {
+        run_astar_bb(cfg, parser, alg_name);
+    }
     else if(alg_name == "bi-dijkstra")
     {
         run_bi_dijkstra(cfg, parser, alg_name);
@@ -1074,9 +1156,9 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_fch(cfg, parser, alg_name);
     }
-    else if(alg_name == "fch-bb-dfs")
+    else if(alg_name == "fch-bb")
     {
-        run_fch_bb_dfs(cfg, parser, alg_name);
+        run_fch_bb(cfg, parser, alg_name);
     }
     else if(alg_name == "cpd-search")
     {
@@ -1101,11 +1183,11 @@ run_dimacs(warthog::util::cfg& cfg)
 }
 
 
-int 
+int
 main(int argc, char** argv)
 {
 	// parse arguments
-	warthog::util::param valid_args[] = 
+	warthog::util::param valid_args[] =
 	{
 		{"alg",  required_argument, 0, 1},
 		{"nruns",  required_argument, 0, 1},
@@ -1129,6 +1211,3 @@ main(int argc, char** argv)
 
     run_dimacs(cfg);
 }
-
-
-

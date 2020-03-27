@@ -37,15 +37,17 @@ class bb_filter
         ~bb_filter() { }
 
         inline void
-        set_target_xy(int32_t tx, int32_t ty) { tx_ = tx; ty_ = ty; }
+        set_target(uint32_t target_id) 
+        { 
+            bbl_->get_graph()->get_xy(target_id, tx_, ty_);
+        }
 
         // return true if the bounding box of of the specified edge DOES NOT
         // contain the target, and return false otherwise. 
         inline bool 
         filter(uint32_t node_id, uint32_t edge_id)
         {
-            warthog::geom::rectangle rect = bbl_->get_label(node_id, edge_id);
-            if(rect.contains(tx_, ty_))
+            if(bbl_->get_label(node_id, edge_id).bbox_.contains(tx_, ty_))
             {
                 return false;
             }

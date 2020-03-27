@@ -2,9 +2,9 @@
 #define WARTHOG_XY_GRAPH_H
 
 // xy_graph.h
-// 
-// A simple general purpose data structure for directed weighted xy graphs 
-// (i.e. spatial networks embedded in two dimensions). 
+//
+// A simple general purpose data structure for directed weighted xy graphs
+// (i.e. spatial networks embedded in two dimensions).
 // Supported input types are:
 //  - warthog::gridmap objects
 //  - road network graphs in the format of the 9th DIMACS competition
@@ -18,12 +18,13 @@
 //
 
 
+#include "constants.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
 #include "forward.h"
 #include "graph.h"
 #include "gridmap_expansion_policy.h"
-#include "constants.h"
+#include "util/timer.h"
 
 #include <ostream>
 #include <unordered_map>
@@ -51,13 +52,14 @@ class xy_graph_base
 {
     public:
         // create an empty graph
-        xy_graph_base(uint32_t num_nodes=0, std::string filename = "") 
-            : verbose_(false), filename_(filename)
+        xy_graph_base(uint32_t num_nodes=0,
+                      std::string filename = "", bool incoming=false)
+            : verbose_(false), filename_(filename), store_incoming_(incoming)
         {
             grow(num_nodes);
         }
 
-        ~xy_graph_base() 
+        ~xy_graph_base()
         { }
 
         warthog::graph::xy_graph_base<T_NODE, T_EDGE>&
@@ -74,7 +76,7 @@ class xy_graph_base
 
             return *this;
         }
-        
+
         bool
         operator==(const warthog::graph::xy_graph_base<T_NODE, T_EDGE>& other)
         {
@@ -84,7 +86,7 @@ class xy_graph_base
                 {
                     if(xy_[i] != other.xy_[i]) { return false; }
                 }
-            } 
+            }
             else { return false; }
 
             if(get_num_nodes() == other.get_num_nodes())
@@ -101,7 +103,7 @@ class xy_graph_base
 
 
         // set the number of nodes and edges in the graph to zero.
-        // any currently assigned nodes and edges have their destructors 
+        // any currently assigned nodes and edges have their destructors
         // called
         void
         clear()
@@ -110,7 +112,7 @@ class xy_graph_base
             xy_.clear();
         }
 
-        // grow the graph so that the number of vertices is equal to 
+        // grow the graph so that the number of vertices is equal to
         // @param num_nodes. if @param num_nodes is less than the current
         // number of nodes, this function does nothing.
         void
@@ -138,7 +140,7 @@ class xy_graph_base
             return (uint32_t)nodes_.size();
         }
 
-        inline uint32_t 
+        inline uint32_t
         get_num_edges_out() const
         {
             uint32_t num_edges = 0;
@@ -193,7 +195,7 @@ class xy_graph_base
         // @param id: an internal graph id
         // @return: the node object associated with @param id
         inline T_NODE*
-        get_node(uint32_t id) 
+        get_node(uint32_t id)
         {
             //if(id >= ID_OFFSET && id < nodes_sz_)
             if(id < get_num_nodes())
@@ -203,10 +205,10 @@ class xy_graph_base
             return 0;
         }
 
-        // Add a new node into the graph. If a node already exists in the 
-        // graph with the same external id as @param ext_id then then nothing 
+        // Add a new node into the graph. If a node already exists in the
+        // graph with the same external id as @param ext_id then then nothing
         // is added.
-        // NB: a new node is always added if @param ext_id is equal to the 
+        // NB: a new node is always added if @param ext_id is equal to the
         // value warthog::INF
         //
         // @param x: the x-coordinate of the new node
@@ -217,10 +219,10 @@ class xy_graph_base
         uint32_t
         add_node(int32_t x, int32_t y, uint32_t ext_id)
         {
-            // check if a node with the same external id already exists; if so 
+            // check if a node with the same external id already exists; if so
             // return the id of the existing node. otherwise, add a new node
             //uint32_t graph_id = to_graph_id(ext_id);
-            //if(graph_id != warthog::INF32) { return graph_id; } 
+            //if(graph_id != warthog::INF32) { return graph_id; }
 
             uint32_t graph_id = (uint32_t)get_num_nodes();
             nodes_.push_back(T_NODE());
@@ -241,16 +243,16 @@ class xy_graph_base
             return add_node(warthog::INF32, warthog::INF32, warthog::INF32);
         }
 
-        // print extra stuff to std::err 
-        inline void 
-        set_verbose(bool verbose) { verbose_ = verbose; } 
+        // print extra stuff to std::err
+        inline void
+        set_verbose(bool verbose) { verbose_ = verbose; }
 
         inline bool
         get_verbose() const { return verbose_; }
 
-        // @return the name of the file from which the 
+        // @return the name of the file from which the
         // current graph object was constructed
-        inline const char* 
+        inline const char*
         get_filename() const { return filename_.c_str(); }
 
         inline void
@@ -272,7 +274,7 @@ class xy_graph_base
                 sizeof(*this);
             return mem;
         }
-        
+
         // convert an external node id (e.g. as it appears in an input file)
         // to the equivalent internal id used by the current graph
         //
@@ -281,9 +283,9 @@ class xy_graph_base
         // if ex_id did not appear in the input file (or if the graph
         // was not created from an input file) the function returns
         // the value warthog::INF32
-        inline uint32_t 
-        to_graph_id(uint32_t ext_id) 
-        { 
+        inline uint32_t
+        to_graph_id(uint32_t ext_id)
+        {
             return ext_id;
         }
 
@@ -295,18 +297,18 @@ class xy_graph_base
         // if ex_id did not appear in the input file (or if the graph
         // was not created from an input file) the function returns
         // the value warthog::INF32
-        inline uint32_t 
+        inline uint32_t
         to_external_id(uint32_t in_id)  const
-        { 
+        {
             return in_id;
         }
 
         // compute the proportion of bytes allocated to edges with respect
         // to the size of the address space those bytes span.
-        // a value of 1 using this metric indicates that the edges perfectly 
+        // a value of 1 using this metric indicates that the edges perfectly
         // fit into the allocated address space
         inline double
-        edge_mem_frag() 
+        edge_mem_frag()
         {
             T_EDGE *min_addr, *max_addr;
             min_addr = this->get_node(0)->outgoing_begin();
@@ -319,20 +321,20 @@ class xy_graph_base
                 T_EDGE* in_begin = n->incoming_begin();
                 T_EDGE* in_end = n->incoming_end();
 
-                min_addr = out_begin ? 
+                min_addr = out_begin ?
                             (out_begin < min_addr ? out_begin : min_addr) :
                             min_addr;
-                max_addr = out_end ? 
+                max_addr = out_end ?
                             (out_end > max_addr ? out_end : max_addr) :
                             max_addr;
-                min_addr = in_begin ? 
+                min_addr = in_begin ?
                             (in_begin < min_addr ? in_begin : min_addr) :
                             min_addr;
-                max_addr = in_end ? 
+                max_addr = in_end ?
                             (in_end > max_addr ? in_end : max_addr) :
                             max_addr;
             }
-            
+
             size_t mem_lb = sizeof(T_EDGE) *
                 (this->get_num_edges_out() + this->get_num_edges_in());
             size_t mem_actual =
@@ -365,7 +367,7 @@ class xy_graph_base
                     {
                         if(!fix_if_not) { return false; }
                         (*it).wt_ = static_cast<uint32_t>(ceil(hdist));
-                    } 
+                    }
                 }
             }
             return true;
@@ -405,7 +407,7 @@ class xy_graph_base
         //    edge* tmp = new edge[get_num_edges()];
         //    uint32_t e_index = 0;
         //    for(uint32_t i = 0; i < this->get_num_nodes(); i++)
-        //    { 
+        //    {
         //        uint32_t in_deg = nodes_[i].in_degree();
         //        uint32_t out_deg = nodes_[i].out_degree();
         //        nodes_[i].relocate(&tmp[e_index], &tmp[e_index + in_deg]);
@@ -413,15 +415,113 @@ class xy_graph_base
         //    }
         //}
 
-    private:
+        friend std::istream& operator>>(
+            std::istream &in,
+            warthog::graph::xy_graph_base<T_NODE, T_EDGE> &g) {
+          warthog::timer mytimer;
+          mytimer.start();
+
+          uint32_t num_nodes = 0, num_edges = 0;
+          std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
+          std::vector<std::pair<int32_t, int32_t>> xy;
+          std::vector<warthog::graph::ECAP_T> in_degree;
+          std::vector<warthog::graph::ECAP_T> out_degree;
+
+          warthog::graph::parse_xy(
+              in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
+          // allocate memory for nodes
+          g.clear();
+          g.grow(num_nodes);
+
+          // allocate memory for edges and set xy coordinates
+          for (uint32_t i = 0; i < num_nodes; i++) {
+            g.set_xy(i, xy[i].first, xy[i].second);
+            g.get_node(i)->capacity(out_degree[i], in_degree[i]);
+          }
+
+          // add edges
+          for (std::pair<uint32_t, warthog::graph::edge> e : edges) {
+            uint32_t from_id = e.first;
+            warthog::graph::node *from = g.get_node(from_id);
+            from->add_outgoing(e.second);
+            if (g.store_incoming_) {
+              uint32_t to_id = e.second.node_id_;
+              warthog::graph::node *to = g.get_node(to_id);
+              e.second.node_id_ = from_id;
+              to->add_incoming(e.second);
+            }
+          }
+
+          mytimer.stop();
+          std::cerr << "graph, loaded.\n";
+          std::cerr << "read " << num_nodes << " nodes"
+                    << " and read " << num_edges << " outgoing edges"
+                    << ". total time "
+                    << (double)mytimer.elapsed_time_nano() / 1e9 << " s"
+                    << std::endl;
+
+          return in;
+        }
+
+        friend std::ostream &operator<<(
+            std::ostream &out,
+            warthog::graph::xy_graph_base<T_NODE, T_EDGE> &g) {
+          warthog::timer mytimer;
+          mytimer.start();
+
+          // comments
+          out << "# warthog xy graph\n"
+              << "# this file is formatted as follows: [header data] [node "
+                 "data] [edge data]\n"
+              << "# header format: nodes [number of nodes] edges [number of "
+                 "edges] \n"
+              << "# node data format: v [id] [x] [y]\n"
+              << "# edge data format: e [from_node_id] [to_node_id] [cost]\n"
+              << "#\n"
+              << "# 32bit integer values are used throughout.\n"
+              << "# Identifiers are all zero indexed.\n"
+              << std::endl;
+
+          // header stuff
+          // out << "chd 1.0" << std::endl;
+          out << "nodes " << g.get_num_nodes() << " "
+              << "edges " << g.get_num_edges_out() << std::endl;
+
+          // node data
+          for (uint32_t i = 0; i < g.get_num_nodes(); i++) {
+            int32_t x, y;
+            g.get_xy(i, x, y);
+            out << "v " << i << " " << x << " " << y << " " << std::endl;
+          }
+
+          for (uint32_t i = 0; i < g.get_num_nodes(); i++) {
+            warthog::graph::node *n = g.get_node(i);
+            for (uint32_t edge_idx = 0; edge_idx < n->out_degree();
+                 edge_idx++) {
+              warthog::graph::edge *e = n->outgoing_begin() + edge_idx;
+              out << "e " << i << " " << e->node_id_ << " " << e->wt_
+                  << std::endl;
+            }
+          }
+
+          mytimer.stop();
+          std::cerr << "wrote xy_graph; time "
+                    << ((double)mytimer.elapsed_time_nano() / 1e9) << " s"
+                    << std::endl;
+
+          return out;
+        }
+
+      private:
         // the set of nodes that comprise the graph
         std::vector<T_NODE> nodes_;
-        
+
         // xy coordinates stored as adjacent pairs (x, then y)
         std::vector<int32_t> xy_;
 
-        bool verbose_;
+       bool verbose_;
         std::string filename_;
+        bool store_incoming_;
 };
 typedef xy_graph_base<warthog::graph::node, warthog::graph::edge> xy_graph;
 
@@ -430,16 +530,16 @@ typedef xy_graph_base<warthog::graph::node, warthog::graph::edge> xy_graph;
 //
 // @param gm: the gridmap
 // @param g: the target graph object; if not empty, the graph will be cleared
-// @param store_incoming_edges: if true, incoming and outgoing edges are 
+// @param store_incoming_edges: if true, incoming and outgoing edges are
 // both added to the graph; if false, only outgoing edges are added.
 void
 gridmap_to_xy_graph(
-    warthog::gridmap* gm, warthog::graph::xy_graph*, 
+    warthog::gridmap* gm, warthog::graph::xy_graph*,
     bool store_incoming = false);
 
 // create an xy-graph from DIMACS 9th Challenge graph data
-// In this format graphs are specified using two files: 
-// (i) a gr file which defines edge weights and endpoints and; 
+// In this format graphs are specified using two files:
+// (i) a gr file which defines edge weights and endpoints and;
 // (ii) a co file which defines node ids and xy coordinates
 //
 // @param dimacs: a parser object with preloaded coordinates and edge data
@@ -449,16 +549,10 @@ gridmap_to_xy_graph(
 // @param enforce_euclidean: arc lengths must be >= euclidean distance
 void
 dimacs_to_xy_graph(
-        warthog::dimacs_parser& dimacs, warthog::graph::xy_graph& g, 
+        warthog::dimacs_parser& dimacs, warthog::graph::xy_graph& g,
         bool reverse_arcs=false,
-        bool store_incoming_edges = false, 
+        bool store_incoming_edges = false,
         bool enforce_euclidean=true);
-
-void
-write_xy(std::ostream& out, warthog::graph::xy_graph& g);
-
-void
-read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming=false);
 
 void
 write_dimacs(std::ostream& out, warthog::graph::xy_graph& g);
@@ -467,4 +561,3 @@ write_dimacs(std::ostream& out, warthog::graph::xy_graph& g);
 }
 
 #endif
-

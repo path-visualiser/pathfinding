@@ -61,7 +61,7 @@ warthog::cbs_ll_heuristic::set_current_target(warthog::sn_id_t target_id)
 
     sol_->reset();
     warthog::problem_instance problem(target_id);
-    alg_->get_distance(problem, *sol_);
+    alg_->get_pathcost(problem, *sol_);
 }
 
 size_t

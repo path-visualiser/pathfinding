@@ -31,6 +31,12 @@ warthog::util::cfg::parse_args(int argc, char** argv, const char* options,
         if(!(optarg == 0))
         {
             params_[params[current_opt].name].push_back(optarg);
+            for(int index = optind; 
+                    index < argc && *argv[index] != '-'; 
+                    index++)
+            {
+                params_[params[current_opt].name].push_back(argv[index]);
+            }
         }
 	}
 }

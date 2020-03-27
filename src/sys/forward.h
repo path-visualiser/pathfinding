@@ -9,6 +9,8 @@
 // @created: 2018-11-07
 //
 
+#include <cstdint>
+
 namespace warthog
 {
 
@@ -37,8 +39,10 @@ namespace graph
 {
 
 class node;
-class edge;
-class corner_point_graph;
+
+template<typename T_LABEL>
+class edge_base;
+typedef edge_base<uintptr_t> edge;
 
 template<class T_NODE, class T_EDGE>
 class xy_graph_base;
