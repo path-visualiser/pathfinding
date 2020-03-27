@@ -35,6 +35,17 @@ namespace warthog
 namespace graph
 {
 
+// Need to be declared before 'xy_graph_base'
+void
+parse_xy(
+    std::istream &in,
+    uint32_t &num_nodes,
+    uint32_t &num_edges,
+    std::vector<std::pair<uint32_t, warthog::graph::edge>> &edges,
+    std::vector<std::pair<int32_t, int32_t>> &xy,
+    std::vector<warthog::graph::ECAP_T> &in_degree,
+    std::vector<warthog::graph::ECAP_T> &out_degree);
+
 template<class T_NODE, class T_EDGE>
 class xy_graph_base
 {
@@ -360,7 +371,33 @@ class xy_graph_base
             return true;
         }
 
+        /**
+        * Given an already loaded 'xy_graph' and a new file, we edit the labels
+        * of the edges to contain the new costs.
+        */
+        void
+        perturb(std::istream& in)
+        {
+            uint32_t num_nodes;
+            uint32_t num_edges;
+            std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
+            std::vector<std::pair<int32_t, int32_t>> xy;
+            std::vector<warthog::graph::ECAP_T> in_degree;
+            std::vector<warthog::graph::ECAP_T> out_degree;
 
+            parse_xy(
+                in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
+
+            assert(num_nodes == nodes_.size());
+
+            for (auto e : edges)
+            {
+              uint32_t from_id = e.first;
+              node* from = get_node(from_id);
+              edge_iter eit = from->find_edge(e.second.node_id_);
+              eit->label_ = e.second.wt_;
+            }
+        }
 
         //inline void
         //shrink_to_fit()
@@ -424,16 +461,6 @@ void
 read_xy(std::istream& in, warthog::graph::xy_graph& g, bool store_incoming=false);
 
 void
-parse_xy(
-    std::istream &in,
-    uint32_t &num_nodes,
-    uint32_t &num_edges,
-    std::vector<std::pair<uint32_t, warthog::graph::edge>> &edges,
-    std::vector<std::pair<int32_t, int32_t>> &xy,
-    std::vector<warthog::graph::ECAP_T> &in_degree,
-    std::vector<warthog::graph::ECAP_T> &out_degree);
-
-void 
 write_dimacs(std::ostream& out, warthog::graph::xy_graph& g);
 
 }

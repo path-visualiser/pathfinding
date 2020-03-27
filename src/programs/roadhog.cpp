@@ -781,18 +781,36 @@ run_cpd_search(warthog::util::cfg& cfg,
     warthog::graph::read_xy(ifs, g);
     ifs.close();
 
-    // apply some default upperbound costs
-    // (ub == lb)
-    for(uint32_t i = 0; i < g.get_num_nodes(); i++)
+    // Check if we have a second parameter in the --input
+    std::string diff_filename = cfg.get_param_value("input");
+    if (diff_filename == "")
     {
-        warthog::graph::node* n = g.get_node(i);
-        for(uint32_t j = 0; j < n->out_degree(); j++)
+        // apply some default upperbound costs
+        // (ub == lb)
+        for(uint32_t i = 0; i < g.get_num_nodes(); i++)
         {
-            warthog::graph::edge* e = (n->outgoing_begin() + j);
-            e->label_ = e->wt_;
+            warthog::graph::node* n = g.get_node(i);
+            for(uint32_t j = 0; j < n->out_degree(); j++)
+            {
+                warthog::graph::edge* e = (n->outgoing_begin() + j);
+                e->label_ = e->wt_;
+            }
         }
     }
+    else
+    {
+        ifs.open(diff_filename);
 
+        if (!ifs.good())
+        {
+            std::cerr << "cannot open diff: --diff [xy-graph file]\n";
+            return;
+        }
+
+        g.perturb(ifs);
+
+        ifs.close();
+    }
 
     // read the cpd (create from scratch if one doesn't exist)
     warthog::cpd::graph_oracle oracle(&g);
