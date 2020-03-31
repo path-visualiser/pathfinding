@@ -390,6 +390,9 @@ class xy_graph_base
             parse_xy(
                 in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
 
+            std::cerr << "graph read: " << num_nodes << " nodes and "
+                      << num_edges << " edges.";
+
             assert(num_nodes == nodes_.size());
 
             for (auto e : edges)

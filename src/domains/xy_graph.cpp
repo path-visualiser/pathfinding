@@ -251,8 +251,4 @@ warthog::graph::parse_xy(
     }
     assert(n_added == num_nodes);
     assert(e_added == num_edges);
-
-    std::cerr << "graph read: "
-              << n_added << " nodes and "
-              << e_added << " edges.";
 }
