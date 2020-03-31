@@ -8,63 +8,19 @@ struct shared_data
     std::vector<uint32_t>* sources_;
 };
 
-// helps to precompute first-move data
-struct graph_oracle_listener
+void warthog::cpd::compute_row(uint32_t source_id,
+                               warthog::cpd::graph_oracle* cpd,
+                               warthog::search* dijk,
+                               std::vector<warthog::cpd::fm_coll> &s_row)
 {
-    inline void
-    generate_node(warthog::search_node* succ, 
-                  warthog::search_node* from, 
-                  warthog::cost_t edge_cost,
-                  uint32_t edge_id) 
-    {
-        if(from == 0) { return; } // start node 
+    warthog::problem_instance problem(source_id);
+    warthog::solution sol;
 
-        if(from->get_id() == *source_id_) // start node successors
-        { 
-            //assert(s_row_.at(succ->get_id()) == 0);
-            assert(edge_id < 
-                     oracle_->get_graph()->get_node(
-                        (uint32_t)*source_id_)->out_degree());
-            s_row_->at(succ->get_id()) = (1 << edge_id);
-            assert(s_row_->at(succ->get_id()));
-        }
-        else // all other nodes
-        {
-            warthog::sn_id_t succ_id = succ->get_id();
-            warthog::sn_id_t from_id = from->get_id();
-            double alt_g = from->get_g() + edge_cost;
-            double g_val = 
-                succ->get_search_number() == from->get_search_number() ? 
-                succ->get_g() : DBL_MAX;
-
-            //  update first move
-            if(alt_g < g_val) 
-            { 
-                s_row_->at(succ_id) = s_row_->at(from_id);
-                assert(s_row_->at(succ_id) == s_row_->at(from_id));
-            }
-            
-            // add to the list of optimal first moves
-            if(alt_g == g_val) 
-            { 
-                s_row_->at(succ_id) |= s_row_->at(from_id); 
-                assert(s_row_->at(succ_id) >= s_row_->at(from_id));
-            }
-
-        }
-    }
-
-    inline void
-    expand_node(warthog::search_node* current) { }
-
-    inline void
-    relax_node(warthog::search_node* current) { }
-
-    warthog::cpd::graph_oracle* oracle_;
-    warthog::sn_id_t* source_id_;
-    std::vector<warthog::cpd::fm_coll>* s_row_;
-
-};
+    s_row.clear();
+    s_row.resize(cpd->get_graph()->get_num_nodes());
+    dijk->get_path(problem, sol);
+    cpd->add_row(source_id, s_row);
+}
 
 void
 warthog::cpd::graph_oracle::precompute() 
@@ -91,13 +47,13 @@ warthog::cpd::graph_oracle::precompute()
         warthog::simple_graph_expansion_policy expander(g);
         warthog::zero_heuristic h;
         warthog::pqueue_min queue;
-        graph_oracle_listener listener;
+        warthog::cpd::graph_oracle_listener listener;
 
         warthog::flexible_astar 
             <warthog::zero_heuristic, 
             warthog::simple_graph_expansion_policy,
             warthog::pqueue_min,
-            graph_oracle_listener>
+            warthog::cpd::graph_oracle_listener>
                 dijk(&h, &expander, &queue, &listener);
 
         listener.oracle_ = cpd;
@@ -113,13 +69,7 @@ warthog::cpd::graph_oracle::precompute()
             { continue; }
 
             source_id = shared->sources_->at(i);
-            warthog::problem_instance problem(source_id);
-            warthog::solution sol;
-
-            s_row.clear();
-            s_row.resize(shared->cpd_->get_graph()->get_num_nodes());
-            dijk.get_path(problem, sol);
-            cpd->add_row((uint32_t)source_id, s_row);
+            warthog::cpd::compute_row(source_id, cpd, &dijk, s_row);
             par->nprocessed_++;
         }
         return 0;
