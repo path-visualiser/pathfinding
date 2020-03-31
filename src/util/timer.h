@@ -46,8 +46,10 @@ public:
 	void stop();
 	double elapsed_time_nano();
 	double elapsed_time_micro();
+	double elapsed_time_sec();
 	double get_time_nano();
 	inline double get_time_micro() { return get_time_nano() / 1000.0; }
+	inline double get_time_sec() { return get_time_nano() / 1e9f; }
 };
 
 }

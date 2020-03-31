@@ -84,3 +84,8 @@ warthog::timer::elapsed_time_micro()
 	return elapsed_time_nano() / 1000.0;
 }
 
+double
+warthog::timer::elapsed_time_sec()
+{
+	return elapsed_time_nano() / 1e9f;
+}
