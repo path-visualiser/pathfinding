@@ -103,7 +103,7 @@ warthog::cpd::graph_oracle::precompute()
             (uint32_t)source_nodes.size());
             
     // convert the column order into a map: from vertex id to its ordered index
-    warthog::helpers::value_index_swap_array(order_);
+    value_index_swap_array();
 
     t.stop();
     std::cerr 

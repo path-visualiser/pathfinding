@@ -69,7 +69,15 @@ class graph_oracle
         {
             warthog::cpd::compute_dfs_preorder(g_, &order_);
         }
-    
+
+        // convert the column order into a map: from vertex id to its ordered
+        // index
+        inline void
+        value_index_swap_array()
+        {
+            warthog::helpers::value_index_swap_array(order_);
+        }
+
         // compress a given first-move table @param row and associate
         // the compressed result with source node @param source_id
         void
