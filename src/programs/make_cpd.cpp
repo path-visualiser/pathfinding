@@ -8,6 +8,7 @@
 
 #include "cfg.h"
 #include "graph_oracle.h"
+#include "log.h"
 #include "xy_graph.h"
 
 using namespace std;
@@ -16,9 +17,7 @@ int
 make_cpd(std::string xy_filename, int from, int to)
 {
     warthog::graph::xy_graph g;
-    warthog::cpd::graph_oracle cpd(&g);
     std::ifstream ifs(xy_filename);
-    std::vector<uint32_t> order;
 
     if (!ifs.good())
     {
@@ -29,30 +28,37 @@ make_cpd(std::string xy_filename, int from, int to)
     ifs >> g;
     ifs.close();
 
+    // This needs to be done after loading the graph
+    warthog::cpd::graph_oracle cpd(&g);
     uint32_t node_count = g.get_num_nodes();
     if (to < 0)
     {
         to = node_count;
     }
 
+    assert(to > 0);
+    assert((unsigned int)from < node_count);
+    uint32_t node_end = to;
+    unsigned char pct_done = 0;
+    uint32_t nprocessed = 0;
+
     warthog::timer t;
     t.start();
 
-    std::cerr << "Computing node ordering" << std::endl;
-    warthog::cpd::compute_dfs_preorder(&g, &order);
+    info(true, "Computing node ordering.");
+    cpd.compute_dfs_preorder();
 
-    std::cerr << "Computing Dijkstra labels" << std::endl;
+    info(true, "Computing Dijkstra labels.");
+    std::cerr << "progress: [";
+    for(uint32_t i = 0; i < 100; i++) { std::cerr <<" "; }
+    std::cerr << "]\rprogress: [";
 #pragma omp parallel
     {
         int thread_count = omp_get_num_threads();
         int thread_id = omp_get_thread_num();
 
         // warthog ids are 0-indexed, so no need to do anything.
-        warthog::sn_id_t
-            node_begin = from + (node_count * thread_id) / thread_count;
-        warthog::sn_id_t
-            node_end = from + (node_count * (thread_id + 1)) / thread_count;
-        warthog::sn_id_t source_id = node_begin;
+        warthog::sn_id_t source_id = from + thread_id;
 
         std::vector<warthog::cpd::fm_coll> s_row(node_count);
         // each thread has its own copy of Dijkstra and each
@@ -76,19 +82,44 @@ make_cpd(std::string xy_filename, int from, int to)
 
         while (source_id < node_end)
         {
-            // No idea why we want to play with an int pointer...
-            source_id++;
             warthog::cpd::compute_row(source_id, &cpd, &dijk, s_row);
+            // No idea why we want to play with an int pointer...
+            //
+            // We increment the source by the number of threads to *jump* to
+            // that id.
+            source_id += thread_count;
+            #pragma omp critical
+            {
+                nprocessed++;
+
+                if ((nprocessed * 100 / (to - from)) > pct_done)
+                {
+                    std::cerr << "=";
+                    pct_done++;
+                }
+            }
         }
     }
 
+    std::cerr << std::endl;
     // convert the column order into a map: from vertex id to its ordered index
-    warthog::helpers::value_index_swap_array(order);
+    cpd.value_index_swap_array();
 
     t.stop();
-    std::cerr
-        << "total preproc time (seconds): "
-        << t.elapsed_time_sec() << "\n";
+    info(true, "total preproc time (seconds):", t.elapsed_time_sec());
+
+    std::string cpd_filename = xy_filename + ".cpd";
+    std::ofstream ofs(cpd_filename);
+
+    if (!ofs.good())
+    {
+        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
+        return 1;
+    }
+
+    info(true, "Writing results to", cpd_filename);
+    ofs << cpd;
+    ofs.close();
 
     return 0;
 }
@@ -96,9 +127,6 @@ make_cpd(std::string xy_filename, int from, int to)
 int
 main(int argc, char *argv[])
 {
-    int from = 0;
-    int to = -1;
-
     warthog::util::param valid_args[] =
     {
         {"from", required_argument, 0, 1},
@@ -116,13 +144,21 @@ main(int argc, char *argv[])
 
     if (fname == "")
     {
-        std::cerr << "Require argument --input missing." << std::endl;
+        std::cerr << "Required argument --input missing." << std::endl;
         return 1;
     }
+
+    int from = 0;
+    int to = -1;
 
     if (s_from != "")
     {
         from = std::stoi(s_from);
+
+        if (from < 0)
+        {
+            std::cerr << "Argument --from cannot be negative." << std::endl;
+        }
     }
 
     if (s_to != "")
