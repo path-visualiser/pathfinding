@@ -398,7 +398,7 @@ class cpd_search : public warthog::search
             warthog::cost_t gval = current->get_g() + cost_to_n;
             sol->nodes_touched_++;
 
-            listener_->generate_node(n, current, gval, edge_id);
+            listener_->generate_node(current, n, gval, edge_id);
 
             // Generate new search nodes
             if(n->get_search_number() != current->get_search_number())
@@ -531,7 +531,7 @@ class cpd_search : public warthog::search
         // `hscale` is contained in the heuristic
         start->init(pi_.instance_id_, warthog::SN_ID_MAX, 0, start_h, start_ub);
 
-        listener_->generate_node(start, 0, 0, UINT32_MAX);
+        listener_->generate_node(0, start, 0, UINT32_MAX);
 
         user(pi_.verbose_, pi_);
         info(pi_.verbose_, "cut-off =", cost_cutoff_, "- tlim =", time_cutoff_,
