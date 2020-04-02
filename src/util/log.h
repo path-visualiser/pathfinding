@@ -121,7 +121,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define error(p, ...) _abstractLog("ERROR", p, __VA_ARGS__)
+#define error(...) _abstractLog("ERROR", true, __VA_ARGS__)
 #else
 #define error(...) ;
 #endif
@@ -138,7 +138,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define critical(p, ...) _abstractLog("CRTCL", p, __VA_ARGS__)
+#define critical(...) _abstractLog("CRTCL", true, __VA_ARGS__)
 #else
 #define critical(...) ;
 #endif
