@@ -14,7 +14,7 @@
 using namespace std;
 
 int
-make_cpd(std::string xy_filename, int from, int to)
+make_cpd(std::string xy_filename, int from, int to, bool verbose=false)
 {
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
@@ -45,13 +45,14 @@ make_cpd(std::string xy_filename, int from, int to)
     warthog::timer t;
     t.start();
 
-    info(true, "Computing node ordering.");
+    info(verbose, "Computing node ordering.");
     cpd.compute_dfs_preorder();
 
-    info(true, "Computing Dijkstra labels.");
+    info(verbose, "Computing Dijkstra labels.");
     std::cerr << "progress: [";
     for(uint32_t i = 0; i < 100; i++) { std::cerr <<" "; }
     std::cerr << "]\rprogress: [";
+
 #pragma omp parallel
     {
         int thread_count = omp_get_num_threads();
@@ -106,7 +107,7 @@ make_cpd(std::string xy_filename, int from, int to)
     cpd.value_index_swap_array();
 
     t.stop();
-    info(true, "total preproc time (seconds):", t.elapsed_time_sec());
+    info(verbose, "total preproc time (seconds):", t.elapsed_time_sec());
 
     std::string cpd_filename = xy_filename + ".cpd";
     std::ofstream ofs(cpd_filename);
@@ -117,7 +118,7 @@ make_cpd(std::string xy_filename, int from, int to)
         return 1;
     }
 
-    info(true, "Writing results to", cpd_filename);
+    info(verbose, "Writing results to", cpd_filename);
     ofs << cpd;
     ofs.close();
 
@@ -127,11 +128,13 @@ make_cpd(std::string xy_filename, int from, int to)
 int
 main(int argc, char *argv[])
 {
+    int verbose = 0;
     warthog::util::param valid_args[] =
     {
         {"from", required_argument, 0, 1},
         {"to", required_argument, 0, 1},
         {"input", required_argument, 0, 1},
+        {"verbose", no_argument, &verbose, 1},
         {0, 0, 0, 0}
     };
 
@@ -166,5 +169,5 @@ main(int argc, char *argv[])
         to = std::stoi(s_to);
     }
 
-    return make_cpd(fname, from, to);
+    return make_cpd(fname, from, to, verbose);
 }
