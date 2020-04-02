@@ -12,8 +12,8 @@ struct shared_data
 struct graph_oracle_listener
 {
     inline void
-    generate_node(warthog::search_node* succ, 
-                  warthog::search_node* from, 
+    generate_node(warthog::search_node* from, 
+                  warthog::search_node* succ, 
                   warthog::cost_t edge_cost,
                   uint32_t edge_id) 
     {

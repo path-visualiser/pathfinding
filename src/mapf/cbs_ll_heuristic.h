@@ -70,8 +70,8 @@ class cbs_ll_heuristic
             { this->ptr = ptr; }
 
             inline void
-            generate_node(warthog::search_node* child, 
-                          warthog::search_node* parent, 
+            generate_node(warthog::search_node* parent, 
+                          warthog::search_node* child, 
                           warthog::cost_t edge_cost,
                           uint32_t edge_id) { } 
 
