@@ -14,7 +14,8 @@
 using namespace std;
 
 int
-make_cpd(std::string xy_filename, int from, int to, bool verbose=false)
+make_cpd(std::string xy_filename, std::string cpd_filename, int from, int to,
+         bool verbose=false)
 {
     warthog::graph::xy_graph g;
     std::ifstream ifs(xy_filename);
@@ -109,7 +110,6 @@ make_cpd(std::string xy_filename, int from, int to, bool verbose=false)
     t.stop();
     info(verbose, "total preproc time (seconds):", t.elapsed_time_sec());
 
-    std::string cpd_filename = xy_filename + ".cpd";
     std::ofstream ofs(cpd_filename);
 
     if (!ofs.good())
@@ -134,6 +134,7 @@ main(int argc, char *argv[])
         {"from", required_argument, 0, 1},
         {"to", required_argument, 0, 1},
         {"input", required_argument, 0, 1},
+        {"output", required_argument, 0, 1},
         {"verbose", no_argument, &verbose, 1},
         {0, 0, 0, 0}
     };
@@ -144,11 +145,18 @@ main(int argc, char *argv[])
     std::string s_from = cfg.get_param_value("from");
     std::string s_to = cfg.get_param_value("to");
     std::string fname = cfg.get_param_value("input");
+    std::string cpd_filename = cfg.get_param_value("output");
 
     if (fname == "")
     {
         std::cerr << "Required argument --input missing." << std::endl;
         return 1;
+    }
+
+    if (cpd_filename == "")
+    {
+        // Use default name
+        cpd_filename = fname + ".cpd";
     }
 
     int from = 0;
@@ -169,5 +177,5 @@ main(int argc, char *argv[])
         to = std::stoi(s_to);
     }
 
-    return make_cpd(fname, from, to, verbose);
+    return make_cpd(fname, cpd_filename, from, to, verbose);
 }
