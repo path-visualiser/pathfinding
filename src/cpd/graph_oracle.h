@@ -63,6 +63,12 @@ class graph_oracle
         // compute first-move labels and compress the result
         void
         precompute();
+
+        inline void
+        compute_dfs_preorder()
+        {
+            warthog::cpd::compute_dfs_preorder(g_, &order_);
+        }
     
         // compress a given first-move table @param row and associate
         // the compressed result with source node @param source_id

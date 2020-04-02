@@ -82,7 +82,7 @@ warthog::cpd::graph_oracle::precompute()
     warthog::timer t;
     t.start();
 
-    warthog::cpd::compute_dfs_preorder(g_, &order_);
+    compute_dfs_preorder();
 
     // specify which source nodes to precompute for
     // (default: all)
