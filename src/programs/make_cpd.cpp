@@ -11,7 +11,63 @@
 #include "log.h"
 #include "xy_graph.h"
 
-using namespace std;
+/**
+ * Given a graph file, an output name and a list of files and an output name,
+ * rebuild the complete CPD, considering all parts were done on the same graph.
+ *
+ * The partial CPDs must be given in the order of the nodes.
+ */
+int
+join_cpds(std::string xy_filename, std::string cpd_filename,
+          std::vector<std::string> file_list)
+{
+    warthog::graph::xy_graph g;
+    // Kinda hacky, create the container before loading the graph so we
+    // effectively have an empty container.
+    warthog::cpd::graph_oracle cpd(&g);
+
+    std::ifstream ifs(xy_filename);
+
+    if (!ifs.good())
+    {
+        std::cerr << "Cannot open file " << xy_filename << std::endl;
+        return 1;
+    }
+
+    ifs >> g;
+    ifs.close();
+
+    for (auto name: file_list)
+    {
+        warthog::cpd::graph_oracle part(&g);
+        ifs.open(name);
+
+        if (!ifs.good())
+        {
+            std::cerr << "Cannot open file " << name << std::endl;
+            return 1;
+        }
+
+        ifs >> part;
+        ifs.close();
+
+        cpd += part;
+    }
+
+    std::ofstream ofs(cpd_filename);
+
+    if (!ofs.good())
+    {
+        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
+        return 1;
+    }
+
+    info(true, "Writing results to", cpd_filename);
+    ofs << cpd;
+    ofs.close();
+
+    return 0;
+}
 
 int
 make_cpd(std::string xy_filename, std::string cpd_filename, int from, int to,
@@ -135,6 +191,7 @@ main(int argc, char *argv[])
         {"to", required_argument, 0, 1},
         {"input", required_argument, 0, 1},
         {"output", required_argument, 0, 1},
+        {"join", required_argument, 0, 1},
         {"verbose", no_argument, &verbose, 1},
         {0, 0, 0, 0}
     };
@@ -177,5 +234,22 @@ main(int argc, char *argv[])
         to = std::stoi(s_to);
     }
 
-    return make_cpd(fname, cpd_filename, from, to, verbose);
+    if (cfg.get_num_values("join") > 0)
+    {
+        std::vector<std::string> names;
+        std::string part;
+
+        while (true)
+        {
+            part = cfg.get_param_value("join");
+
+            if (part == "") { break; }
+            names.push_back(part);
+        }
+        return join_cpds(fname, cpd_filename, names);
+    }
+    else
+    {
+        return make_cpd(fname, cpd_filename, from, to, verbose);
+    }
 }

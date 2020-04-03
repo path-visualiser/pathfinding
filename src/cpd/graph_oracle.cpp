@@ -181,6 +181,13 @@ warthog::cpd::operator>>(std::istream& in,
     lab.fm_.resize(lab.g_->get_num_nodes());
     for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
     {
+        // Check if we have a partial CPD file
+        if (in.peek() == EOF)
+        {
+            lab.fm_.resize(row_id);
+            std::cerr << "early stop; ";
+            break;
+        }
         // number of runs for this row
         uint32_t num_runs;
         in.read((char*)(&num_runs), 4);
@@ -235,12 +242,17 @@ warthog::cpd::operator<<(std::ostream& out,
     }
 
     // write the runs for each row
+    uint32_t row_count = 0;
     uint32_t run_count = 0;
     for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
     {
         // write the number of runs
         uint32_t num_runs = (uint32_t)lab.fm_.at(row_id).size();
+        // Skip empty runs
+        if (num_runs == 0) { continue; }
+
         out.write((char*)(&num_runs), 4);
+        row_count++;
 
         for(uint32_t run = 0; run < num_runs; run++)
         {
@@ -262,7 +274,7 @@ warthog::cpd::operator<<(std::ostream& out,
     mytimer.stop();
 
     std::cerr 
-        << "wrote to disk " << lab.fm_.size()
+        << "wrote to disk " << row_count
         << " rows and "
         << run_count << " runs. "
         << " time: " << (double)mytimer.elapsed_time_nano() / 1e9 << " s \n";
