@@ -12,39 +12,22 @@
 #include "xy_graph.h"
 
 /**
- * Given a graph file, an output name and a list of files and an output name,
- * rebuild the complete CPD, considering all parts were done on the same graph.
+ * Rebuild a CPD given a list of file containing its parts.
  *
  * The partial CPDs must be given in the order of the nodes.
  */
 int
-join_cpds(std::string xy_filename, std::string cpd_filename,
+join_cpds(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
           std::vector<std::string> file_list)
 {
-    warthog::graph::xy_graph g;
-    // Kinda hacky, create the container before loading the graph so we
-    // effectively have an empty container.
-    warthog::cpd::graph_oracle cpd(&g);
-
-    std::ifstream ifs(xy_filename);
-
-    if (!ifs.good())
-    {
-        std::cerr << "Cannot open file " << xy_filename << std::endl;
-        return 1;
-    }
-
-    ifs >> g;
-    ifs.close();
-
     for (auto name: file_list)
     {
         warthog::cpd::graph_oracle part(&g);
-        ifs.open(name);
+        std::ifstream ifs(name);
 
         if (!ifs.good())
         {
-            std::cerr << "Cannot open file " << name << std::endl;
+            error("Cannot open file ", name);
             return 1;
         }
 
@@ -54,39 +37,13 @@ join_cpds(std::string xy_filename, std::string cpd_filename,
         cpd += part;
     }
 
-    std::ofstream ofs(cpd_filename);
-
-    if (!ofs.good())
-    {
-        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
-        return 1;
-    }
-
-    info(true, "Writing results to", cpd_filename);
-    ofs << cpd;
-    ofs.close();
-
     return 0;
 }
 
 int
-make_cpd(std::string xy_filename, std::string cpd_filename, int from, int to,
-         bool verbose=false)
+make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
+         int to, bool verbose=false)
 {
-    warthog::graph::xy_graph g;
-    std::ifstream ifs(xy_filename);
-
-    if (!ifs.good())
-    {
-        std::cerr << "Cannot open file " << xy_filename << std::endl;
-        return 1;
-    }
-
-    ifs >> g;
-    ifs.close();
-
-    // This needs to be done after loading the graph
-    warthog::cpd::graph_oracle cpd(&g);
     uint32_t node_count = g.get_num_nodes();
     if (to < 0)
     {
@@ -94,7 +51,10 @@ make_cpd(std::string xy_filename, std::string cpd_filename, int from, int to,
     }
 
     assert(to > 0);
+    assert(from < to);
     assert((unsigned int)from < node_count);
+    assert((unsigned int)to <= node_count);
+
     uint32_t node_end = to;
     unsigned char pct_done = 0;
     uint32_t nprocessed = 0;
@@ -166,18 +126,6 @@ make_cpd(std::string xy_filename, std::string cpd_filename, int from, int to,
     t.stop();
     info(verbose, "total preproc time (seconds):", t.elapsed_time_sec());
 
-    std::ofstream ofs(cpd_filename);
-
-    if (!ofs.good())
-    {
-        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
-        return 1;
-    }
-
-    info(verbose, "Writing results to", cpd_filename);
-    ofs << cpd;
-    ofs.close();
-
     return 0;
 }
 
@@ -185,6 +133,7 @@ int
 main(int argc, char *argv[])
 {
     int verbose = 0;
+    int status = 0;
     warthog::util::param valid_args[] =
     {
         {"from", required_argument, 0, 1},
@@ -201,21 +150,28 @@ main(int argc, char *argv[])
 
     std::string s_from = cfg.get_param_value("from");
     std::string s_to = cfg.get_param_value("to");
-    std::string fname = cfg.get_param_value("input");
+    std::string xy_filename = cfg.get_param_value("input");
     std::string cpd_filename = cfg.get_param_value("output");
 
-    if (fname == "")
+    if (xy_filename == "")
     {
-        std::cerr << "Required argument --input missing." << std::endl;
+        error("Required argument --input [xy graph] missing.");
         return 1;
     }
 
-    if (cpd_filename == "")
+    warthog::graph::xy_graph g;
+    std::ifstream ifs(xy_filename);
+
+    if (!ifs.good())
     {
-        // Use default name
-        cpd_filename = fname + ".cpd";
+        error("Cannot open file ", xy_filename);
+        return 1;
     }
 
+    ifs >> g;
+    ifs.close();
+
+    warthog::cpd::graph_oracle cpd(&g);
     int from = 0;
     int to = -1;
 
@@ -225,7 +181,8 @@ main(int argc, char *argv[])
 
         if (from < 0)
         {
-            std::cerr << "Argument --from cannot be negative." << std::endl;
+            error("Argument --from [node id] cannot be negative.");
+            return 1;
         }
     }
 
@@ -246,10 +203,33 @@ main(int argc, char *argv[])
             if (part == "") { break; }
             names.push_back(part);
         }
-        return join_cpds(fname, cpd_filename, names);
+        cpd.clear();
+        status = join_cpds(g, cpd, names);
     }
     else
     {
-        return make_cpd(fname, cpd_filename, from, to, verbose);
+        status = make_cpd(g, cpd, from, to, verbose);
     }
+
+    // There was an error
+    if (status == 1) { return 1; }
+
+    // No error, proceed
+    if (cpd_filename == "")
+    {
+        // Use default name
+        cpd_filename = xy_filename + ".cpd";
+    }
+
+    std::ofstream ofs(cpd_filename);
+
+    if (!ofs.good())
+    {
+        error("Could not open CPD file ", cpd_filename);
+        return 1;
+    }
+
+    info(verbose, "Writing results to", cpd_filename);
+    ofs << cpd;
+    ofs.close();
 }
