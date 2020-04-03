@@ -109,7 +109,8 @@ class graph_oracle
         friend std::istream&
         operator>>(std::istream& in, warthog::cpd::graph_oracle& o);
 
-
+        warthog::cpd::graph_oracle&
+        operator+=(const warthog::cpd::graph_oracle &cpd);
 
     private:
         std::vector<std::vector<warthog::cpd::rle_run32>> fm_;

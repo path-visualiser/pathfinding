@@ -269,3 +269,25 @@ warthog::cpd::operator<<(std::ostream& out,
     return out;
 }
 
+/**
+ * Append operator for CPDs. Used when building partial CPDs so we can join them
+ * into a single one.
+ *
+ * Works by appending runs to the current instance and, if the order is not set,
+ * copying the order.
+ */
+warthog::cpd::graph_oracle&
+warthog::cpd::graph_oracle::operator+=(const warthog::cpd::graph_oracle &cpd)
+{
+    fm_.insert(fm_.end(), cpd.fm_.begin(), cpd.fm_.end());
+
+    // Order is always read completely
+    if (order_.size() == 0)
+    {
+        order_ = cpd.order_;
+    }
+
+    assert(order_ == cpd.order_);
+
+    return *this;
+}
