@@ -65,6 +65,13 @@ class graph_oracle
         precompute();
 
         inline void
+        clear()
+        {
+            order_.clear();
+            fm_.clear();
+        }
+
+        inline void
         compute_dfs_preorder()
         {
             warthog::cpd::compute_dfs_preorder(g_, &order_);
