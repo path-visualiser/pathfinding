@@ -85,7 +85,6 @@ warthog::cpd::graph_oracle::precompute()
         std::vector<warthog::cpd::fm_coll> s_row(g->get_num_nodes());
         warthog::sn_id_t source_id;
 
-
         // each thread has its own copy of Dijkstra and each
         // copy has a separate memory pool
         warthog::simple_graph_expansion_policy expander(g);
@@ -109,15 +108,19 @@ warthog::cpd::graph_oracle::precompute()
         {
             // source nodes are evenly divided among all threads;
             // skip any source nodes not intended for current thread
-            if((i % par->max_threads_) != par->thread_id_) 
+
             { continue; }
 
             source_id = shared->sources_->at(i);
             warthog::problem_instance problem(source_id);
             warthog::solution sol;
 
+            // everything begins as a wildcard 
             s_row.clear();
-            s_row.resize(shared->cpd_->get_graph()->get_num_nodes());
+            s_row.assign(shared->cpd_->get_graph()->get_num_nodes(), warthog::cpd::CPD_FM_NONE);
+
+            // compute actual first moves to each reachable node
+            // (NB: non-reachable nodes retain wildcard moves)
             dijk.get_path(problem, sol);
             cpd->add_row((uint32_t)source_id, s_row);
             par->nprocessed_++;
