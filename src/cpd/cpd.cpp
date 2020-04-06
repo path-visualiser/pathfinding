@@ -52,14 +52,17 @@ warthog::cpd::compute_dfs_preorder(
 
     // unreachable nodes are added to the end of the 
     // column ordering
+    uint32_t unreachable = 0;
     for(uint32_t i = 0; i < dfs_labeling.size(); i++)
     {
         if(dfs_labeling.at(i) == UINT32_MAX)
         {
             dfs_labeling.at(i) = preorder_id++;
+            unreachable++;
         }
     }
     assert(preorder_id == g->get_num_nodes());
+    std::cerr << "graph has " << unreachable << " unreachable nodes\n";
 
     // sort the columns by their dfs labels (smallest to largest)
     column_order->reserve(g->get_num_nodes());
