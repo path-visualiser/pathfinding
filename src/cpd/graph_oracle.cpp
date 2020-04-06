@@ -16,8 +16,7 @@ void warthog::cpd::compute_row(uint32_t source_id,
     warthog::problem_instance problem(source_id);
     warthog::solution sol;
 
-    s_row.clear();
-    s_row.resize(cpd->get_graph()->get_num_nodes());
+    std::fill(s_row.begin(), s_row.end(), warthog::cpd::CPD_FM_NONE);
     dijk->get_path(problem, sol);
     cpd->add_row(source_id, s_row);
 }
