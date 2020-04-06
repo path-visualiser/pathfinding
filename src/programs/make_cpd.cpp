@@ -27,7 +27,7 @@ join_cpds(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
 
         if (!ifs.good())
         {
-            error("Cannot open file ", name);
+            std::cerr << "Cannot open file " << name << std::endl;
             return 1;
         }
 
@@ -155,7 +155,8 @@ main(int argc, char *argv[])
 
     if (xy_filename == "")
     {
-        error("Required argument --input [xy graph] missing.");
+        std::cerr << "Required argument --input [xy graph] missing."
+                  << std::endl;
         return 1;
     }
 
@@ -164,7 +165,7 @@ main(int argc, char *argv[])
 
     if (!ifs.good())
     {
-        error("Cannot open file ", xy_filename);
+        std::cerr << "Cannot open file " << xy_filename << std::endl;
         return 1;
     }
 
@@ -181,7 +182,8 @@ main(int argc, char *argv[])
 
         if (from < 0)
         {
-            error("Argument --from [node id] cannot be negative.");
+            std::cerr << "Argument --from [node id] cannot be negative."
+                      << std::endl;
             return 1;
         }
     }
@@ -225,7 +227,7 @@ main(int argc, char *argv[])
 
     if (!ofs.good())
     {
-        error("Could not open CPD file ", cpd_filename);
+        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
         return 1;
     }
 
