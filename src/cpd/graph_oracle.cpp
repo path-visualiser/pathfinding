@@ -65,6 +65,7 @@ warthog::cpd::graph_oracle::precompute()
             // source nodes are evenly divided among all threads;
             // skip any source nodes not intended for current thread
 
+            if((i % par->max_threads_) != par->thread_id_) 
             { continue; }
 
             source_id = shared->sources_->at(i);

@@ -14,7 +14,7 @@ warthog::cpd::compute_dfs_preorder(
     typedef std::pair<uint32_t, uint32_t> dfs_pair;
     std::vector<dfs_pair> dfs_stack;
 
-    uint32_t postorder_id = 0;
+    uint32_t preorder_id = 0;
     uint32_t dfs_seed = ((uint32_t)rand() % (uint32_t)g->get_num_nodes());
     dfs_stack.push_back(dfs_pair(dfs_seed, 0));
     dfs_stack.reserve(g->get_num_nodes());
@@ -27,7 +27,7 @@ warthog::cpd::compute_dfs_preorder(
         if(dfs_labeling.at(dfs_node.first) == UINT32_MAX)
         { 
             // first time we reach this node. assign it an id
-            dfs_labeling.at(dfs_node.first) = postorder_id++;
+            dfs_labeling.at(dfs_node.first) = preorder_id++;
         }
 
         while(true)
@@ -49,6 +49,20 @@ warthog::cpd::compute_dfs_preorder(
             }
         }
     }
+
+    // unreachable nodes are added to the end of the 
+    // column ordering
+    uint32_t unreachable = 0;
+    for(uint32_t i = 0; i < dfs_labeling.size(); i++)
+    {
+        if(dfs_labeling.at(i) == UINT32_MAX)
+        {
+            dfs_labeling.at(i) = preorder_id++;
+            unreachable++;
+        }
+    }
+    assert(preorder_id == g->get_num_nodes());
+    std::cerr << "graph has " << unreachable << " unreachable nodes\n";
 
     // sort the columns by their dfs labels (smallest to largest)
     column_order->reserve(g->get_num_nodes());
