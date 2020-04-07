@@ -892,7 +892,7 @@ run_cpd_search(warthog::util::cfg& cfg,
 
     // read the cpd (create from scratch if one doesn't exist)
     warthog::cpd::graph_oracle oracle(&g);
-    std::string cpd_filename = cfg.get_param_value("cpd");
+    std::string cpd_filename = cfg.get_param_value("input");
     if(cpd_filename == "")
     {
         cpd_filename = xy_filename + ".cpd";
@@ -1000,7 +1000,7 @@ run_cpd(warthog::util::cfg& cfg,
         sol->time_elapsed_nano_ = mytimer.elapsed_time_nano();
     };
 
-    //run_experiments(cpd_extract, alg_name, parser, std::cout);
+    run_experiments(cpd_extract, alg_name, parser, std::cout);
 
 }
 
