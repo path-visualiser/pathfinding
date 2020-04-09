@@ -45,6 +45,41 @@ class graph_oracle
 
         graph_oracle(const graph_oracle&) = default;
 
+        bool
+        operator==(const graph_oracle& other)
+        {
+            if (order_ != other.order_)
+            {
+                return false;
+            }
+
+            if (fm_.size() != other.fm_.size())
+            {
+                return false;
+            }
+
+            for (size_t i = 0; i < fm_.size(); i++)
+            {
+                std::vector<warthog::cpd::rle_run32> row1 = fm_.at(i);
+                std::vector<warthog::cpd::rle_run32> row2 = other.fm_.at(i);
+
+                if (row1.size() != row2.size())
+                {
+                    return false;
+                }
+
+                for (size_t j = 0; j < row1.size(); j++)
+                {
+                    if (row1.at(j).data_ != row2.at(j).data_)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
         inline uint32_t 
         get_move(warthog::sn_id_t source_id, 
                  warthog::sn_id_t target_id)
