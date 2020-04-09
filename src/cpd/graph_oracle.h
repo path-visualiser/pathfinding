@@ -43,6 +43,8 @@ class graph_oracle
 
         virtual ~graph_oracle() { } 
 
+        graph_oracle(const graph_oracle&) = default;
+
         inline uint32_t 
         get_move(warthog::sn_id_t source_id, 
                  warthog::sn_id_t target_id)
