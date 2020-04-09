@@ -62,6 +62,8 @@ class xy_graph_base
         ~xy_graph_base()
         { }
 
+        xy_graph_base(const xy_graph_base&) = default;
+
         warthog::graph::xy_graph_base<T_NODE, T_EDGE>&
         operator=(const warthog::graph::xy_graph_base<T_NODE, T_EDGE>&& other)
         {
