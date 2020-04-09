@@ -39,6 +39,8 @@ class graph_oracle
             fm_.resize(g_->get_num_nodes());
         }
 
+        graph_oracle() { }
+
         virtual ~graph_oracle() { } 
 
         inline uint32_t 
