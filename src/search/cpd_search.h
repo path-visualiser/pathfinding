@@ -492,7 +492,9 @@ class cpd_search : public warthog::search
         {
             n->relax(gval, pid);
             listener_->relax_node(n);
-        } else {
+        }
+        else
+        {
             n->set_g(gval);
         }
     }
