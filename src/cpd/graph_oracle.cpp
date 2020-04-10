@@ -156,7 +156,9 @@ warthog::cpd::operator>>(std::istream& in,
 
     uint32_t num_nodes;
     in.read((char*)(&num_nodes), 4);
-    if(num_nodes != lab.g_->get_num_nodes())
+    // Need to check whether we have initialized the graph as serialising
+    // removes the internal pointer.
+    if(lab.g_ != nullptr && num_nodes != lab.g_->get_num_nodes())
     {
         std::cerr
             << "err; " << "input mismatch. cpd file says " << num_nodes
@@ -165,7 +167,7 @@ warthog::cpd::operator>>(std::istream& in,
     }
 
     lab.fm_.clear();
-    lab.order_.resize(lab.g_->get_num_nodes());
+    lab.order_.resize(num_nodes);
 
     // read the vertex-to-column-order mapping
     for(uint32_t i = 0; i < num_nodes; i++)
@@ -177,8 +179,8 @@ warthog::cpd::operator>>(std::istream& in,
 
     // read the RLE data
     uint32_t run_count = 0;
-    lab.fm_.resize(lab.g_->get_num_nodes());
-    for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
+    lab.fm_.resize(num_nodes);
+    for(uint32_t row_id = 0; row_id < num_nodes; row_id++)
     {
         // Check if we have a partial CPD file
         if (in.peek() == EOF)

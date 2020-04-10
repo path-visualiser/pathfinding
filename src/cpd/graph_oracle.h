@@ -39,7 +39,7 @@ class graph_oracle
             fm_.resize(g_->get_num_nodes());
         }
 
-        graph_oracle() { }
+        graph_oracle() : g_(nullptr) { }
 
         virtual ~graph_oracle() { } 
 
