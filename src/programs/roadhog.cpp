@@ -862,6 +862,12 @@ run_cpd_search(warthog::util::cfg& cfg,
     std::string diff_filename = cfg.get_param_value("input");
     if (diff_filename == "")
     {
+        diff_filename = xy_filename + ".diff";
+    }
+
+    ifs.open(diff_filename);
+    if (!ifs.good())
+    {
         // apply some default upperbound costs
         // (ub == lb)
         for(uint32_t i = 0; i < g.get_num_nodes(); i++)
@@ -876,15 +882,6 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
     else
     {
-        ifs.open(diff_filename);
-
-        if (!ifs.good())
-        {
-            std::cerr << "cannot open diff: --input [xy-graph file] "
-                      << "[diff-xy-graph file]\n";
-            return;
-        }
-
         g.perturb(ifs);
 
         ifs.close();
