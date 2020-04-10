@@ -133,6 +133,10 @@ class graph_oracle
         inline warthog::graph::xy_graph* 
         get_graph() { return g_; } 
 
+        inline void
+        set_graph(warthog::graph::xy_graph* g)
+        { g_ = g; }
+
         inline size_t
         mem()
         {
