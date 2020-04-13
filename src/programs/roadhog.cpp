@@ -20,6 +20,7 @@
 #include "constants.h"
 #include "contraction.h"
 #include "cpd_heuristic.h"
+#include "cpd_search.h"
 #include "depth_first_search.h"
 #include "dimacs_parser.h"
 #include "euclidean_heuristic.h"
@@ -913,7 +914,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     warthog::cpd_heuristic h(&oracle);
     warthog::pqueue_min open;
 
-    warthog::anytime_astar<
+    warthog::cpd_search<
         warthog::cpd_heuristic,
         warthog::simple_graph_expansion_policy,
         warthog::pqueue_min>
