@@ -376,14 +376,15 @@ class xy_graph_base
         }
 
         /**
-        * Given an already loaded 'xy_graph' and a new file, we edit the labels
-        * of the edges to contain the new costs.
-        */
+         * Given an already loaded 'xy_graph' and a new file, we edit the labels
+         * of the edges to contain the new costs.
+         */
         void
         perturb(std::istream& in)
         {
             uint32_t num_nodes;
             uint32_t num_edges;
+            uint32_t num_modif;
             std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
             std::vector<std::pair<int32_t, int32_t>> xy;
             std::vector<warthog::graph::ECAP_T> in_degree;
@@ -393,7 +394,7 @@ class xy_graph_base
                 in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
 
             std::cerr << "graph read: " << num_nodes << " nodes and "
-                      << num_edges << " edges.";
+                      << num_edges << " edges. ";
 
             assert(num_nodes == nodes_.size());
 
@@ -402,8 +403,16 @@ class xy_graph_base
               uint32_t from_id = e.first;
               node* from = get_node(from_id);
               edge_iter eit = from->find_edge(e.second.node_id_);
-              eit->label_ = e.second.wt_;
+
+              if (eit != from->outgoing_end())
+              {
+                eit->label_ = e.second.wt_;
+                num_modif++;
+              }
+              // TODO else add warning (from log.h?)
             }
+
+            std::cerr << "Perturbed " << num_modif << " edges." << std::endl;
         }
 
         //inline void
