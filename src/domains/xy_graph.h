@@ -384,7 +384,7 @@ class xy_graph_base
         {
             uint32_t num_nodes;
             uint32_t num_edges;
-            uint32_t num_modif;
+            uint32_t num_modif = 0;
             std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
             std::vector<std::pair<int32_t, int32_t>> xy;
             std::vector<warthog::graph::ECAP_T> in_degree;
@@ -392,10 +392,6 @@ class xy_graph_base
 
             parse_xy(
                 in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
-
-            std::cerr << "graph read: " << num_nodes << " nodes and "
-                      << num_edges << " edges. ";
-
             assert(num_nodes == nodes_.size());
 
             for (auto e : edges)
@@ -407,7 +403,9 @@ class xy_graph_base
               if (eit != from->outgoing_end())
               {
                 eit->label_ = e.second.wt_;
-                num_modif++;
+
+                if (eit->wt_ != eit->label_)
+                { num_modif++; }
               }
               // TODO else add warning (from log.h?)
             }
