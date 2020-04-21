@@ -16,6 +16,23 @@ int main(int argv, char* args[]) {
     return res;
 }
 
+void
+perturb_edge(
+    warthog::graph::xy_graph* g, uint32_t from, uint32_t to, uint32_t coef=2)
+{
+    warthog::graph::node* n = g->get_node(from);
+
+    for (uint32_t j = 0; j < n->out_degree(); j++)
+    {
+        warthog::graph::edge* e = (n->outgoing_begin() + j);
+
+        if (e->node_id_ == to)
+        {
+            e->label_ = e->wt_ * coef;
+        }
+    }
+}
+
 SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 {
     string map_name = "square01.map";
@@ -88,7 +105,116 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
                 REQUIRE(sol.sum_of_edge_costs_ == cost);
             }
         }
+    }
+}
 
+SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
+{
+    // Load map
+    string map_name = "cross01.map";
+    warthog::graph::xy_graph g;
+    warthog::gridmap d(map_name.c_str());
+    warthog::graph::gridmap_to_xy_graph(&d, &g, false);
+
+    // Load CPD
+    warthog::cpd::graph_oracle oracle(&g);
+    std::string cpd_filename = map_name + ".cpd";
+    warthog::cpd_heuristic h(&oracle);
+    std::ifstream ifs(cpd_filename);
+
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        std::cerr << "precomputing... " <<std::endl;
+        oracle.precompute();
+        std::ofstream ofs(cpd_filename);
+        ofs << oracle;
+        std::cerr << "writing " << cpd_filename << std::endl;
+    }
+
+    // Search algorithm
+    warthog::simple_graph_expansion_policy expander(&g, nullptr, true);
+    warthog::pqueue_min open;
+    warthog::solution sol;
+    warthog::cpd_search<
+        warthog::cpd_heuristic,
+        warthog::simple_graph_expansion_policy>
+        astar(&h, &expander, &open);
+
+    // Instance data
+    warthog::sn_id_t start = 0;
+    warthog::sn_id_t goal = 19;
+    // Cannot cut corners
+    // warthog::cost_t cost = warthog::ONE *
+    //     (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
+    std::vector<warthog::sn_id_t> optipath = {19, 14, 10, 8, 3, 2, 1, 0};
+
+    // Set labels for the entire graph
+    for (uint32_t i = 0; i < g.get_num_nodes(); i++)
+    {
+        warthog::graph::node *n = g.get_node(i);
+
+        for (uint32_t j = 0; j < n->out_degree(); j++)
+        {
+            warthog::graph::edge *e = (n->outgoing_begin() + j);
+            e->label_ = e->wt_;
+        }
+    }
+
+    GIVEN("A perturbation not on the optimal path")
+    {
+        perturb_edge(&g, 0, 4);
+
+        THEN("The search is not affected")
+        {
+            warthog::problem_instance pi(start, goal, true);
+
+            astar.get_path(pi, sol);
+
+            REQUIRE(sol.path_ == optipath);
+            REQUIRE(sol.nodes_expanded_ <= 1);
+        }
+    }
+
+    GIVEN("A perturbation on the optimal path")
+    {
+        // Affect (0, 0) -> (0, 1)
+        perturb_edge(&g, 0, 1);
+
+        THEN("The search is affected but cost is the same")
+        {
+            warthog::problem_instance pi(start, goal, true);
+
+            astar.get_path(pi, sol);
+
+            REQUIRE(sol.path_ != optipath);
+            // REQUIRE(sol.sum_of_edge_costs_ == cost); // TODO Rounding error?
+            REQUIRE(sol.nodes_expanded_ > 1);
+        }
+    }
+
+    GIVEN("A perturbed map")
+    {
+        // Now we will modify the map enough to warrant search: the diagonal
+        // moves at the corner -- which are the only ones that offer
+        // alternatives.
+        perturb_edge(&g, 3, 8);
+        perturb_edge(&g, 11, 16);
+
+        THEN("The optimal path is now two straight lines")
+        {
+            warthog::problem_instance pi(start, goal, true);
+
+            astar.get_path(pi, sol);
+
+            REQUIRE(sol.path_ != optipath);
+            REQUIRE(sol.path_.size() == (optipath.size() + 1));
+            REQUIRE(sol.sum_of_edge_costs_ == warthog::ONE * 8);
+        }
+       
         WHEN("We have a bit of time to search")
         {
             astar.set_max_ms_cutoff(1);
