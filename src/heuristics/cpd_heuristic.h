@@ -45,14 +45,22 @@ class cpd_heuristic
     typedef std::pair<warthog::sn_id_t, warthog::graph::edge*> stack_pair;
     public:
 
-        cpd_heuristic(warthog::cpd::graph_oracle* cpd)
-            : cpd_(cpd)
+        cpd_heuristic(warthog::cpd::graph_oracle* cpd, double hscale=1.0)
+            : cpd_(cpd), hscale_(hscale)
         {
             cache_.resize(cpd_->get_graph()->get_num_nodes());
             stack_.reserve(4096);
         }
 
         ~cpd_heuristic() { }
+
+        inline void
+        set_hscale(double hscale)
+        { hscale_ = hscale; }
+
+        inline double
+        get_hscale()
+        { return hscale_; }
 
         // @return a lowerbound cost from node @param start_id to
         // node @param target_id. If no such bound has been established
@@ -93,7 +101,7 @@ class cpd_heuristic
                 stack_pair sp = stack_.back();
                 stack_.pop_back();
 
-                lb += (sp.second)->wt_;
+                lb += (sp.second)->wt_ * hscale_;
                 ub += (sp.second)->label_;
                 cache_.at(sp.first).lb_ = lb;
                 cache_.at(sp.first).ub_ = ub;
@@ -151,6 +159,7 @@ class cpd_heuristic
 
     private:
         warthog::cpd::graph_oracle* cpd_;
+        double hscale_;
         std::vector<warthog::cpd_heuristic_cache_entry> cache_;
         std::vector<stack_pair> stack_;
 };

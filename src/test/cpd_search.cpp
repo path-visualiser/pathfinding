@@ -111,7 +111,29 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
                 warthog::problem_instance pi(start, goal, true);
                 astar.get_path(pi, sol);
 
+                // TODO have the actual number of nodes of some sort?
                 REQUIRE(sol.nodes_expanded_ > 0);
+            }
+        }
+    }
+
+    GIVEN("A sub-optimal heuristic")
+    {
+        h.set_hscale(2.0);
+
+        WHEN("The graph is perturbed within acceptable range")
+        {
+            // Modify optimal edge (0, 0) -> (0, 1), but the total cost of the
+            // path is within the acceptance factor (100% in this case).
+            perturb_edge(&g, 0, 1);
+
+            THEN("The search is not modified")
+            {
+                warthog::problem_instance pi(start, goal, true);
+
+                astar.get_path(pi, sol);
+
+                REQUIRE(sol.path_ == optipath);
             }
         }
     }
