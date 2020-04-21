@@ -263,18 +263,30 @@ class cpd_search : public warthog::search
         // if not [incumbent = nil or f(n) < f(incumbent)]
         if (incumbent != nullptr)
         {
-            if (n->get_f() >= incumbent->get_f())
+            warthog::cost_t bound;
+
+            // If we have an UB, we need to use it as source-of-truth
+            if (incumbent->get_ub() < warthog::COST_MAX)
+            {
+                bound = incumbent->get_ub();
+            }
+            else
+            {
+                bound = incumbent->get_f();
+            }
+
+            if (n->get_f() >= bound)
             {
                 debug(pi_.verbose_, stage, "by f-val:", *n);
                 prune = true;
             }
-
-            if (n->get_ub() < warthog::COST_MAX &&
-                n->get_ub() >= incumbent->get_ub())
-            {
-                debug(pi_.verbose_, stage, "by UB:", *n);
-                prune = true;
-            }
+            // TODO Do we need to make a case where we have an incumbent's UB
+            // but the current node does not?
+            // else if (n->get_ub() < warthog::COST_MAX && n->get_ub() >= bound)
+            // {
+            //     debug(pi_.verbose_, stage, "by UB:", *n);
+            //     prune = true;
+            // }
         }
 
         if (k_moves_.at(n->get_id()) >= max_k_moves_)
@@ -354,7 +366,7 @@ class cpd_search : public warthog::search
         n->init(current->get_search_number(), current->get_id(),
                 warthog::COST_MAX, gval + hval, ub);
 
-        debug(pi_.verbose_, "Generating:", *n);
+        debug(pi_.verbose_, "Generating:", n->get_id());
 
         listener_->relax_node(n);
     }
@@ -428,13 +440,15 @@ class cpd_search : public warthog::search
                 if (incumbent == nullptr)
                 {
                     debug(pi_.verbose_, "Found UB:", *n);
+                    incumbent = n;
                 }
                 // Better incumbent
-                else
+                else if (n->get_ub() < incumbent->get_ub())
                 {
                     debug(pi_.verbose_, "Update UB:", *n);
+                    incumbent = n;
                 }
-                incumbent = n;
+                // incumbent = n;
             }
 
             // Add nodes to queue
@@ -485,7 +499,7 @@ class cpd_search : public warthog::search
             k_moves_.at(n->get_id()) = k_moves_.at(pid) + 1;
         }
 
-        debug(pi_.verbose_, "Node", n->get_id(), "set to k=",
+        trace(pi_.verbose_, "Node", n->get_id(), "set to k=",
               k_moves_.at(n->get_id()));
 
         if (n->get_g() < warthog::COST_MAX)
@@ -560,10 +574,10 @@ class cpd_search : public warthog::search
         {
             warthog::search_node* current = open_->pop();
 
-            if (early_stop_(current, &sol, &mytimer) ||
+            if (early_stop_(current, &sol, &mytimer))
                  // Stop if the $f$ value of UB of the best candidate node is
                  // worse than the incumbent.
-                 should_prune_(incumbent, current, "Stop"))
+                 // should_prune_(incumbent, current, "Stop"))
             {
                 break;
             }
