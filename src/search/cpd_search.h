@@ -51,6 +51,7 @@ class cpd_search : public warthog::search
         time_cutoff_ = DBL_MAX;
         max_k_moves_ = UINT32_MAX;
         pi_.instance_id_ = UINT32_MAX;
+        quality_cutoff_ = 1.0;
         // TODO Check whether this is the number of nodes
         k_moves_ = std::vector<uint32_t>(expander_->get_node_pool_size(), 0);
     }
@@ -182,11 +183,20 @@ class cpd_search : public warthog::search
     inline uint32_t
     get_max_time_cutoff() { return time_cutoff_; }
 
+    // Set a k-radius cut-off -- stop expanding nodes further than k moves away
+    // from the start.
     inline void
     set_max_k_moves(uint32_t k_moves) { max_k_moves_ = k_moves; }
 
     inline uint32_t
     get_max_k_moves() { return max_k_moves_; }
+
+    // Set a quality cut-off, if the LB is within xx% of the UB we can stop
+    inline void
+    set_quality_cutoff(double cutoff) { quality_cutoff_ = cutoff; }
+
+    inline double
+    get_quality_cutoff() { return quality_cutoff_; }
 
     void
     set_listener(L* listener)
@@ -221,6 +231,7 @@ class cpd_search : public warthog::search
     double time_cutoff_;            // Time limit in nanoseconds
     uint32_t max_k_moves_;          // Max "distance" from target
     std::vector<uint32_t> k_moves_; // "Distance" from target
+    double quality_cutoff_;
 
     // no copy ctor
     cpd_search(const cpd_search& other) { }
@@ -269,6 +280,12 @@ class cpd_search : public warthog::search
             if (incumbent->get_ub() < warthog::COST_MAX)
             {
                 bound = incumbent->get_ub();
+
+                if (n->get_f() * quality_cutoff_ > bound)
+                {
+                    debug(pi_.verbose_, stage, "by quality:", *n);
+                    prune = true;
+                }
             }
             else
             {

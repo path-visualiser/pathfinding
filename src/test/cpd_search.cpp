@@ -245,7 +245,9 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
 
     GIVEN("A sub-optimal heuristic")
     {
-        h.set_hscale(2.0);
+        // I think this is wrong, we need the f-scale
+        // h.set_hscale(2.0);
+        astar.set_quality_cutoff(2.0);
 
         WHEN("The graph is perturbed within acceptable range")
         {
