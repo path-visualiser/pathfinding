@@ -571,19 +571,14 @@ class cpd_search : public warthog::search
              "- k-move =", max_k_moves_);
         debug(pi_.verbose_, "Start node:", *start);
 
+        open_->push(start);
+        sol.nodes_inserted_++;
+
         if (start_ub < warthog::COST_MAX)
         {
             // Having an UB means having a *concrete* path.
             incumbent = start;
             info(pi_.verbose_, "Set UB:", incumbent->get_ub());
-            // We expand neighbours here instead of adding the start node to
-            // the queue in order to avoid premature stopping.
-            expand_node_(start, incumbent, &sol, &mytimer);
-        }
-        else
-        {
-            open_->push(start);
-            sol.nodes_inserted_++;
         }
 
         // begin expanding
