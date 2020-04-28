@@ -846,6 +846,7 @@ void
 run_cpd_search(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
 {
+    bool label_as_lb = false;
     warthog::graph::xy_graph g;
     std::ifstream ifs;
     // We first load the xy_graph and its diff as we need them to be *read* in
@@ -865,22 +866,13 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
 
     ifs.open(diff_filename);
-    // apply some default upperbound costs (ub == lb)
     if (!ifs.good())
     {
         ifs.close();
         ifs.open(xy_filename);
         ifs >> g;
-
-        for(uint32_t i = 0; i < g.get_num_nodes(); i++)
-        {
-            warthog::graph::node* n = g.get_node(i);
-            for(uint32_t j = 0; j < n->out_degree(); j++)
-            {
-                warthog::graph::edge* e = (n->outgoing_begin() + j);
-                e->label_ = e->wt_;
-            }
-        }
+        // No modification on the graph
+        label_as_lb = false;
     }
     else
     {
@@ -890,8 +882,9 @@ run_cpd_search(warthog::util::cfg& cfg,
         // Base graph second
         ifs.open(xy_filename);
         g.perturb(ifs);
-        ifs.close();
+        label_as_lb = true;
     }
+    ifs.close();
 
     // read the cpd (create from scratch if one doesn't exist)
     warthog::cpd::graph_oracle oracle(&g);
@@ -916,7 +909,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
-    warthog::cpd_heuristic h(&oracle, 1.0, true);
+    warthog::cpd_heuristic h(&oracle, 1.0, label_as_lb);
     warthog::pqueue_min open;
 
     warthog::cpd_search<

@@ -16,6 +16,7 @@
 #include "graph_oracle.h"
 #include "helpers.h"
 #include "xy_graph.h"
+#include "cast.h"
 
 #include <stack>
 
@@ -102,15 +103,29 @@ class cpd_heuristic
                 stack_pair sp = stack_.back();
                 stack_.pop_back();
 
+                warthog::graph::edge_cost_t label =
+                    warthog::graph::EDGE_COST_MAX;
+
+                if ((sp.second)->label_ == UINTPTR_MAX)
+                {
+                    // You probably don't want to be playing with unset labels
+                    assert(!label_as_lb_);
+                }
+                else
+                {
+                    label = cpd::label_to_wt((sp.second)->label_);
+                }
+
                 if (label_as_lb_)
                 {
                     // Always apply `hscale_` to the lb
-                    lb += (sp.second)->label_ * hscale_;
+                    lb += label * hscale_;
                     ub += (sp.second)->wt_;
                 }
                 else
                 {
                     lb += (sp.second)->wt_ * hscale_;
+                    // Technically does not need the cast
                     ub += (sp.second)->label_;
                 }
 

@@ -25,6 +25,7 @@
 #include "graph.h"
 #include "gridmap_expansion_policy.h"
 #include "util/timer.h"
+#include "cast.h"
 
 #include <ostream>
 #include <unordered_map>
@@ -402,10 +403,12 @@ class xy_graph_base
 
               if (eit != from->outgoing_end())
               {
-                eit->label_ = e.second.wt_;
+                  // Welcome to valid C++, we are storing the raw value in the
+                  // memory location of the pointer.
+                  eit->label_ = cpd::wt_to_label(e.second.wt_);
 
-                if (eit->wt_ != eit->label_)
-                { num_modif++; }
+                  if (eit->wt_ != e.second.wt_)
+                  { num_modif++; }
               }
               // TODO else add warning (from log.h?)
             }

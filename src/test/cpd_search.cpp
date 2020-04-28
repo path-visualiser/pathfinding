@@ -7,10 +7,13 @@
 #include "dimacs_parser.h"
 #include "graph_oracle.h"
 #include "cpd_heuristic.h"
+#include "cast.h"
 
 using namespace std;
 
-int main(int argv, char* args[]) {
+int
+main(int argv, char* args[])
+{
     Catch::Session session;
     int res = session.run(argv, args);
     return res;
@@ -28,8 +31,7 @@ perturb_edge(
 
         if (e->node_id_ == to)
         {
-            assert(e->label_ == e->wt_);
-            e->wt_ = e->label_ * coef;
+            e->wt_ *= coef;
             return true;
         }
     }
@@ -164,7 +166,22 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
         for (uint32_t j = 0; j < n->out_degree(); j++)
         {
             warthog::graph::edge *e = (n->outgoing_begin() + j);
-            e->label_ = e->wt_;
+            e->label_ = warthog::cpd::wt_to_label(e->wt_);
+            assert(warthog::cpd::label_to_wt(e->label_) == e->wt_);
+        }
+    }
+
+    GIVEN("The unperturbed graph")
+    {
+        THEN("The path is correct")
+        {
+            warthog::problem_instance pi(start, goal, true);
+
+            astar.get_path(pi, sol);
+
+            REQUIRE(sol.path_ == optipath);
+            REQUIRE(sol.sum_of_edge_costs_ == cost);
+            REQUIRE(sol.nodes_expanded_ <= 1);
         }
     }
 
@@ -195,8 +212,10 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
             astar.get_path(pi, sol);
 
             REQUIRE(sol.path_ != optipath);
-            REQUIRE(sol.sum_of_edge_costs_ == cost); 
-            REQUIRE(sol.nodes_expanded_ > 1);
+            REQUIRE(sol.sum_of_edge_costs_ == cost);
+            // We actually only expand one node: the start; we early stop when
+            // fetching 5 from the queue.
+            REQUIRE(sol.nodes_expanded_ == 1);
         }
     }
 
