@@ -16,7 +16,7 @@ int main(int argv, char* args[]) {
     return res;
 }
 
-void
+bool
 perturb_edge(
     warthog::graph::xy_graph* g, uint32_t from, uint32_t to, uint32_t coef=2)
 {
@@ -28,9 +28,13 @@ perturb_edge(
 
         if (e->node_id_ == to)
         {
-            e->label_ = e->wt_ * coef;
+            assert(e->label_ == e->wt_);
+            e->wt_ = e->label_ * coef;
+            return true;
         }
     }
+
+    return false;
 }
 
 SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
@@ -75,7 +79,7 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 
     GIVEN("A CPD heuristic")
     {
-        warthog::cpd_heuristic h(&oracle);
+        warthog::cpd_heuristic h(&oracle, 1.0, true);
         warthog::pqueue_min open;
         warthog::solution sol;
         warthog::cpd_search<
@@ -119,7 +123,7 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     // Load CPD
     warthog::cpd::graph_oracle oracle(&g);
     std::string cpd_filename = map_name + ".cpd";
-    warthog::cpd_heuristic h(&oracle);
+    warthog::cpd_heuristic h(&oracle, 1.0, true);
     std::ifstream ifs(cpd_filename);
 
     if(ifs.is_open())
@@ -136,7 +140,7 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     }
 
     // Search algorithm
-    warthog::simple_graph_expansion_policy expander(&g, nullptr, true);
+    warthog::simple_graph_expansion_policy expander(&g);
     warthog::pqueue_min open;
     warthog::solution sol;
     warthog::cpd_search<
@@ -148,8 +152,8 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     warthog::sn_id_t start = 0;
     warthog::sn_id_t goal = 19;
     // Cannot cut corners
-    // warthog::cost_t cost = warthog::ONE *
-    //     (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
+    warthog::cost_t cost = warthog::ONE *
+        (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
     std::vector<warthog::sn_id_t> optipath = {19, 14, 10, 8, 3, 2, 1, 0};
 
     // Set labels for the entire graph
@@ -166,7 +170,7 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
 
     GIVEN("A perturbation not on the optimal path")
     {
-        perturb_edge(&g, 0, 4);
+        REQUIRE(perturb_edge(&g, 0, 5));
 
         THEN("The search is not affected")
         {
@@ -182,7 +186,7 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     GIVEN("A perturbation on the optimal path")
     {
         // Affect (0, 0) -> (0, 1)
-        perturb_edge(&g, 0, 1);
+        REQUIRE(perturb_edge(&g, 0, 1));
 
         THEN("The search is affected but cost is the same")
         {
@@ -191,7 +195,7 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
             astar.get_path(pi, sol);
 
             REQUIRE(sol.path_ != optipath);
-            // REQUIRE(sol.sum_of_edge_costs_ == cost); // TODO Rounding error?
+            REQUIRE(sol.sum_of_edge_costs_ == cost); 
             REQUIRE(sol.nodes_expanded_ > 1);
         }
     }
@@ -201,8 +205,8 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
         // Now we will modify the map enough to warrant search: the diagonal
         // moves at the corner -- which are the only ones that offer
         // alternatives.
-        perturb_edge(&g, 3, 8);
-        perturb_edge(&g, 11, 16);
+        REQUIRE(perturb_edge(&g, 3, 8));
+        REQUIRE(perturb_edge(&g, 11, 16));
 
         THEN("The optimal path is now two straight lines")
         {
@@ -253,7 +257,7 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
         {
             // Modify optimal edge (0, 0) -> (0, 1), but the total cost of the
             // path is within the acceptance factor (100% in this case).
-            perturb_edge(&g, 0, 1);
+            REQUIRE(perturb_edge(&g, 0, 1));
 
             THEN("The search is not modified")
             {

@@ -44,9 +44,10 @@ class cpd_heuristic
 {
     typedef std::pair<warthog::sn_id_t, warthog::graph::edge*> stack_pair;
     public:
-
-        cpd_heuristic(warthog::cpd::graph_oracle* cpd, double hscale=1.0)
-            : cpd_(cpd), hscale_(hscale)
+        // `label_as_lb` switches ub/lb fields.
+        cpd_heuristic(warthog::cpd::graph_oracle* cpd, double hscale=1.0,
+            bool label_as_lb=false)
+            : cpd_(cpd), hscale_(hscale), label_as_lb_(label_as_lb)
         {
             cache_.resize(cpd_->get_graph()->get_num_nodes());
             stack_.reserve(4096);
@@ -101,8 +102,18 @@ class cpd_heuristic
                 stack_pair sp = stack_.back();
                 stack_.pop_back();
 
-                lb += (sp.second)->wt_ * hscale_;
-                ub += (sp.second)->label_;
+                if (label_as_lb_)
+                {
+                    // Always apply `hscale_` to the lb
+                    lb += (sp.second)->label_ * hscale_;
+                    ub += (sp.second)->wt_;
+                }
+                else
+                {
+                    lb += (sp.second)->wt_ * hscale_;
+                    ub += (sp.second)->label_;
+                }
+
                 cache_.at(sp.first).lb_ = lb;
                 cache_.at(sp.first).ub_ = ub;
                 cache_.at(sp.first).fm_ = sp.second;
@@ -160,6 +171,7 @@ class cpd_heuristic
     private:
         warthog::cpd::graph_oracle* cpd_;
         double hscale_;
+        bool label_as_lb_;
         std::vector<warthog::cpd_heuristic_cache_entry> cache_;
         std::vector<stack_pair> stack_;
 };
