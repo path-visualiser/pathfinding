@@ -53,7 +53,7 @@
  *
  * @param[in] ... the entries to put on stream
  */
-#define trace(...) _abstractLog("TRACE", __VA_ARGS__)
+#define trace(p, ...) _abstractLog("TRACE", p, __VA_ARGS__)
 #else
 #define trace(...) ;
 #endif
