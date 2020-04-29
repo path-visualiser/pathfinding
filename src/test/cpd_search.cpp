@@ -81,7 +81,7 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 
     GIVEN("A CPD heuristic")
     {
-        warthog::cpd_heuristic h(&oracle, 1.0, true);
+        warthog::cpd_heuristic h(&oracle);
         warthog::pqueue_min open;
         warthog::solution sol;
         warthog::cpd_search<
