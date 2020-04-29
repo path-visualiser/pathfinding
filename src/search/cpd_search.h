@@ -327,20 +327,20 @@ class cpd_search : public warthog::search
         // search or if we want to impose some memory limit
         if(current->get_f() > cost_cutoff_)
         {
-            debug(pi_.verbose_, "Cost cutoff", current->get_f(), ">",
+            trace(pi_.verbose_, "Cost cutoff", current->get_f(), ">",
                   cost_cutoff_);
             stop = true;
         }
         if(sol->nodes_expanded_ >= exp_cutoff_)
         {
-            debug(pi_.verbose_, "Expanded cutoff", sol->nodes_expanded_, ">",
+            trace(pi_.verbose_, "Expanded cutoff", sol->nodes_expanded_, ">",
                   exp_cutoff_);
             stop = true;
         }
         // Exceeded time limit
         if (mytimer->elapsed_time_nano() > time_cutoff_)
         {
-            debug(pi_.verbose_, "Time cutoff", mytimer->elapsed_time_nano(),
+            trace(pi_.verbose_, "Time cutoff", mytimer->elapsed_time_nano(),
                   ">", time_cutoff_);
             stop = true;
         }
@@ -348,7 +348,7 @@ class cpd_search : public warthog::search
         // CPD terms, we have an "unperturbed path."
         if (current->get_f() == current->get_ub())
         {
-            debug(pi_.verbose_, "Early stop");
+            trace(pi_.verbose_, "Early stop");
             stop = true;
         }
 
@@ -414,8 +414,8 @@ class cpd_search : public warthog::search
         {
             mytimer->stop();
 
-            trace(pi_.verbose_, "[", mytimer->elapsed_time_micro(),"]",
-                  sol->nodes_expanded_, "- Expanding:", current->get_id());
+            info(pi_.verbose_, "[", mytimer->elapsed_time_micro(),"]",
+                 sol->nodes_expanded_, "- Expanding:", current->get_id());
         }
 
         // The first loop over the neighbours is used to update the
@@ -449,20 +449,23 @@ class cpd_search : public warthog::search
                 incumbent = n;
                 relax_node_(incumbent, gval, current->get_id());
                 incumbent->set_ub(n->get_g());
-                trace(pi_.verbose_, "New path to target:", *incumbent);
+                trace(pi_.verbose_, "New path to target:", n->get_g());
+                debug(pi_.verbose_, *n);
             }
             else if (n->get_ub() < warthog::COST_MAX)
             {
                 // Found a new incumbent
                 if (incumbent == nullptr)
                 {
-                    debug(pi_.verbose_, "Found UB:", *n);
+                    trace(pi_.verbose_, "Found UB:", n->get_ub());
+                    debug(pi_.verbose_, *n);
                     incumbent = n;
                 }
                 // Better incumbent
                 else if (n->get_ub() < incumbent->get_ub())
                 {
-                    debug(pi_.verbose_, "Update UB:", *n);
+                    trace(pi_.verbose_, "Update UB:", n->get_ub());
+                    debug(pi_.verbose_, *n);
                     incumbent = n;
                 }
                 // incumbent = n;
@@ -516,7 +519,7 @@ class cpd_search : public warthog::search
             k_moves_.at(n->get_id()) = k_moves_.at(pid) + 1;
         }
 
-        trace(pi_.verbose_, "Node", n->get_id(), "set to k=",
+        debug(pi_.verbose_, "Node", n->get_id(), "set to k=",
               k_moves_.at(n->get_id()));
 
         if (n->get_g() < warthog::COST_MAX)
@@ -578,7 +581,7 @@ class cpd_search : public warthog::search
         {
             // Having an UB means having a *concrete* path.
             incumbent = start;
-            info(pi_.verbose_, "Set UB:", incumbent->get_ub());
+            trace(pi_.verbose_, "Set UB:", incumbent->get_ub());
         }
 
         // begin expanding
