@@ -2,16 +2,8 @@
 
 uintptr_t
 warthog::cpd::wt_to_label(double& b)
-{
-    uintptr_t ret;
-    memcpy(&ret, &b, sizeof(double));
-    return ret;
-}
+{ return conv<uintptr_t, double>(b); }
 
 double
 warthog::cpd::label_to_wt(uintptr_t &b)
-{
-  double ret;
-  memcpy(&ret, &b, sizeof(uintptr_t));
-  return ret;
-}
+{ return conv<double, uintptr_t>(b); }
