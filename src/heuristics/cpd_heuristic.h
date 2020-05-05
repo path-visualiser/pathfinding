@@ -64,6 +64,10 @@ class cpd_heuristic
         get_hscale()
         { return hscale_; }
 
+        warthog::cpd::graph_oracle*
+        get_oracle()
+        { return cpd_; }
+
         // @return a lowerbound cost from node @param start_id to
         // node @param target_id. If no such bound has been established
         // compute one using the CPD in time O(n log(k)) where n is

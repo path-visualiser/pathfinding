@@ -202,6 +202,14 @@ class cpd_search : public warthog::search
     set_listener(L* listener)
     { listener_ = listener; }
 
+    E*
+    get_expander()
+    { return expander_; }
+
+    H*
+    get_heuristic()
+    { return heuristic_; }
+
     virtual inline size_t
     mem()
     {

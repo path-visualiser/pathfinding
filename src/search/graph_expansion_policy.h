@@ -56,6 +56,10 @@ class graph_expansion_policy
             delete [] nodepool_;
         }
 
+        warthog::graph::xy_graph*
+        get_g()
+        { return g_; }
+
 		void 
 		expand(warthog::search_node* current, warthog::problem_instance* pi)
         {
