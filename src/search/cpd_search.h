@@ -169,18 +169,18 @@ class cpd_search : public warthog::search
 
     // Set a time limit cutoff
     inline void
-    set_max_time_cutoff(uint32_t cutoff) { time_cutoff_ = cutoff; }
+    set_max_time_cutoff(double cutoff) { time_cutoff_ = cutoff; }
 
     inline void
-    set_max_us_cutoff(uint32_t cutoff) { set_max_time_cutoff(cutoff * 1e3); }
+    set_max_us_cutoff(double cutoff) { set_max_time_cutoff(cutoff * 1e3); }
 
     inline void
-    set_max_ms_cutoff(uint32_t cutoff) { set_max_time_cutoff(cutoff * 1e6); }
+    set_max_ms_cutoff(double cutoff) { set_max_time_cutoff(cutoff * 1e6); }
 
     inline void
-    set_max_s_cutoff(uint32_t cutoff) { set_max_time_cutoff(cutoff * 1e9); }
+    set_max_s_cutoff(double cutoff) { set_max_time_cutoff(cutoff * 1e9); }
 
-    inline uint32_t
+    inline double
     get_max_time_cutoff() { return time_cutoff_; }
 
     // Set a k-radius cut-off -- stop expanding nodes further than k moves away
