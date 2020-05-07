@@ -121,6 +121,41 @@ operator>>(std::istream& is, config &c)
     return c;
 }
 
+/**
+ * Takes care of "default parameters" as we use a bunch of wildcards to
+ * represent different unbounded values.
+ *
+ * TODO Should this be part of cpd search directly?
+ */
+void
+sanitise_conf(config& conf)
+{
+    conf.fscale = std::max(1.0, conf.fscale);
+    conf.hscale = std::max(1.0, conf.hscale);
+
+    if (conf.itrs == 0)
+    { conf.itrs = warthog::INF32; }
+
+    if (conf.k_moves == 0)
+    { conf.k_moves = warthog::INF32; }
+
+    if (conf.time == 0)
+    { conf.time = DBL_MAX; }
+
+    // Do not touch conf.prefix
+
+    // Enforce single threaded or use max threads
+#ifdef SINGLE_THREADED
+    conf.threads = 1;
+#else
+    if (conf.threads == 0)
+    {
+        conf.threads = omp_get_max_threads();
+    }
+#endif
+
+}
+
 // Global container, booh
 vector<warthog::search*> algos;
 
@@ -320,21 +355,13 @@ reader()
     try
     {
         fd >> conf;
+        sanitise_conf(conf);
     } // Ignore bad parsing and fall back on default conf
     catch (std::exception& e)
     {
         debug(conf.verbose, e.what());
 
     }
-
-#ifdef SINGLE_THREADED
-    conf.threads = 1;
-#else
-    if (conf.threads == 0)
-    {
-        conf.threads = omp_get_max_threads();
-    }
-#endif
 
     trace(conf.verbose, conf);
 
