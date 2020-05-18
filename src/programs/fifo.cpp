@@ -342,68 +342,69 @@ cpd_search(config& conf,
 void
 reader()
 {
-    ifstream fd(FIFO);
-
-    if (fd.good())
-    {
-        debug(VERBOSE, "Got a writer");
-    }
-    // else?
-
-    // Start by reading config
+    ifstream fd;
     config conf;
-    try
-    {
-        fd >> conf;
-        sanitise_conf(conf);
-    } // Ignore bad parsing and fall back on default conf
-    catch (std::exception& e)
-    {
-        debug(conf.verbose, e.what());
-
-    }
-
-    trace(conf.verbose, conf);
-
-    // Read output pipe and size of input
-    size_t s = 0;
     string fifo_out;
+    vector<t_query> lines;
 
-    fd >> fifo_out >> s;
-    debug(conf.verbose, "Preparing to read", s, "items.");
-    debug(conf.verbose, "Output to", fifo_out);
-
-    warthog::sn_id_t o, d;
-    size_t i = 0;
-
-    vector<t_query> lines(s * 2);
-    while (fd >> o >> d)
+    while (true)
     {
-        lines.at(i) = o;
-        lines.at(i + 1) = d;
-        i += 2;
-    }
-    fd.close();                 // TODO check if we need to keep this open
+        fd.open(FIFO);
 
-    trace(conf.verbose, "Read", int(lines.size() / 2), "queries.");
-    assert(lines.size() == s * 2);
-
-    DO_ON_DEBUG_IF(conf.debug)
-    {
-        for (size_t i = 0; i < lines.size(); i += 2)
+        if (fd.good())
         {
-            // Not using `verbose` here, it's a lot of info...
-            debug(conf.debug, lines.at(i), ",", lines.at(i + 1));
+            debug(VERBOSE, "Got a writer");
+        }
+        // else?
+
+        // Start by reading config
+        try
+        {
+            fd >> conf;
+            sanitise_conf(conf);
+        } // Ignore bad parsing and fall back on default conf
+        catch (std::exception& e)
+        {
+            debug(conf.verbose, e.what());
+        }
+
+        trace(conf.verbose, conf);
+
+        // Read output pipe and size of input
+        size_t s = 0;
+        fd >> fifo_out >> s;
+        debug(conf.verbose, "Preparing to read", s, "items.");
+        debug(conf.verbose, "Output to", fifo_out);
+
+        warthog::sn_id_t o, d;
+        size_t i = 0;
+
+        lines.resize(s * 2);
+        while (fd >> o >> d)
+        {
+            lines.at(i) = o;
+            lines.at(i + 1) = d;
+            i += 2;
+        }
+        fd.close();                 // TODO check if we need to keep this open
+
+        trace(conf.verbose, "Read", int(lines.size() / 2), "queries.");
+        assert(lines.size() == s * 2);
+
+        DO_ON_DEBUG_IF(conf.debug)
+        {
+            for (size_t i = 0; i < lines.size(); i += 2)
+            {
+                // Not using `verbose` here, it's a lot of info...
+                debug(conf.debug, lines.at(i), ",", lines.at(i + 1));
+            }
+        }
+
+        if (lines.size() > 0)
+        {
+            cpd_search(conf, fifo_out, lines);
         }
     }
-
-    if (lines.size() > 0)
-    {
-        cpd_search(conf, fifo_out, lines);
-    }
-
-    // Back to reader
-    reader();
 }
 /**
  * The main takes care of loading the data and spawning the reader thread.
