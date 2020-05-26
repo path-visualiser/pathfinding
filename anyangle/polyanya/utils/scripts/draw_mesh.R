@@ -160,13 +160,14 @@ draw_trace <- function(search_trace, draw_intermediate=TRUE)
     for(i in seq(1, length(begin)))
     {
 
-        if(i > 1)
-        {
-            #print(paste(begin[i-1], end[i-1]))
-            draw_path(search_trace$path[i-1], TRUE)
-            draw_expansion(search_trace$trace[begin[i-1] : end[i-1], ], TRUE, draw_intermediate)
-        }
+        #if(i > 1)
+        #{
+        #    #print(paste(begin[i-1], end[i-1]))
+        #    draw_path(search_trace$path[i-1], TRUE)
+        #    draw_expansion(search_trace$trace[begin[i-1] : end[i-1], ], TRUE, draw_intermediate)
+        #}
         #print(paste(begin[i], end[i]))
+
         draw_expansion(search_trace$trace[begin[i] : end[i], ], FALSE, draw_intermediate)
         #print(search_trace$path[i])
         if(i <= length(search_trace$path))
