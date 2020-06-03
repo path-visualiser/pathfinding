@@ -1,9 +1,11 @@
-#pragma once
+#ifndef WARTHOG_UTIL_CFG_H
+#define WARTHOG_UTIL_CFG_H
 
 #include "getopt.h"
 
 #include <iostream>
 #include <map>
+#include <vector>
 
 // cfg.h
 //
@@ -23,27 +25,39 @@ typedef struct option param;
 
 class cfg
 {
-    public:
-        cfg();
-        ~cfg();
+	public:
+		cfg();
+		~cfg();
 
-        void 
-        parse_args(int argc, char** argv, warthog::util::param params[]);
-
-        std::string
-        get_param_value(std::string);
-
+		void 
+		parse_args(int argc, char** argv, warthog::util::param params[]);
 
         void
-        print(std::ostream& out);
+		parse_args(int argc, char** argv, const char* short_opts, 
+                warthog::util::param params[]);
 
-    private:
-        // no copy
-        cfg(const cfg& other) {}
-        cfg& operator=(const cfg& other) { return *this; }
+		std::string
+		get_param_value(std::string);
 
-        std::map<std::string, std::string> params_;
+        uint32_t
+        get_num_values(std::string);
+
+		void
+		print(std::ostream& out);
+
+        void
+        print_values(const std::string&, std::ostream& out);
+
+	private:
+		// no copy
+		cfg(const cfg& other) {}
+		cfg& operator=(const cfg& other) { return *this; }
+
+		std::map<std::string, std::vector<std::string>> params_;
 };
 
 }
 }
+
+#endif
+
