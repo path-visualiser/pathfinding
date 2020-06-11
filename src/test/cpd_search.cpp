@@ -268,14 +268,13 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
 
     GIVEN("A sub-optimal heuristic")
     {
-        // I think this is wrong, we need the f-scale
-        // h.set_hscale(2.0);
-        astar.set_quality_cutoff(2.0);
+        // 100% quality cutoff
+        astar.set_quality_cutoff(1.0);
 
         WHEN("The graph is perturbed within acceptable range")
         {
             // Modify optimal edge (0, 0) -> (0, 1), but the total cost of the
-            // path is within the acceptance factor (100% in this case).
+            // path is within the acceptance factor.
             REQUIRE(perturb_edge(&g, 0, 1));
 
             THEN("The search is not modified")

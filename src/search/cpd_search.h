@@ -51,7 +51,7 @@ class cpd_search : public warthog::search
         time_cutoff_ = DBL_MAX;
         max_k_moves_ = UINT32_MAX;
         pi_.instance_id_ = UINT32_MAX;
-        quality_cutoff_ = 1.0;
+        quality_cutoff_ = 0.0;
         // TODO Check whether this is the number of nodes
         k_moves_ = std::vector<uint32_t>(expander_->get_node_pool_size(), 0);
     }
@@ -287,9 +287,10 @@ class cpd_search : public warthog::search
             // If we have an UB, we need to use it as source-of-truth
             if (incumbent->get_ub() < warthog::COST_MAX)
             {
+                warthog::cost_t lb = n->get_f();
                 bound = incumbent->get_ub();
 
-                if (n->get_f() * quality_cutoff_ > bound)
+                if ((bound - lb) / lb <= quality_cutoff_)
                 {
                     debug(pi_.verbose_, stage, "by quality:", *n);
                     prune = true;
