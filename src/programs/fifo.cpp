@@ -130,7 +130,7 @@ operator>>(std::istream& is, config &c)
 void
 sanitise_conf(config& conf)
 {
-    conf.fscale = std::max(1.0, conf.fscale);
+    conf.fscale = std::max(0.0, conf.fscale);
     conf.hscale = std::max(1.0, conf.hscale);
 
     if (conf.itrs == 0)
