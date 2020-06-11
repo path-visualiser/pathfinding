@@ -350,6 +350,7 @@ reader()
     while (true)
     {
         fd.open(FIFO);
+        debug(VERBOSE, "waiting for writers...");
 
         if (fd.good())
         {
@@ -521,16 +522,15 @@ main(int argc, char *argv[])
 
     int status = mkfifo(FIFO, S_IFIFO | 0666);
 
-    debug(VERBOSE, "FIFO status:", status);
+    if (status < 0)
+    {
+        perror("mkfifo");
+        return EXIT_FAILURE;
+    }
 
-    // if (status < 0)
-    // {
-    //     return -status;
-    // }
-
+    // Register signal handlers
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
-    debug(VERBOSE, "waiting for writers...");
     reader();
 
     // We do not exit from here
