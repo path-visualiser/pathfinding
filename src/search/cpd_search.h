@@ -247,28 +247,6 @@ class cpd_search : public warthog::search
     cpd_search&
     operator=(const cpd_search& other) { return *this; }
 
-    warthog::cost_t
-    get_cost_(warthog::search_node *current, warthog::sn_id_t n_id)
-    {
-        warthog::cost_t cost_to_n = 0;
-        warthog::search_node *n;
-
-        expander_->expand(current, &pi_);
-        for(expander_->first(n, cost_to_n);
-            n != nullptr;
-            expander_->next(n, cost_to_n))
-        {
-            if (n->get_id() == n_id)
-            {
-                return cost_to_n;
-            }
-        }
-
-        error(pi_.verbose_, "Could not find", n_id, "in neighbours of",
-              current->get_id());
-        return warthog::COST_MAX;
-    }
-
     /**
      * Determine whether we should be pruning a node or adding it to the open
      * list.
@@ -589,7 +567,8 @@ class cpd_search : public warthog::search
             }
         }
 
-        // Rebuild path from incumbent to solution
+        // In case the incumbent is not the target, this means we found a better
+        // path by *following the heuristic*, so we rebuild it in the same way.
         while (incumbent != nullptr && !expander_->is_target(incumbent, &pi_))
         {
             warthog::sn_id_t p_id = incumbent->get_id();
@@ -603,9 +582,8 @@ class cpd_search : public warthog::search
             else
             {
                 warthog::search_node* n = expander_->generate(n_id);
-                warthog::cost_t gval =
-                        incumbent->get_g() + get_cost_(incumbent, n_id);
-
+                warthog::cost_t gval = incumbent->get_g() +
+                    heuristic_->get_cost(p_id, pi_.target_id_);
                 // Force node "generation" in case some of them were not
                 // generated during the search.
                 generate_node_(incumbent, n, gval);
