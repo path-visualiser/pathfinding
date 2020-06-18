@@ -53,8 +53,8 @@ class cpd_search : public warthog::search
         max_k_moves_ = UINT32_MAX;
         pi_.instance_id_ = UINT32_MAX;
         quality_cutoff_ = 0.0;
-        // TODO Check whether this is the number of nodes
-        k_moves_ = std::vector<uint32_t>(expander_->get_node_pool_size(), 0);
+        k_moves_ =
+            std::vector<uint32_t>(expander_->get_g()->get_num_nodes(), 0);
     }
 
     virtual ~cpd_search() { }
