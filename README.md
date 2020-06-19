@@ -18,4 +18,4 @@ Some things that are hosted in this repository:
 | [scenarios](https://bitbucket.org/dharabor/pathfinding/src/master/scenarios/) | Benchmark instances (point-to-point problems) that I use in experiments. |
 
 
-My development platform is OSX 10.8.4 with most of the code here being written in C++. When compiling I recommend that platform together with GCC 4.8.1. In the past I have successfully compiled and executed the same code on Linux (most recently Ubuntu 13.10). 
+My development platform is Linux 20.04with most of the code here being written in C++. When compiling I recommend that platform together with GCC 9.3.0. In the past I have successfully compiled and executed the same code on OSX (most recently macOS 10.13).
