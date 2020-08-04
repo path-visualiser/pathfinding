@@ -13,8 +13,6 @@
 #include <vector>
 #include <omp.h>
 
-#define FIFO "/tmp/warthog.fifo"
-
 #ifndef NDEBUG
 #define VERBOSE true
 #else
@@ -158,6 +156,7 @@ sanitise_conf(config& conf)
 
 // Global container, booh
 vector<warthog::search*> algos;
+std::string fifo = "/tmp/warthog.fifo";
 
 //
 // - Functions
@@ -167,7 +166,7 @@ signalHandler(int signum)
 {
     warning(true, "Interrupt signal", signum, "received.");
 
-    remove(FIFO);
+    remove(fifo.c_str());
 
     exit(signum);
 }
@@ -349,7 +348,7 @@ reader()
 
     while (true)
     {
-        fd.open(FIFO);
+        fd.open(fifo);
         debug(VERBOSE, "waiting for writers...");
 
         if (fd.good())
@@ -421,6 +420,7 @@ main(int argc, char *argv[])
             // {"verbose",  no_argument, &verbose, 1},
             // {"noheader",  no_argument, &suppress_header, 1},
             {"input",  required_argument, 0, 1},
+            {"fifo",   required_argument, 0, 1},
             // {"problem",  required_argument, 0, 1},
             {0,  0, 0, 0}
         };
@@ -520,7 +520,13 @@ main(int argc, char *argv[])
 
     user(VERBOSE, "Loaded", algos.size(), "search.");
 
-    int status = mkfifo(FIFO, S_IFIFO | 0666);
+    std::string other = cfg.get_param_value("fifo");
+    if (other != "")
+    {
+        fifo = other;
+    }
+
+    int status = mkfifo(fifo.c_str(), S_IFIFO | 0666);
 
     if (status < 0)
     {
