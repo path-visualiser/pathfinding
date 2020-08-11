@@ -314,7 +314,19 @@ cpd_search(config& conf,
     user(conf.verbose, "Processed", n_results, "in", t.elapsed_time_micro(),
          "us");
 
-    std::ofstream out(fifo_out);
+    std::streambuf* buf;
+    std::ofstream of;
+    if (fifo_out == "-")
+    {
+        buf = std::cout.rdbuf();
+    }
+    else
+    {
+        of.open(fifo_out);
+        buf = of.rdbuf();
+    }
+
+    std::ostream out(buf);
 
     debug(conf.verbose, "Spawned a writer on", fifo_out);
     out << n_expanded << "," << n_inserted << "," << n_touched << ","
@@ -323,7 +335,7 @@ cpd_search(config& conf,
         << t_astar << "," << t.elapsed_time_nano()
         << std::endl;
 
-    out.close();
+    if (fifo_out != "-") { of.close(); }
 }
 
 /**
@@ -533,6 +545,8 @@ main(int argc, char *argv[])
         perror("mkfifo");
         return EXIT_FAILURE;
     }
+
+    debug(true, "Reading from", fifo);
 
     // Register signal handlers
     signal(SIGINT, signalHandler);
