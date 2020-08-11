@@ -211,7 +211,8 @@ extractions(warthog::sn_id_t start_id, warthog::sn_id_t target_id,
 void
 cpd_search(config& conf,
            const std::string& fifo_out,
-           const std::vector<t_query> &reqs)
+           const std::vector<t_query> &reqs,
+           double t_read)
 {
     assert(reqs.size() % 2 == 0);
     size_t n_results = reqs.size() / 2;
@@ -332,7 +333,7 @@ cpd_search(config& conf,
     out << n_expanded << "," << n_inserted << "," << n_touched << ","
         << n_updated << "," << n_surplus << "," << plen << ","
         << cost_diff << "," << flow_diff << "," << base_diff << ","
-        << t_astar << "," << t.elapsed_time_nano()
+        << t_astar << "," << t.elapsed_time_nano() + t_read
         << std::endl;
 
     if (fifo_out != "-") { of.close(); }
@@ -357,6 +358,7 @@ reader()
     config conf;
     string fifo_out;
     vector<t_query> lines;
+    warthog::timer t;
 
     while (true)
     {
@@ -368,6 +370,7 @@ reader()
             debug(VERBOSE, "Got a writer");
         }
         // else?
+        t.start();
 
         // Start by reading config
         try
@@ -399,6 +402,7 @@ reader()
             i += 2;
         }
         fd.close();                 // TODO check if we need to keep this open
+        t.stop();
 
         trace(conf.verbose, "Read", int(lines.size() / 2), "queries.");
         assert(lines.size() == s * 2);
@@ -414,7 +418,7 @@ reader()
 
         if (lines.size() > 0)
         {
-            cpd_search(conf, fifo_out, lines);
+            cpd_search(conf, fifo_out, lines, t.elapsed_time_nano());
         }
     }
 }
