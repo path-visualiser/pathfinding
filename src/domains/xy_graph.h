@@ -387,7 +387,7 @@ class xy_graph_base
         //}
 
     friend std::istream& 
-    warthog::graph::operator>> (
+    operator>> (
             std::istream& in, warthog::graph::xy_graph_base<T_NODE, T_EDGE>& g)
     {
         warthog::timer mytimer;
@@ -491,7 +491,7 @@ class xy_graph_base
     }
 
     friend std::ostream& 
-    warthog::graph::operator<< (
+    operator<< (
             std::ostream& out, warthog::graph::xy_graph_base<T_NODE, T_EDGE>& g)
     {
         warthog::timer mytimer; 
