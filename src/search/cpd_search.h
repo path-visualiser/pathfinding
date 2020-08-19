@@ -518,7 +518,6 @@ class cpd_search : public warthog::search
                 // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
                 if (generated || gval < n->get_g())
                 {
-                    update_k_(n->get_id(), current->get_id());
                     listener_->relax_node(n);
 
                     if (generated)
@@ -528,6 +527,7 @@ class cpd_search : public warthog::search
                     else
                     {
                         n->relax(gval, current->get_id());
+                        update_k_(n->get_id(), current->get_id());
                         sol.nodes_updated_++;
                     }
 
