@@ -330,9 +330,7 @@ class cpd_search : public warthog::search
 
         if (incumbent != nullptr && incumbent->get_ub() < warthog::COST_MAX)
         {
-            warthog::cost_t lb = current->get_f();
-
-            if ((incumbent->get_ub() - lb) / lb <= quality_cutoff_)
+            if (current->get_f() * (1 + quality_cutoff_) > incumbent->get_ub())
             {
                 trace(pi_.verbose_, "Quality cutoff");
                 stop = true;
