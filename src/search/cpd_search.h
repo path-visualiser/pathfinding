@@ -574,7 +574,8 @@ class cpd_search : public warthog::search
 
             if (n_id == warthog::SN_ID_MAX)
             {
-                warning(pi_.verbose_, "Cannot rebuild path from", p_id);
+                // warning(pi_.verbose_, "Cannot rebuild path from", p_id);
+                std::cerr << "Cannot rebuild path from " << p_id << std::endl;
                 incumbent = nullptr;
             }
             else
