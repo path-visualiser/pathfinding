@@ -922,8 +922,10 @@ run_cpd_search(warthog::util::cfg& cfg,
     std::stringstream ss;
     std::string scale = cfg.get_param_value("fscale");
     std::string tlim = cfg.get_param_value("uslim");
+    std::string moves = cfg.get_param_value("kmoves");
     double f_scale;
     uint32_t us_lim;
+    uint32_t k_moves;
 
     if (scale != "")
     {
@@ -944,6 +946,17 @@ run_cpd_search(warthog::util::cfg& cfg,
         if (us_lim > 0)
         {
             alg.set_max_us_cutoff(us_lim);
+        }
+    }
+
+    if (moves != "")
+    {
+        ss << moves;
+        ss >> k_moves;
+
+        if (k_moves > 0)
+        {
+            alg.set_max_k_moves(k_moves);
         }
     }
 
@@ -1224,6 +1237,7 @@ main(int argc, char** argv)
 		{"problem",  required_argument, 0, 1},
         {"fscale", required_argument, 0, 1},
         {"uslim", required_argument, 0, 1},
+        {"kmoves", required_argument, 0, 1},
 		{0,  0, 0, 0}
 	};
 
