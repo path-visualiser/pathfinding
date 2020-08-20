@@ -96,8 +96,8 @@ class cpd_heuristic
                 stack_pair sp = stack_.back();
                 stack_.pop_back();
 
-                lb += (sp.second)->wt_;
-                ub += (sp.second)->label_;
+                ub += (sp.second)->wt_;
+                lb += (sp.second)->label_;
                 cache_.at(sp.first).lb_ = lb;
                 cache_.at(sp.first).ub_ = ub;
                 cache_.at(sp.first).fm_ = sp.second;

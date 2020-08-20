@@ -57,6 +57,7 @@ class anytime_astar : public warthog::search
 			open_ = queue;
             cost_cutoff_ = warthog::COST_MAX;
             exp_cutoff_ = UINT32_MAX;
+            time_cutoff_nanos_ = UINT64_MAX;
             on_relax_fn_ = 0;
             on_generate_fn_ = 0;
             on_expand_fn_ = 0;
@@ -96,7 +97,7 @@ class anytime_astar : public warthog::search
                             incumbent->get_id(), 
                             pi_.target_id_);
 
-				// follow backpointers to extract the path
+				// follow backpointers to extract the path from start -> incumbent
                 warthog::search_node* current = incumbent;
 				while(true)
                 {
@@ -318,6 +319,21 @@ class anytime_astar : public warthog::search
 			while(open_->size())
 			{
 				warthog::search_node* current = open_->pop();
+
+				#ifndef NDEBUG
+				if(pi_.verbose_)
+				{
+					int32_t x, y;
+                    expander_->get_xy(current->get_id(), x, y);
+					std::cerr 
+                        << sol.nodes_expanded_
+                        << (current->get_expanded() ? ". re-expanding " : ". expanding ")
+                        << "("<<x<<", "<<y<<")...";
+					current->print(std::cerr);
+					std::cerr << std::endl;
+				}
+				#endif
+
 				current->set_expanded(true); // NB: set before generating
 				assert(current->get_expanded());
 				sol.nodes_expanded_++;
@@ -334,6 +350,9 @@ class anytime_astar : public warthog::search
                 // terminate if we closed the gap
                 if(current_ub == current_lb)
                 {
+                    incumbent = current;
+                    incumbent_lb = current_lb;
+                    incumbent_ub = current_ub;
                     break;
                 }
                     
@@ -342,19 +361,6 @@ class anytime_astar : public warthog::search
                 if(sol.nodes_expanded_ >= exp_cutoff_) { break; }
                 if(mytimer.elapsed_time_nano() >= time_cutoff_nanos_) { break; }
 
-				#ifndef NDEBUG
-				if(pi_.verbose_)
-				{
-					int32_t x, y;
-                    expander_->get_xy(current->get_id(), x, y);
-					std::cerr 
-                        << sol.nodes_expanded_
-                        << (current->get_expanded() ? ". re-expanding" : ". expanding ")
-                        << "("<<x<<", "<<y<<")...";
-					current->print(std::cerr);
-					std::cerr << std::endl;
-				}
-				#endif
 
                 // generate successors
 				expander_->expand(current, &pi_);
@@ -375,7 +381,7 @@ class anytime_astar : public warthog::search
                         warthog::cost_t hval = 
                             heuristic_->h(n->get_id(),pi_.target_id_);
                         warthog::cost_t ub_val = 
-                            heuristic_->h(n->get_id(),pi_.target_id_);
+                            heuristic_->ub(n->get_id(),pi_.target_id_);
 
                         if((gval + ub_val) < incumbent_ub)
                         {
