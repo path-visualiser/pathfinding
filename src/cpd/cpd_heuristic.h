@@ -113,6 +113,7 @@ class cpd_heuristic
         inline warthog::cost_t
         ub(warthog::sn_id_t start_id, warthog::sn_id_t target_id)
         {
+            if(start_id == target_id) { return 0; }
             if(cache_.at(start_id).target_id_ != target_id)
             { 
                 h(start_id, target_id);
