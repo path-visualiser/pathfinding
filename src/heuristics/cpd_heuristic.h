@@ -18,6 +18,7 @@
 #include "xy_graph.h"
 #include "cast.h"
 
+#include <climits>
 #include <stack>
 
 namespace warthog
@@ -33,12 +34,14 @@ struct cpd_heuristic_cache_entry
         lb_ = warthog::COST_MAX;
         ub_ = warthog::COST_MAX;
         target_id_ = warthog::SN_ID_MAX;
+        graph_id_ = UINT_MAX;
     }
 
     warthog::cost_t lb_;
     warthog::cost_t ub_;
     warthog::graph::edge* fm_;
     warthog::sn_id_t target_id_;
+    uint32_t graph_id_;
 };
 
 class cpd_heuristic
@@ -80,7 +83,7 @@ class cpd_heuristic
             uint32_t c_id = start_id;
             while(c_id != target_id)
             {
-                if(cache_.at(c_id).target_id_ == target_id)
+                if(is_cached_(c_id, target_id))
                 {
                     // stop when the rest of the path is in cache
                     lb = cache_.at(c_id).lb_;
@@ -133,6 +136,7 @@ class cpd_heuristic
                 cache_.at(sp.first).ub_ = ub;
                 cache_.at(sp.first).fm_ = sp.second;
                 cache_.at(sp.first).target_id_ = target_id;
+                cache_.at(sp.first).graph_id_ = cpd_->get_graph()->get_id();
             }
 
             return lb;
@@ -152,7 +156,7 @@ class cpd_heuristic
         inline warthog::cost_t
         ub(warthog::sn_id_t start_id, warthog::sn_id_t target_id)
         {
-            if(cache_.at(start_id).target_id_ != target_id)
+            if(!is_cached_(start_id, target_id))
             {
                 h(start_id, target_id);
             }
@@ -166,7 +170,7 @@ class cpd_heuristic
         warthog::sn_id_t
         get_move(warthog::sn_id_t from_id, warthog::sn_id_t target_id)
         {
-            if(cache_.at(from_id).target_id_ == target_id)
+            if(is_cached_(from_id, target_id))
             {
                 cpd_heuristic_cache_entry & entry = cache_.at(from_id);
                 return entry.fm_->node_id_;
@@ -184,6 +188,13 @@ class cpd_heuristic
         }
 
     private:
+        inline bool
+        is_cached_(uint32_t c_id, warthog::sn_id_t target_id)
+        {
+            return cache_.at(c_id).target_id_ == target_id &&
+                   cache_.at(c_id).graph_id_ == cpd_->get_graph()->get_id();
+        }
+
         warthog::cpd::graph_oracle* cpd_;
         double hscale_;
         bool label_as_lb_;
