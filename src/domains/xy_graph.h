@@ -55,7 +55,8 @@ class xy_graph_base
         // create an empty graph
         xy_graph_base(uint32_t num_nodes=0,
                       std::string filename = "", bool incoming=false)
-            : verbose_(false), filename_(filename), store_incoming_(incoming)
+            : verbose_(false), filename_(filename), store_incoming_(incoming),
+              graph_id_(graph_counter_++)
         {
             grow(num_nodes);
         }
@@ -63,7 +64,9 @@ class xy_graph_base
         ~xy_graph_base()
         { }
 
-        xy_graph_base(const xy_graph_base&) = default;
+        // TODO If you need the copy constructor, you will need to drop the
+        // @delete@ as we need to update 'graph_counter_' to be consistent.
+        xy_graph_base(const xy_graph_base&) = delete;
 
         warthog::graph::xy_graph_base<T_NODE, T_EDGE>&
         operator=(const warthog::graph::xy_graph_base<T_NODE, T_EDGE>&& other)
@@ -76,6 +79,8 @@ class xy_graph_base
             filename_ = other.filename_;
             nodes_ = std::move(other.nodes_);
             xy_ = std::move(other.xy_);
+            // Technically the same but don't know what you will do with it.
+            graph_id_ = graph_counter_++;
 
             return *this;
         }
@@ -136,6 +141,11 @@ class xy_graph_base
             xy_.reserve(num_nodes*2);
         }
 
+        inline uint32_t
+        get_id() const
+        {
+            return graph_id_;
+        }
 
         inline uint32_t
         get_num_nodes() const
@@ -413,6 +423,9 @@ class xy_graph_base
               // TODO else add warning (from log.h?)
             }
 
+            // The important bit: update the graph's id when perturbating
+            graph_id_ = graph_counter_++;
+
             std::cerr << "Perturbed " << num_modif << " edges." << std::endl;
         }
 
@@ -535,10 +548,16 @@ class xy_graph_base
         // xy coordinates stored as adjacent pairs (x, then y)
         std::vector<int32_t> xy_;
 
-       bool verbose_;
+        bool verbose_;
         std::string filename_;
         bool store_incoming_;
+        uint32_t graph_id_;
+        static uint32_t graph_counter_;
 };
+
+template<class T_NODE, class T_EDGE>
+uint32_t xy_graph_base<T_NODE, T_EDGE>::graph_counter_ = 0;
+
 typedef xy_graph_base<warthog::graph::node, warthog::graph::edge> xy_graph;
 
 // Create an xy-graph from a gridmap data in the format of
