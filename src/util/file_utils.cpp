@@ -38,7 +38,7 @@ bool isFileExists(const std::string& name) {
 }
 
 std::string getBaseNameAsString(const std::string& filepath) {
-	return std::string{getBaseNameAsString(filepath)};
+	return std::string{getBaseName(filepath)};
 }
 
 std::string getBaseNameAsString(const char* filepath) {
