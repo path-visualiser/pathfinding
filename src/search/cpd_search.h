@@ -505,28 +505,26 @@ class cpd_search : public warthog::search
                     generated = true;
                 }
 
-                if (should_prune_(incumbent, n))
-                {
-                    trace(pi_.verbose_, "Prune", n->get_id());
-                    continue;
-                }
-
-                update_incumbent_(incumbent, n);
-
                 // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
                 if (generated || gval < n->get_g())
                 {
-                    listener_->relax_node(n);
+                    if (!generated)
+                    {
+                        listener_->relax_node(n);
 
-                    if (generated)
-                    {
-                        sol.nodes_inserted_++;
-                    }
-                    else
-                    {
                         n->relax(gval, current->get_id());
                         update_k_(n->get_id(), current->get_id());
                         sol.nodes_updated_++;
+                    }
+
+                    // Beware, we need to prune *after updating* otherwise we
+                    // may have a cache miss of some sort: a node gets
+                    // generated, then pruned, then touched and pruned before
+                    // being updated.
+                    if (should_prune_(incumbent, n))
+                    {
+                        trace(pi_.verbose_, "Pruning:", *n);
+                        continue;
                     }
 
                     // g(n_i) <- g(n) + c(n, n_i)
@@ -540,12 +538,15 @@ class cpd_search : public warthog::search
                     {
                         open_->push(n);
                         debug(pi_.verbose_, "Insert:", *n);
+                        sol.nodes_inserted_++;
                     }
                 }
                 else
                 {
                     debug(pi_.verbose_, "Skip:", *n);
                 }
+
+                update_incumbent_(incumbent, n);
             }
         }
 
