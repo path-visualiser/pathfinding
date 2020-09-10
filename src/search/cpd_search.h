@@ -448,14 +448,24 @@ class cpd_search : public warthog::search
              "- k-move =", max_k_moves_, "- quality =", quality_cutoff_);
         debug(pi_.verbose_, "Start node:", *start);
 
-        open_->push(start);
-        sol.nodes_inserted_++;
-
-        if (start_ub < warthog::COST_MAX)
+        mytimer.stop();
+        if (mytimer.elapsed_time_nano() > time_cutoff_)
         {
-            // Having an UB means having a *concrete* path.
-            incumbent = start;
-            debug(pi_.verbose_, "Set UB:", incumbent->get_ub());
+            // Bail without an answer if we exceed the time limit after the
+            // first path extraction.
+            info(pi_.verbose_, "Time cutoff before start of search.");
+        }
+        else
+        {
+            open_->push(start);
+            sol.nodes_inserted_++;
+
+            if (start_ub < warthog::COST_MAX)
+            {
+                // Having an UB means having a *concrete* path.
+                incumbent = start;
+                debug(pi_.verbose_, "Set UB:", incumbent->get_ub());
+            }
         }
 
         // begin expanding

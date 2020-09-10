@@ -283,8 +283,6 @@ cpd_search(config& conf,
             }
             else
             {
-                // Initial path
-                alg->get_heuristic()->h(start_id, target_id, base, init);
                 // Actual search
                 warthog::problem_instance pi(start_id, target_id, conf.debug);
                 alg->get_pathcost(pi, sol);
@@ -297,10 +295,15 @@ cpd_search(config& conf,
             n_touched += sol.nodes_touched_;
             n_updated += sol.nodes_updated_;
             n_surplus += sol.nodes_surplus_;
-            plen += sol.path_.size();
-            cost_diff += (init - sol.sum_of_edge_costs_) / init;
-            flow_diff += (sol.sum_of_edge_costs_ - base) / sol.sum_of_edge_costs_;
-            base_diff += (init - base) / init;
+
+            if (sol.nodes_inserted_ > 0)
+            {
+                plen += 1; // KLUDGE Use plen to record finished instances
+                alg->get_heuristic()->h(start_id, target_id, base, init);
+                cost_diff += (init - sol.sum_of_edge_costs_) / init;
+                flow_diff += (sol.sum_of_edge_costs_ - base) / sol.sum_of_edge_costs_;
+                base_diff += (init - base) / init;
+            }
         }
 
         t_thread.stop();
