@@ -495,7 +495,6 @@ class cpd_search : public warthog::search
                 expander_->next(n, cost_to_n))
             {
                 warthog::cost_t gval = current->get_g() + cost_to_n;
-                bool generated = false;
 
                 sol.nodes_touched_++;
                 edge_id++;
@@ -505,48 +504,44 @@ class cpd_search : public warthog::search
                 if(n->get_search_number() != current->get_search_number())
                 {
                     generate_node_(current, n, gval);
-                    generated = true;
                 }
-
                 // if n_i \in OPEN u CLOSED and g(n_i) > g(n) + c(n, n_i)
-                if (generated || gval < n->get_g())
+                else if (gval < n->get_g())
                 {
-                    if (!generated)
-                    {
-                        listener_->relax_node(n);
+                    listener_->relax_node(n);
 
-                        n->relax(gval, current->get_id());
-                        update_k_(n->get_id(), current->get_id());
-                        sol.nodes_updated_++;
-                    }
-
-                    // Beware, we need to prune *after updating* otherwise we
-                    // may have a cache miss of some sort: a node gets
-                    // generated, then pruned, then touched and pruned before
-                    // being updated.
-                    if (should_prune_(incumbent, n))
-                    {
-                        trace(pi_.verbose_, "Pruning:", *n);
-                        continue;
-                    }
-
-                    // g(n_i) <- g(n) + c(n, n_i)
-                    if(open_->contains(n))
-                    {
-                        open_->decrease_key(n);
-                        trace(pi_.verbose_, "Updating:", *n);
-                    }
-                    // if n_i \in CLOSED
-                    else
-                    {
-                        open_->push(n);
-                        trace(pi_.verbose_, "Generating:", *n);
-                        sol.nodes_inserted_++;
-                    }
+                    n->relax(gval, current->get_id());
+                    update_k_(n->get_id(), current->get_id());
+                    sol.nodes_updated_++;
                 }
+                // Neither a new node nor an improving path to it
                 else
                 {
                     trace(pi_.verbose_, "Closed;", *n);
+                    continue;
+                }
+
+                // Beware, we need to prune *after updating* otherwise we may
+                // have a cache miss of some sort: a node gets generated, then
+                // pruned, then touched and pruned before being updated.
+                if (should_prune_(incumbent, n))
+                {
+                    trace(pi_.verbose_, "Pruning:", *n);
+                    continue;
+                }
+
+                // g(n_i) <- g(n) + c(n, n_i)
+                if(open_->contains(n))
+                {
+                    open_->decrease_key(n);
+                    trace(pi_.verbose_, "Updating:", *n);
+                }
+                // if n_i \in CLOSED
+                else
+                {
+                    open_->push(n);
+                    trace(pi_.verbose_, "Generating:", *n);
+                    sol.nodes_inserted_++;
                 }
             }
         }
