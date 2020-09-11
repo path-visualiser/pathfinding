@@ -297,20 +297,20 @@ class cpd_search : public warthog::search
         // search or if we want to impose some memory limit
         if(current->get_f() > cost_cutoff_)
         {
-            debug(pi_.verbose_, "Cost cutoff", current->get_f(), ">",
+            info(pi_.verbose_, "Cost cutoff", current->get_f(), ">",
                   cost_cutoff_);
             stop = true;
         }
         if(sol->nodes_expanded_ >= exp_cutoff_)
         {
-            debug(pi_.verbose_, "Expanded cutoff", sol->nodes_expanded_, ">",
+            info(pi_.verbose_, "Expanded cutoff", sol->nodes_expanded_, ">",
                   exp_cutoff_);
             stop = true;
         }
         // Exceeded time limit
         if (mytimer->elapsed_time_nano() > time_cutoff_)
         {
-            debug(pi_.verbose_, "Time cutoff", mytimer->elapsed_time_nano(),
+            info(pi_.verbose_, "Time cutoff", mytimer->elapsed_time_nano(),
                   ">", time_cutoff_);
             stop = true;
         }
@@ -318,7 +318,7 @@ class cpd_search : public warthog::search
         // CPD terms, we have an "unperturbed path."
         if (current->get_f() == current->get_ub())
         {
-            debug(pi_.verbose_, "Early stop");
+            info(pi_.verbose_, "Early stop");
             stop = true;
         }
 
@@ -326,7 +326,7 @@ class cpd_search : public warthog::search
         {
             if (current->get_f() * (1 + quality_cutoff_) > incumbent->get_ub())
             {
-                debug(pi_.verbose_, "Quality cutoff", current->get_f(), "x",
+                info(pi_.verbose_, "Quality cutoff", current->get_f(), "x",
                       quality_cutoff_ + 1, ">", incumbent->get_ub());
                 stop = true;
             }
