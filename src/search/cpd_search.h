@@ -460,19 +460,13 @@ class cpd_search : public warthog::search
         {
             open_->push(start);
             sol.nodes_inserted_++;
-
-            if (start_ub < warthog::COST_MAX)
-            {
-                // Having an UB means having a *concrete* path.
-                incumbent = start;
-                debug(pi_.verbose_, "Set UB:", incumbent->get_ub());
-            }
         }
 
         // begin expanding
         while(open_->size())
         {
             warthog::search_node* current = open_->pop();
+            update_incumbent_(incumbent, current);
 
             if (early_stop_(current, incumbent, &sol, &mytimer)) { break; }
 
@@ -554,8 +548,6 @@ class cpd_search : public warthog::search
                 {
                     trace(pi_.verbose_, "Closed;", *n);
                 }
-
-                update_incumbent_(incumbent, n);
             }
         }
 
