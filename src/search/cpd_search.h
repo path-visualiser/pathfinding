@@ -281,12 +281,6 @@ class cpd_search : public warthog::search
             // but the current node does not?
         }
 
-        if (k_moves_.at(n->get_id()) >= max_k_moves_)
-        {
-            debug(pi_.verbose_, "Prune by maximum k:", k_moves_.at(n->get_id()));
-            prune = true;
-        }
-
         return prune;
     }
 
@@ -336,6 +330,13 @@ class cpd_search : public warthog::search
                       quality_cutoff_ + 1, ">", incumbent->get_ub());
                 stop = true;
             }
+        }
+
+        if (k_moves_.at(current->get_id()) >= max_k_moves_)
+        {
+            info(pi_.verbose_,
+                 "Reached maximum radius", k_moves_.at(current->get_id()));
+            stop = true;
         }
 
         // A bit of a travestite use here.
