@@ -1,3 +1,12 @@
+// programs/fifo.cpp
+//
+// Run warthog reading from a FIFO (kernel-level file descriptor). This allows
+// to interface with any other program able to output querysets to the FIFO.
+//
+// TODO There's a lot of duplicate code between here and 'programs/roadhog.cpp',
+// mainly loading code. Find a way to DRY up?
+//
+#include <cstdlib>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -13,18 +22,17 @@
 #include <vector>
 #include <omp.h>
 
-#ifndef NDEBUG
-#define VERBOSE true
-#else
-#define VERBOSE false
-#endif
-
+#include "bch_expansion_policy.h"
+#include "bch_search.h"
 #include "cfg.h"
+#include "ch_data.h"
+#include "cpd_extractions.h"
 #include "cpd_graph_expansion_policy.h"
 #include "cpd_heuristic.h"
 #include "cpd_search.h"
 #include "graph_oracle.h"
 #include "json.hpp"
+#include "json_config.h"
 #include "log.h"
 #include "solution.h"
 #include "timer.h"
@@ -32,130 +40,9 @@
 
 using namespace std;
 
-//
-// - Forwards
-//
-void reader();
+typedef std::function<void(warthog::search*, config&)> conf_fn;
 
-//
-// - Definitions
-//
-typedef warthog::sn_id_t t_query;
-
-typedef std::tuple<unsigned int, // Nodes expanded
-                   unsigned int, // Nodes inserted
-                   unsigned int, // Nodes touched
-                   unsigned int, // Nodes updated
-                   unsigned int, // Surplus nodes
-                   unsigned int, // Total length of paths
-                   double,       // Difference between perturbed and opti
-                   double,       // Difference between free flow and opti
-                   double,       // Difference between free flow and perturbed
-                   double,       // Time spent in A*
-                   double>       // Time to do the search
-    t_results;
-
-typedef struct config
-{
-    // Default config
-    config() : hscale(1.0), fscale(1.0), time(DBL_MAX), itrs(warthog::INF32),
-               k_moves(warthog::INF32), prefix(0), threads(0), verbose(VERBOSE)
-    {};
-
-    double hscale;                // Modifier for heuristic's value
-    double fscale;                // Quality tolerance
-    double time;
-    uint32_t itrs;
-    uint32_t k_moves;
-    uint32_t prefix;
-    unsigned char threads;
-    bool verbose;
-    bool debug;
-} config;
-
-void
-to_json(nlohmann::json& j, const config& c)
-{
-    j = {
-        {"hscale", c.hscale}, {"fscale", c.fscale}, {"time", c.time},
-        {"itrs", c.itrs}, {"k_moves", c.k_moves}, {"prefix", c.prefix},
-        {"threads", c.threads}, {"verbose", c.verbose},
-        {"debug", c.debug}
-    };
-}
-
-void
-from_json(const nlohmann::json& j, config &c)
-{
-    j.at("hscale").get_to(c.hscale);
-    j.at("fscale").get_to(c.fscale);
-    j.at("time").get_to(c.time);
-    j.at("itrs").get_to(c.itrs);
-    j.at("k_moves").get_to(c.k_moves);
-    j.at("prefix").get_to(c.prefix);
-    j.at("threads").get_to(c.threads);
-    j.at("verbose").get_to(c.verbose);
-    j.at("debug").get_to(c.debug);
-}
-
-std::ostream&
-operator<<(std::ostream& os, config &c)
-{
-    nlohmann::json j = c;
-
-    os << j;
-
-    return os;
-}
-
-config&
-operator>>(std::istream& is, config &c)
-{
-    nlohmann::json j;
-
-    is >> j;
-    c = j.get<config>(); // this will only read a complete object
-
-    return c;
-}
-
-/**
- * Takes care of "default parameters" as we use a bunch of wildcards to
- * represent different unbounded values.
- *
- * TODO Should this be part of cpd search directly?
- */
-void
-sanitise_conf(config& conf)
-{
-    conf.fscale = std::max(0.0, conf.fscale);
-    conf.hscale = std::max(1.0, conf.hscale);
-
-    if (conf.itrs == 0)
-    { conf.itrs = warthog::INF32; }
-
-    if (conf.k_moves == 0)
-    { conf.k_moves = warthog::INF32; }
-
-    if (conf.time == 0)
-    { conf.time = DBL_MAX; }
-
-    // Do not touch conf.prefix
-
-    // Enforce single threaded or use max threads
-#ifdef SINGLE_THREADED
-    conf.threads = 1;
-#else
-    if (conf.threads == 0)
-    {
-        conf.threads = omp_get_max_threads();
-    }
-#endif
-
-}
-
-// Global container, booh
-vector<warthog::search*> algos;
+// Defaults
 std::string fifo = "/tmp/warthog.fifo";
 
 //
@@ -172,71 +59,35 @@ signalHandler(int signum)
 }
 
 /**
- * Helper function to run a fixed number of CPD extractions.
- */
-void
-extractions(warthog::sn_id_t start_id, warthog::sn_id_t target_id,
-            uint32_t prefix, warthog::cpd::graph_oracle* cpd,
-            warthog::graph::xy_graph* g, warthog::cost_t& base,
-            warthog::cost_t &init)
-{
-    uint32_t p = 0;
-    warthog::sn_id_t pid = start_id;
-
-    while (p < prefix && pid != target_id)
-    {
-        uint32_t fm = cpd->get_move(pid, target_id);
-        warthog::graph::node* n = g->get_node(pid);
-
-        // Should not happen
-        if (fm == warthog::cpd::CPD_FM_NONE)
-        {
-            error("Could not find path", start_id, "->", target_id);
-            break;
-        }
-
-        assert(n->out_degree() > fm);
-        warthog::graph::edge* e = n->outgoing_begin() + fm;
-        pid = e->node_id_;
-        base += warthog::cpd::label_to_wt(e->label_);
-        init += e->wt_;
-        p++;
-    }
-}
-
-/**
  * The search function does a bunch of statistics out of the search. It takes a
  * configration object, an output pipe and a list of queries and processes them.
  */
 void
-cpd_search(config& conf,
-           const std::string& fifo_out,
-           const std::vector<t_query> &reqs,
-           double t_read)
+run_search(vector<warthog::search*>& algos, conf_fn& apply_conf,
+           config& conf, const std::string& fifo_out,
+           const std::vector<t_query> &reqs, double t_read)
 {
-    assert(reqs.size() % 2 == 0);
-    size_t n_results = reqs.size() / 2;
-    // Statistics
-    unsigned int n_expanded = 0;
-    unsigned int n_inserted = 0;
-    unsigned int n_touched = 0;
-    unsigned int n_updated = 0;
-    unsigned int n_surplus = 0;
-    unsigned int plen = 0;
-    double t_astar = 0;
-    double cost_diff = 0;
-    double flow_diff = 0;
-    double base_diff = 0;
+  assert(reqs.size() % 2 == 0);
+  size_t n_results = reqs.size() / 2;
+  // Statistics
+  unsigned int n_expanded = 0;
+  unsigned int n_inserted = 0;
+  unsigned int n_touched = 0;
+  unsigned int n_updated = 0;
+  unsigned int n_surplus = 0;
+  unsigned int plen = 0;
+  unsigned int finished = 0;
+  double t_astar = 0;
 
-    warthog::timer t;
-    user(conf.verbose, "Preparing to process", n_results, "queries using",
-         (int) conf.threads, "threads.");
+  warthog::timer t;
+  user(conf.verbose, "Preparing to process", n_results, "queries using",
+       (int)conf.threads, "threads.");
 
-    t.start();
+  t.start();
 
 #pragma omp parallel num_threads(conf.threads)                          \
     reduction(+ : t_astar, n_expanded, n_inserted, n_touched, n_updated, \
-              n_surplus, cost_diff, flow_diff, base_diff)
+              n_surplus, plen, finished)
     {
         // Parallel data
         const int thread_count = omp_get_num_threads();
@@ -244,21 +95,9 @@ cpd_search(config& conf,
 
         warthog::timer t_thread;
         warthog::solution sol;
+        warthog::search* alg = algos.at(thread_id);
 
-        warthog::cpd_search<
-            warthog::cpd_heuristic,
-            warthog::simple_graph_expansion_policy,
-            warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
-                warthog::cpd_heuristic,
-                warthog::simple_graph_expansion_policy,
-                warthog::pqueue_min>*>(algos.at(thread_id));
-
-        // Setup algo's config; we assume sane inputs
-        alg->get_heuristic()->set_hscale(conf.hscale);
-        alg->set_max_time_cutoff(conf.time); // This needs to be in ns
-        alg->set_max_expansions_cutoff(conf.itrs);
-        alg->set_max_k_moves(conf.k_moves);
-        alg->set_quality_cutoff(conf.fscale);
+        apply_conf(alg, conf);
 
         // Instead of bothering with manual conversiong (think 'ceil()'), we use
         // the magic of "usual arithmetic" to achieve the right from/to values.
@@ -272,21 +111,9 @@ cpd_search(config& conf,
             size_t i = id * 2;
             warthog::sn_id_t start_id = reqs.at(i);
             warthog::sn_id_t target_id = reqs.at(i + 1);
-            warthog::cost_t base = 0;
-            warthog::cost_t init = 0;
-
-            if (conf.prefix > 0)
-            {
-                extractions(start_id, target_id, conf.prefix,
-                            alg->get_heuristic()->get_oracle(),
-                            alg->get_expander()->get_g(), base, init);
-            }
-            else
-            {
-                // Actual search
-                warthog::problem_instance pi(start_id, target_id, conf.debug);
-                alg->get_pathcost(pi, sol);
-            }
+            // Actual search
+            warthog::problem_instance pi(start_id, target_id, conf.debug);
+            alg->get_path(pi, sol);
 
             // Update stasts
             t_astar += sol.time_elapsed_nano_;
@@ -295,15 +122,8 @@ cpd_search(config& conf,
             n_touched += sol.nodes_touched_;
             n_updated += sol.nodes_updated_;
             n_surplus += sol.nodes_surplus_;
-
-            if (sol.nodes_inserted_ > 0)
-            {
-                plen += 1; // KLUDGE Use plen to record finished instances
-                alg->get_heuristic()->h(start_id, target_id, base, init);
-                cost_diff += (init - sol.sum_of_edge_costs_) / init;
-                flow_diff += (sol.sum_of_edge_costs_ - base) / sol.sum_of_edge_costs_;
-                base_diff += (init - base) / init;
-            }
+            plen += sol.path_.size();
+            finished += sol.nodes_inserted_ > 0;
         }
 
         t_thread.stop();
@@ -335,8 +155,7 @@ cpd_search(config& conf,
     debug(conf.verbose, "Spawned a writer on", fifo_out);
     out << n_expanded << "," << n_inserted << "," << n_touched << ","
         << n_updated << "," << n_surplus << "," << plen << ","
-        << cost_diff << "," << flow_diff << "," << base_diff << ","
-        << t_astar << "," << t.elapsed_time_nano() + t_read
+        << finished << "," << t_astar << "," << t.elapsed_time_nano() + t_read
         << std::endl;
 
     if (fifo_out != "-") { of.close(); }
@@ -355,7 +174,7 @@ cpd_search(config& conf,
  * It then passes the data to the search function before calling itself again.
  */
 void
-reader()
+reader(vector<warthog::search*>& algos, conf_fn& apply_conf)
 {
     ifstream fd;
     config conf;
@@ -421,50 +240,25 @@ reader()
 
         if (lines.size() > 0)
         {
-            cpd_search(conf, fifo_out, lines, t.elapsed_time_nano());
+            run_search(algos, apply_conf, conf, fifo_out, lines,
+                       t.elapsed_time_nano());
         }
     }
 }
-/**
- * The main takes care of loading the data and spawning the reader thread.
- */
-int
-main(int argc, char *argv[])
+
+void
+run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
+               vector<warthog::search*> algos)
 {
-	// parse arguments
-	warthog::util::param valid_args[] =
-        {
-            // {"help", no_argument, &print_help, 1},
-            // {"checkopt",  no_argument, &checkopt, 1},
-            // {"verbose",  no_argument, &verbose, 1},
-            // {"noheader",  no_argument, &suppress_header, 1},
-            {"input",  required_argument, 0, 1},
-            {"fifo",   required_argument, 0, 1},
-            // {"problem",  required_argument, 0, 1},
-            {0,  0, 0, 0}
-        };
-
-	warthog::util::cfg cfg;
     bool label_as_lb = false;
-    warthog::graph::xy_graph g;
     std::ifstream ifs;
-
-	cfg.parse_args(argc, argv, "-f", valid_args);
-
-    // TODO
-    // if(argc == 1 || print_help)
-    // {
-	// 	help();
-    //     exit(0);
-    // }
-
     // We first load the xy_graph and its diff as we need them to be *read* in
     // reverse order.
     std::string xy_filename = cfg.get_param_value("input");
     if(xy_filename == "")
     {
         std::cerr << "parameter is missing: --input [xy-graph file]\n";
-        return EXIT_FAILURE;
+        return;
     }
 
     // Check if we have a second parameter in the --input
@@ -495,7 +289,7 @@ main(int argc, char *argv[])
     }
     ifs.close();
 
-    // read the cpd (create from scratch if one doesn't exist)
+    // read the cpd
     warthog::cpd::graph_oracle oracle(&g);
     std::string cpd_filename = cfg.get_param_value("input");
     if(cpd_filename == "")
@@ -511,17 +305,9 @@ main(int argc, char *argv[])
     }
     else
     {
-        oracle.precompute();
-        std::ofstream ofs(cpd_filename);
-        ofs << oracle;
-        ofs.close();
+        std::cerr << "Could not find the CPD file." << std::endl;
+        return;
     }
-
-#ifdef SINGLE_THREADED
-    algos.resize(1);
-#else
-    algos.resize(omp_get_max_threads());
-#endif
 
     for (auto& alg: algos)
     {
@@ -538,6 +324,160 @@ main(int argc, char *argv[])
     }
 
     user(VERBOSE, "Loaded", algos.size(), "search.");
+
+    conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
+    {
+        warthog::cpd_search<
+            warthog::cpd_heuristic,
+            warthog::simple_graph_expansion_policy,
+            warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
+                warthog::cpd_heuristic,
+                warthog::simple_graph_expansion_policy,
+                warthog::pqueue_min>*>(base);
+
+        // Setup algo's config; we assume sane inputs
+        alg->get_heuristic()->set_hscale(conf.hscale);
+        alg->set_max_time_cutoff(conf.time); // This needs to be in ns
+        alg->set_max_expansions_cutoff(conf.itrs);
+        alg->set_max_k_moves(conf.k_moves);
+        alg->set_quality_cutoff(conf.fscale);
+    };
+
+    reader(algos, apply_conf);
+}
+
+void
+run_cpd(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
+        vector<warthog::search*> algos)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    std::ifstream ifs(xy_filename);
+    ifs >> g;
+    ifs.close();
+
+    warthog::cpd::graph_oracle oracle(&g);
+    std::string cpd_filename = cfg.get_param_value("cpd");
+    if(cpd_filename == "")
+    {
+        cpd_filename = xy_filename + ".cpd";
+    }
+
+    ifs.open(cpd_filename);
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+        ifs.close();
+    }
+    else
+    {
+        std::cerr << "Could not find CPD file." << std::endl;
+        return;
+    }
+
+    for (auto& alg: algos)
+    {
+        alg = new warthog::cpd_extractions(&g, &oracle);
+    }
+
+    conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
+    {};
+
+    reader(algos, apply_conf);
+}
+
+void
+run_bch(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
+        vector<warthog::search*> algos)
+{
+    std::string chd_file = cfg.get_param_value("input");
+    if(chd_file == "")
+    {
+        std::cerr << "err; missing chd input file\n";
+        return;
+    }
+
+    warthog::ch::ch_data chd;
+    chd.type_ = warthog::ch::UP_ONLY;
+    std::ifstream ifs(chd_file.c_str());
+    if(!ifs.is_open())
+    {
+        std::cerr << "err; invalid path to chd input file\n";
+        return;
+    }
+
+    ifs >> chd;
+    ifs.close();
+
+    for (auto& alg: algos)
+    {
+        warthog::bch_expansion_policy* fexp =
+            new warthog::bch_expansion_policy(chd.g_);
+        warthog::bch_expansion_policy* bexp =
+            new warthog::bch_expansion_policy(chd.g_, true);
+        warthog::zero_heuristic* h = new warthog::zero_heuristic();
+        alg = new warthog::bch_search<
+            warthog::zero_heuristic, warthog::bch_expansion_policy>
+            (fexp, bexp, h);
+    }
+
+    conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
+    {};
+
+    reader(algos, apply_conf);
+}
+
+/**
+ * The main takes care of loading the data and spawning the reader thread.
+ */
+int
+main(int argc, char *argv[])
+{
+	// parse arguments
+	warthog::util::param valid_args[] =
+        {
+            // {"help", no_argument, &print_help, 1},
+            // {"checkopt",  no_argument, &checkopt, 1},
+            // {"verbose",  no_argument, &verbose, 1},
+            // {"noheader",  no_argument, &suppress_header, 1},
+            {"input", required_argument, 0, 1},
+            {"fifo",  required_argument, 0, 1},
+            {"alg",   required_argument, 0, 1},
+            // {"problem",  required_argument, 0, 1},
+            {0,  0, 0, 0}
+        };
+
+	warthog::util::cfg cfg;
+    warthog::graph::xy_graph g;
+
+	cfg.parse_args(argc, argv, "-f", valid_args);
+
+    // TODO
+    // if(argc == 1 || print_help)
+    // {
+	// 	help();
+    //     exit(0);
+    // }
+
+    std::string alg_name = cfg.get_param_value("alg");
+    if((alg_name == ""))
+    {
+        std::cerr << "parameter is missing: --alg\n";
+        return EXIT_FAILURE;
+    }
+
+    vector<warthog::search*> algos;
+
+#ifdef SINGLE_THREADED
+    algos.resize(1);
+#else
+    algos.resize(omp_get_max_threads());
+#endif
 
     std::string other = cfg.get_param_value("fifo");
     if (other != "")
@@ -558,7 +498,21 @@ main(int argc, char *argv[])
     // Register signal handlers
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
-    reader();
+
+    std::string err;
+
+    if (alg_name == "cpd-search")
+    {
+        run_cpd_search(cfg, g, algos);
+    }
+    else if (alg_name == "cpd")
+    {
+        run_cpd(cfg, g, algos);
+    }
+    else if (alg_name == "bch")
+    {
+        run_bch(cfg, g, algos);
+    }
 
     // We do not exit from here
     return EXIT_FAILURE;
