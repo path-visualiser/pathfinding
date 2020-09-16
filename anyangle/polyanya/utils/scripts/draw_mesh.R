@@ -67,43 +67,6 @@ draw_mesh <- function(rawmesh, labels=FALSE, poly_colour="white", poly_border_co
     }
 }
 
-draw_mesh2 <- function(rawmesh, poly_colour="lightgray")
-{
-    yrange <- range(rawmesh$points[,2]) + c(-1, 1)
-    xrange <- range(rawmesh$points[,1]) + c(-1, 1)
-    plot(NA, xlim=xrange, ylim=yrange, main=rawmesh$filename, yaxt="n", xaxt="n", xlab="", ylab="")
-
-    axis(1, at=pretty(xrange), tick=TRUE, labels=TRUE)
-    axis(2, at=pretty(yrange), tick=TRUE, labels=TRUE)
-
-    print("computing poly lines")
-    poly_lines <- mesh2lines(rawmesh)
-    poly_lines <- poly_lines[unique(sort(poly_lines)), ]
-    print("drawing poly lines")
-    pb <- txtProgressBar(0, nrow(poly_lines), style=3)
-    for(i in seq(1, nrow(poly_lines)))
-    {
-        setTxtProgressBar(pb, i)
-        poly_points <- rawmesh$points[poly_lines[i,],]
-        lines(poly_points, col=poly_colour)
-    }
-}
-
-mesh2lines <- function(rawmesh)
-{
-    poly_lines <- matrix(NA, nrow=nrow(rawmesh$polys)*4, ncol=2)
-    for(i in seq(1, nrow(rawmesh$polys)))
-    {
-        poly_points <- rawmesh$polys[i, seq_len(rawmesh$verts_per_poly[i])]
-        for(j in seq(1, length(poly_points)-1))
-        {
-            poly_lines[i+(j-1), ] <- sort(poly_points[c(j, j+1)])
-        }
-        poly_lines[i, ] <- sort(poly_points[c(1, length(poly_points))])
-    }
-    poly_lines
-}
-
 # load 
 load_trace <- function(filename)
 {
