@@ -499,8 +499,6 @@ main(int argc, char *argv[])
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
 
-    std::string err;
-
     if (alg_name == "cpd-search")
     {
         run_cpd_search(cfg, g, algos);
@@ -513,6 +511,12 @@ main(int argc, char *argv[])
     {
         run_bch(cfg, g, algos);
     }
+    else
+    {
+        std::cerr << "--alg not recognised." << std::endl;
+    }
+
+    signalHandler(EXIT_FAILURE); // Is this even legal?
 
     // We do not exit from here
     return EXIT_FAILURE;
