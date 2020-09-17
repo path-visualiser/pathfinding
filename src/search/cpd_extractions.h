@@ -11,6 +11,7 @@
 #include "problem_instance.h"
 #include "solution.h"
 #include "timer.h"
+#include <bits/stdint-uintn.h>
 #include <climits>
 
 namespace warthog
@@ -46,7 +47,7 @@ class cpd_extractions : public warthog::search
             // NB: we store the actual path in addition to simply extracting it
             sol.sum_of_edge_costs_ = 0;
 
-            while(source_id != target_id)
+            while(source_id != target_id && sol.nodes_touched_ < max_k_moves_)
             {
                 sol.path_.push_back(source_id);
 
@@ -85,7 +86,7 @@ class cpd_extractions : public warthog::search
 
             sol.sum_of_edge_costs_ = 0;
 
-            while(source_id != target_id)
+            while(source_id != target_id && sol.nodes_touched_ < max_k_moves_)
             {
                 uint32_t move = oracle_->get_move(source_id, target_id);
                 if (move == warthog::cpd::CPD_FM_NONE)
@@ -106,6 +107,14 @@ class cpd_extractions : public warthog::search
             mytimer.stop();
             sol.time_elapsed_nano_ = mytimer.elapsed_time_nano();
         }
+
+        void
+        set_max_k_moves(uint32_t k_moves)
+        { max_k_moves_ = k_moves; }
+
+        uint32_t
+        get_max_k_moves()
+        { return max_k_moves_; }
 
         virtual size_t
         mem()

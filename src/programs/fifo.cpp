@@ -385,8 +385,15 @@ run_cpd(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
         alg = new warthog::cpd_extractions(&g, &oracle);
     }
 
+    user(VERBOSE, "Loaded", algos.size(), "search.");
+
     conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
-    {};
+    {
+        warthog::cpd_extractions* alg =
+            static_cast<warthog::cpd_extractions*>(base);
+
+        alg->set_max_k_moves(conf.k_moves);
+    };
 
     reader(algos, apply_conf);
 }
@@ -425,6 +432,8 @@ run_bch(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
             warthog::zero_heuristic, warthog::bch_expansion_policy>
             (fexp, bexp, h);
     }
+
+    user(VERBOSE, "Loaded", algos.size(), "search.");
 
     conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
     {};
