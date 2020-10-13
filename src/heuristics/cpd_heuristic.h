@@ -188,7 +188,7 @@ class cpd_heuristic
         warthog::cost_t
         get_cost(warthog::sn_id_t from_id, warthog::sn_id_t target_id)
         {
-            if(cache_.at(from_id).target_id_ == target_id)
+            if(is_cached_(from_id, target_id))
             {
                 cpd_heuristic_cache_entry & entry = cache_.at(from_id);
 
