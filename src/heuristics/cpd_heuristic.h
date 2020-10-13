@@ -125,13 +125,12 @@ class cpd_heuristic
 
                 if (label_as_lb_)
                 {
-                    // Always apply `hscale_` to the lb
-                    lb += label * hscale_;
+                    lb += label;
                     ub += (sp.second)->wt_;
                 }
                 else
                 {
-                    lb += (sp.second)->wt_ * hscale_;
+                    lb += (sp.second)->wt_;
                     // Technically does not need the cast
                     ub += (sp.second)->label_;
                 }
@@ -143,7 +142,8 @@ class cpd_heuristic
                 cache_.at(sp.first).graph_id_ = cpd_->get_graph()->get_id();
             }
 
-            return lb;
+            // Only apply `hscale` to the return value
+            return lb * hscale_;
         }
 
         inline void
