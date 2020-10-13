@@ -10,7 +10,7 @@ WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
 
 D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
 					 -I./heuristics -I./jps -I./contraction -I./label \
-					 -I./memory -I./mapf -I./sys -I./sipp -I./cpd
+					 -I./memory -I./mapf -I./sys -I./sipp -I./cpd -I./third_party
 
 D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include
 D_LIBS = -L./lib -L/usr/local/lib
