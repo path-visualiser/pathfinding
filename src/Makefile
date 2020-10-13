@@ -89,6 +89,7 @@ extras__: makedirs warthog
 	$(CC) programs/tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 	$(CC) programs/make_cpd.cpp -o ./bin/make_cpd -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) -fopenmp
 	$(CC) test/cpd_search.cpp -o ./bin/test_cpd_search -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CC) programs/fifo.cpp -o ./bin/fifo -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) -fopenmp
 
 .PHONY: makedirs
 makedirs:

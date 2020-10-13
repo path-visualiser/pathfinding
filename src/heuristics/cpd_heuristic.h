@@ -67,6 +67,10 @@ class cpd_heuristic
         get_hscale()
         { return hscale_; }
 
+        warthog::cpd::graph_oracle*
+        get_oracle()
+        { return cpd_; }
+
         // @return a lowerbound cost from node @param start_id to
         // node @param target_id. If no such bound has been established
         // compute one using the CPD in time O(n log(k)) where n is
@@ -177,6 +181,28 @@ class cpd_heuristic
                 return entry.fm_->node_id_;
             }
             return warthog::SN_ID_MAX;
+        }
+
+        // As above, but return the cost of the move as we need to take labels
+        // into account.
+        warthog::cost_t
+        get_cost(warthog::sn_id_t from_id, warthog::sn_id_t target_id)
+        {
+            if(cache_.at(from_id).target_id_ == target_id)
+            {
+                cpd_heuristic_cache_entry & entry = cache_.at(from_id);
+
+                if (label_as_lb_)
+                {
+                  return entry.fm_->wt_;
+                }
+                else
+                {
+                  return cpd::label_to_wt(entry.fm_->label_);
+                }
+            }
+
+            return warthog::COST_MAX;
         }
 
         inline size_t

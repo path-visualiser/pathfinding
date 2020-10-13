@@ -918,6 +918,48 @@ run_cpd_search(warthog::util::cfg& cfg,
         warthog::pqueue_min>
             alg(&h, &expander, &open);
 
+    // Set options for CPD searh
+    std::stringstream ss;
+    std::string scale = cfg.get_param_value("fscale");
+    std::string tlim = cfg.get_param_value("uslim");
+    std::string moves = cfg.get_param_value("kmoves");
+    double f_scale;
+    uint32_t us_lim;
+    uint32_t k_moves;
+
+    if (scale != "")
+    {
+        ss << scale;
+        ss >> f_scale;
+
+        if (f_scale > 0.0)
+        {
+            alg.set_quality_cutoff(f_scale);
+        }
+    }
+
+    if (tlim != "")
+    {
+        ss << tlim;
+        ss >> us_lim;
+
+        if (us_lim > 0)
+        {
+            alg.set_max_us_cutoff(us_lim);
+        }
+    }
+
+    if (moves != "")
+    {
+        ss << moves;
+        ss >> k_moves;
+
+        if (k_moves > 0)
+        {
+            alg.set_max_k_moves(k_moves);
+        }
+    }
+
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
@@ -1193,6 +1235,9 @@ main(int argc, char** argv)
 		{"noheader",  no_argument, &suppress_header, 1},
 		{"input",  required_argument, 0, 1},
 		{"problem",  required_argument, 0, 1},
+        {"fscale", required_argument, 0, 1},
+        {"uslim", required_argument, 0, 1},
+        {"kmoves", required_argument, 0, 1},
 		{0,  0, 0, 0}
 	};
 
