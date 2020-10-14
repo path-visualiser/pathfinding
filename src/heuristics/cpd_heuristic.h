@@ -48,10 +48,8 @@ class cpd_heuristic
 {
     typedef std::pair<warthog::sn_id_t, warthog::graph::edge*> stack_pair;
     public:
-        // `label_as_lb` switches ub/lb fields.
-        cpd_heuristic(warthog::cpd::graph_oracle* cpd, double hscale=1.0,
-            bool label_as_lb=false)
-            : cpd_(cpd), hscale_(hscale), label_as_lb_(label_as_lb)
+        cpd_heuristic(warthog::cpd::graph_oracle* cpd, double hscale=1.0)
+            : cpd_(cpd), hscale_(hscale)
         {
             cache_.resize(cpd_->get_graph()->get_num_nodes());
             stack_.reserve(4096);
@@ -110,30 +108,8 @@ class cpd_heuristic
                 stack_pair sp = stack_.back();
                 stack_.pop_back();
 
-                warthog::graph::edge_cost_t label =
-                    warthog::graph::EDGE_COST_MAX;
-
-                if ((sp.second)->label_ == UINTPTR_MAX)
-                {
-                    // You probably don't want to be playing with unset labels
-                    assert(!label_as_lb_);
-                }
-                else
-                {
-                    label = cpd::label_to_wt((sp.second)->label_);
-                }
-
-                if (label_as_lb_)
-                {
-                    lb += label;
-                    ub += (sp.second)->wt_;
-                }
-                else
-                {
-                    lb += (sp.second)->wt_;
-                    // Technically does not need the cast
-                    ub += (sp.second)->label_;
-                }
+                lb += (sp.second)->wt_;
+                ub += warthog::cpd::label_to_wt((sp.second)->label_);
 
                 cache_.at(sp.first).lb_ = lb;
                 cache_.at(sp.first).ub_ = ub;
@@ -185,24 +161,17 @@ class cpd_heuristic
 
         // As above, but return the cost of the move as we need to take labels
         // into account.
-        warthog::cost_t
-        get_cost(warthog::sn_id_t from_id, warthog::sn_id_t target_id)
+        void
+        get_costs(warthog::sn_id_t from_id, warthog::sn_id_t target_id,
+                  warthog::cost_t &wt, warthog::cost_t &label)
         {
             if(is_cached_(from_id, target_id))
             {
                 cpd_heuristic_cache_entry & entry = cache_.at(from_id);
 
-                if (label_as_lb_)
-                {
-                  return entry.fm_->wt_;
-                }
-                else
-                {
-                  return cpd::label_to_wt(entry.fm_->label_);
-                }
+                wt = entry.fm_->wt_;
+                label = entry.fm_->label_;
             }
-
-            return warthog::COST_MAX;
         }
 
         inline size_t
@@ -224,7 +193,6 @@ class cpd_heuristic
 
         warthog::cpd::graph_oracle* cpd_;
         double hscale_;
-        bool label_as_lb_;
         std::vector<warthog::cpd_heuristic_cache_entry> cache_;
         std::vector<stack_pair> stack_;
 };

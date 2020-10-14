@@ -125,7 +125,7 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     // Load CPD
     warthog::cpd::graph_oracle oracle(&g);
     std::string cpd_filename = map_name + ".cpd";
-    warthog::cpd_heuristic h(&oracle, 1.0, true);
+    warthog::cpd_heuristic h(&oracle, 1.0);
     std::ifstream ifs(cpd_filename);
 
     if(ifs.is_open())

@@ -578,8 +578,20 @@ class cpd_search : public warthog::search
             else
             {
                 warthog::search_node* n = expander_->generate(n_id);
-                warthog::cost_t gval = incumbent->get_g() +
-                    heuristic_->get_cost(p_id, pi_.target_id_);
+                warthog::cost_t lb;
+                warthog::cost_t ub;
+                warthog::cost_t gval = incumbent->get_g();
+                heuristic_->get_costs(p_id, pi_.target_id_, lb, ub);
+
+                if (ub < warthog::COST_MAX)
+                {
+                    gval += incumbent->get_ub() - ub;
+                }
+                else
+                {
+                    gval += incumbent->get_f() - lb;
+                }
+
                 // Force node "generation" in case some of them were not
                 // generated during the search.
                 generate_node_(incumbent, n, gval);

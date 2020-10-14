@@ -846,7 +846,6 @@ void
 run_cpd_search(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
 {
-    bool label_as_lb = false;
     warthog::graph::xy_graph g;
     std::ifstream ifs;
     // We first load the xy_graph and its diff as we need them to be *read* in
@@ -858,33 +857,32 @@ run_cpd_search(warthog::util::cfg& cfg,
         return;
     }
 
+    ifs.open(xy_filename);
+    if (!ifs.good())
+    {
+        std::cerr << "Could not open xy-graph: " << xy_filename << std::endl;
+        return;
+    }
+
+    ifs >> g;
+    ifs.close();
+
     // Check if we have a second parameter in the --input
     std::string diff_filename = cfg.get_param_value("input");
     if (diff_filename == "")
     {
         diff_filename = xy_filename + ".diff";
-    }
+        ifs.open(diff_filename);
+        if (!ifs.good())
+        {
+            std::cerr <<
+                "Could not open diff-graph: " << diff_filename << std::endl;
+            return;
+        }
 
-    ifs.open(diff_filename);
-    if (!ifs.good())
-    {
-        ifs.close();
-        ifs.open(xy_filename);
-        ifs >> g;
-        // No modification on the graph
-        label_as_lb = false;
-    }
-    else
-    {
-        // Perturbed graph first
-        ifs >> g;
-        ifs.close();
-        // Base graph second
-        ifs.open(xy_filename);
         g.perturb(ifs);
-        label_as_lb = true;
+        ifs.close();
     }
-    ifs.close();
 
     // read the cpd (create from scratch if one doesn't exist)
     warthog::cpd::graph_oracle oracle(&g);
@@ -909,7 +907,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
-    warthog::cpd_heuristic h(&oracle, 1.0, label_as_lb);
+    warthog::cpd_heuristic h(&oracle, 1.0);
     warthog::pqueue_min open;
 
     warthog::cpd_search<
