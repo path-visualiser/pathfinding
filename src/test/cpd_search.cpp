@@ -97,20 +97,6 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
 
             REQUIRE(sol.sum_of_edge_costs_ == cost);
         }
-
-        WHEN("We do not have time to search")
-        {
-            astar.set_max_time_cutoff(0);
-
-            THEN("We should still find a solution because the start node " +
-                 "has an incumbent.")
-            {
-                warthog::problem_instance pi(start, goal, true);
-                astar.get_path(pi, sol);
-
-                REQUIRE(sol.sum_of_edge_costs_ == cost);
-            }
-        }
     }
 }
 
