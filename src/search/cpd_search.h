@@ -580,21 +580,25 @@ class cpd_search : public warthog::search
                 warthog::search_node* n = expander_->generate(n_id);
                 warthog::cost_t lb;
                 warthog::cost_t ub;
-                warthog::cost_t gval = incumbent->get_g();
-                heuristic_->get_costs(p_id, pi_.target_id_, lb, ub);
+                warthog::cost_t gval;
 
+                heuristic_->h(n_id, pi_.target_id_, lb, ub);
+                // The g-value of the next node is the g-value of the current
+                // one plus the difference in their heuristic costs.
+                //
+                // We assume that either all nodes have UBs or none do.
                 if (ub < warthog::COST_MAX)
                 {
-                    gval += incumbent->get_ub() - ub;
+                    gval = incumbent->get_ub() - ub;
                 }
                 else
                 {
-                    gval += incumbent->get_f() - lb;
+                    gval = incumbent->get_f() - lb;
                 }
 
-                // Force node "generation" in case some of them were not
-                // generated during the search.
-                generate_node_(incumbent, n, gval);
+                n->init(incumbent->get_search_number(),
+                        p_id, gval, gval + lb, gval + ub);
+                debug(pi_.verbose_, "Rebuild", *n);
                 incumbent = n;
             }
         }

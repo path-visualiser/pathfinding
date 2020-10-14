@@ -159,21 +159,6 @@ class cpd_heuristic
             return warthog::SN_ID_MAX;
         }
 
-        // As above, but return the cost of the move as we need to take labels
-        // into account.
-        void
-        get_costs(warthog::sn_id_t from_id, warthog::sn_id_t target_id,
-                  warthog::cost_t &wt, warthog::cost_t &label)
-        {
-            if(is_cached_(from_id, target_id))
-            {
-                cpd_heuristic_cache_entry & entry = cache_.at(from_id);
-
-                wt = entry.fm_->wt_;
-                label = entry.fm_->label_;
-            }
-        }
-
         inline size_t
         mem()
         {
