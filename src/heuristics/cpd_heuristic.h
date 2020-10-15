@@ -108,8 +108,8 @@ class cpd_heuristic
                 stack_pair sp = stack_.back();
                 stack_.pop_back();
 
-                lb += (sp.second)->wt_;
-                ub += warthog::cpd::label_to_wt((sp.second)->label_);
+                lb += warthog::cpd::label_to_wt((sp.second)->label_);
+                ub += (sp.second)->wt_;
 
                 cache_.at(sp.first).lb_ = lb;
                 cache_.at(sp.first).ub_ = ub;

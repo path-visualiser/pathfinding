@@ -413,12 +413,13 @@ class xy_graph_base
 
               if (eit != from->outgoing_end())
               {
-                  // Welcome to valid C++, we are storing the raw value in the
-                  // memory location of the pointer.
-                  eit->label_ = cpd::wt_to_label(e.second.wt_);
-
+                  // Save the original value as the label
+                  eit->label_ = cpd::wt_to_label(eit->wt_);
                   if (eit->wt_ != e.second.wt_)
-                  { num_modif++; }
+                  {
+                      num_modif++;
+                      eit->wt_ = e.second.wt_;
+                  }
               }
               // TODO else add warning (from log.h?)
             }
