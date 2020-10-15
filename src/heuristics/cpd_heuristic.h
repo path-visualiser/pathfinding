@@ -13,6 +13,7 @@
 //
 
 #include "constants.h"
+#include "forward.h"
 #include "graph_oracle.h"
 #include "helpers.h"
 #include "xy_graph.h"
@@ -51,8 +52,11 @@ class cpd_heuristic
         cpd_heuristic(warthog::cpd::graph_oracle* cpd, double hscale=1.0)
             : cpd_(cpd), hscale_(hscale)
         {
-            cache_.resize(cpd_->get_graph()->get_num_nodes());
+            graph::xy_graph* g = cpd_->get_graph();
+            cache_.resize(g->get_num_nodes());
             stack_.reserve(4096);
+            // Label all edges
+            g->perturb(*g);
         }
 
         ~cpd_heuristic() { }

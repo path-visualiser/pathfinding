@@ -51,8 +51,6 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
     std::string cpd_filename = "square01.cpd";
     std::ifstream ifs(cpd_filename);
 
-    g.perturb(g);
-
     if(ifs.is_open())
     {
         ifs >> oracle;
@@ -149,8 +147,6 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
 
     GIVEN("The unperturbed graph")
     {
-        g.perturb(g);
-
         THEN("The path is correct")
         {
             warthog::problem_instance pi(start, goal, true);
@@ -257,7 +253,6 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     {
         // 100% quality cutoff
         astar.set_quality_cutoff(1.0);
-        g.perturb(g);
 
         WHEN("The graph is perturbed within acceptable range")
         {
