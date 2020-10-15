@@ -387,15 +387,13 @@ class xy_graph_base
         }
 
         /**
-         * Given an already loaded 'xy_graph' and a new file, we edit the labels
-         * of the edges to contain the new costs.
+         * Perturb given an already loaded 'xy_graph' and a new file.
          */
         void
         perturb(std::istream& in)
         {
             uint32_t num_nodes;
             uint32_t num_edges;
-            uint32_t num_modif = 0;
             std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
             std::vector<std::pair<int32_t, int32_t>> xy;
             std::vector<warthog::graph::ECAP_T> in_degree;
@@ -405,6 +403,40 @@ class xy_graph_base
                 in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
             assert(num_nodes == nodes_.size());
 
+            perturb(edges);
+        }
+
+        /**
+         * Perturb given an already loaded 'xy_graph' and a companion graph.
+         */
+        void
+        perturb(xy_graph& g)
+        {
+            std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
+            assert(nodes_.size() == g.get_num_nodes());
+
+            for (uint32_t i = 0; i < g.get_num_nodes(); i++)
+            {
+                warthog::graph::node* n = g.get_node(i);
+                for (uint32_t edge_idx = 0; edge_idx < n->out_degree();
+                     edge_idx++)
+                {
+                    warthog::graph::edge* e = n->outgoing_begin() + edge_idx;
+                    edges.push_back({i, *e});
+                }
+            }
+
+            perturb(edges);
+        }
+
+        /**
+         * Edit the weights of the edges to contain the new costs and save the
+         * original cost in the labels.
+         */
+        void
+        perturb(std::vector<std::pair<uint32_t, warthog::graph::edge>>& edges)
+        {
+            uint32_t num_modif = 0;
             for (auto e : edges)
             {
               uint32_t from_id = e.first;

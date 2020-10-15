@@ -51,6 +51,8 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
     std::string cpd_filename = "square01.cpd";
     std::ifstream ifs(cpd_filename);
 
+    g.perturb(g);
+
     if(ifs.is_open())
     {
         ifs >> oracle;
@@ -96,6 +98,7 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
             astar.get_path(pi, sol);
 
             REQUIRE(sol.sum_of_edge_costs_ == cost);
+            REQUIRE(sol.nodes_expanded_ == 0);
         }
     }
 }
@@ -144,21 +147,10 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
         (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
     std::vector<warthog::sn_id_t> optipath = {19, 14, 10, 8, 3, 2, 1, 0};
 
-    // Set labels for the entire graph
-    for (uint32_t i = 0; i < g.get_num_nodes(); i++)
-    {
-        warthog::graph::node *n = g.get_node(i);
-
-        for (uint32_t j = 0; j < n->out_degree(); j++)
-        {
-            warthog::graph::edge *e = (n->outgoing_begin() + j);
-            e->label_ = warthog::cpd::wt_to_label(e->wt_);
-            assert(warthog::cpd::label_to_wt(e->label_) == e->wt_);
-        }
-    }
-
     GIVEN("The unperturbed graph")
     {
+        g.perturb(g);
+
         THEN("The path is correct")
         {
             warthog::problem_instance pi(start, goal, true);
@@ -173,7 +165,10 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
 
     GIVEN("A perturbation not on the optimal path")
     {
-        REQUIRE(perturb_edge(&g, 0, 5));
+        warthog::graph::xy_graph p;
+        warthog::graph::gridmap_to_xy_graph(&d, &p, false);
+        REQUIRE(perturb_edge(&p, 0, 5));
+        g.perturb(p);
 
         THEN("The search is not affected")
         {
@@ -189,7 +184,10 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     GIVEN("A perturbation on the optimal path")
     {
         // Affect (0, 0) -> (0, 1)
-        REQUIRE(perturb_edge(&g, 0, 1));
+        warthog::graph::xy_graph p;
+        warthog::graph::gridmap_to_xy_graph(&d, &p, false);
+        REQUIRE(perturb_edge(&p, 0, 1));
+        g.perturb(p);
 
         THEN("The search is affected but cost is the same")
         {
@@ -210,8 +208,11 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
         // Now we will modify the map enough to warrant search: the diagonal
         // moves at the corner -- which are the only ones that offer
         // alternatives.
-        REQUIRE(perturb_edge(&g, 3, 8));
-        REQUIRE(perturb_edge(&g, 11, 16));
+        warthog::graph::xy_graph p;
+        warthog::graph::gridmap_to_xy_graph(&d, &p, false);
+        REQUIRE(perturb_edge(&p, 3, 8));
+        REQUIRE(perturb_edge(&p, 11, 16));
+        g.perturb(p);
 
         THEN("The optimal path is now two straight lines")
         {
@@ -256,12 +257,16 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     {
         // 100% quality cutoff
         astar.set_quality_cutoff(1.0);
+        g.perturb(g);
 
         WHEN("The graph is perturbed within acceptable range")
         {
             // Modify optimal edge (0, 0) -> (0, 1), but the total cost of the
             // path is within the acceptance factor.
-            REQUIRE(perturb_edge(&g, 0, 1));
+            warthog::graph::xy_graph p;
+            warthog::graph::gridmap_to_xy_graph(&d, &p, false);
+            REQUIRE(perturb_edge(&p, 0, 1));
+            g.perturb(p);
 
             THEN("The search is not modified")
             {
