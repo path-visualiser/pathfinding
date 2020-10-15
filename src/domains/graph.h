@@ -33,7 +33,7 @@ template<typename LABEL_T>
 class edge_base
 {
     public:
-        edge_base() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = UINTPTR_MAX;}
+        edge_base() { node_id_ = UINT32_MAX; wt_ = UINT32_MAX; label_ = 0;}
 
         edge_base(uint32_t node_id, edge_cost_t wt, uintptr_t label)
         {
@@ -46,7 +46,7 @@ class edge_base
         {
             node_id_ = node_id;
             wt_ = wt;
-            label_ = UINTPTR_MAX;
+            label_ = 0;
         }
 
         edge_base(const warthog::graph::edge_base<LABEL_T>& other) 
