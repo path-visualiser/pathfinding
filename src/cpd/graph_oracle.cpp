@@ -2,16 +2,11 @@
 #include "graph_oracle.h"
 #include "helpers.h"
 
-struct shared_data
-{
-    warthog::cpd::graph_oracle* cpd_;
-    std::vector<uint32_t>* sources_;
-};
-
-void warthog::cpd::compute_row(uint32_t source_id,
-                               warthog::cpd::graph_oracle* cpd,
-                               warthog::search* dijk,
-                               std::vector<warthog::cpd::fm_coll> &s_row)
+void
+warthog::cpd::compute_row(uint32_t source_id,
+                          warthog::cpd::graph_oracle* cpd,
+                          warthog::search* dijk,
+                          std::vector<warthog::cpd::fm_coll> &s_row)
 {
     warthog::problem_instance problem(source_id);
     warthog::solution sol;
@@ -19,96 +14,6 @@ void warthog::cpd::compute_row(uint32_t source_id,
     std::fill(s_row.begin(), s_row.end(), warthog::cpd::CPD_FM_NONE);
     dijk->get_path(problem, sol);
     cpd->add_row(source_id, s_row);
-}
-
-void
-warthog::cpd::graph_oracle::precompute()
-{
-
-    // The actual precompute function. We fork threads and run this
-    // function. Each thread considers a selected set of source nodes
-    void*(*thread_compute_fn)(void*) =
-    [] (void* args_in) -> void*
-    {
-        warthog::helpers::thread_params* par =
-            (warthog::helpers::thread_params*) args_in;
-
-        shared_data* shared = (shared_data*) par->shared_;
-        warthog::cpd::graph_oracle* cpd = shared->cpd_;
-        warthog::graph::xy_graph* g = cpd->get_graph();
-
-        std::vector<warthog::cpd::fm_coll> s_row(g->get_num_nodes());
-        warthog::sn_id_t source_id;
-
-        // each thread has its own copy of Dijkstra and each
-        // copy has a separate memory pool
-        warthog::simple_graph_expansion_policy expander(g);
-        warthog::zero_heuristic h;
-        warthog::pqueue_min queue;
-        warthog::cpd::graph_oracle_listener listener;
-
-        warthog::flexible_astar
-            <warthog::zero_heuristic,
-            warthog::simple_graph_expansion_policy,
-            warthog::pqueue_min,
-            warthog::cpd::graph_oracle_listener>
-                dijk(&h, &expander, &queue, &listener);
-
-        listener.oracle_ = cpd;
-        listener.source_id_ = &source_id;
-        listener.s_row_ = &s_row;
-        dijk.set_listener(&listener);
-
-        for(uint32_t i = 0; i < shared->sources_->size(); i++)
-        {
-            // source nodes are evenly divided among all threads;
-            // skip any source nodes not intended for current thread
-
-            if((i % par->max_threads_) != par->thread_id_) 
-            { continue; }
-
-            source_id = shared->sources_->at(i);
-            warthog::cpd::compute_row(source_id, cpd, &dijk, s_row);
-            par->nprocessed_++;
-        }
-        return 0;
-    };
-
-    // Here we do the forking. Each thread receives its own
-    // separate version of Dijkstra's algorithm and each
-    // has a separate memory pool
-
-    warthog::timer t;
-    t.start();
-
-    compute_dfs_preorder();
-
-    // specify which source nodes to precompute for
-    // (default: all)
-    std::vector<uint32_t> source_nodes;
-    source_nodes.reserve(g_->get_num_nodes());
-    for(uint32_t i = 0; i < g_->get_num_nodes(); i++)
-    {
-        source_nodes.push_back(i);
-    }
-
-    shared_data shared;
-    shared.cpd_ = this;
-    shared.sources_ = &source_nodes;
-
-    std::cerr << "computing dijkstra labels\n";
-    warthog::helpers::parallel_compute(
-            thread_compute_fn, &shared,
-            (uint32_t)source_nodes.size());
-
-    // convert the column order into a map: from vertex id to its ordered index
-    value_index_swap_array();
-
-    t.stop();
-    std::cerr
-        << "total preproc time (seconds): "
-        << t.elapsed_time_micro() / 1000000 << "\n";
-
 }
 
 void

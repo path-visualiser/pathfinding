@@ -99,10 +99,6 @@ class graph_oracle
             return row.at(begin).get_move();
         }
 
-        // compute first-move labels and compress the result
-        void
-        precompute();
-
         inline void
         clear()
         {

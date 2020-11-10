@@ -900,10 +900,8 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
     else
     {
-        oracle.precompute();
-        std::ofstream ofs(cpd_filename);
-        ofs << oracle;
-        ofs.close();
+        std::cerr << "Could not find CPD file '" << cpd_filename << "'\n";
+        return;
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
@@ -993,10 +991,8 @@ run_cpd(warthog::util::cfg& cfg,
     }
     else
     {
-        oracle.precompute();
-        std::ofstream ofs(cpd_filename);
-        ofs << oracle;
-        ofs.close();
+        std::cerr << "Could not find CPD file '" << cpd_filename << "'\n";
+        return;
     }
 
     warthog::cpd_graph_expansion_policy expander(&oracle);
@@ -1101,9 +1097,8 @@ run_cpd_dfs(warthog::util::cfg& cfg,
     }
     else
     {
-        oracle.precompute();
-        std::ofstream ofs(cpd_filename);
-        ofs << oracle;
+        std::cerr << "Could not find CPD file '" << cpd_filename << "'\n";
+        return;
     }
 
     warthog::cpd_graph_expansion_policy expander(&oracle);

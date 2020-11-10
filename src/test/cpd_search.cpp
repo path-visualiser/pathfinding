@@ -57,11 +57,8 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
     }
     else
     {
-        std::cerr << "precomputing... " <<std::endl;
-        oracle.precompute();
-        std::ofstream ofs(cpd_filename);
-        ofs << oracle;
-        std::cerr << "writing " << cpd_filename << std::endl;
+        std::cerr << "Could not find CPD file '" << cpd_filename << "'\n";
+        return;
     }
 
     warthog::sn_id_t start = 0;
@@ -121,11 +118,8 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
     }
     else
     {
-        std::cerr << "precomputing... " <<std::endl;
-        oracle.precompute();
-        std::ofstream ofs(cpd_filename);
-        ofs << oracle;
-        std::cerr << "writing " << cpd_filename << std::endl;
+        std::cerr << "Could not find CPD file '" << cpd_filename << "'\n";
+        return;
     }
 
     // Search algorithm
