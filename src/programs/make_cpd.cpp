@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include <omp.h>
 
+#include "bidirectional_graph_expansion_policy.h"
 #include "cfg.h"
 #include "graph_oracle.h"
 #include "log.h"
@@ -81,14 +82,14 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
         std::vector<warthog::cpd::fm_coll> s_row(node_count);
         // each thread has its own copy of Dijkstra and each
         // copy has a separate memory pool
-        warthog::simple_graph_expansion_policy expander(&g);
+        warthog::bidirectional_graph_expansion_policy expander(&g, false);
         warthog::zero_heuristic h;
         warthog::pqueue_min queue;
         warthog::cpd::graph_oracle_listener listener;
 
         warthog::flexible_astar<
             warthog::zero_heuristic,
-            warthog::simple_graph_expansion_policy,
+            warthog::bidirectional_graph_expansion_policy,
             warthog::pqueue_min,
             warthog::cpd::graph_oracle_listener>
                 dijk(&h, &expander, &queue, &listener);
