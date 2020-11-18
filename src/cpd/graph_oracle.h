@@ -174,63 +174,6 @@ void
 compute_row(uint32_t source_id, warthog::cpd::graph_oracle* cpd,
             warthog::search* dijk, std::vector<warthog::cpd::fm_coll> &s_row);
 
-// helps to precompute first-move data
-struct graph_oracle_listener
-{
-    inline void
-    generate_node(warthog::search_node *from, warthog::search_node *succ,
-                  warthog::cost_t edge_cost, uint32_t edge_id)
-
-    {
-        if(from == 0) { return; } // start node
-
-        if(from->get_id() == *source_id_) // start node successors
-        {
-            //assert(s_row_.at(succ->get_id()) == 0);
-            assert(edge_id <
-                        oracle_->get_graph()->get_node(
-                        (uint32_t)*source_id_)->out_degree());
-            s_row_->at(succ->get_id()) = (1 << edge_id);
-            assert(s_row_->at(succ->get_id()));
-        }
-        else // all other nodes
-        {
-            warthog::sn_id_t succ_id = succ->get_id();
-            warthog::sn_id_t from_id = from->get_id();
-            double alt_g = from->get_g() + edge_cost;
-            double g_val =
-                succ->get_search_number() == from->get_search_number() ?
-                succ->get_g() : DBL_MAX;
-
-            //  update first move
-            if(alt_g < g_val)
-            {
-                s_row_->at(succ_id) = s_row_->at(from_id);
-                assert(s_row_->at(succ_id) == s_row_->at(from_id));
-            }
-
-            // add to the list of optimal first moves
-            if(alt_g == g_val)
-            {
-                s_row_->at(succ_id) |= s_row_->at(from_id);
-                assert(s_row_->at(succ_id) >= s_row_->at(from_id));
-            }
-
-        }
-    }
-
-    inline void
-    expand_node(warthog::search_node* current) { }
-
-    inline void
-    relax_node(warthog::search_node* current) { }
-
-    warthog::cpd::graph_oracle* oracle_;
-    warthog::sn_id_t* source_id_;
-    std::vector<warthog::cpd::fm_coll>* s_row_;
-
-};
-
 }
 
 }

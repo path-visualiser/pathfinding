@@ -9,6 +9,7 @@
 #include "bidirectional_graph_expansion_policy.h"
 #include "cfg.h"
 #include "graph_oracle.h"
+#include "oracle_listener.h"
 #include "log.h"
 #include "xy_graph.h"
 
@@ -43,7 +44,7 @@ join_cpds(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
 
 int
 make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
-         int to, bool verbose=false)
+         int to, bool verbose=false, bool reverse=false)
 {
     uint32_t node_count = g.get_num_nodes();
     if (to < 0)
@@ -71,7 +72,7 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
     for(uint32_t i = 0; i < 100; i++) { std::cerr <<" "; }
     std::cerr << "]\rprogress: [";
 
-#pragma omp parallel
+    #pragma omp parallel
     {
         int thread_count = omp_get_num_threads();
         int thread_id = omp_get_thread_num();
@@ -82,28 +83,33 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
         std::vector<warthog::cpd::fm_coll> s_row(node_count);
         // each thread has its own copy of Dijkstra and each
         // copy has a separate memory pool
-        warthog::bidirectional_graph_expansion_policy expander(&g, false);
+        warthog::bidirectional_graph_expansion_policy expander(&g, reverse);
         warthog::zero_heuristic h;
+        warthog::cpd::oracle_listener* listener;
         warthog::pqueue_min queue;
-        warthog::cpd::graph_oracle_listener listener;
-
         warthog::flexible_astar<
             warthog::zero_heuristic,
             warthog::bidirectional_graph_expansion_policy,
             warthog::pqueue_min,
-            warthog::cpd::graph_oracle_listener>
-                dijk(&h, &expander, &queue, &listener);
+            warthog::cpd::oracle_listener>
+            dijk(&h, &expander, &queue);
 
-        listener.oracle_ = &cpd;
-        listener.source_id_ = &source_id;
-        listener.s_row_ = &s_row;
-        dijk.set_listener(&listener);
+        if (reverse)
+        {
+            listener = new warthog::cpd::reverse_oracle_listener(
+                &cpd, &source_id, &s_row);
+        }
+        else
+        {
+            listener = new warthog::cpd::graph_oracle_listener(
+                &cpd, &source_id, &s_row);
+        }
+
+        dijk.set_listener(listener);
 
         while (source_id < node_end)
         {
             warthog::cpd::compute_row(source_id, &cpd, &dijk, s_row);
-            // No idea why we want to play with an int pointer...
-            //
             // We increment the source by the number of threads to *jump* to
             // that id.
             source_id += thread_count;
@@ -135,6 +141,7 @@ main(int argc, char *argv[])
 {
     int verbose = 0;
     int status = 0;
+    int reverse = 0;
     warthog::util::param valid_args[] =
     {
         {"from", required_argument, 0, 1},
@@ -143,6 +150,7 @@ main(int argc, char *argv[])
         {"output", required_argument, 0, 1},
         {"join", required_argument, 0, 1},
         {"verbose", no_argument, &verbose, 1},
+        {"reverse", no_argument, &reverse, 1},
         {0, 0, 0, 0}
     };
 
@@ -161,7 +169,8 @@ main(int argc, char *argv[])
         return 1;
     }
 
-    warthog::graph::xy_graph g;
+    // We save the incoming edges in case we are building a reverse CPD
+    warthog::graph::xy_graph g(0, "", reverse);
     std::ifstream ifs(xy_filename);
 
     if (!ifs.good())
@@ -211,7 +220,7 @@ main(int argc, char *argv[])
     }
     else
     {
-        status = make_cpd(g, cpd, from, to, verbose);
+        status = make_cpd(g, cpd, from, to, verbose, reverse);
     }
 
     // There was an error
