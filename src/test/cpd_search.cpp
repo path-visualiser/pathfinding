@@ -7,6 +7,7 @@
 #include "dimacs_parser.h"
 #include "graph_oracle.h"
 #include "cpd_heuristic.h"
+#include "cpd_extractions.h"
 #include "cast.h"
 
 using namespace std;
@@ -265,6 +266,92 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
 
                 REQUIRE(sol.path_ == optipath);
             }
+        }
+    }
+}
+
+SCENARIO("Test reverse CPD A* on a square matrix", "[reverse][square][astar]")
+{
+    string map_filename = "square01.xy";
+    warthog::graph::xy_graph g;
+    std::ifstream ifs;
+
+    // string map_name = "square01.map";
+    // warthog::graph::xy_graph g;
+    // warthog::gridmap d(map_name.c_str());
+    // warthog::graph::gridmap_to_xy_graph(&d, &g, false);
+    ifs.open(map_filename);
+
+    if (ifs.is_open())
+    {
+        ifs >> g;
+    }
+    else
+    {
+        std::cerr << "Could not find xy-graph '" << map_filename << "'\n";
+        return;
+    }
+
+    ifs.close();
+
+    warthog::simple_graph_expansion_policy expander(&g);
+    warthog::cpd::graph_oracle oracle(&g, true);
+    // Needs to be created by hand
+    std::string cpd_filename = "square01-rev.xy.cpd";
+    ifs.open(cpd_filename);
+
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+    }
+    else
+    {
+        std::cerr << "Could not find CPD file '" << cpd_filename << "'\n";
+        return;
+    }
+
+    warthog::sn_id_t start = 0;
+    warthog::sn_id_t goal = 19;
+    warthog::problem_instance pi(start, goal, true);
+    // For some reason cannot use `warthog::sn_id_t`
+    int32_t x, y;
+    // Cannot cut corners
+    warthog::cost_t cost = warthog::ONE *
+        (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
+
+    g.get_xy(start, x, y);
+    REQUIRE(x == 0);
+    REQUIRE(y == 0);
+    g.get_xy(goal, x, y);
+    REQUIRE(x == 400000);  // (5 - 1) * GRID_TO_GRAPH_SCALE_FACTOR
+    REQUIRE(y == 400000);
+
+    GIVEN("A reverse CPD")
+    {
+        THEN("We can perform extractions")
+        {
+            warthog::cpd_extractions cpd(&g, &oracle);
+            warthog::solution sol;
+
+            cpd.get_pathcost(pi, sol);
+            REQUIRE(sol.sum_of_edge_costs_ == cost);
+        }
+
+        THEN("Search should not expand nodes without congestion")
+        {
+            warthog::solution sol;
+            warthog::pqueue_min open;
+            warthog::cpd_heuristic h(&oracle);
+            warthog::cpd_search<
+                warthog::cpd_heuristic,
+                warthog::simple_graph_expansion_policy>
+                    astar(&h, &expander, &open);
+
+            astar.set_max_expansions_cutoff(10);
+            astar.get_path(pi, sol);
+
+            REQUIRE(sol.sum_of_edge_costs_ == cost);
+            REQUIRE(sol.nodes_expanded_ == 0);
         }
     }
 }

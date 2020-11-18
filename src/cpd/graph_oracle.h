@@ -32,8 +32,8 @@ namespace cpd
 class graph_oracle
 {
     public: 
-        graph_oracle(warthog::graph::xy_graph* g) 
-             : g_(g)
+        graph_oracle(warthog::graph::xy_graph* g, bool reverse=false)
+             : g_(g), reverse_(reverse)
         {
             order_.resize(g_->get_num_nodes());
             fm_.resize(g_->get_num_nodes());
@@ -84,10 +84,26 @@ class graph_oracle
         get_move(warthog::sn_id_t source_id, 
                  warthog::sn_id_t target_id)
         {
-            if(fm_.at(source_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
+            warthog::sn_id_t from;
+            warthog::sn_id_t to;
 
-            std::vector<warthog::cpd::rle_run32>& row = fm_.at(source_id);
-            uint32_t target_index = order_.at(target_id);
+            // Swap search ids: if we are extracting from a reverse CPD, then we
+            // want the row at `target_id`.
+            if (reverse_)
+            {
+                from = target_id;
+                to = source_id;
+            }
+            else
+            {
+                from = source_id;
+                to = target_id;
+            }
+
+            if(fm_.at(from).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
+
+            std::vector<warthog::cpd::rle_run32>& row = fm_.at(from);
+            uint32_t target_index = order_.at(to);
             uint32_t end = (uint32_t)row.size();
             uint32_t begin = 0;
             while(begin<(end-1))
@@ -162,6 +178,7 @@ class graph_oracle
         std::vector<std::vector<warthog::cpd::rle_run32>> fm_;
         std::vector<uint32_t> order_;
         warthog::graph::xy_graph* g_;
+        bool reverse_;
 };
 
 std::ostream&
