@@ -445,8 +445,8 @@ run_bch(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
 int
 main(int argc, char *argv[])
 {
-	// parse arguments
-	warthog::util::param valid_args[] =
+    // parse arguments
+    warthog::util::param valid_args[] =
         {
             // {"help", no_argument, &print_help, 1},
             // {"checkopt",  no_argument, &checkopt, 1},
@@ -459,15 +459,15 @@ main(int argc, char *argv[])
             {0,  0, 0, 0}
         };
 
-	warthog::util::cfg cfg;
+    warthog::util::cfg cfg;
     warthog::graph::xy_graph g;
 
-	cfg.parse_args(argc, argv, "-f", valid_args);
+    cfg.parse_args(argc, argv, "-f", valid_args);
 
     // TODO
     // if(argc == 1 || print_help)
     // {
-	// 	help();
+    //      help();
     //     exit(0);
     // }
 
