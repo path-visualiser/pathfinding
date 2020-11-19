@@ -43,7 +43,7 @@ warthog::mem::node_pool::~node_pool()
 			blocks_[i] = 0;
 		}
 	}
-    delete blocks_;
+    delete [] blocks_;
 }
 
 warthog::search_node*
