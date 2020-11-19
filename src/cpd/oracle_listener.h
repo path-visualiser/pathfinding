@@ -18,6 +18,8 @@ class oracle_listener
                     std::vector<warthog::cpd::fm_coll>* s_row)
         : oracle_(oracle), source_id_(source_id), s_row_(s_row) {}
 
+    virtual ~oracle_listener() {};
+
     virtual void
     generate_node(warthog::search_node *from, warthog::search_node *succ,
                   warthog::cost_t edge_cost, uint32_t edge_id) = 0;

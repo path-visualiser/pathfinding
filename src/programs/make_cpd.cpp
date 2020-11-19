@@ -124,6 +124,8 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
                 }
             }
         }
+
+        delete listener;
     }
 
     std::cerr << std::endl;
