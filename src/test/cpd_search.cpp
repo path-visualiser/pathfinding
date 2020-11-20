@@ -272,43 +272,18 @@ SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
 
 SCENARIO("Test reverse CPD A* on a square matrix", "[reverse][square][astar]")
 {
-    string map_filename = "square01.xy";
+    string map_name = "square01.map";
     warthog::graph::xy_graph g;
-    std::ifstream ifs;
-
-    // string map_name = "square01.map";
-    // warthog::graph::xy_graph g;
-    // warthog::gridmap d(map_name.c_str());
-    // warthog::graph::gridmap_to_xy_graph(&d, &g, false);
-    ifs.open(map_filename);
-
-    if (ifs.is_open())
-    {
-        ifs >> g;
-    }
-    else
-    {
-        std::cerr << "Could not find xy-graph '" << map_filename << "'\n";
-        return;
-    }
-
-    ifs.close();
-
+    warthog::gridmap d(map_name.c_str());
+    warthog::graph::gridmap_to_xy_graph(&d, &g, false);
     warthog::simple_graph_expansion_policy expander(&g);
-    warthog::cpd::graph_oracle oracle(&g, true);
+    warthog::cpd::graph_oracle_base<warthog::cpd::REVERSE> oracle(&g);
     // Needs to be created by hand
     std::string cpd_filename = "square01-rev.xy.cpd";
-    ifs.open(cpd_filename);
+    std::ifstream ifs(cpd_filename);
 
-    if(ifs.is_open())
-    {
-        ifs >> oracle;
-    }
-    else
-    {
-        std::cerr << "Could not find CPD file '" << cpd_filename << "'\n";
-        return;
-    }
+    REQUIRE(ifs.is_open());
+    ifs >> oracle;
 
     warthog::sn_id_t start = 0;
     warthog::sn_id_t goal = 19;
@@ -330,7 +305,8 @@ SCENARIO("Test reverse CPD A* on a square matrix", "[reverse][square][astar]")
     {
         THEN("We can perform extractions")
         {
-            warthog::cpd_extractions cpd(&g, &oracle);
+            warthog::cpd_extractions_base<warthog::cpd::REVERSE> cpd(
+                &g, &oracle);
             warthog::solution sol;
 
             cpd.get_pathcost(pi, sol);
@@ -341,9 +317,9 @@ SCENARIO("Test reverse CPD A* on a square matrix", "[reverse][square][astar]")
         {
             warthog::solution sol;
             warthog::pqueue_min open;
-            warthog::cpd_heuristic h(&oracle);
+            warthog::cpd_heuristic_base<warthog::cpd::REVERSE> h(&oracle);
             warthog::cpd_search<
-                warthog::cpd_heuristic,
+                warthog::cpd_heuristic_base<warthog::cpd::REVERSE>,
                 warthog::simple_graph_expansion_policy>
                     astar(&h, &expander, &open);
 

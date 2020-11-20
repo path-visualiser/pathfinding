@@ -18,6 +18,7 @@
 #ifndef WARTHOG_CPD_GRAPH_ORACLE_H
 #define WARTHOG_CPD_GRAPH_ORACLE_H
 
+#include "binary.h"
 #include "constants.h"
 #include "cpd.h"
 #include "graph_expansion_policy.h"
@@ -29,24 +30,27 @@ namespace warthog
 namespace cpd
 {
 
-class graph_oracle
+enum Type {FORWARD, REVERSE};
+
+template<Type T>
+class graph_oracle_base
 {
     public: 
-        graph_oracle(warthog::graph::xy_graph* g, bool reverse=false)
-             : g_(g), reverse_(reverse)
+        graph_oracle_base(warthog::graph::xy_graph* g)
+             : g_(g)
         {
             order_.resize(g_->get_num_nodes());
             fm_.resize(g_->get_num_nodes());
         }
 
-        graph_oracle() : g_(nullptr) { }
+        graph_oracle_base() : g_(nullptr) { }
 
-        virtual ~graph_oracle() { } 
+        virtual ~graph_oracle_base() { }
 
-        graph_oracle(const graph_oracle&) = default;
+        graph_oracle_base(const graph_oracle_base&) = default;
 
         bool
-        operator==(const graph_oracle& other)
+        operator==(const graph_oracle_base& other)
         {
             if (order_ != other.order_)
             {
@@ -83,37 +87,8 @@ class graph_oracle
         inline uint32_t 
         get_move(warthog::sn_id_t source_id, 
                  warthog::sn_id_t target_id)
-        {
-            warthog::sn_id_t from;
-            warthog::sn_id_t to;
-
-            // Swap search ids: if we are extracting from a reverse CPD, then we
-            // want the row at `target_id`.
-            if (reverse_)
-            {
-                from = target_id;
-                to = source_id;
-            }
-            else
-            {
-                from = source_id;
-                to = target_id;
-            }
-
-            if(fm_.at(from).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
-
-            std::vector<warthog::cpd::rle_run32>& row = fm_.at(from);
-            uint32_t target_index = order_.at(to);
-            uint32_t end = (uint32_t)row.size();
-            uint32_t begin = 0;
-            while(begin<(end-1))
-            {
-                uint32_t mid = begin + ((end-begin)>>1);
-                if(target_index < row.at(mid).get_index()) { end = mid ;  }
-                else { begin = mid; }
-            }
-            return row.at(begin).get_move();
-        }
+        // This should really be an error
+        { return warthog::cpd::CPD_FM_NONE; }
 
         inline void
         clear()
@@ -139,8 +114,38 @@ class graph_oracle
         // compress a given first-move table @param row and associate
         // the compressed result with source node @param source_id
         void
-        add_row(uint32_t source_id, 
-                 std::vector<warthog::cpd::fm_coll>& row);
+        add_row(uint32_t source_id, std::vector<warthog::cpd::fm_coll>& row)
+        {
+            // source gets a wildcard move
+            row.at(source_id) = warthog::cpd::CPD_FM_NONE;
+
+            // greedily compress the row w.r.t. the current column order
+            warthog::cpd::fm_coll moveset = row.at(order_.at(0));
+            uint32_t head = 0;
+            for(uint32_t index = 0; index < row.size(); index++)
+            {
+                assert(moveset > 0);
+                if((moveset & row.at(order_.at(index))) == 0)
+                {
+                    uint32_t firstmove = __builtin_ffsl(moveset) - 1;
+                    assert(firstmove < warthog::cpd::CPD_FM_MAX);
+                    fm_.at(source_id).push_back(
+                            warthog::cpd::rle_run32{ (head << 4) | firstmove} );
+                    moveset = row.at(order_.at(index));
+                    head = index;
+                }
+                moveset = moveset & row.at(order_.at(index));
+            }
+
+            // add the last run
+            uint32_t firstmove = __builtin_ffsl(moveset) - 1;
+            assert(firstmove < warthog::cpd::CPD_FM_MAX);
+            fm_.at(source_id).push_back(
+                    warthog::cpd::rle_run32{ (head << 4) | firstmove} );
+
+        //    std::cerr << "compressed source row " << source_id << " with "
+        //        << fm_.at(source_id).size() << std::endl;
+        }
 
         inline warthog::graph::xy_graph* 
         get_graph() { return g_; } 
@@ -166,13 +171,164 @@ class graph_oracle
         }
 
         friend std::ostream&
-        operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
+        operator<<(std::ostream& out, graph_oracle_base& lab)
+        {
+            warthog::timer mytimer;
+            mytimer.start();
+
+            // write graph size
+            uint32_t num_nodes = lab.g_->get_num_nodes();
+            out.write((char*)(&num_nodes), 4);
+
+            // write node ordering
+            assert(lab.order_.size() == num_nodes);
+            for(uint32_t i = 0; i < num_nodes; i++)
+            {
+                uint32_t n_id = lab.order_.at(i);
+                out.write((char*)(&n_id), 4);
+            }
+
+            // write the runs for each row
+            uint32_t row_count = 0;
+            uint32_t run_count = 0;
+            for(uint32_t row_id = 0; row_id < lab.g_->get_num_nodes(); row_id++)
+            {
+                // write the number of runs
+                uint32_t num_runs = (uint32_t)lab.fm_.at(row_id).size();
+                // Skip empty runs
+                if (num_runs == 0) { continue; }
+
+                out.write((char*)(&num_runs), 4);
+                row_count++;
+
+                for(uint32_t run = 0; run < num_runs; run++)
+                {
+                    out << lab.fm_.at(row_id).at(run);
+                    run_count++;
+                    if(!out.good())
+                    {
+                        std::cerr << "err; while writing labels\n";
+                        std::cerr
+                            << "[debug info] "
+                            << " row_id " << row_id
+                            << " run# " << lab.fm_.at(row_id).size()
+                            << ". aborting.\n";
+                        return out;
+                    }
+                }
+
+            }
+            mytimer.stop();
+
+            std::cerr
+                << "wrote to disk " << row_count
+                << " rows and "
+                << run_count << " runs. "
+                << " time: " << (double)mytimer.elapsed_time_nano() / 1e9
+                << " s \n";
+            return out;
+        }
 
         friend std::istream&
-        operator>>(std::istream& in, warthog::cpd::graph_oracle& o);
+        operator>>(std::istream& in, graph_oracle_base& lab)
+        {
+            // read the graph size data
+            warthog::timer mytimer;
+            mytimer.start();
 
-        warthog::cpd::graph_oracle&
-        operator+=(const warthog::cpd::graph_oracle &cpd);
+            uint32_t num_nodes;
+            in.read((char*)(&num_nodes), 4);
+            // Need to check whether we have initialized the graph as
+            // serialising removes the internal pointer.
+            if(lab.g_ != nullptr && num_nodes != lab.g_->get_num_nodes())
+            {
+                std::cerr
+                    << "err; " << "input mismatch. cpd file says " << num_nodes
+                    << " nodes, but graph contains " << lab.g_->get_num_nodes()
+                    << "\n";
+                return in;
+            }
+
+            lab.fm_.clear();
+            lab.order_.resize(num_nodes);
+
+            // read the vertex-to-column-order mapping
+            for(uint32_t i = 0; i < num_nodes; i++)
+            {
+                uint32_t n_id;
+                in.read((char*)(&n_id), 4);
+                lab.order_.at(i) = n_id;
+            }
+
+            // read the RLE data
+            uint32_t run_count = 0;
+            lab.fm_.resize(num_nodes);
+            for(uint32_t row_id = 0; row_id < num_nodes; row_id++)
+            {
+                // Check if we have a partial CPD file
+                if (in.peek() == EOF)
+                {
+                    lab.fm_.resize(row_id);
+                    std::cerr << "early stop; ";
+                    break;
+                }
+                // number of runs for this row
+                uint32_t num_runs;
+                in.read((char*)(&num_runs), 4);
+
+                // read all the runs for the current row
+                for(uint32_t i = 0; i < num_runs; i++)
+                {
+                    warthog::cpd::rle_run32 tmp;
+                    in >> tmp;
+                    lab.fm_.at(row_id).push_back(tmp);
+                    run_count++;
+
+                    if(!in.good())
+                    {
+                        std::cerr << "err; while reading firstmove labels\n";
+                        std::cerr
+                            << "[debug info] "
+                            << " row_id " << row_id
+                            << " run# " << i << " of " << lab.fm_.size()
+                            << ". aborting.\n";
+                        return in;
+                    }
+                }
+            }
+            mytimer.stop();
+
+            std::cerr
+                << "read from disk " << lab.fm_.size()
+                << " rows and "
+                << run_count << " runs. "
+                << " time: " << (double)mytimer.elapsed_time_nano() / 1e9
+                << " s\n";
+            return in;
+        }
+
+        /**
+        * Append operator for CPDs. Used when building partial CPDs so we can
+        * join them into a single one.
+        *
+        * Works by appending runs to the current instance and, if the order is
+        * not set, copying the order.
+        */
+        graph_oracle_base&
+        operator+=(const graph_oracle_base &cpd)
+        {
+            fm_.insert(fm_.end(), cpd.fm_.begin(), cpd.fm_.end());
+
+            // Order is always read completely
+            if (order_.size() == 0)
+            {
+                order_ = cpd.order_;
+            }
+
+            assert(order_ == cpd.order_);
+
+            return *this;
+        }
 
         void
         compute_row(uint32_t source_id, warthog::search* dijk,
@@ -190,8 +346,9 @@ class graph_oracle
         std::vector<std::vector<warthog::cpd::rle_run32>> fm_;
         std::vector<uint32_t> order_;
         warthog::graph::xy_graph* g_;
-        bool reverse_;
 };
+
+typedef warthog::cpd::graph_oracle_base<FORWARD> graph_oracle;
 
 std::ostream&
 operator<<(std::ostream& out, warthog::cpd::graph_oracle& o);
@@ -203,8 +360,58 @@ void
 compute_row(uint32_t source_id, warthog::cpd::graph_oracle* cpd,
             warthog::search* dijk, std::vector<warthog::cpd::fm_coll> &s_row);
 
+typedef std::function<bool(uint32_t&)> t_find_fn;
+
+template<>
+inline uint32_t
+graph_oracle_base<warthog::cpd::FORWARD>::get_move(
+    warthog::sn_id_t source_id, warthog::sn_id_t target_id)
+{
+    if(fm_.at(source_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
+
+    std::vector<warthog::cpd::rle_run32>& row = fm_.at(source_id);
+    uint32_t target_index = order_.at(target_id);
+    uint32_t end = (uint32_t)row.size();
+
+    t_find_fn find_target = [&target_index, &row](uint32_t mid)
+    {
+        return target_index < row.at(mid).get_index();
+    };
+
+    uint32_t begin = util::binary_find_first<uint32_t, t_find_fn>(
+        0, end, find_target);
+
+    return row.at(begin).get_move();
+}
+
+// In a reverse CPD we get the row with the target's id, and then try to find
+// the first move from the source.
+template<>
+inline uint32_t
+graph_oracle_base<warthog::cpd::REVERSE>::get_move(
+    warthog::sn_id_t source_id, warthog::sn_id_t target_id)
+{
+
+    if(fm_.at(target_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
+
+    std::vector<warthog::cpd::rle_run32>& row = fm_.at(target_id);
+    uint32_t target_index = order_.at(source_id);
+    uint32_t end = (uint32_t)row.size();
+
+    t_find_fn find_target = [&target_index, &row](uint32_t mid)
+    {
+        return target_index < row.at(mid).get_index();
+    };
+
+    uint32_t begin = util::binary_find_first<uint32_t, t_find_fn>(
+        0, end, find_target);
+
+    return row.at(begin).get_move();
 }
 
 }
+
+}
+
 
 #endif
