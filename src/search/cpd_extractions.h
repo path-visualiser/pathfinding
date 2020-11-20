@@ -27,7 +27,6 @@ class cpd_extractions : public warthog::search
             assert(oracle->get_graph() == g);
             max_k_moves_ = UINT_MAX;
             time_cutoff_ = DBL_MAX;
-            pi_.instance_id_ = UINT32_MAX;
         }
 
         virtual ~cpd_extractions() { }
@@ -125,7 +124,6 @@ class cpd_extractions : public warthog::search
     private:
         warthog::graph::xy_graph* g_;
         warthog::cpd::graph_oracle* oracle_;
-        warthog::problem_instance pi_;
         double time_cutoff_;            // Time limit in nanoseconds
         uint32_t max_k_moves_;          // Max "distance" from target
 };
