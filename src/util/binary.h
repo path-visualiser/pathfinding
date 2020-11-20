@@ -27,8 +27,8 @@ binary_find_first(t_iter begin, t_iter end, t_functor& lessThan)
 {
     while(begin<(end-1))
     {
-        uint32_t mid = begin + (end-begin)>>1;
-        if(lessThan(*mid)) { end = mid ;  }
+        uint32_t mid = begin + ((end-begin)>>1);
+        if(lessThan(mid)) { end = mid ;  }
         else { begin = mid; }
     }
     return begin;
