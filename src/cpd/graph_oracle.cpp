@@ -3,20 +3,6 @@
 #include "helpers.h"
 
 void
-warthog::cpd::compute_row(uint32_t source_id,
-                          warthog::cpd::graph_oracle* cpd,
-                          warthog::search* dijk,
-                          std::vector<warthog::cpd::fm_coll> &s_row)
-{
-    warthog::problem_instance problem(source_id);
-    warthog::solution sol;
-
-    std::fill(s_row.begin(), s_row.end(), warthog::cpd::CPD_FM_NONE);
-    dijk->get_path(problem, sol);
-    cpd->add_row(source_id, s_row);
-}
-
-void
 warthog::cpd::graph_oracle::add_row(uint32_t source_id,
                  std::vector<warthog::cpd::fm_coll>& row)
 {

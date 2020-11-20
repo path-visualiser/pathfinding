@@ -174,6 +174,18 @@ class graph_oracle
         warthog::cpd::graph_oracle&
         operator+=(const warthog::cpd::graph_oracle &cpd);
 
+        void
+        compute_row(uint32_t source_id, warthog::search* dijk,
+                    std::vector<warthog::cpd::fm_coll> &s_row)
+        {
+            warthog::problem_instance problem(source_id);
+            warthog::solution sol;
+
+            std::fill(s_row.begin(), s_row.end(), warthog::cpd::CPD_FM_NONE);
+            dijk->get_path(problem, sol);
+            add_row(source_id, s_row);
+        }
+
     private:
         std::vector<std::vector<warthog::cpd::rle_run32>> fm_;
         std::vector<uint32_t> order_;
