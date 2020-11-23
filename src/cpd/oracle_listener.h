@@ -37,13 +37,13 @@ class oracle_listener
 };
 
 // helps to precompute first-move data
-class graph_oracle_listener : public oracle_listener
+class graph_oracle_listener final : public oracle_listener
 {
     using oracle_listener::oracle_listener;
 
     inline void
     generate_node(warthog::search_node *from, warthog::search_node *succ,
-                  warthog::cost_t edge_cost, uint32_t edge_id) final
+                  warthog::cost_t edge_cost, uint32_t edge_id)
     {
         if(from == 0) { return; } // start node
 
@@ -84,13 +84,13 @@ class graph_oracle_listener : public oracle_listener
 };
 
 // helps to precompute first-move data, this time we build the rows in reverse.
-class reverse_oracle_listener : public oracle_listener
+class reverse_oracle_listener final : public oracle_listener
 {
     using oracle_listener::oracle_listener;
 
     inline void
     generate_node(warthog::search_node *from, warthog::search_node *succ,
-                  warthog::cost_t edge_cost, uint32_t edge_id) final
+                  warthog::cost_t edge_cost, uint32_t edge_id)
     {
         if(from == nullptr) { return; } // start node has no predecessor
 
