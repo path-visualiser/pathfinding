@@ -30,9 +30,9 @@ namespace warthog
 namespace cpd
 {
 
-enum Type {FORWARD, REVERSE};
+enum symbol {FORWARD, REVERSE};
 
-template<Type T>
+template<symbol T>
 class graph_oracle_base
 {
     public: 

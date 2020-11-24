@@ -45,7 +45,7 @@ struct cpd_heuristic_cache_entry
     uint32_t graph_id_;
 };
 
-template<warthog::cpd::Type T>
+template<warthog::cpd::symbol T>
 class cpd_heuristic_base
 {
     typedef std::pair<warthog::sn_id_t, warthog::graph::edge*> stack_pair;

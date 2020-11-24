@@ -17,7 +17,7 @@
 namespace warthog
 {
 
-template<warthog::cpd::Type T>
+template<warthog::cpd::symbol T>
 class cpd_extractions_base : public warthog::search
 {
     public:
