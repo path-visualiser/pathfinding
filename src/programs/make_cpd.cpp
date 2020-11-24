@@ -232,7 +232,14 @@ main(int argc, char *argv[])
     if (cpd_filename == "")
     {
         // Use default name
-        cpd_filename = xy_filename + ".cpd";
+        cpd_filename = xy_filename;
+
+        if (reverse)
+        {
+           cpd_filename += "-rev";
+        }
+
+        cpd_filename += ".cpd";
     }
 
     std::ofstream ofs(cpd_filename);
