@@ -279,7 +279,7 @@ SCENARIO("Test reverse CPD A* on a square matrix", "[reverse][square][astar]")
     warthog::simple_graph_expansion_policy expander(&g);
     warthog::cpd::graph_oracle_base<warthog::cpd::REVERSE> oracle(&g);
     // Needs to be created by hand
-    std::string cpd_filename = "square01-rev.xy.cpd";
+    std::string cpd_filename = "square01.xy-rev.cpd";
     std::ifstream ifs(cpd_filename);
 
     REQUIRE(ifs.is_open());
