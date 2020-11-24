@@ -72,7 +72,9 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
     for(uint32_t i = 0; i < 100; i++) { std::cerr <<" "; }
     std::cerr << "]\rprogress: [";
 
+    #ifndef SINGLE_THREADED
     #pragma omp parallel
+    #endif
     {
         int thread_count = omp_get_num_threads();
         int thread_id = omp_get_thread_num();
