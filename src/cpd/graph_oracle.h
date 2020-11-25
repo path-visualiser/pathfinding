@@ -362,6 +362,19 @@ compute_row(uint32_t source_id, warthog::cpd::graph_oracle* cpd,
 
 typedef std::function<bool(uint32_t&)> t_find_fn;
 
+inline uint32_t
+binary_find_row(uint32_t target_index,
+                std::vector<warthog::cpd::rle_run32>& row)
+{
+    uint32_t end = (uint32_t)row.size();
+    t_find_fn find_target = [&target_index, &row](uint32_t mid)
+    {
+        return target_index < row.at(mid).get_index();
+    };
+
+    return util::binary_find_first<uint32_t, t_find_fn>(0, end, find_target);
+}
+
 template<>
 inline uint32_t
 graph_oracle_base<warthog::cpd::FORWARD>::get_move(
@@ -371,15 +384,7 @@ graph_oracle_base<warthog::cpd::FORWARD>::get_move(
 
     std::vector<warthog::cpd::rle_run32>& row = fm_.at(source_id);
     uint32_t target_index = order_.at(target_id);
-    uint32_t end = (uint32_t)row.size();
-
-    t_find_fn find_target = [&target_index, &row](uint32_t mid)
-    {
-        return target_index < row.at(mid).get_index();
-    };
-
-    uint32_t begin = util::binary_find_first<uint32_t, t_find_fn>(
-        0, end, find_target);
+    uint32_t begin = binary_find_row(target_index, row);
 
     return row.at(begin).get_move();
 }
@@ -396,15 +401,10 @@ graph_oracle_base<warthog::cpd::REVERSE>::get_move(
 
     std::vector<warthog::cpd::rle_run32>& row = fm_.at(target_id);
     uint32_t target_index = order_.at(source_id);
-    uint32_t end = (uint32_t)row.size();
+    uint32_t begin = binary_find_row(target_index, row);
 
-    t_find_fn find_target = [&target_index, &row](uint32_t mid)
     {
-        return target_index < row.at(mid).get_index();
-    };
 
-    uint32_t begin = util::binary_find_first<uint32_t, t_find_fn>(
-        0, end, find_target);
 
     return row.at(begin).get_move();
 }
