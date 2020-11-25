@@ -32,24 +32,13 @@ warthog::geo::get_bearing(double lat1, double lng1, double lat2, double lng2)
    return rad_to_deg(std::atan2(y, x));
 }
 
-// Latitude of North pole is 90, longitude is 0
-//
-// In radians, this means that φ2 = π / 2 and λ2 = 0
-//
-// Further: cos φ2 = 0 and sin φ2 = 1 and Δλ = -λ1
-//
-// So: θ = atan2(0 , cos φ1)
-//
 // We use the magnetic North (86°26′52.8″N 175°20′45.06″E) as to avoid angles
 // being 180° for all points.
 double
 warthog::geo::true_bearing(double lat, double lng)
 {
-    // double phi = deg_to_rad(lat);
-
-    // return rad_to_deg(std::atan2(0, cos(phi)));
     return warthog::geo::get_bearing(
-        deg_to_rad(86.44778), deg_to_rad(175.35483),
+        deg_to_rad(86.448), deg_to_rad(175.5968),
         deg_to_rad(lng), deg_to_rad(lat));
 }
 
