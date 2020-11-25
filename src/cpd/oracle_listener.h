@@ -102,7 +102,7 @@ class reverse_oracle_listener final : public oracle_listener
         // predecessor's edge
         graph::node* pred = oracle_->get_graph()->get_node(succ->get_id());
         graph::edge_iter eit = pred->find_edge(from->get_id());
-        uint8_t fm = 1 << (eit - pred->outgoing_begin());
+        warthog::cpd::fm_coll fm = 1 << (eit - pred->outgoing_begin());
 
         assert(eit != pred->outgoing_end());
 
