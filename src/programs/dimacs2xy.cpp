@@ -27,7 +27,8 @@ orient_node_edges(warthog::graph::xy_graph &g, warthog::graph::ECAP_T degree,
         // Bearing wrt North
         //
         // Don't forget to convert DIMACS ids to degrees
-        angles.at(edge_idx) = warthog::geo::true_bearing(lng / 1e6, lat / 1e6);
+        angles.at(edge_idx) = warthog::geo::true_bearing(
+            lng / warthog::geo::DIMACS_RATIO, lat / warthog::geo::DIMACS_RATIO);
     }
 
     // Compute the index ordering given all edges' angles

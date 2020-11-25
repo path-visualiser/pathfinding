@@ -9,6 +9,8 @@ namespace warthog
 namespace geo
 {
 
+static const double DIMACS_RATIO = 1e6;
+
 // Get the bearing from pos1 to pos2
 double
 get_bearing(double lng1, double lat1, double lng2, double lat2);
