@@ -123,6 +123,83 @@ class reverse_oracle_listener final : public oracle_listener
 
 };
 
+// helps to precompute first-move data, this one does bearing compression on
+// road networks. This may not work on classic gridmaps.
+//
+// TODO add a forward listener with orientation
+class reverse_bearing_oracle_listener final : public oracle_listener
+{
+    using oracle_listener::oracle_listener;
+
+    inline void
+    generate_node(warthog::search_node *from, warthog::search_node *succ,
+                  warthog::cost_t edge_cost, uint32_t edge_id)
+    {
+        if(from == nullptr) { return; } // start node has no predecessor
+
+        double alt_g = from->get_g() + edge_cost;
+        double g_val =
+            succ->get_search_number() == from->get_search_number() ?
+            succ->get_g() : DBL_MAX;
+        graph::node* pred = oracle_->get_graph()->get_node(succ->get_id());
+        graph::edge_iter eit = pred->find_edge(from->get_id());
+
+        assert(eit != pred->outgoing_end());
+        assert(
+            (eit - pred->outgoing_begin()) < (warthog::cpd::CPD_FM_MAX - 2));
+        // Offset the first move symbol by two we can fit the clockwise symbols.
+        warthog::cpd::fm_coll fm = 1 << ((eit - pred->outgoing_begin()) + 2);
+
+        // Circle back around on both sides
+        warthog::graph::edge_iter prev = eit - 1;
+        warthog::graph::edge_iter next = eit + 1;
+        if(eit == pred->outgoing_begin())
+        {
+            prev = pred->outgoing_end() - 1;
+        }
+
+        if(next == pred->outgoing_end())
+        {
+            next = pred->outgoing_begin();
+        }
+
+        // Next, find whether it is (counter-) clockwise from the target
+        warthog::graph::xy_graph* g = oracle_->get_graph();
+        int32_t xf, yf, xs, ys, xt, yt, xp, yp, xn, yn;
+        g->get_xy(from->get_id(), xf, yf);
+        g->get_xy(succ->get_id(), xs, ys);
+        g->get_xy(*source_id_, xt, yt);
+        g->get_xy(prev->node_id_, xp, yp);
+        g->get_xy(next->node_id_, xn, yn);
+
+        // To add a wildcard, we need the target's bearing to lie between the
+        // first move and one of its neighbours. We record which direction to
+        // rotate from that bearing to find the first move.
+        if(warthog::geo::between_xy(xs, ys, xp, yp, xt, yt, xf, yf))
+        {
+            fm |= 1 << warthog::cpd::CW;
+        }
+        if(warthog::geo::between_xy(xs, ys, xf, yf, xt, yt, xn, yn))
+        {
+            fm |= 1 << warthog::cpd::CCW;
+        }
+
+        //  update first move
+        if(alt_g < g_val)
+        {
+            s_row_->at(succ->get_id()) = fm;
+            assert(s_row_->at(succ->get_id()));
+        }
+
+        // add to the list of optimal first moves
+        if(alt_g == g_val)
+        {
+            s_row_->at(succ->get_id()) |= fm;
+        }
+    }
+
+};
+
 }
 
 }

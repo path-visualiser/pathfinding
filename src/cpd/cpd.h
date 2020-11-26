@@ -25,6 +25,8 @@ namespace warthog
 namespace cpd
 {
 
+enum clock_direction {CW, CCW};
+
 // defines a 32bit run in a run-length encoding
 // the first 4 bits tell the symbol.
 // the next 28 bits tell the index where the run begins

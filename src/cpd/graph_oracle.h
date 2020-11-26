@@ -21,6 +21,8 @@
 #include "binary.h"
 #include "constants.h"
 #include "cpd.h"
+#include "geography.h"
+#include "graph.h"
 #include "graph_expansion_policy.h"
 #include "xy_graph.h"
 
@@ -30,7 +32,7 @@ namespace warthog
 namespace cpd
 {
 
-enum symbol {FORWARD, REVERSE};
+enum symbol {FORWARD, REVERSE, BEARING};
 
 template<symbol T>
 class graph_oracle_base
@@ -403,15 +405,80 @@ graph_oracle_base<warthog::cpd::REVERSE>::get_move(
     uint32_t target_index = order_.at(source_id);
     uint32_t begin = binary_find_row(target_index, row);
 
-    {
-
-
     return row.at(begin).get_move();
 }
 
+template<>
+inline uint32_t
+graph_oracle_base<warthog::cpd::BEARING>::get_move(
+    warthog::sn_id_t source_id, warthog::sn_id_t target_id)
+{
+
+    if(fm_.at(target_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
+
+    std::vector<warthog::cpd::rle_run32>& row = fm_.at(target_id);
+    uint32_t target_index = order_.at(source_id);
+    uint32_t begin = binary_find_row(target_index, row);
+    uint8_t fm = row.at(begin).get_move();
+
+    // Check if we have a counter-/clock-wise wildcard
+    if(fm < 2)
+    {
+        // safeguard
+        fm = warthog::cpd::CPD_FM_NONE;
+
+        int32_t xa, ya, xb, yb, xt, yt, xs, ys;
+        warthog::graph::node* node = g_->get_node(source_id);
+        warthog::graph::edge_iter from = node->outgoing_begin();
+        g_->get_xy(target_id, xt, yt);
+        g_->get_xy(source_id, xs, ys);
+
+        for(warthog::graph::ECAP_T edge_id = 0;
+            edge_id < node->out_degree();
+            edge_id++)
+        {
+            warthog::graph::edge_iter to = from + 1;
+
+            // Wrap around
+            if (to == node->outgoing_end())
+            {
+                to = node->outgoing_begin();
+            }
+
+            g_->get_xy(from->node_id_, xa, ya);
+            g_->get_xy(to->node_id_, xb, yb);
+
+            if(warthog::geo::between_xy(xs, ys, xa, ya, xt, yt, xb, yb))
+            {
+                if(fm == warthog::cpd::CW)
+                {
+                    fm = edge_id + 1;
+
+                    if(fm >= node->out_degree())
+                    {
+                        fm = 0;
+                    }
+                }
+                else // if(fm == warthog::cpd::CCW)
+                {
+                    fm = edge_id;
+                }
+                break;
+            }
+            from = to;
+        }
+        assert(fm != warthog::cpd::CPD_FM_NONE);
+    }
+    else
+    {
+            fm -= 2;
+    }
+
+    return fm;
 }
 
 }
 
+}
 
 #endif

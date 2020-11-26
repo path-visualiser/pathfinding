@@ -1,6 +1,7 @@
 /**
  * This file is used to create CPDs in an independent fashion.
  */
+#include <cstdlib>
 #include <iostream>
 #include <fstream>
 #include <getopt.h>
@@ -30,7 +31,7 @@ join_cpds(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
         if (!ifs.good())
         {
             std::cerr << "Cannot open file " << name << std::endl;
-            return 1;
+            return EXIT_FAILURE;
         }
 
         ifs >> part;
@@ -43,8 +44,9 @@ join_cpds(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
 }
 
 int
-make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
-         int to, bool verbose=false, bool reverse=false)
+make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
+         warthog::cpd::symbol type, bool reverse, int from, int to,
+         bool verbose=false)
 {
     uint32_t node_count = g.get_num_nodes();
     if (to < 0)
@@ -96,15 +98,25 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd, int from,
             warthog::cpd::oracle_listener>
             dijk(&h, &expander, &queue);
 
-        if (reverse)
+        switch (type)
         {
-            listener = new warthog::cpd::reverse_oracle_listener(
-                &cpd, &source_id, &s_row);
-        }
-        else
-        {
-            listener = new warthog::cpd::graph_oracle_listener(
-                &cpd, &source_id, &s_row);
+            case warthog::cpd::REVERSE:
+                listener = new warthog::cpd::reverse_oracle_listener(
+                    &cpd, &source_id, &s_row);
+                break;
+            case warthog::cpd::BEARING:
+                listener = new warthog::cpd::reverse_bearing_oracle_listener(
+                    &cpd, &source_id, &s_row);
+                break;
+            // case warthog::cpd::FORWARD:
+            //
+            // We have to have a default case, otherwise we may encounter a
+            // compilation error.
+            //
+            // error: ‘listener’ may be used uninitialized in this function
+            default:
+                listener = new warthog::cpd::graph_oracle_listener(
+                    &cpd, &source_id, &s_row);
         }
 
         dijk.set_listener(listener);
@@ -145,7 +157,6 @@ main(int argc, char *argv[])
 {
     int verbose = 0;
     int status = 0;
-    int reverse = 0;
     warthog::util::param valid_args[] =
     {
         {"from", required_argument, 0, 1},
@@ -153,13 +164,40 @@ main(int argc, char *argv[])
         {"input", required_argument, 0, 1},
         {"output", required_argument, 0, 1},
         {"join", required_argument, 0, 1},
+        {"type", required_argument, 0, 1},
         {"verbose", no_argument, &verbose, 1},
-        {"reverse", no_argument, &reverse, 1},
         {0, 0, 0, 0}
     };
 
     warthog::util::cfg cfg;
     cfg.parse_args(argc, argv, valid_args);
+
+    std::string type = cfg.get_param_value("type");
+    bool reverse;
+    warthog::cpd::symbol cpd_type;
+
+    if (type == "" || type == "fwd" || type == "forward")
+    {
+        cpd_type = warthog::cpd::FORWARD;
+        reverse = false;
+    }
+    else if (type == "bwd" || type == "backward" || type == "rev" ||
+             type == "reverse")
+    {
+        cpd_type = warthog::cpd::REVERSE;
+        reverse = true;
+    }
+    else if (type == "bearing")
+    {
+        cpd_type = warthog::cpd::BEARING;
+        reverse = true;
+        // TODO Implement forward azimuth compression
+    }
+    else
+    {
+        std::cerr << "Unknown CPD type '" << type << "'\n";
+        return EXIT_FAILURE;
+    }
 
     std::string s_from = cfg.get_param_value("from");
     std::string s_to = cfg.get_param_value("to");
@@ -170,7 +208,7 @@ main(int argc, char *argv[])
     {
         std::cerr << "Required argument --input [xy graph] missing."
                   << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     // We save the incoming edges in case we are building a reverse CPD
@@ -180,12 +218,14 @@ main(int argc, char *argv[])
     if (!ifs.good())
     {
         std::cerr << "Cannot open file " << xy_filename << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     ifs >> g;
     ifs.close();
 
+    // It does not matter which graph oracle we define here as they only
+    // specialise `get_move()`
     warthog::cpd::graph_oracle cpd(&g);
     int from = 0;
     int to = -1;
@@ -198,7 +238,7 @@ main(int argc, char *argv[])
         {
             std::cerr << "Argument --from [node id] cannot be negative."
                       << std::endl;
-            return 1;
+            return EXIT_FAILURE;
         }
     }
 
@@ -224,17 +264,22 @@ main(int argc, char *argv[])
     }
     else
     {
-        status = make_cpd(g, cpd, from, to, verbose, reverse);
+        status = make_cpd(g, cpd, cpd_type, reverse, from, to, verbose);
     }
 
     // There was an error
-    if (status == 1) { return 1; }
+    if (status == 1) { return EXIT_FAILURE; }
 
     // No error, proceed
     if (cpd_filename == "")
     {
         // Use default name
         cpd_filename = xy_filename;
+
+        if (cpd_type == warthog::cpd::BEARING)
+        {
+            cpd_filename += "-bearing";
+        }
 
         if (reverse)
         {
@@ -249,7 +294,7 @@ main(int argc, char *argv[])
     if (!ofs.good())
     {
         std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
-        return 1;
+        return EXIT_FAILURE;
     }
 
     info(verbose, "Writing results to", cpd_filename);
