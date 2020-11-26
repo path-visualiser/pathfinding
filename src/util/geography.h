@@ -1,4 +1,7 @@
 // Module to handle geographic coordinates (lat/long)
+//
+// The '*_xy' variants are meant to convert coordinates in usual `xy_graph`
+// format to floats using the DIMACS ratio.
 #ifndef __GEOGRAPHY_H_
 #define __GEOGRAPHY_H_
 
@@ -35,6 +38,24 @@ between(double lat_a, double lng_a, double lat_b, double lng_b, double lat_c,
 bool
 between(double lat_s, double lng_s, double lat_a, double lng_a, double lat_b,
         double lng_b, double lat_c, double lng_c);
+
+double
+get_bearing_xy(uint32_t lat1, uint32_t lng1, uint32_t lat2, uint32_t lng2);
+
+double
+true_bearing_xy(uint32_t lng, uint32_t lat);
+
+double
+get_angle_xy(uint32_t lat_a, uint32_t lng_a, uint32_t lat_b, uint32_t lng_b,
+             uint32_t lat_c, uint32_t lng_c);
+
+bool
+between_xy(uint32_t lat_a, uint32_t lng_a, uint32_t lat_b, uint32_t lng_b,
+           uint32_t lat_c, uint32_t lng_c);
+
+bool
+between_xy(uint32_t lat_s, uint32_t lng_s, uint32_t lat_a, uint32_t lng_a,
+           uint32_t lat_b, uint32_t lng_b, uint32_t lat_c, uint32_t lng_c);
 
 }
 }
