@@ -2,6 +2,7 @@
 #include "contraction.h"
 #include "dimacs_parser.h"
 #include "geography.h"
+#include "graph.h"
 
 #include <cmath>
 #include <numeric>
@@ -13,31 +14,32 @@
 // each iteration -- e.g., pre-allocate them in 'orient_edges()' and handle
 // bounds.
 std::vector<size_t>
-orient_node_edges(warthog::graph::xy_graph &g, warthog::graph::ECAP_T degree,
+orient_node_edges(warthog::graph::xy_graph& g, uint32_t n_id,
+                  warthog::graph::ECAP_T degree,
                   warthog::graph::edge_iter start)
 {
     std::vector<double> angles(degree);
+    int32_t nx, ny;
+    g.get_xy(n_id, nx, ny);
 
     for (uint32_t edge_idx = 0; edge_idx < degree; edge_idx++)
     {
         warthog::graph::edge* e = start + edge_idx;
         // Longitude and latitude of the point
-        int32_t lng, lat;
+        int32_t lat, lng;
         g.get_xy(e->node_id_, lat, lng);
-        // Bearing wrt North
-        //
-        // Don't forget to convert DIMACS ids to degrees
-        angles.at(edge_idx) = warthog::geo::true_bearing(
-            lng / warthog::geo::DIMACS_RATIO, lat / warthog::geo::DIMACS_RATIO);
+        // Bearing wrt central node
+        angles.at(edge_idx) = warthog::geo::get_bearing_xy(nx, ny, lat, lng);
     }
 
     // Compute the index ordering given all edges' angles
     std::vector<size_t> idx(degree);
     std::iota(idx.begin(), idx.end(), 0);
 
+    // We sort with $\ge$ as we want a *clockwise rotation*
     stable_sort(idx.begin(), idx.end(), [&](size_t i1, size_t i2)
     {
-        return angles[i1] < angles[i2];
+        return angles[i1] > angles[i2];
     });
 
     return idx;
@@ -47,23 +49,24 @@ orient_node_edges(warthog::graph::xy_graph &g, warthog::graph::ECAP_T degree,
 void
 orient_edges(warthog::graph::xy_graph& g)
 {
+    std::vector<warthog::graph::edge> save(warthog::graph::ECAP_MAX);
+
     for (uint32_t i = 0; i < g.get_num_nodes(); i++)
     {
         warthog::graph::node* n = g.get_node(i);
-
-        // So, clear does not free memory, so we can tag the old starting
-        // memory, clear the node, and re-insert edges in the right order.
         warthog::graph::edge_iter head = n->outgoing_begin();
         warthog::graph::ECAP_T out_deg = n->out_degree();
-        std::vector<warthog::graph::edge> save(out_deg);
-        n->clear();
 
-        for(warthog::graph::ECAP_T i = 0; i < out_deg; i++)
+        // Although 'graph::node::clear()' does not free the memory, we still
+        // need to save the *values* in a temporary location, otherwise we end
+        // up erasing them.
+        for(warthog::graph::ECAP_T j = 0; j < out_deg; j++)
         {
-            save.at(i) = *(head + i);
+            save.at(j) = *(head + j);
         }
 
-        std::vector<size_t> order = orient_node_edges(g, out_deg, head);
+        n->clear();
+        std::vector<size_t> order = orient_node_edges(g, i, out_deg, head);
         for(auto id : order)
         {
             n->add_outgoing(save.at(id));
