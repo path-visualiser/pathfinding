@@ -42,19 +42,31 @@ warthog::geo::true_bearing(double lat, double lng)
         deg_to_rad(lng), deg_to_rad(lat));
 }
 
-// Taken from: https://stackoverflow.com/questions/3486172/angle-between-3-points
+// The angle (ABC) is defined as the bearing from C to A when B is the origin.
 double
-warthog::geo::get_angle(double xa, double ya, double xb, double yb,
-                        double xc, double yc)
+warthog::geo::get_angle(double lat_a, double lng_a, double lat_b, double lng_b,
+                        double lat_c, double lng_c)
 {
-    double xab = xb - xa;
-    double yab = yb - ya;
-    double xcb = xb - xc;
-    double ycb = yb - yc;
+    return warthog::geo::get_bearing(
+        lat_a - lat_b, lng_a - lng_b, lat_c - lat_b, lng_c - lng_b);
+}
 
-    double dot = xab * xcb + yab * ycb; // dot product
-    double cross = xab * ycb - yab * xcb; // cross product
-    double alpha = atan2(cross, dot);
+// This works by checking that the longitude of A and C differ in sign wrt B.
+bool
+warthog::geo::between(double lat_a, double lng_a, double lat_b, double lng_b,
+                      double lat_c, double lng_c)
+{
+    return (lng_a - lng_b) * (lng_c - lng_b) < 0;
+}
 
-    return rad_to_deg(alpha);
+// Variant of 'between' where we pass the origin.
+bool
+warthog::geo::between(double lat_o, double lng_o, double lat_a, double lng_a,
+                      double lat_b, double lng_b, double lat_c, double lng_c)
+{
+    double lng_sa = lng_o - lng_a;
+    double lng_sb = lng_o - lng_b;
+    double lng_sc = lng_o - lng_c;
+    // TODO Offset latitudes too?
+    return warthog::geo::between(lat_a, lng_sa, lat_b, lng_sb, lat_c, lng_sc);
 }
