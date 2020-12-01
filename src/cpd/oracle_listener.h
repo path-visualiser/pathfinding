@@ -14,11 +14,6 @@ namespace cpd
 class oracle_listener
 {
   public:
-    oracle_listener(warthog::cpd::graph_oracle* oracle,
-                    warthog::sn_id_t* source_id,
-                    std::vector<warthog::cpd::fm_coll>* s_row)
-        : oracle_(oracle), source_id_(source_id), s_row_(s_row) {}
-
     virtual ~oracle_listener() {};
 
     virtual void
@@ -31,8 +26,15 @@ class oracle_listener
     inline void
     relax_node(warthog::search_node* current) { }
 
+    void
+    set_run(warthog::sn_id_t* source_id,
+            std::vector<warthog::cpd::fm_coll>* s_row)
+    {
+        source_id_ = source_id;
+        s_row_ = s_row;
+    }
+
   protected:
-    graph_oracle* oracle_;
     warthog::sn_id_t* source_id_;
     std::vector<warthog::cpd::fm_coll>* s_row_;
 };
@@ -40,7 +42,9 @@ class oracle_listener
 // helps to precompute first-move data
 class graph_oracle_listener final : public oracle_listener
 {
-    using oracle_listener::oracle_listener;
+  public:
+    graph_oracle_listener(warthog::cpd::graph_oracle* oracle)
+        : oracle_(oracle) {}
 
     inline void
     generate_node(warthog::search_node *from, warthog::search_node *succ,
@@ -90,12 +94,18 @@ class graph_oracle_listener final : public oracle_listener
 
         }
     }
+
+  private:
+    warthog::cpd::graph_oracle* oracle_;
 };
 
 // helps to precompute first-move data, this time we build the rows in reverse.
 class reverse_oracle_listener final : public oracle_listener
 {
-    using oracle_listener::oracle_listener;
+  public:
+    reverse_oracle_listener(
+        warthog::cpd::graph_oracle_base<warthog::cpd::REVERSE>* oracle)
+        : oracle_(oracle) {}
 
     inline void
     generate_node(warthog::search_node *from, warthog::search_node *succ,
@@ -137,6 +147,8 @@ class reverse_oracle_listener final : public oracle_listener
         }
     }
 
+  private:
+    warthog::cpd::graph_oracle_base<warthog::cpd::REVERSE>* oracle_;
 };
 
 // helps to precompute first-move data, this one does bearing compression on
@@ -145,7 +157,10 @@ class reverse_oracle_listener final : public oracle_listener
 // TODO add a forward listener with orientation
 class reverse_bearing_oracle_listener final : public oracle_listener
 {
-    using oracle_listener::oracle_listener;
+  public:
+    reverse_bearing_oracle_listener(
+        warthog::cpd::graph_oracle_base<warthog::cpd::BEARING>* oracle)
+        : oracle_(oracle) {}
 
     inline void
     generate_node(warthog::search_node *from, warthog::search_node *succ,
@@ -214,6 +229,8 @@ class reverse_bearing_oracle_listener final : public oracle_listener
         }
     }
 
+  private:
+    warthog::cpd::graph_oracle_base<warthog::cpd::BEARING>* oracle_;
 };
 
 }

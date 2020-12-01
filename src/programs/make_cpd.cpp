@@ -20,9 +20,12 @@
  * The partial CPDs must be given in the order of the nodes.
  */
 int
-join_cpds(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
-          std::vector<std::string> file_list)
+join_cpds(warthog::graph::xy_graph &g, std::string cpd_filename,
+          std::vector<std::string> file_list, bool verbose)
 {
+    // Here, the type of the oracle does not matter.
+    warthog::cpd::graph_oracle cpd(&g);
+
     for (auto name: file_list)
     {
         warthog::cpd::graph_oracle part(&g);
@@ -40,12 +43,26 @@ join_cpds(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
         cpd += part;
     }
 
-    return 0;
+    std::ofstream ofs(cpd_filename);
+
+    if (!ofs.good())
+    {
+        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    info(verbose, "Writing results to", cpd_filename);
+    ofs << cpd;
+    ofs.close();
+
+    return EXIT_SUCCESS;
 }
 
+template<warthog::cpd::symbol S>
 int
-make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
-         warthog::cpd::symbol type, bool reverse, int from, int to,
+make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle_base<S> &cpd,
+         std::vector<warthog::cpd::oracle_listener*> &listeners,
+         std::string cpd_filename, bool reverse, int from, int to,
          bool verbose=false)
 {
     uint32_t node_count = g.get_num_nodes();
@@ -89,7 +106,6 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
         // copy has a separate memory pool
         warthog::bidirectional_graph_expansion_policy expander(&g, reverse);
         warthog::zero_heuristic h;
-        warthog::cpd::oracle_listener* listener;
         warthog::pqueue_min queue;
         warthog::flexible_astar<
             warthog::zero_heuristic,
@@ -98,28 +114,8 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
             warthog::cpd::oracle_listener>
             dijk(&h, &expander, &queue);
 
-        switch (type)
-        {
-            case warthog::cpd::REVERSE:
-                listener = new warthog::cpd::reverse_oracle_listener(
-                    &cpd, &source_id, &s_row);
-                break;
-            case warthog::cpd::BEARING:
-                listener = new warthog::cpd::reverse_bearing_oracle_listener(
-                    &cpd, &source_id, &s_row);
-                break;
-            // case warthog::cpd::FORWARD:
-            //
-            // We have to have a default case, otherwise we may encounter a
-            // compilation error.
-            //
-            // error: ‘listener’ may be used uninitialized in this function
-            default:
-                listener = new warthog::cpd::graph_oracle_listener(
-                    &cpd, &source_id, &s_row);
-        }
-
-        dijk.set_listener(listener);
+        listeners.at(thread_id)->set_run(&source_id, &s_row);
+        dijk.set_listener(listeners.at(thread_id));
 
         while (source_id < node_end)
         {
@@ -138,8 +134,6 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
                 }
             }
         }
-
-        delete listener;
     }
 
     std::cerr << std::endl;
@@ -149,14 +143,30 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle &cpd,
     t.stop();
     info(verbose, "total preproc time (seconds):", t.elapsed_time_sec());
 
-    return 0;
+    std::ofstream ofs(cpd_filename);
+
+    if (!ofs.good())
+    {
+        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
+        return EXIT_FAILURE;
+    }
+
+    info(verbose, "Writing results to", cpd_filename);
+    ofs << cpd;
+    ofs.close();
+
+    for (auto l : listeners)
+    {
+        delete l;
+    }
+
+    return EXIT_SUCCESS;
 }
 
 int
 main(int argc, char *argv[])
 {
     int verbose = 0;
-    int status = 0;
     warthog::util::param valid_args[] =
     {
         {"from", required_argument, 0, 1},
@@ -224,9 +234,6 @@ main(int argc, char *argv[])
     ifs >> g;
     ifs.close();
 
-    // It does not matter which graph oracle we define here as they only
-    // specialise `get_move()`
-    warthog::cpd::graph_oracle cpd(&g);
     int from = 0;
     int to = -1;
 
@@ -247,30 +254,6 @@ main(int argc, char *argv[])
         to = std::stoi(s_to);
     }
 
-    if (cfg.get_num_values("join") > 0)
-    {
-        std::vector<std::string> names;
-        std::string part;
-
-        while (true)
-        {
-            part = cfg.get_param_value("join");
-
-            if (part == "") { break; }
-            names.push_back(part);
-        }
-        cpd.clear();
-        status = join_cpds(g, cpd, names);
-    }
-    else
-    {
-        status = make_cpd(g, cpd, cpd_type, reverse, from, to, verbose);
-    }
-
-    // There was an error
-    if (status == 1) { return EXIT_FAILURE; }
-
-    // No error, proceed
     if (cpd_filename == "")
     {
         // Use default name
@@ -289,15 +272,76 @@ main(int argc, char *argv[])
         cpd_filename += ".cpd";
     }
 
-    std::ofstream ofs(cpd_filename);
-
-    if (!ofs.good())
+    if (cfg.get_num_values("join") > 0)
     {
-        std::cerr << "Could not open CPD file " << cpd_filename << std::endl;
-        return EXIT_FAILURE;
-    }
+        std::vector<std::string> names;
+        std::string part;
 
-    info(verbose, "Writing results to", cpd_filename);
-    ofs << cpd;
-    ofs.close();
+        while (true)
+        {
+            part = cfg.get_param_value("join");
+
+            if (part == "") { break; }
+            names.push_back(part);
+        }
+
+        return join_cpds(g, cpd_filename, names, verbose);
+    }
+    else
+    {
+        #ifndef SINGLE_THREADED
+        size_t nthreads = 1;
+        #else
+        size_t nthreads = omp_get_max_threads();
+        #endif
+        std::vector<warthog::cpd::oracle_listener*> listeners(nthreads);
+
+        // We have to explicitly create and pass the different (sub-) types of
+        // oracles and listeners or it messes with the template resolution.
+        switch (cpd_type)
+        {
+            case warthog::cpd::REVERSE:
+            {
+                warthog::cpd::graph_oracle_base<warthog::cpd::REVERSE> cpd(&g);
+
+                for (size_t t = 0; t < nthreads; t++)
+                {
+                    listeners.at(t) =
+                        new warthog::cpd::reverse_oracle_listener(&cpd);
+                }
+
+                return make_cpd<warthog::cpd::REVERSE>(
+                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+            }
+
+            case warthog::cpd::BEARING:
+            {
+                warthog::cpd::graph_oracle_base<warthog::cpd::BEARING> cpd(&g);
+
+                for (size_t t = 0; t < nthreads; t++)
+                {
+                    listeners.at(t) =
+                        new warthog::cpd::reverse_bearing_oracle_listener(&cpd);
+                }
+
+                return make_cpd<warthog::cpd::BEARING>(
+                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+            }
+
+            // case warthog::cpd::FORWARD:
+            default:
+            {
+                warthog::cpd::graph_oracle cpd(&g);
+
+                for (size_t t = 0; t < nthreads; t++)
+                {
+                    listeners.at(t) =
+                        new warthog::cpd::graph_oracle_listener(&cpd);
+                }
+
+                return make_cpd<warthog::cpd::FORWARD>(
+                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+            }
+        }
+    }
 }
