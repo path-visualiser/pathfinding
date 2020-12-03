@@ -203,6 +203,11 @@ main(int argc, char *argv[])
         reverse = true;
         // TODO Implement forward azimuth compression
     }
+    else if (type == "table")
+    {
+        cpd_type = warthog::cpd::TABLE;
+        reverse = true;
+    }
     else
     {
         std::cerr << "Unknown CPD type '" << type << "'\n";
@@ -259,17 +264,24 @@ main(int argc, char *argv[])
         // Use default name
         cpd_filename = xy_filename;
 
-        if (cpd_type == warthog::cpd::BEARING)
+        switch (cpd_type)
         {
-            cpd_filename += "-bearing";
-        }
-
-        if (reverse)
-        {
-           cpd_filename += "-rev";
+            case warthog::cpd::REVERSE:
+                cpd_filename += "-rev";
+            case warthog::cpd::BEARING:
+                cpd_filename += "-bearing";
+                break;
+            case warthog::cpd::TABLE:
+                cpd_filename += "-table";
+                break;
+            default: // noop
+                break;
         }
 
         cpd_filename += ".cpd";
+
+        std::cerr << "No --output provided, defaulting to: " << cpd_filename
+                  << std::endl;
     }
 
     if (cfg.get_num_values("join") > 0)
@@ -289,7 +301,7 @@ main(int argc, char *argv[])
     }
     else
     {
-        #ifndef SINGLE_THREADED
+        #ifdef SINGLE_THREADED
         size_t nthreads = 1;
         #else
         size_t nthreads = omp_get_max_threads();
@@ -325,6 +337,20 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::BEARING>(
+                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+            }
+
+            case warthog::cpd::TABLE:
+            {
+                warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> cpd(&g);
+
+                for (size_t t = 0; t < nthreads; t++)
+                {
+                    listeners.at(t) =
+                        new warthog::cpd::table_oracle_listener(&cpd);
+                }
+
+                return make_cpd<warthog::cpd::TABLE>(
                     g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
             }
 

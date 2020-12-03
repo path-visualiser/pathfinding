@@ -28,6 +28,7 @@
 #include "graph.h"
 #include "graph_expansion_policy.h"
 #include "xy_graph.h"
+#include <bits/stdint-uintn.h>
 
 namespace warthog
 {
@@ -35,7 +36,7 @@ namespace warthog
 namespace cpd
 {
 
-enum symbol {FORWARD, REVERSE, BEARING};
+enum symbol {FORWARD, REVERSE, BEARING, TABLE};
 
 template<symbol T>
 class graph_oracle_base
@@ -526,6 +527,32 @@ graph_oracle_base<warthog::cpd::BEARING>::get_move(
 
     return fm;
 }
+
+// Finding a first move is a lookup, a mask and a shift
+template<>
+inline uint32_t
+warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>::get_move(
+    warthog::sn_id_t source_id, warthog::sn_id_t target_id)
+{
+
+    if(fm_.at(target_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
+
+    std::vector<warthog::cpd::rle_run32>& row = fm_.at(target_id);
+    uint32_t index = order_.at(source_id);
+    uint32_t entry = index / 8; // Which 32bit int contains the information
+    uint8_t shift = (index % 8) * 4; // Where in the 32bit int is the fm
+    uint32_t mask = 0xF << shift;
+
+    // TODO look into `bextr`
+    return (row.at(entry).data_ & mask) >> shift;
+}
+
+// For some reason, this needs to be defined in the .cpp. But we cannot do the
+// same for `get_move()`...
+template<>
+void
+warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>::add_row(
+    uint32_t target_id, std::vector<warthog::cpd::fm_coll>& row);
 
 }
 

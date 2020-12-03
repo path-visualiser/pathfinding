@@ -331,3 +331,65 @@ SCENARIO("Test reverse CPD A* on a square matrix", "[reverse][square][astar]")
         }
     }
 }
+
+SCENARIO("Test table lookup A* on a square matrix", "[table][square][astar]")
+{
+    string map_name = "square01.map";
+    warthog::graph::xy_graph g;
+    warthog::gridmap d(map_name.c_str());
+    warthog::graph::gridmap_to_xy_graph(&d, &g, false);
+    warthog::simple_graph_expansion_policy expander(&g);
+    warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
+    // Needs to be created by hand
+    std::string cpd_filename = "square01.xy-table.cpd";
+    std::ifstream ifs(cpd_filename);
+
+    REQUIRE(ifs.is_open());
+    ifs >> oracle;
+
+    warthog::sn_id_t start = 0;
+    warthog::sn_id_t goal = 19;
+    warthog::problem_instance pi(start, goal, true);
+    // For some reason cannot use `warthog::sn_id_t`
+    int32_t x, y;
+    // Cannot cut corners
+    warthog::cost_t cost = warthog::ONE *
+        (warthog::DBL_ONE * 6 + warthog::DBL_ROOT_TWO);
+
+    g.get_xy(start, x, y);
+    REQUIRE(x == 0);
+    REQUIRE(y == 0);
+    g.get_xy(goal, x, y);
+    REQUIRE(x == 400000);  // (5 - 1) * GRID_TO_GRAPH_SCALE_FACTOR
+    REQUIRE(y == 400000);
+
+    GIVEN("A table CPD")
+    {
+        THEN("We can perform extractions")
+        {
+            warthog::cpd_extractions_base<warthog::cpd::TABLE> cpd(
+                &g, &oracle);
+            warthog::solution sol;
+
+            cpd.get_pathcost(pi, sol);
+            REQUIRE(sol.sum_of_edge_costs_ == cost);
+        }
+
+        THEN("Search should not expand nodes without congestion")
+        {
+            warthog::solution sol;
+            warthog::pqueue_min open;
+            warthog::cpd_heuristic_base<warthog::cpd::TABLE> h(&oracle);
+            warthog::cpd_search<
+                warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+                warthog::simple_graph_expansion_policy>
+                    astar(&h, &expander, &open);
+
+            astar.set_max_expansions_cutoff(10);
+            astar.get_path(pi, sol);
+
+            REQUIRE(sol.sum_of_edge_costs_ == cost);
+            REQUIRE(sol.nodes_expanded_ == 0);
+        }
+    }
+}
