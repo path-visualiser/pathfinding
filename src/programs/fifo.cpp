@@ -58,6 +58,74 @@ signalHandler(int signum)
     exit(signum);
 }
 
+std::string
+read_graph(warthog::util::cfg& cfg, warthog::graph::xy_graph& g)
+{
+    std::ifstream ifs;
+    // We first load the xy_graph and its diff as we need them to be *read* in
+    // reverse order.
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return "";
+    }
+
+    ifs.open(xy_filename);
+    if (!ifs.good())
+    {
+        std::cerr << "Could not open xy-graph: " << xy_filename << std::endl;
+        return "";
+    }
+
+    ifs >> g;
+    ifs.close();
+
+    // Check if we have a second parameter in the --input
+    std::string diff_filename = cfg.get_param_value("input");
+    if (diff_filename == "")
+    {
+        diff_filename = xy_filename + ".diff";
+        ifs.open(diff_filename);
+        if (!ifs.good())
+        {
+            std::cerr <<
+                "Could not open diff-graph: " << diff_filename << std::endl;
+            return "";
+        }
+
+        g.perturb(ifs);
+        ifs.close();
+    }
+
+    return xy_filename;
+}
+
+template<warthog::cpd::symbol S>
+void
+read_oracle(warthog::util::cfg& cfg, std::string xy_filename, warthog::cpd::graph_oracle_base<S>& oracle)
+{
+    std::ifstream ifs;
+    // read the cpd
+    std::string cpd_filename = cfg.get_param_value("input");
+    if(cpd_filename == "")
+    {
+        cpd_filename = xy_filename + ".cpd";
+    }
+
+    ifs.open(cpd_filename);
+    if(ifs.is_open())
+    {
+        ifs >> oracle;
+        ifs.close();
+    }
+    else
+    {
+        std::cerr << "Could not find the CPD file." << std::endl;
+        return;
+    }
+}
+
 /**
  * The search function does a bunch of statistics out of the search. It takes a
  * configration object, an output pipe and a list of queries and processes them.
@@ -250,62 +318,13 @@ void
 run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
                vector<warthog::search*> algos)
 {
-    std::ifstream ifs;
-    // We first load the xy_graph and its diff as we need them to be *read* in
-    // reverse order.
-    std::string xy_filename = cfg.get_param_value("input");
-    if(xy_filename == "")
-    {
-        std::cerr << "parameter is missing: --input [xy-graph file]\n";
-        return;
-    }
+    std::string xy_filename = read_graph(cfg, g);
 
-    ifs.open(xy_filename);
-    if (!ifs.good())
-    {
-        std::cerr << "Could not open xy-graph: " << xy_filename << std::endl;
-        return;
-    }
+    // TODO Have better control flow
+    if (xy_filename == "") { return; }
 
-    ifs >> g;
-    ifs.close();
-
-    // Check if we have a second parameter in the --input
-    std::string diff_filename = cfg.get_param_value("input");
-    if (diff_filename == "")
-    {
-        diff_filename = xy_filename + ".diff";
-        ifs.open(diff_filename);
-        if (!ifs.good())
-        {
-            std::cerr <<
-                "Could not open diff-graph: " << diff_filename << std::endl;
-            return;
-        }
-
-        g.perturb(ifs);
-        ifs.close();
-    }
-
-    // read the cpd
     warthog::cpd::graph_oracle oracle(&g);
-    std::string cpd_filename = cfg.get_param_value("input");
-    if(cpd_filename == "")
-    {
-        cpd_filename = xy_filename + ".cpd";
-    }
-
-    ifs.open(cpd_filename);
-    if(ifs.is_open())
-    {
-        ifs >> oracle;
-        ifs.close();
-    }
-    else
-    {
-        std::cerr << "Could not find the CPD file." << std::endl;
-        return;
-    }
+    read_oracle<warthog::cpd::FORWARD>(cfg, xy_filename, oracle);
 
     for (auto& alg: algos)
     {
@@ -330,6 +349,55 @@ run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
             warthog::simple_graph_expansion_policy,
             warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
                 warthog::cpd_heuristic,
+                warthog::simple_graph_expansion_policy,
+                warthog::pqueue_min>*>(base);
+
+        // Setup algo's config; we assume sane inputs
+        alg->get_heuristic()->set_hscale(conf.hscale);
+        alg->set_max_time_cutoff(conf.time); // This needs to be in ns
+        alg->set_max_expansions_cutoff(conf.itrs);
+        alg->set_max_k_moves(conf.k_moves);
+        alg->set_quality_cutoff(conf.fscale);
+    };
+
+    reader(algos, apply_conf);
+}
+
+void
+run_table_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
+                 vector<warthog::search*> algos)
+{
+    std::string xy_filename = read_graph(cfg, g);
+
+    // TODO Have better control flow
+    if (xy_filename == "") { return; }
+
+    warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
+    read_oracle<warthog::cpd::TABLE>(cfg, xy_filename, oracle);
+
+    for (auto& alg: algos)
+    {
+        warthog::simple_graph_expansion_policy* expander =
+            new warthog::simple_graph_expansion_policy(&g);
+        warthog::cpd_heuristic_base<warthog::cpd::TABLE>* h =
+            new warthog::cpd_heuristic_base<warthog::cpd::TABLE>(&oracle, 1.0);
+        warthog::pqueue_min* open = new warthog::pqueue_min();
+
+        alg = new warthog::cpd_search<
+            warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+            warthog::simple_graph_expansion_policy,
+            warthog::pqueue_min>(h, expander, open);
+    }
+
+    user(VERBOSE, "Loaded", algos.size(), "search.");
+
+    conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
+    {
+        warthog::cpd_search<
+            warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+            warthog::simple_graph_expansion_policy,
+            warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
+                warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
                 warthog::simple_graph_expansion_policy,
                 warthog::pqueue_min>*>(base);
 
@@ -509,6 +577,11 @@ main(int argc, char *argv[])
     if (alg_name == "cpd-search")
     {
         run_cpd_search(cfg, g, algos);
+    }
+    else if (alg_name == "table-oracle")
+    {
+        // CPD Search with reverse move table
+        run_table_search(cfg, g, algos);
     }
     else if (alg_name == "cpd")
     {
