@@ -66,7 +66,7 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle_base<S> &cpd,
          bool verbose=false)
 {
     uint32_t node_count = g.get_num_nodes();
-    if (to < 0)
+    if (to < 0 || node_count < (uint32_t) to)
     {
         to = node_count;
     }
