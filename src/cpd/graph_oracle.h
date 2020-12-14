@@ -106,7 +106,7 @@ class graph_oracle_base
         }
 
         inline void
-        compute_dfs_preorder()
+        compute_dfs_preorder(uint32_t seed=0)
         {
             warthog::cpd::compute_dfs_preorder(g_, &order_);
         }

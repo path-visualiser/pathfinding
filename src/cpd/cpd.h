@@ -81,7 +81,8 @@ typedef uint16_t fm_coll;
 void
 compute_dfs_preorder(
         warthog::graph::xy_graph* g,
-        std::vector<uint32_t>* column_order);
+        std::vector<uint32_t>* column_order,
+        uint32_t seed=0);
 
 }
 

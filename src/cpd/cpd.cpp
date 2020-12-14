@@ -5,7 +5,8 @@
 void
 warthog::cpd::compute_dfs_preorder(
         warthog::graph::xy_graph* g,
-        std::vector<uint32_t>* column_order)
+        std::vector<uint32_t>* column_order,
+        uint32_t dfs_seed)
 {
     assert(g->get_num_nodes() < UINT32_MAX);
 
@@ -15,7 +16,6 @@ warthog::cpd::compute_dfs_preorder(
     std::vector<dfs_pair> dfs_stack;
 
     uint32_t preorder_id = 0;
-    uint32_t dfs_seed = ((uint32_t)rand() % (uint32_t)g->get_num_nodes());
     dfs_stack.push_back(dfs_pair(dfs_seed, 0));
     dfs_stack.reserve(g->get_num_nodes());
     while(dfs_stack.size())

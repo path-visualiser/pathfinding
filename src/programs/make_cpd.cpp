@@ -21,11 +21,11 @@
  */
 int
 join_cpds(warthog::graph::xy_graph &g, std::string cpd_filename,
-          std::vector<std::string> file_list, bool verbose)
+          std::vector<std::string> file_list, uint32_t seed, bool verbose)
 {
     // Here, the type of the oracle does not matter.
     warthog::cpd::graph_oracle cpd(&g);
-    cpd.compute_dfs_preorder();
+    cpd.compute_dfs_preorder(seed);
     // convert the column order into a map: from vertex id to its ordered index
     cpd.value_index_swap_array();
 
@@ -66,7 +66,7 @@ int
 make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle_base<S> &cpd,
          std::vector<warthog::cpd::oracle_listener*> &listeners,
          std::string cpd_filename, bool reverse, int from, int to,
-         bool verbose=false)
+         uint32_t seed, bool verbose=false)
 {
     uint32_t node_count = g.get_num_nodes();
     if (to < 0 || node_count < (uint32_t) to)
@@ -87,7 +87,7 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle_base<S> &cpd,
     t.start();
 
     info(verbose, "Computing node ordering.");
-    cpd.compute_dfs_preorder();
+    cpd.compute_dfs_preorder(seed);
 
     info(verbose, "Computing Dijkstra labels.");
     std::cerr << "progress: [";
@@ -177,6 +177,7 @@ main(int argc, char *argv[])
         {"input", required_argument, 0, 1},
         {"output", required_argument, 0, 1},
         {"join", required_argument, 0, 1},
+        {"seed", required_argument, 0, 1},
         {"type", required_argument, 0, 1},
         {"verbose", no_argument, &verbose, 1},
         {0, 0, 0, 0}
@@ -287,6 +288,18 @@ main(int argc, char *argv[])
                   << std::endl;
     }
 
+    std::string s_seed = cfg.get_param_value("seed");
+    uint32_t seed;
+
+    if (s_seed != "")
+    {
+        seed = std::stoi(s_seed);
+    }
+    else
+    {
+        seed = ((uint32_t)rand() % (uint32_t)g.get_num_nodes());
+    }
+
     if (cfg.get_num_values("join") > 0)
     {
         std::vector<std::string> names;
@@ -300,7 +313,7 @@ main(int argc, char *argv[])
             names.push_back(part);
         }
 
-        return join_cpds(g, cpd_filename, names, verbose);
+        return join_cpds(g, cpd_filename, names, seed, verbose);
     }
     else
     {
@@ -326,7 +339,8 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::REVERSE>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    verbose);
             }
 
             case warthog::cpd::BEARING:
@@ -340,7 +354,8 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::BEARING>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    verbose);
             }
 
             case warthog::cpd::TABLE:
@@ -354,7 +369,8 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::TABLE>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    verbose);
             }
 
             // case warthog::cpd::FORWARD:
@@ -369,7 +385,8 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::FORWARD>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, verbose);
+                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    verbose);
             }
         }
     }
