@@ -329,26 +329,13 @@ class graph_oracle_base
         }
 
         /**
-        * Append operator for CPDs. Used when building partial CPDs so we can
-        * join them into a single one.
-        *
-        * Works by appending runs to the current instance and, if the order is
-        * not set, copying the order.
-        */
-        graph_oracle_base&
-        operator+=(const graph_oracle_base &cpd)
+         * Append operator for CPDs. Used when building partial CPDs so we can
+         * join them into a single one.
+         */
+        void
+        append_fm(const graph_oracle_base &cpd)
         {
             fm_.insert(fm_.end(), cpd.fm_.begin(), cpd.fm_.end());
-
-            // Order is always read completely
-            if (order_.size() == 0)
-            {
-                order_ = cpd.order_;
-            }
-
-            assert(order_ == cpd.order_);
-
-            return *this;
         }
 
         void
