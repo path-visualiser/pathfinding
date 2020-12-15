@@ -147,13 +147,19 @@ run_search(vector<warthog::search*>& algos, conf_fn& apply_conf,
   unsigned int finished = 0;
   double t_astar = 0;
 
+#ifdef SINGLE_THREADED
+  unsigned int threads = 1;
+#else
+  unsigned int threads = conf.threads;
+#endif
+
   warthog::timer t;
   user(conf.verbose, "Preparing to process", n_results, "queries using",
-       (int)conf.threads, "threads.");
+       (int)threads, "threads.");
 
   t.start();
 
-#pragma omp parallel num_threads(conf.threads)                          \
+#pragma omp parallel num_threads(threads)                          \
     reduction(+ : t_astar, n_expanded, n_inserted, n_touched, n_updated, \
               n_surplus, plen, finished)
     {
