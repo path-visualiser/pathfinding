@@ -30,20 +30,15 @@ typedef std::tuple<unsigned int, // Nodes expanded
 
 typedef struct config
 {
-    // Default config
-    config() : hscale(1.0), fscale(1.0), time(DBL_MAX), itrs(warthog::INF32),
-               k_moves(warthog::INF32), prefix(0), threads(0), verbose(VERBOSE)
-    {};
-
-    double hscale;                // Modifier for heuristic's value
-    double fscale;                // Quality tolerance
-    double time;
-    uint32_t itrs;
-    uint32_t k_moves;
-    uint32_t prefix;
-    unsigned char threads;
-    bool verbose;
-    bool debug;
+    double hscale = 1.0;                // Modifier for heuristic's value
+    double fscale = 1.0;                // Quality tolerance
+    double time = DBL_MAX;
+    uint32_t itrs = warthog::INF32;
+    uint32_t k_moves = warthog::INF32;
+    uint32_t prefix = 0;
+    unsigned char threads = 0;
+    bool verbose = VERBOSE;
+    bool debug = false;
 } config;
 
 void
