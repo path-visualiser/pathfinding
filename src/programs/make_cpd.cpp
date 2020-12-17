@@ -18,6 +18,46 @@
 #include "xy_graph.h"
 
 std::vector<warthog::sn_id_t>
+modulo(warthog::util::cfg &cfg, size_t node_count)
+{
+    std::vector<warthog::sn_id_t> nodes;
+    std::string s_mod = cfg.get_param_value("mod");
+    std::string s_num = cfg.get_param_value("num");
+    int mod = 0;
+    int num = 0;
+
+    // TODO this should be a try/catch block
+    if (s_mod != "")
+    {
+        mod = std::stoi(s_mod);
+
+        if (mod < 1)
+        {
+            std::cerr << "The modulo must be >= 1, got: " << s_mod << std::endl;
+            return nodes;
+        }
+    }
+
+    if (s_num != "")
+    {
+        num = std::stoi(s_num);
+
+        if (num < 0)
+        {
+            std::cerr << "The offset must be >= 0, got: " << s_num << std::endl;
+            return nodes;
+        }
+    }
+
+    for (warthog::sn_id_t i = num; i < node_count; i += mod)
+    {
+        nodes.push_back(i);
+    }
+
+    return nodes;
+}
+
+std::vector<warthog::sn_id_t>
 range(warthog::util::cfg &cfg, size_t node_count)
 {
     std::vector<warthog::sn_id_t> nodes;
@@ -208,6 +248,8 @@ main(int argc, char *argv[])
     {
         {"from", required_argument, 0, 1},
         {"to", required_argument, 0, 1},
+        {"mod", required_argument, 0, 1},
+        {"num", required_argument, 0, 1},
         {"input", required_argument, 0, 1},
         {"output", required_argument, 0, 1},
         {"join", required_argument, 0, 1},
@@ -335,7 +377,17 @@ main(int argc, char *argv[])
         size_t nthreads = omp_get_max_threads();
         #endif
         std::vector<warthog::cpd::oracle_listener*> listeners(nthreads);
-        std::vector<warthog::sn_id_t> nodes = range(cfg, g.get_num_nodes());
+        std::vector<warthog::sn_id_t> nodes;
+
+        // TODO Message to inform that only one can be used?
+        if (cfg.get_num_values("mod") > 0)
+        {
+            nodes = modulo(cfg, g.get_num_nodes());
+        }
+        else
+        {
+            nodes = range(cfg, g.get_num_nodes());
+        }
 
         // We have to explicitly create and pass the different (sub-) types of
         // oracles and listeners or it messes with the template resolution.
