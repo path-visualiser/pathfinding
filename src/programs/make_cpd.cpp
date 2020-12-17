@@ -5,14 +5,59 @@
 #include <iostream>
 #include <fstream>
 #include <getopt.h>
+#include <numeric>
 #include <omp.h>
+#include <vector>
 
 #include "bidirectional_graph_expansion_policy.h"
 #include "cfg.h"
+#include "constants.h"
 #include "graph_oracle.h"
 #include "oracle_listener.h"
 #include "log.h"
 #include "xy_graph.h"
+
+std::vector<warthog::sn_id_t>
+range(warthog::util::cfg &cfg, size_t node_count)
+{
+    std::vector<warthog::sn_id_t> nodes;
+    std::string s_from = cfg.get_param_value("from");
+    std::string s_to = cfg.get_param_value("to");
+    int from = 0;
+    int to = -1;
+
+    if (s_from != "")
+    {
+        from = std::stoi(s_from);
+
+        if (from < 0)
+        {
+            std::cerr << "Argument --from [node id] cannot be negative."
+                      << std::endl;
+            return nodes;
+        }
+    }
+
+    if (s_to != "")
+    {
+        to = std::stoi(s_to);
+    }
+
+    if (to < 0 || node_count < (uint32_t) to)
+    {
+        to = node_count;
+    }
+
+    assert(to > 0);
+    assert(from < to);
+    assert((unsigned int)from < node_count);
+    assert((unsigned int)to <= node_count);
+
+    nodes.resize(to - from);
+    std::iota(nodes.begin(), nodes.end(), from);
+
+    return nodes;
+}
 
 /**
  * Rebuild a CPD given a list of file containing its parts.
@@ -65,23 +110,12 @@ template<warthog::cpd::symbol S>
 int
 make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle_base<S> &cpd,
          std::vector<warthog::cpd::oracle_listener*> &listeners,
-         std::string cpd_filename, bool reverse, int from, int to,
-         uint32_t seed, bool verbose=false)
+         std::string cpd_filename, std::vector<warthog::sn_id_t> &nodes,
+         bool reverse, uint32_t seed, bool verbose=false)
 {
-    uint32_t node_count = g.get_num_nodes();
-    if (to < 0 || node_count < (uint32_t) to)
-    {
-        to = node_count;
-    }
-
-    assert(to > 0);
-    assert(from < to);
-    assert((unsigned int)from < node_count);
-    assert((unsigned int)to <= node_count);
-
-    uint32_t node_end = to;
     unsigned char pct_done = 0;
     uint32_t nprocessed = 0;
+    size_t node_count = nodes.size();
 
     warthog::timer t;
     t.start();
@@ -100,11 +134,10 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle_base<S> &cpd,
     {
         int thread_count = omp_get_num_threads();
         int thread_id = omp_get_thread_num();
+        size_t start_id = thread_id;
+        warthog::sn_id_t source_id;
 
-        // warthog ids are 0-indexed, so no need to do anything.
-        warthog::sn_id_t source_id = from + thread_id;
-
-        std::vector<warthog::cpd::fm_coll> s_row(node_count);
+        std::vector<warthog::cpd::fm_coll> s_row(g.get_num_nodes());
         // each thread has its own copy of Dijkstra and each
         // copy has a separate memory pool
         warthog::bidirectional_graph_expansion_policy expander(&g, reverse);
@@ -120,17 +153,18 @@ make_cpd(warthog::graph::xy_graph &g, warthog::cpd::graph_oracle_base<S> &cpd,
         listeners.at(thread_id)->set_run(&source_id, &s_row);
         dijk.set_listener(listeners.at(thread_id));
 
-        while (source_id < node_end)
+        while (start_id < node_count)
         {
+            source_id = nodes.at(start_id);
             cpd.compute_row(source_id, &dijk, s_row);
-            // We increment the source by the number of threads to *jump* to
-            // that id.
-            source_id += thread_count;
+            // We increment the start_id by the number of threads to *jump* to
+            // that id in the vector.
+            start_id += thread_count;
             #pragma omp critical
             {
                 nprocessed++;
 
-                if ((nprocessed * 100 / (to - from)) > pct_done)
+                if ((nprocessed * 100 / node_count) > pct_done)
                 {
                     std::cerr << "=";
                     pct_done++;
@@ -218,8 +252,6 @@ main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    std::string s_from = cfg.get_param_value("from");
-    std::string s_to = cfg.get_param_value("to");
     std::string xy_filename = cfg.get_param_value("input");
     std::string cpd_filename = cfg.get_param_value("output");
 
@@ -242,26 +274,6 @@ main(int argc, char *argv[])
 
     ifs >> g;
     ifs.close();
-
-    int from = 0;
-    int to = -1;
-
-    if (s_from != "")
-    {
-        from = std::stoi(s_from);
-
-        if (from < 0)
-        {
-            std::cerr << "Argument --from [node id] cannot be negative."
-                      << std::endl;
-            return EXIT_FAILURE;
-        }
-    }
-
-    if (s_to != "")
-    {
-        to = std::stoi(s_to);
-    }
 
     if (cpd_filename == "")
     {
@@ -323,6 +335,7 @@ main(int argc, char *argv[])
         size_t nthreads = omp_get_max_threads();
         #endif
         std::vector<warthog::cpd::oracle_listener*> listeners(nthreads);
+        std::vector<warthog::sn_id_t> nodes = range(cfg, g.get_num_nodes());
 
         // We have to explicitly create and pass the different (sub-) types of
         // oracles and listeners or it messes with the template resolution.
@@ -339,7 +352,7 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::REVERSE>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    g, cpd, listeners, cpd_filename, nodes, reverse, seed,
                     verbose);
             }
 
@@ -354,7 +367,7 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::BEARING>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    g, cpd, listeners, cpd_filename, nodes, reverse, seed,
                     verbose);
             }
 
@@ -369,7 +382,7 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::TABLE>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    g, cpd, listeners, cpd_filename, nodes, reverse, seed,
                     verbose);
             }
 
@@ -385,7 +398,7 @@ main(int argc, char *argv[])
                 }
 
                 return make_cpd<warthog::cpd::FORWARD>(
-                    g, cpd, listeners, cpd_filename, reverse, from, to, seed,
+                    g, cpd, listeners, cpd_filename, nodes, reverse, seed,
                     verbose);
             }
         }
