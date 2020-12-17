@@ -593,6 +593,7 @@ main(int argc, char *argv[])
     // Register signal handlers
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
+    signal(SIGABRT, signalHandler);
 
     if (alg_name == "cpd-search")
     {
