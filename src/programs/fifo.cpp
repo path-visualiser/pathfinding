@@ -381,6 +381,17 @@ run_table_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
     warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
     read_oracle<warthog::cpd::TABLE>(cfg, xy_filename, oracle);
 
+    std::string s_div = cfg.get_param_value("div");
+    std::string s_mod = cfg.get_param_value("mod");
+    if (s_div != "")
+    {
+        oracle.set_div(std::stoi(s_div));
+    }
+    if (s_mod != "")
+    {
+        oracle.set_mod(std::stoi(s_mod));
+    }
+
     for (auto& alg: algos)
     {
         warthog::simple_graph_expansion_policy* expander =
@@ -529,6 +540,9 @@ main(int argc, char *argv[])
             {"input", required_argument, 0, 1},
             {"fifo",  required_argument, 0, 1},
             {"alg",   required_argument, 0, 1},
+            {"div",   required_argument, 0, 1},
+            {"mod",   required_argument, 0, 1},
+            {"num",   required_argument, 0, 1},
             // {"problem",  required_argument, 0, 1},
             {0,  0, 0, 0}
         };

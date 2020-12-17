@@ -43,7 +43,7 @@ class graph_oracle_base
 {
     public: 
         graph_oracle_base(warthog::graph::xy_graph* g)
-             : g_(g)
+             : g_(g), div_(1), mod_(0)
         {
             order_.resize(g_->get_num_nodes());
             fm_.resize(g_->get_num_nodes());
@@ -351,15 +351,47 @@ class graph_oracle_base
         }
 
         inline fm_coll
-        get_edge_label(warthog::search_node* from, uint32_t edge_id) {
-          return elabels[from->get_id()][edge_id];
+        get_edge_label(warthog::search_node* from, uint32_t edge_id)
+        {
+            return elabels[from->get_id()][edge_id];
         }
+
+        // TODO should only be used with reverse schemes
+        std::vector<warthog::cpd::rle_run32>&
+        get_row(warthog::sn_id_t target_id)
+        {
+            size_t row_id;
+            if(div_ > 1)
+            {
+                row_id = target_id / div_;
+            }
+            else if(mod_ > 0)
+            {
+                row_id = target_id % mod_;
+            }
+            else
+            {
+                row_id = target_id;
+            }
+
+            return fm_.at(row_id);
+        }
+
+        void
+        set_div(uint32_t div)
+        { div_ = div; }
+
+        void
+        set_mod(uint32_t mod)
+        { mod_ = mod; }
 
     private:
         std::vector<std::vector<warthog::cpd::rle_run32>> fm_;
         std::vector<std::vector<warthog::cpd::fm_coll>> elabels;
         std::vector<uint32_t> order_;
         warthog::graph::xy_graph* g_;
+        uint32_t div_;
+        uint32_t mod_;
 
         void init_edge_labels() {
           for (uint32_t i=0; i<g_->get_num_nodes(); i++) {
@@ -436,10 +468,9 @@ inline uint32_t
 graph_oracle_base<warthog::cpd::REVERSE>::get_move(
     warthog::sn_id_t source_id, warthog::sn_id_t target_id)
 {
+    std::vector<warthog::cpd::rle_run32>& row = get_row(target_id);
+    if(row.size() == 0) { return warthog::cpd::CPD_FM_NONE; }
 
-    if(fm_.at(target_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
-
-    std::vector<warthog::cpd::rle_run32>& row = fm_.at(target_id);
     uint32_t target_index = order_.at(source_id);
     uint32_t begin = binary_find_row(target_index, row);
 
@@ -521,10 +552,9 @@ inline uint32_t
 warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>::get_move(
     warthog::sn_id_t source_id, warthog::sn_id_t target_id)
 {
+    std::vector<warthog::cpd::rle_run32>& row = get_row(target_id);
+    if(row.size() == 0) { return warthog::cpd::CPD_FM_NONE; }
 
-    if(fm_.at(target_id).size() == 0) { return warthog::cpd::CPD_FM_NONE; }
-
-    std::vector<warthog::cpd::rle_run32>& row = fm_.at(target_id);
     uint32_t index = order_.at(source_id);
     uint32_t entry = index / 8; // Which 32bit int contains the information
     uint8_t shift = (index % 8) * 4; // Where in the 32bit int is the fm
