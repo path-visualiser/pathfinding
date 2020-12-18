@@ -59,11 +59,9 @@ signalHandler(int signum)
 }
 
 std::string
-read_graph(warthog::util::cfg& cfg, warthog::graph::xy_graph& g)
+read_graph_and_diff(warthog::util::cfg& cfg, warthog::graph::xy_graph& g)
 {
     std::ifstream ifs;
-    // We first load the xy_graph and its diff as we need them to be *read* in
-    // reverse order.
     std::string xy_filename = cfg.get_param_value("input");
     if(xy_filename == "")
     {
@@ -86,24 +84,26 @@ read_graph(warthog::util::cfg& cfg, warthog::graph::xy_graph& g)
     if (diff_filename == "")
     {
         diff_filename = xy_filename + ".diff";
-        ifs.open(diff_filename);
-        if (!ifs.good())
-        {
-            std::cerr <<
-                "Could not open diff-graph: " << diff_filename << std::endl;
-            return "";
-        }
-
-        g.perturb(ifs);
-        ifs.close();
     }
+
+    ifs.open(diff_filename);
+    if (!ifs.good())
+    {
+        std::cerr <<
+            "Could not open diff-graph: " << diff_filename << std::endl;
+        return "";
+    }
+
+    g.perturb(ifs);
+    ifs.close();
 
     return xy_filename;
 }
 
 template<warthog::cpd::symbol S>
 void
-read_oracle(warthog::util::cfg& cfg, std::string xy_filename, warthog::cpd::graph_oracle_base<S>& oracle)
+read_oracle(warthog::util::cfg& cfg, std::string xy_filename,
+            warthog::cpd::graph_oracle_base<S>& oracle)
 {
     std::ifstream ifs;
     // read the cpd
@@ -324,7 +324,7 @@ void
 run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
                vector<warthog::search*> algos)
 {
-    std::string xy_filename = read_graph(cfg, g);
+    std::string xy_filename = read_graph_and_diff(cfg, g);
 
     // TODO Have better control flow
     if (xy_filename == "") { return; }
@@ -373,7 +373,7 @@ void
 run_table_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
                  vector<warthog::search*> algos)
 {
-    std::string xy_filename = read_graph(cfg, g);
+    std::string xy_filename = read_graph_and_diff(cfg, g);
 
     // TODO Have better control flow
     if (xy_filename == "") { return; }
