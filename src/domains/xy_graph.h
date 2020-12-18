@@ -392,14 +392,14 @@ class xy_graph_base
         void
         perturb(std::istream& in)
         {
-            uint32_t num_nodes;
-            uint32_t num_edges;
+            uint32_t num_nodes = 0;
+            uint32_t num_edges = 0;
             std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
             std::vector<std::pair<int32_t, int32_t>> xy;
             std::vector<warthog::graph::ECAP_T> in_degree;
             std::vector<warthog::graph::ECAP_T> out_degree;
 
-            parse_xy(
+            warthog::graph::parse_xy(
                 in, num_nodes, num_edges, edges, xy, in_degree, out_degree);
             assert(num_nodes == nodes_.size());
 
@@ -439,21 +439,21 @@ class xy_graph_base
             uint32_t num_modif = 0;
             for (auto e : edges)
             {
-              uint32_t from_id = e.first;
-              node* from = get_node(from_id);
-              edge_iter eit = from->find_edge(e.second.node_id_);
+                uint32_t from_id = e.first;
+                node* from = get_node(from_id);
+                edge_iter eit = from->find_edge(e.second.node_id_);
 
-              if (eit != from->outgoing_end())
-              {
-                  // Save the original value as the label
-                  eit->label_ = cpd::wt_to_label(eit->wt_);
-                  if (eit->wt_ != e.second.wt_)
-                  {
-                      num_modif++;
-                      eit->wt_ = e.second.wt_;
-                  }
-              }
-              // TODO else add warning (from log.h?)
+                if (eit != from->outgoing_end())
+                {
+                    // Save the original value as the label
+                    eit->label_ = cpd::wt_to_label(eit->wt_);
+                    if (eit->wt_ != e.second.wt_)
+                    {
+                        num_modif++;
+                        eit->wt_ = e.second.wt_;
+                    }
+                }
+                // TODO else add warning (from log.h?)
             }
 
             // The important bit: update the graph's id when perturbating
