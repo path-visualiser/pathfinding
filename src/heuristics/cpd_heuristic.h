@@ -57,8 +57,12 @@ class cpd_heuristic_base
             graph::xy_graph* g = cpd_->get_graph();
             cache_.resize(g->get_num_nodes());
             stack_.reserve(4096);
-            // Label all edges
-            g->perturb(*g);
+            // TODO Have an actual field?
+            if(g->get_id() == 0)
+            {
+                // Label all edges
+                g->perturb(*g);
+            }
         }
 
         ~cpd_heuristic_base() { }
