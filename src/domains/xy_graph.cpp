@@ -28,7 +28,7 @@ warthog::graph::gridmap_to_xy_graph(
             { continue; }
 
             // add graph node (we scale up all costs and coordinates)
-            id_map[from_gm_id] = next_graph_id;
+            id_map.at(from_gm_id) = next_graph_id;
             g->set_xy(next_graph_id,
                 (int32_t)(x * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR),
                 (int32_t)(y * warthog::graph::GRID_TO_GRAPH_SCALE_FACTOR));
@@ -45,7 +45,7 @@ warthog::graph::gridmap_to_xy_graph(
             // standard constraints on grid moves re; e.g. corner cutting
             uint32_t from_graph_id;
             {
-                from_graph_id = id_map[y*gm->header_width() + x];
+                from_graph_id = id_map.at(y*gm->header_width() + x);
                 assert(from_graph_id < next_graph_id);
             }
 
@@ -62,7 +62,7 @@ warthog::graph::gridmap_to_xy_graph(
                     uint32_t nei_x, nei_y;
                     gm->to_unpadded_xy((uint32_t)nei->get_id(), nei_x, nei_y);
                     uint32_t to_gm_id = nei_y * gm->header_width() + nei_x;
-                    to_graph_id = id_map[to_gm_id];
+                    to_graph_id = id_map.at(to_gm_id);
                     assert(from_graph_id != to_graph_id);
                     assert(to_graph_id < next_graph_id);
                 }
@@ -110,8 +110,8 @@ warthog::graph::dimacs_to_xy_graph(
     for(warthog::dimacs_parser::edge_iterator it = dimacs.edges_begin();
             it != dimacs.edges_end(); it++)
     {
-        in_deg[it->head_id_ - offset]++;
-        out_deg[it->tail_id_ - offset]++;
+        in_deg.at(it->head_id_ - offset)++;
+        out_deg.at(it->tail_id_ - offset)++;
     }
 
     // allocate memory for edges
@@ -120,7 +120,7 @@ warthog::graph::dimacs_to_xy_graph(
     {
         uint32_t nid = (*it).id_ - offset;
         g.get_node(nid)->capacity(
-            store_incoming_edges ? in_deg[nid] : 0, out_deg[nid]);
+            store_incoming_edges ? in_deg.at(nid) : 0, out_deg[nid]);
         g.set_xy(nid, (*it).x_, (*it).y_);
     }
 
@@ -227,7 +227,7 @@ warthog::graph::parse_xy(
             uint32_t id;
             int32_t x, y;
             in >> id >> x >> y;
-            xy[id] = std::pair<int32_t, int32_t>(x, y);
+            xy.at(id) = std::pair<int32_t, int32_t>(x, y);
             in >> std::ws; // trailing whitespace
             n_added++;
         }
@@ -238,14 +238,14 @@ warthog::graph::parse_xy(
             warthog::graph::edge_cost_t cost;
 
             in >> from_id >> to_id >> cost;
-            edges[e_added] =
+            edges.at(e_added) =
                 std::pair<uint32_t, warthog::graph::edge>
                     (from_id, warthog::graph::edge(to_id, cost));
 
-            assert(out_degree[from_id] != warthog::graph::ECAP_MAX);
-            assert(out_degree[to_id] != warthog::graph::ECAP_MAX);
-            out_degree[from_id]++;
-            in_degree[to_id]++;
+            assert(out_degree.at(from_id) != warthog::graph::ECAP_MAX);
+            assert(out_degree.at(to_id) != warthog::graph::ECAP_MAX);
+            out_degree.at(from_id)++;
+            in_degree.at(to_id)++;
             e_added++;
         }
     }
