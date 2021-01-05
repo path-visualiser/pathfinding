@@ -45,3 +45,5 @@ src/tags
 src/testdata
 src/*log
 src/*results*
+src/dev
+src/fast
