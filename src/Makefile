@@ -33,7 +33,7 @@ endif
 
 .EXPORT_ALL_VARIABLES:
 
-.PHONY: all info dev fast default
+.PHONY: all info dev fast default cleaner
 
 default:
 	+$(MAKE) fast main
@@ -42,6 +42,11 @@ default:
 all:
 	+$(MAKE) fast
 	+$(MAKE) dev
+
+# clean is handled in 'make.file'
+cleaner:
+	@-$(RM) -rf ./fast
+	@-$(RM) -rf ./dev
 
 fast: CFLAGS += -O3 -DNDEBUG -Wno-unused-variable
 fast: fast/Makefile
