@@ -31,10 +31,15 @@ endif
 
 .EXPORT_ALL_VARIABLES:
 
-.PHONY: all info dev fast
+.PHONY: all info dev fast default
 
+default:
+	+$(MAKE) fast main
+
+# These need to be explicitly split
 all:
-	+$(MAKE) -C fast
+	+$(MAKE) fast
+	+$(MAKE) dev
 
 fast: CFLAGS += -O3 -DNDEBUG -Wno-unused-variable
 fast: fast/Makefile
