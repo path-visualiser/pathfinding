@@ -1,6 +1,6 @@
 # -*- mode: makefile -*-
 
-all: main extras__
+all: main convert extras test
 
 .PHONY: clean
 clean:
@@ -8,24 +8,13 @@ clean:
 	@-$(RM) -rf ./build/*
 	@-$(RM) ./lib/*
 
-main: $(warthog)
-	@echo "linking..."
-	@$(shell mkdir -p $(@D))
-	$(CXX) ../programs/warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/roadhog.cpp -o ./bin/roadhog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/mapf.cpp -o ./bin/mapf -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+main: bin/warthog bin/roadhog bin/mapf
 
-extras__: $(warthog)
-	@echo "linking..."
-	@$(shell mkdir -p $(@D))
-	$(CXX) ../programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/dimacs2xy.cpp -o ./bin/dimacs2xy -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/grid2graph.cpp -o ./bin/grid2graph -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/make_cpd.cpp -o ./bin/make_cpd -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) -fopenmp
-	$(CXX) ../test/cpd_search.cpp -o ./bin/test_cpd_search -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CXX) ../programs/fifo.cpp -o ./bin/fifo -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) -fopenmp
+extras: bin/ch bin/fifo bin/make_cpd
+
+convert: bin/dimacs2xy bin/dimacs2metis bin/grid2graph
+
+test: bin/tests test/cpd_search
 
 $(warthog): $(WARTHOG_OBJ)
 	@echo "###  Archiving object files ###"
