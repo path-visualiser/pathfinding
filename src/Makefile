@@ -68,3 +68,7 @@ info:
 	@echo "Options:"
 	@echo "  fast          build with opti flags"
 	@echo "  dev           build with debug info"
+
+# Gobble extra targets
+%:
+	@true
