@@ -43,7 +43,7 @@ $(warthog): $(WARTHOG_OBJ)
 # Warthog objects as single targets
 build/%.o: ../%.cpp
 	@$(shell mkdir -p $(@D))
-	$(CXX) -c $< -MMD -o $@ $(CFLAGS) $(D_INCLUDES)
+	$(CXX) -c $< -o $@ $(CFLAGS) $(D_INCLUDES) -MMD -MP -MT $@ -MF $(@:.o=.d)
 
 # Warthog executables as single targets
 bin/%: ../programs/%.cpp $(warthog)
