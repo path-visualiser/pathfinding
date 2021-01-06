@@ -15,6 +15,8 @@ D_WARTHOG_INCLUDES = -I../ -I../domains -I../util -I../search -I../experimental 
 D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include
 D_LIBS = -L./lib -L/usr/local/lib
 
+warthog = ./lib/libwarthog.a
+
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion \
 	-Wno-unused-result -Wno-unused-but-set-variable
 # PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG
