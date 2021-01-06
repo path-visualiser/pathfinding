@@ -18,7 +18,7 @@ D_LIBS = -L./lib -L/usr/local/lib
 warthog = ./lib/libwarthog.a
 
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion \
-	-Wno-unused-result -Wno-unused-but-set-variable
+	-Wno-unused-result -Wno-unused-but-set-variable -fopenmp
 # PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
