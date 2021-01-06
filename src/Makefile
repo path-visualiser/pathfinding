@@ -21,6 +21,8 @@ CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion \
 	-Wno-unused-result -Wno-unused-but-set-variable -fopenmp
 # PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG
 
+FLAVOURS = fast dev debug
+
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
   CC = g++
   CFLAGS += -DOS_MAC
@@ -33,21 +35,31 @@ endif
 
 .EXPORT_ALL_VARIABLES:
 
-.PHONY: all info dev fast default cleaner
+.PHONY: all help default clean cleaner $(FLAVOURS)
+
+.SILENT: all clean cleaner
 
 default:
 	+$(MAKE) fast main
 
 # These need to be explicitly split
 all:
-	+$(MAKE) fast
-	+$(MAKE) dev
+	for dir in $(FLAVOURS); do \
+		$(MAKE) $$dir; \
+	done
 
-# clean is handled in 'make.file'
+clean:
+	for dir in $(FLAVOURS); do \
+		$(MAKE) -C $$dir clean; \
+	done
+
 cleaner:
-	@-$(RM) -rf ./fast
-	@-$(RM) -rf ./dev
+	for dir in $(FLAVOURS); do \
+		$(RM) -rf $$dir; \
+	done
 
+# We need to call make explicitly on the subdirs as they are the ones deciding
+# what needs to run.
 fast: CFLAGS += -O3 -DNDEBUG -Wno-unused-variable
 fast: fast/Makefile
 # Little hack: the first argument is read as the subdir
@@ -57,19 +69,21 @@ dev: CFLAGS += -ggdb -O0 -gdwarf-4 -no-pie -DSINGLE_THREADED -DQUICK_LOG=1
 dev: dev/Makefile
 	+$(MAKE) -C $(MAKECMDGOALS)
 
-fast/Makefile: make.file
+debug: CFLAGS += -ggdb -O3 -gdwarf-4 -no-pie -DQUICK_LOG=3
+debug: debug/Makefile
+	+$(MAKE) -C $(MAKECMDGOALS)
+
+# Generate the Makefile of the appropriate flavour
+%/Makefile: make.file
 	@$(shell mkdir -p $(@D))
 	@$(shell cp $< $@)
 
-dev/Makefile: make.file
-	@$(shell mkdir -p $(@D))
-	@$(shell cp $< $@)
-
-info:
+help:
 	@echo "Compile warthog in different flavours, the executables will be built"
 	@echo "in their respective directory."
 	@echo ""
-	@echo "Usage:   make [fast | dev] <target>"
+	@echo "Usage:   make <flavour> <target>"
+	@echo "Flavours: $(FLAVOURS)"
 	@echo "Options:"
 	@echo "  fast          build with opti flags"
 	@echo "  dev           build with debug info"
