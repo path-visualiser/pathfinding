@@ -44,3 +44,8 @@ bin/%: ../programs/%.cpp $(warthog)
 	@echo "linking..."
 	@$(shell mkdir -p $(@D))
 	$(CXX) $< -o $@ -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+
+test/%: ../test/%.cpp $(warthog)
+	@echo "linking..."
+	@$(shell mkdir -p $(@D))
+	$(CXX) $< -o $@ -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
