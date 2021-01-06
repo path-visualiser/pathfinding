@@ -39,7 +39,13 @@ warthog: $(WARTHOG_OBJ)
 
 -include $(WARTHOG_OBJ:.o=.d)
 
+# Warthog objects as single targets
 build/%.o: ../%.cpp
-	@echo "compiling..."
-	@mkdir -p $(@D)
+	@$(shell mkdir -p $(@D))
 	$(CXX) -c $< -MMD -o $@ $(CFLAGS) $(D_INCLUDES)
+
+# Warthog executables as single targets
+bin/%: ../programs/%.cpp warthog
+	@echo "linking..."
+	@$(shell mkdir -p ./bin)
+	$(CXX) $< -o $@ -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
