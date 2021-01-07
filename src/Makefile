@@ -64,13 +64,15 @@ help:														## Print this message
 ##@ Cleaning
 
 clean:													## Clean build artifacts, can be run as a flavour
+ifeq ($(firstword $(MAKECMDGOALS)), clean) # Only run if invoked directly
 	for dir in $(FLAVOURS); do \
-		$(MAKE) -C $$dir clean; \
+		if [ -d $$dir ]; then $(MAKE) -C $$dir clean; fi \
 	done
+endif
 
 cleaner:												## Remove sub-directories
 	for dir in $(FLAVOURS); do \
-		$(RM) -rf $$dir; \
+		if [ -d $$dir ]; then $(RM) -rf $$dir; fi \
 	done
 
 ##@ Flavours
