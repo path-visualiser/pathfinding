@@ -31,7 +31,7 @@ typedef std::tuple<unsigned int, // Nodes expanded
 typedef struct config
 {
     double hscale = 1.0;                // Modifier for heuristic's value
-    double fscale = 1.0;                // Quality tolerance
+    double fscale = 0.0;                // Quality tolerance
     double time = DBL_MAX;
     uint32_t itrs = warthog::INF32;
     uint32_t k_moves = warthog::INF32;
