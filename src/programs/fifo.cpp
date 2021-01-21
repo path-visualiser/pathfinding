@@ -43,6 +43,8 @@ typedef warthog::sn_id_t t_query;
 
 // Defaults
 std::string fifo = "/tmp/warthog.fifo";
+std::vector<warthog::search*> algos;
+warthog::util::cfg cfg;
 
 //
 // - Functions
@@ -58,7 +60,7 @@ signalHandler(int signum)
 }
 
 std::string
-read_graph_and_diff(warthog::util::cfg& cfg, warthog::graph::xy_graph& g)
+read_graph_and_diff(warthog::graph::xy_graph& g)
 {
     std::ifstream ifs;
     std::string xy_filename = cfg.get_param_value("input");
@@ -101,8 +103,7 @@ read_graph_and_diff(warthog::util::cfg& cfg, warthog::graph::xy_graph& g)
 
 template<warthog::cpd::symbol S>
 void
-read_oracle(warthog::util::cfg& cfg, std::string xy_filename,
-            warthog::cpd::graph_oracle_base<S>& oracle)
+read_oracle(std::string xy_filename, warthog::cpd::graph_oracle_base<S>& oracle)
 {
     std::ifstream ifs;
     // read the cpd
@@ -130,8 +131,7 @@ read_oracle(warthog::util::cfg& cfg, std::string xy_filename,
  * configration object, an output pipe and a list of queries and processes them.
  */
 void
-run_search(std::vector<warthog::search*>& algos, conf_fn& apply_conf,
-           config& conf, const std::string& fifo_out,
+run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
            const std::vector<t_query> &reqs, double t_read)
 {
   assert(reqs.size() % 2 == 0);
@@ -247,7 +247,7 @@ run_search(std::vector<warthog::search*>& algos, conf_fn& apply_conf,
  * It then passes the data to the search function before calling itself again.
  */
 void
-reader(std::vector<warthog::search*>& algos, conf_fn& apply_conf)
+reader(conf_fn& apply_conf)
 {
     std::ifstream fd;
     config conf;
@@ -313,23 +313,22 @@ reader(std::vector<warthog::search*>& algos, conf_fn& apply_conf)
 
         if (lines.size() > 0)
         {
-            run_search(algos, apply_conf, conf, fifo_out, lines,
+            run_search(apply_conf, conf, fifo_out, lines,
                        t.elapsed_time_nano());
         }
     }
 }
 
 void
-run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-               std::vector<warthog::search*> algos)
+run_cpd_search(warthog::graph::xy_graph &g)
 {
-    std::string xy_filename = read_graph_and_diff(cfg, g);
+    std::string xy_filename = read_graph_and_diff(g);
 
     // TODO Have better control flow
     if (xy_filename == "") { return; }
 
     warthog::cpd::graph_oracle oracle(&g);
-    read_oracle<warthog::cpd::FORWARD>(cfg, xy_filename, oracle);
+    read_oracle<warthog::cpd::FORWARD>(xy_filename, oracle);
 
     for (auto& alg: algos)
     {
@@ -365,20 +364,19 @@ run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
         alg->set_quality_cutoff(conf.fscale);
     };
 
-    reader(algos, apply_conf);
+    reader(apply_conf);
 }
 
 void
-run_table_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-                 std::vector<warthog::search*> algos)
+run_table_search(warthog::graph::xy_graph &g)
 {
-    std::string xy_filename = read_graph_and_diff(cfg, g);
+    std::string xy_filename = read_graph_and_diff(g);
 
     // TODO Have better control flow
     if (xy_filename == "") { return; }
 
     warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
-    read_oracle<warthog::cpd::TABLE>(cfg, xy_filename, oracle);
+    read_oracle<warthog::cpd::TABLE>(xy_filename, oracle);
 
     std::string s_div = cfg.get_param_value("div");
     std::string s_mod = cfg.get_param_value("mod");
@@ -425,12 +423,11 @@ run_table_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
         alg->set_quality_cutoff(conf.fscale);
     };
 
-    reader(algos, apply_conf);
+    reader(apply_conf);
 }
 
 void
-run_table(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-          std::vector<warthog::search*> algos)
+run_table(warthog::graph::xy_graph &g)
 {
     std::string xy_filename = cfg.get_param_value("input");
     if(xy_filename == "")
@@ -444,7 +441,7 @@ run_table(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
     ifs.close();
 
     warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
-    read_oracle<warthog::cpd::TABLE>(cfg, xy_filename, oracle);
+    read_oracle<warthog::cpd::TABLE>(xy_filename, oracle);
 
     std::string s_div = cfg.get_param_value("div");
     std::string s_mod = cfg.get_param_value("mod");
@@ -475,12 +472,11 @@ run_table(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
         alg->set_max_k_moves(conf.k_moves);
     };
 
-    reader(algos, apply_conf);
+    reader(apply_conf);
 }
 
 void
-run_cpd(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-        std::vector<warthog::search*> algos)
+run_cpd(warthog::graph::xy_graph &g)
 {
     std::string xy_filename = cfg.get_param_value("input");
     if(xy_filename == "")
@@ -527,12 +523,11 @@ run_cpd(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
         alg->set_max_k_moves(conf.k_moves);
     };
 
-    reader(algos, apply_conf);
+    reader(apply_conf);
 }
 
 void
-run_bch(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-        std::vector<warthog::search*> algos)
+run_bch()
 {
     std::string chd_file = cfg.get_param_value("input");
     if(chd_file == "")
@@ -570,7 +565,7 @@ run_bch(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
     conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
     {};
 
-    reader(algos, apply_conf);
+    reader(apply_conf);
 }
 
 /**
@@ -596,7 +591,6 @@ main(int argc, char *argv[])
             {0,  0, 0, 0}
         };
 
-    warthog::util::cfg cfg;
     warthog::graph::xy_graph g;
 
     cfg.parse_args(argc, argv, "-f", valid_args);
@@ -614,8 +608,6 @@ main(int argc, char *argv[])
         std::cerr << "parameter is missing: --alg\n";
         return EXIT_FAILURE;
     }
-
-    std::vector<warthog::search*> algos;
 
 #ifdef SINGLE_THREADED
     algos.resize(1);
@@ -646,24 +638,24 @@ main(int argc, char *argv[])
 
     if (alg_name == "cpd-search")
     {
-        run_cpd_search(cfg, g, algos);
+        run_cpd_search(g);
     }
     else if (alg_name == "table-oracle")
     {
         // CPD Search with reverse move table
-        run_table_search(cfg, g, algos);
+        run_table_search(g);
     }
     else if (alg_name == "cpd")
     {
-        run_cpd(cfg, g, algos);
+        run_cpd(g);
     }
     else if (alg_name == "table")
     {
-        run_table(cfg, g, algos);
+        run_table(g);
     }
     else if (alg_name == "bch")
     {
-        run_bch(cfg, g, algos);
+        run_bch();
     }
     else
     {
