@@ -38,9 +38,8 @@
 #include "timer.h"
 #include "xy_graph.h"
 
-using namespace std;
-
 typedef std::function<void(warthog::search*, config&)> conf_fn;
+typedef warthog::sn_id_t t_query;
 
 // Defaults
 std::string fifo = "/tmp/warthog.fifo";
@@ -131,7 +130,7 @@ read_oracle(warthog::util::cfg& cfg, std::string xy_filename,
  * configration object, an output pipe and a list of queries and processes them.
  */
 void
-run_search(vector<warthog::search*>& algos, conf_fn& apply_conf,
+run_search(std::vector<warthog::search*>& algos, conf_fn& apply_conf,
            config& conf, const std::string& fifo_out,
            const std::vector<t_query> &reqs, double t_read)
 {
@@ -248,12 +247,12 @@ run_search(vector<warthog::search*>& algos, conf_fn& apply_conf,
  * It then passes the data to the search function before calling itself again.
  */
 void
-reader(vector<warthog::search*>& algos, conf_fn& apply_conf)
+reader(std::vector<warthog::search*>& algos, conf_fn& apply_conf)
 {
-    ifstream fd;
+    std::ifstream fd;
     config conf;
-    string fifo_out;
-    vector<t_query> lines;
+    std::string fifo_out;
+    std::vector<t_query> lines;
     warthog::timer t;
 
     while (true)
@@ -322,7 +321,7 @@ reader(vector<warthog::search*>& algos, conf_fn& apply_conf)
 
 void
 run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-               vector<warthog::search*> algos)
+               std::vector<warthog::search*> algos)
 {
     std::string xy_filename = read_graph_and_diff(cfg, g);
 
@@ -371,7 +370,7 @@ run_cpd_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
 
 void
 run_table_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-                 vector<warthog::search*> algos)
+                 std::vector<warthog::search*> algos)
 {
     std::string xy_filename = read_graph_and_diff(cfg, g);
 
@@ -481,7 +480,7 @@ run_table(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
 
 void
 run_cpd(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-        vector<warthog::search*> algos)
+        std::vector<warthog::search*> algos)
 {
     std::string xy_filename = cfg.get_param_value("input");
     if(xy_filename == "")
@@ -533,7 +532,7 @@ run_cpd(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
 
 void
 run_bch(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
-        vector<warthog::search*> algos)
+        std::vector<warthog::search*> algos)
 {
     std::string chd_file = cfg.get_param_value("input");
     if(chd_file == "")
@@ -616,7 +615,7 @@ main(int argc, char *argv[])
         return EXIT_FAILURE;
     }
 
-    vector<warthog::search*> algos;
+    std::vector<warthog::search*> algos;
 
 #ifdef SINGLE_THREADED
     algos.resize(1);

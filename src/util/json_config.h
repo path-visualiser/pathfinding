@@ -13,8 +13,6 @@
 //
 // - Definitions
 //
-typedef warthog::sn_id_t t_query;
-
 typedef std::tuple<unsigned int, // Nodes expanded
                    unsigned int, // Nodes inserted
                    unsigned int, // Nodes touched
