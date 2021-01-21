@@ -134,31 +134,31 @@ void
 run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
            const std::vector<t_query> &reqs, double t_read)
 {
-  assert(reqs.size() % 2 == 0);
-  size_t n_results = reqs.size() / 2;
-  // Statistics
-  unsigned int n_expanded = 0;
-  unsigned int n_inserted = 0;
-  unsigned int n_touched = 0;
-  unsigned int n_updated = 0;
-  unsigned int n_surplus = 0;
-  unsigned int plen = 0;
-  unsigned int finished = 0;
-  double t_astar = 0;
+    assert(reqs.size() % 2 == 0);
+    size_t n_results = reqs.size() / 2;
+    // Statistics
+    unsigned int n_expanded = 0;
+    unsigned int n_inserted = 0;
+    unsigned int n_touched = 0;
+    unsigned int n_updated = 0;
+    unsigned int n_surplus = 0;
+    unsigned int plen = 0;
+    unsigned int finished = 0;
+    double t_astar = 0;
 
 #ifdef SINGLE_THREADED
-  unsigned int threads = 1;
+    unsigned int threads = 1;
 #else
-  unsigned int threads = conf.threads;
+    unsigned int threads = conf.threads;
 #endif
 
-  warthog::timer t;
-  user(conf.verbose, "Preparing to process", n_results, "queries using",
-       (int)threads, "threads.");
+    warthog::timer t;
+    user(conf.verbose, "Preparing to process", n_results, "queries using",
+         (int)threads, "threads.");
 
-  t.start();
+    t.start();
 
-#pragma omp parallel num_threads(threads)                          \
+#pragma omp parallel num_threads(threads)                               \
     reduction(+ : t_astar, n_expanded, n_inserted, n_touched, n_updated, \
               n_surplus, plen, finished)
     {
@@ -353,8 +353,8 @@ run_cpd_search(warthog::graph::xy_graph &g)
             warthog::simple_graph_expansion_policy,
             warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
                 warthog::cpd_heuristic,
-                warthog::simple_graph_expansion_policy,
-                warthog::pqueue_min>*>(base);
+                                                        warthog::simple_graph_expansion_policy,
+                                                        warthog::pqueue_min>*>(base);
 
         // Setup algo's config; we assume sane inputs
         alg->get_heuristic()->set_hscale(conf.hscale);
@@ -412,8 +412,8 @@ run_table_search(warthog::graph::xy_graph &g)
             warthog::simple_graph_expansion_policy,
             warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
                 warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
-                warthog::simple_graph_expansion_policy,
-                warthog::pqueue_min>*>(base);
+                                                        warthog::simple_graph_expansion_policy,
+                                                        warthog::pqueue_min>*>(base);
 
         // Setup algo's config; we assume sane inputs
         alg->get_heuristic()->set_hscale(conf.hscale);
