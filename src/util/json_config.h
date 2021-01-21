@@ -35,7 +35,6 @@ typedef struct config
     double time = DBL_MAX;
     uint32_t itrs = warthog::INF32;
     uint32_t k_moves = warthog::INF32;
-    uint32_t prefix = 0;
     unsigned char threads = 0;
     bool verbose = VERBOSE;
     bool debug = false;
@@ -46,9 +45,8 @@ to_json(nlohmann::json& j, const config& c)
 {
     j = {
         {"hscale", c.hscale}, {"fscale", c.fscale}, {"time", c.time},
-        {"itrs", c.itrs}, {"k_moves", c.k_moves}, {"prefix", c.prefix},
-        {"threads", c.threads}, {"verbose", c.verbose},
-        {"debug", c.debug}
+        {"itrs", c.itrs}, {"k_moves", c.k_moves}, {"threads", c.threads},
+        {"verbose", c.verbose}, {"debug", c.debug}
     };
 }
 
@@ -60,7 +58,6 @@ from_json(const nlohmann::json& j, config &c)
     j.at("time").get_to(c.time);
     j.at("itrs").get_to(c.itrs);
     j.at("k_moves").get_to(c.k_moves);
-    j.at("prefix").get_to(c.prefix);
     j.at("threads").get_to(c.threads);
     j.at("verbose").get_to(c.verbose);
     j.at("debug").get_to(c.debug);
@@ -107,8 +104,6 @@ sanitise_conf(config& conf)
 
     if (conf.time == 0)
     { conf.time = DBL_MAX; }
-
-    // Do not touch conf.prefix
 
     // Enforce single threaded or use max threads
 #ifdef SINGLE_THREADED

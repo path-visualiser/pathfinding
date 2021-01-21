@@ -229,8 +229,8 @@ run_search(vector<warthog::search*>& algos, conf_fn& apply_conf,
     debug(conf.verbose, "Spawned a writer on", fifo_out);
     out << n_expanded << "," << n_inserted << "," << n_touched << ","
         << n_updated << "," << n_surplus << "," << plen << ","
-        << finished << "," << t_astar << "," << t.elapsed_time_nano() + t_read
-        << std::endl;
+        << finished << "," << t_read << "," << t_astar << ","
+        << t.elapsed_time_nano() << std::endl;
 
     if (fifo_out != "-") { of.close(); }
 }
