@@ -430,6 +430,56 @@ run_table_search(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
 }
 
 void
+run_table(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
+          std::vector<warthog::search*> algos)
+{
+    std::string xy_filename = cfg.get_param_value("input");
+    if(xy_filename == "")
+    {
+        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        return;
+    }
+
+    std::ifstream ifs(xy_filename);
+    ifs >> g;
+    ifs.close();
+
+    warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
+    read_oracle<warthog::cpd::TABLE>(cfg, xy_filename, oracle);
+
+    std::string s_div = cfg.get_param_value("div");
+    std::string s_mod = cfg.get_param_value("mod");
+
+    if (s_div != "")
+    {
+        oracle.set_div(std::atoi(s_div.c_str()));
+    }
+    else if (s_mod != "")       // can only have one
+    {
+        oracle.set_mod(std::atoi(s_mod.c_str()));
+    }
+
+    for (auto& alg: algos)
+    {
+        alg = new warthog::cpd_extractions_base<warthog::cpd::TABLE>(
+            &g, &oracle);
+    }
+
+    user(VERBOSE, "Loaded", algos.size(), "search.");
+
+    conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
+    {
+        warthog::cpd_extractions_base<warthog::cpd::TABLE>* alg =
+            static_cast<warthog::cpd_extractions_base<warthog::cpd::TABLE>*>(
+                base);
+
+        alg->set_max_k_moves(conf.k_moves);
+    };
+
+    reader(algos, apply_conf);
+}
+
+void
 run_cpd(warthog::util::cfg &cfg, warthog::graph::xy_graph &g,
         vector<warthog::search*> algos)
 {
@@ -607,6 +657,10 @@ main(int argc, char *argv[])
     else if (alg_name == "cpd")
     {
         run_cpd(cfg, g, algos);
+    }
+    else if (alg_name == "table")
+    {
+        run_table(cfg, g, algos);
     }
     else if (alg_name == "bch")
     {
