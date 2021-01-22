@@ -163,8 +163,8 @@ run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
               n_surplus, plen, finished)
     {
         // Parallel data
-        const int thread_count = omp_get_num_threads();
-        const int thread_id = omp_get_thread_num();
+        unsigned int thread_count = omp_get_num_threads();
+        unsigned int thread_id = omp_get_thread_num();
 
         warthog::timer t_thread;
         warthog::solution sol;
@@ -172,10 +172,18 @@ run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
 
         apply_conf(alg, conf);
 
-        // Instead of bothering with manual conversiong (think 'ceil()'), we use
-        // the magic of "usual arithmetic" to achieve the right from/to values.
-        size_t step = n_results * thread_id, from = step / thread_count,
+        size_t from = 0;
+        size_t to = n_results;
+
+        if (!conf.thread_alloc)
+        {
+            // Instead of bothering with manual conversion (think 'ceil()'), we
+            // use the magic of "usual arithmetic" to achieve the right from/to
+            // values.
+            size_t step = n_results * thread_id;
+            from = step / thread_count;
             to = (step + n_results) / thread_count;
+        }
 
         t_thread.start();
         // Iterate over the *requests* then convert to ids ({o,d} pair)
@@ -184,6 +192,16 @@ run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
             size_t i = id * 2;
             warthog::sn_id_t start_id = reqs.at(i);
             warthog::sn_id_t target_id = reqs.at(i + 1);
+
+            // Allocate targets to threads.
+            //
+            // TODO Better thread alloc?
+            //
+            // TODO If we have `oracle.mod == thread_count` then only one core
+            // will work.
+            if (conf.thread_alloc && target_id % thread_count != thread_id)
+            { continue; }
+
             // Actual search
             warthog::problem_instance pi(start_id, target_id, conf.debug);
             alg->get_path(pi, sol);

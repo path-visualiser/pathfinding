@@ -36,6 +36,7 @@ typedef struct config
     unsigned char threads = 0;
     bool verbose = VERBOSE;
     bool debug = false;
+    bool thread_alloc = false;
 } config;
 
 void
@@ -44,7 +45,8 @@ to_json(nlohmann::json& j, const config& c)
     j = {
         {"hscale", c.hscale}, {"fscale", c.fscale}, {"time", c.time},
         {"itrs", c.itrs}, {"k_moves", c.k_moves}, {"threads", c.threads},
-        {"verbose", c.verbose}, {"debug", c.debug}
+        {"verbose", c.verbose}, {"debug", c.debug},
+        {"thread_alloc", c.thread_alloc}
     };
 }
 
@@ -59,6 +61,7 @@ from_json(const nlohmann::json& j, config &c)
     j.at("threads").get_to(c.threads);
     j.at("verbose").get_to(c.verbose);
     j.at("debug").get_to(c.debug);
+    j.at("thread_alloc").get_to(c.thread_alloc);
 }
 
 std::ostream&
