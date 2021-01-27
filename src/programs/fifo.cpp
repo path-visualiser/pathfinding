@@ -214,7 +214,7 @@ run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
             n_updated += sol.nodes_updated_;
             n_surplus += sol.nodes_surplus_;
             plen += sol.path_.size();
-            finished += sol.nodes_inserted_ > 0;
+            finished += sol.path_.back() == target_id;
         }
 
         t_thread.stop();
