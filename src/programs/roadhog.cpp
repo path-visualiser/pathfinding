@@ -183,7 +183,7 @@ run_experiments( warthog::search* algo, std::string alg_name,
             << touched / nruns << "\t"
             << surplus / nruns << "\t"
             << nano_time << "\t" /// (double)nruns << "\t"
-            << sol.sum_of_edge_costs_ << "\t"
+            << (long long)sol.sum_of_edge_costs_ << "\t"
             << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t"
             << parser.get_problemfile()
             << std::endl;
@@ -196,6 +196,8 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
 {
     std::cerr << "running experiments\n";
     std::cerr << "(averaging over " << nruns << " runs per instance)\n";
+
+    std::map<std::pair<uint32_t, uint32_t>, uint32_t> freq;
 
     if(!suppress_header)
     {
@@ -228,6 +230,11 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
             nano_time = nano_time < sol.time_elapsed_nano_
                             ?  nano_time : sol.time_elapsed_nano_;
         }
+        for (int i=0; i+1<(int)sol.path_.size(); i++) {
+          auto key = std::make_pair(sol.path_[i], sol.path_[i+1]);
+          if (freq.find(key) == freq.end()) freq[key] = 1;
+          else freq[key] += 1;
+        }
 
         out
             << exp_id++ <<"\t"
@@ -243,6 +250,16 @@ run_experiments( std::function<void(warthog::problem_instance*, warthog::solutio
             << parser.get_problemfile()
             << std::endl;
     }
+    std::ofstream ofs("scen.freq");
+    std::vector<std::pair<uint32_t, std::pair<uint32_t, uint32_t>>> ordered;
+    for (auto e: freq) 
+      ordered.push_back({e.second, e.first});
+    sort(ordered.begin(), ordered.end());
+    reverse(ordered.begin(), ordered.end());
+
+    ofs << ordered.size() << std::endl;
+    for (auto e: ordered)
+      ofs << e.second.first << " " << e.second.second << " " << e.first << std::endl;
 }
 
 void
@@ -842,6 +859,24 @@ run_fch_bb(warthog::util::cfg& cfg, warthog::dimacs_parser& parser,
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
+std::vector<std::pair<unsigned, warthog::graph::edge>>
+load_diff(std::string diff_file, warthog::graph::xy_graph& g)
+{
+  std::vector<std::pair<unsigned, warthog::graph::edge>> edges;
+  std::ifstream ifs(diff_file);
+  int num;
+  ifs >> num;
+  edges.resize(num);
+  for (int i=0; i<num; i++)
+  {
+    int u, v, w;
+    ifs >> u >> v >> w;
+    edges[i].first = u;
+    edges[i].second = warthog::graph::edge(v, w);
+  }
+  return edges;
+}
+
 void
 run_cpd_search(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
@@ -872,16 +907,8 @@ run_cpd_search(warthog::util::cfg& cfg,
     if (diff_filename == "")
     {
         diff_filename = xy_filename + ".diff";
-        ifs.open(diff_filename);
-        if (!ifs.good())
-        {
-            std::cerr <<
-                "Could not open diff-graph: " << diff_filename << std::endl;
-            return;
-        }
-
-        g.perturb(ifs);
-        ifs.close();
+        auto edges = load_diff(diff_filename, g);
+        g.perturb(edges);
     }
 
     // read the cpd (create from scratch if one doesn't exist)
