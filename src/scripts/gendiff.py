@@ -14,7 +14,7 @@ def random_perturbation(arcs):
     for i in range(num):
         u, v, w = arcs[i]
         r = random.uniform(rl, ru)
-        perturbed.append((u, v, w * r))
+        perturbed.append((u, v, int(w * r)))
     return perturbed
 
 
