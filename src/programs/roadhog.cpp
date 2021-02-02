@@ -888,7 +888,8 @@ run_cpd_search(warthog::util::cfg& cfg,
     std::string xy_filename = cfg.get_param_value("input");
     if(xy_filename == "")
     {
-        std::cerr << "parameter is missing: --input [xy-graph file]\n";
+        std::cerr << "parameter is missing: --input graph.xy [graph.xy.diff "
+                  << "[graph.xy.cpd]]\n";
         return;
     }
 
@@ -907,11 +908,20 @@ run_cpd_search(warthog::util::cfg& cfg,
     if (diff_filename == "")
     {
         diff_filename = xy_filename + ".diff";
-        auto edges = load_diff(diff_filename, g);
-        g.perturb(edges);
     }
 
-    // read the cpd (create from scratch if one doesn't exist)
+    ifs.open(diff_filename);
+    if (!ifs.good())
+    {
+        std::cerr <<
+            "Could not open diff-graph: " << diff_filename << std::endl;
+        return;
+    }
+
+    g.perturb(ifs);
+    ifs.close();
+
+    // read the cpd
     warthog::cpd::graph_oracle oracle(&g);
     std::string cpd_filename = cfg.get_param_value("input");
     if(cpd_filename == "")
