@@ -110,6 +110,7 @@ join_cpds(warthog::graph::xy_graph &g, std::string cpd_filename,
 {
     // Here, the type of the oracle does not matter.
     warthog::cpd::graph_oracle cpd(&g);
+    cpd.clear();                // Need to reset fm_
     cpd.compute_dfs_preorder(seed);
     // convert the column order into a map: from vertex id to its ordered index
     cpd.value_index_swap_array();
