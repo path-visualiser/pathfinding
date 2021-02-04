@@ -369,10 +369,11 @@ run_cpd_search(warthog::graph::xy_graph &g)
         warthog::cpd_search<
             warthog::cpd_heuristic,
             warthog::simple_graph_expansion_policy,
-            warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
-                warthog::cpd_heuristic,
-                                                        warthog::simple_graph_expansion_policy,
-                                                        warthog::pqueue_min>*>(base);
+            warthog::pqueue_min>* alg = static_cast<
+                warthog::cpd_search<
+                    warthog::cpd_heuristic,
+                    warthog::simple_graph_expansion_policy,
+                    warthog::pqueue_min>*>(base);
 
         // Setup algo's config; we assume sane inputs
         alg->get_heuristic()->set_hscale(conf.hscale);
@@ -428,10 +429,11 @@ run_table_search(warthog::graph::xy_graph &g)
         warthog::cpd_search<
             warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
             warthog::simple_graph_expansion_policy,
-            warthog::pqueue_min>* alg = static_cast<warthog::cpd_search<
-                warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
-                                                        warthog::simple_graph_expansion_policy,
-                                                        warthog::pqueue_min>*>(base);
+            warthog::pqueue_min>* alg = static_cast<
+                warthog::cpd_search<
+                    warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+                    warthog::simple_graph_expansion_policy,
+                    warthog::pqueue_min>*>(base);
 
         // Setup algo's config; we assume sane inputs
         alg->get_heuristic()->set_hscale(conf.hscale);
