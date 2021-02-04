@@ -19,6 +19,7 @@
 #include "cfg.h"
 #include "constants.h"
 #include "contraction.h"
+#include "cpd_extractions.h"
 #include "cpd_heuristic.h"
 #include "cpd_search.h"
 #include "depth_first_search.h"
@@ -188,78 +189,6 @@ run_experiments( warthog::search* algo, std::string alg_name,
             << parser.get_problemfile()
             << std::endl;
     }
-}
-
-void
-run_experiments( std::function<void(warthog::problem_instance*, warthog::solution*)>& algo_fn,
-        std::string alg_name, warthog::dimacs_parser& parser, std::ostream& out)
-{
-    std::cerr << "running experiments\n";
-    std::cerr << "(averaging over " << nruns << " runs per instance)\n";
-
-    std::map<std::pair<uint32_t, uint32_t>, uint32_t> freq;
-
-    if(!suppress_header)
-    {
-        std::cout
-            << "id\talg\texpanded\tinserted\tupdated\ttouched\tsurplus"
-            << "\tnanos\tpcost\tplen\tmap\n";
-    }
-    uint32_t exp_id = 0;
-    for(auto it = parser.experiments_begin();
-            it != parser.experiments_end();
-            it++)
-    {
-        warthog::dimacs_parser::experiment exp = (*it);
-        warthog::solution sol;
-        warthog::sn_id_t start_id = exp.source;
-        warthog::sn_id_t target_id = exp.p2p ? exp.target : warthog::INF32;
-        warthog::problem_instance pi(start_id, target_id, verbose);
-        uint32_t expanded=0, inserted=0, updated=0, touched=0, surplus=0;
-        double nano_time = DBL_MAX;
-        for(uint32_t i = 0; i < nruns; i++)
-        {
-            sol.reset();
-            algo_fn(&pi, &sol);
-
-            expanded += sol.nodes_expanded_;
-            inserted += sol.nodes_inserted_;
-            touched += sol.nodes_touched_;
-            updated += sol.nodes_updated_;
-            surplus += sol.nodes_surplus_;
-            nano_time = nano_time < sol.time_elapsed_nano_
-                            ?  nano_time : sol.time_elapsed_nano_;
-        }
-        for (int i=0; i+1<(int)sol.path_.size(); i++) {
-          auto key = std::make_pair(sol.path_[i], sol.path_[i+1]);
-          if (freq.find(key) == freq.end()) freq[key] = 1;
-          else freq[key] += 1;
-        }
-
-        out
-            << exp_id++ <<"\t"
-            << alg_name << "\t"
-            << expanded / nruns << "\t"
-            << inserted / nruns << "\t"
-            << updated / nruns << "\t"
-            << touched / nruns << "\t"
-            << surplus / nruns << "\t"
-            << nano_time << "\t" /// (double)nruns << "\t"
-            << sol.sum_of_edge_costs_ << "\t"
-            << (int32_t)((sol.path_.size() == 0) ? -1 : (int32_t)(sol.path_.size()-1)) << "\t"
-            << parser.get_problemfile()
-            << std::endl;
-    }
-    std::ofstream ofs("scen.freq");
-    std::vector<std::pair<uint32_t, std::pair<uint32_t, uint32_t>>> ordered;
-    for (auto e: freq) 
-      ordered.push_back({e.second, e.first});
-    sort(ordered.begin(), ordered.end());
-    reverse(ordered.begin(), ordered.end());
-
-    ofs << ordered.size() << std::endl;
-    for (auto e: ordered)
-      ofs << e.second.first << " " << e.second.second << " " << e.first << std::endl;
 }
 
 void
@@ -1032,45 +961,9 @@ run_cpd(warthog::util::cfg& cfg,
         return;
     }
 
-    warthog::cpd_graph_expansion_policy expander(&oracle);
-    warthog::zero_heuristic h;
-    warthog::pqueue_min open;
+    warthog::cpd_extractions cpd_extract(&g, &oracle);
 
-    // the "algorithm"
-    std::function<void(warthog::problem_instance*, warthog::solution*)>
-            cpd_extract =
-    [&oracle, &g] (warthog::problem_instance* pi, warthog::solution* sol) -> void
-    {
-        warthog::timer mytimer;
-        mytimer.start();
-
-        warthog::sn_id_t source_id = pi->start_id_;
-        warthog::sn_id_t target_id = pi->target_id_;
-
-        // NB: we store the actual path in addition to simply extracting it
-        sol->sum_of_edge_costs_ = 0;
-        if(source_id != target_id)
-        {
-            while(source_id != target_id)
-            {
-                sol->path_.push_back(source_id);
-
-                uint32_t move = oracle.get_move(source_id, target_id);
-                warthog::graph::node* n = g.get_node(source_id);
-                warthog::graph::edge* e = (n->outgoing_begin() + move);
-                source_id = e->node_id_;
-                sol->sum_of_edge_costs_ += e->wt_;
-                sol->nodes_touched_++;
-            }
-        }
-        sol->path_.push_back(source_id);
-
-        mytimer.stop();
-        sol->time_elapsed_nano_ = mytimer.elapsed_time_nano();
-    };
-
-    run_experiments(cpd_extract, alg_name, parser, std::cout);
-
+    run_experiments(&cpd_extract, alg_name, parser, std::cout);
 }
 
 void
