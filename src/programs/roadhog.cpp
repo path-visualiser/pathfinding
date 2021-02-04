@@ -925,6 +925,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     run_experiments(&alg, alg_name, parser, std::cout);
 }
 
+template<warthog::cpd::symbol SYM>
 void
 run_cpd(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
@@ -942,7 +943,7 @@ run_cpd(warthog::util::cfg& cfg,
     ifs >> g;
     ifs.close();
 
-    warthog::cpd::graph_oracle oracle(&g);
+    warthog::cpd::graph_oracle_base<SYM> oracle(&g);
     std::string cpd_filename = cfg.get_param_value("cpd");
     if(cpd_filename == "")
     {
@@ -961,7 +962,7 @@ run_cpd(warthog::util::cfg& cfg,
         return;
     }
 
-    warthog::cpd_extractions cpd_extract(&g, &oracle);
+    warthog::cpd_extractions_base<SYM> cpd_extract(&g, &oracle);
 
     run_experiments(&cpd_extract, alg_name, parser, std::cout);
 }
@@ -1127,7 +1128,11 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "cpd")
     {
-        run_cpd(cfg, parser, alg_name);
+        run_cpd<warthog::cpd::FORWARD>(cfg, parser, alg_name);
+    }
+    else if(alg_name == "table")
+    {
+        run_cpd<warthog::cpd::TABLE>(cfg, parser, alg_name);
     }
     else if(alg_name == "dfs")
     {
