@@ -62,7 +62,7 @@ long nruns = 1;
 void
 help()
 {
-	std::cerr
+    std::cerr
     << "==> manual <==\n"
     << "This program solves point-to-point pathfinding problems on road networks.\n"
     << "Road networks are specified as xy-graphs and collections of instances are \n"
@@ -77,8 +77,8 @@ help()
     << "\t--alg [ algorithm name (required) ]\n"
     << "\t--input [ algorithm-specific input files (omit to show options) ] \n"
     << "\t--problem [ ss or p2p problem file (required) ]\n"
-	<< "\t--verbose (print debug info; omitting this param means no)\n"
-	<< "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
+    << "\t--verbose (print debug info; omitting this param means no)\n"
+    << "\t--nruns [int (repeats per instance; default=" << nruns << ")]\n"
     << "\nRecognised values for --alg:\n"
     << "\tastar, astar-bb, dijkstra, bi-astar, bi-dijkstra\n"
     << "\tbch, bch-astar, bch-bb, fch, fch-bb\n"
@@ -1254,29 +1254,29 @@ run_dimacs(warthog::util::cfg& cfg)
 int
 main(int argc, char** argv)
 {
-	// parse arguments
-	warthog::util::param valid_args[] =
-	{
-		{"alg",  required_argument, 0, 1},
-		{"nruns",  required_argument, 0, 1},
-		{"help", no_argument, &print_help, 1},
-		{"checkopt",  no_argument, &checkopt, 1},
-		{"verbose",  no_argument, &verbose, 1},
-		{"noheader",  no_argument, &suppress_header, 1},
-		{"input",  required_argument, 0, 1},
-		{"problem",  required_argument, 0, 1},
+    // parse arguments
+    warthog::util::param valid_args[] =
+    {
+        {"alg",  required_argument, 0, 1},
+        {"nruns",  required_argument, 0, 1},
+        {"help", no_argument, &print_help, 1},
+        {"checkopt",  no_argument, &checkopt, 1},
+        {"verbose",  no_argument, &verbose, 1},
+        {"noheader",  no_argument, &suppress_header, 1},
+        {"input",  required_argument, 0, 1},
+        {"problem",  required_argument, 0, 1},
         {"fscale", required_argument, 0, 1},
         {"uslim", required_argument, 0, 1},
         {"kmoves", required_argument, 0, 1},
-		{0,  0, 0, 0}
-	};
+        {0,  0, 0, 0}
+    };
 
-	warthog::util::cfg cfg;
-	cfg.parse_args(argc, argv, "-f", valid_args);
+    warthog::util::cfg cfg;
+    cfg.parse_args(argc, argv, "-f", valid_args);
 
     if(argc == 1 || print_help)
     {
-		help();
+        help();
         exit(0);
     }
 
