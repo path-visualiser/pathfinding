@@ -378,6 +378,12 @@ class graph_oracle_base
         }
 
         void
+        set_row(size_t row_id, std::vector<warthog::cpd::rle_run32>& row)
+        {
+            fm_.at(row_id) = row;
+        }
+
+        void
         set_div(uint32_t div)
         { div_ = div; }
 

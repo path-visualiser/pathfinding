@@ -54,8 +54,17 @@ range(size_t from, size_t to, size_t node_count)
  */
 int
 join_cpds(warthog::graph::xy_graph &g, std::string cpd_filename,
-          std::vector<std::string> file_list, uint32_t seed, bool verbose)
+          std::vector<std::string> file_list, uint32_t seed, bool verbose,
+          uint32_t mod)
 {
+    uint32_t step = 0;
+    std::vector<warthog::sn_id_t> nodes;
+
+    if (mod > 1)
+    {
+        nodes = modulo(0, mod, g.get_num_nodes());
+    }
+
     // Here, the type of the oracle does not matter.
     warthog::cpd::graph_oracle cpd(&g);
     cpd.clear();                // Need to reset fm_
@@ -77,7 +86,20 @@ join_cpds(warthog::graph::xy_graph &g, std::string cpd_filename,
         ifs >> part;
         ifs.close();
 
-        cpd.append_fm(part);
+        // Need to do it by hand as the rows are not consecutive
+        if (mod > 1)
+        {
+            for (auto n : nodes)
+            {
+                cpd.set_row(step + n, part.get_row(n));
+            }
+        }
+        else
+        {
+            cpd.append_fm(part);
+        }
+
+        step++;
     }
 
     std::ofstream ofs(cpd_filename);
@@ -292,6 +314,105 @@ main(int argc, char *argv[])
                   << std::endl;
     }
 
+    uint32_t mod = 0;
+    uint32_t num = 0;
+    uint32_t from = 0;
+    uint32_t to = 0;
+    uint32_t node_count = g.get_num_nodes();
+
+    // TODO Message to inform that only one can be used?
+    if (cfg.get_num_values("mod") > 0)
+    {
+        std::string s_mod = cfg.get_param_value("mod");
+        std::string s_num = cfg.get_param_value("num");
+
+        // TODO this should be a try/catch block
+        if (s_mod != "")
+        {
+            mod = std::stoi(s_mod);
+
+            if (mod < 1)
+            {
+                std::cerr << "The modulo must be >= 1, got: " << s_mod
+                          << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
+        if (s_num != "")
+        {
+            num = std::stoi(s_num);
+
+            if (num < 0)
+            {
+                std::cerr << "The offset must be >= 0, got: " << s_num
+                          << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+    }
+    else if (cfg.get_num_values("div") > 0)
+    {
+        std::string s_div = cfg.get_param_value("div");
+        std::string s_num = cfg.get_param_value("num");
+        int div = 0;
+
+        // TODO this should be a try/catch block
+        if (s_div != "") {
+            div = std::stoi(s_div);
+
+            if (div < 1) {
+                std::cerr << "The divisor must be >= 1, got: " << s_div
+                          << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
+        if (s_num != "")
+        {
+            num = std::stoi(s_num);
+
+            if (num < 0)
+            {
+                std::cerr << "The offset must be >= 0, got: " << s_num
+                          << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
+        int range = g.get_num_nodes() / div;
+        from = range * num;
+        to = std::max<size_t>(from + range, g.get_num_nodes());
+        node_count = to - from;
+    }
+    else
+    {
+        std::string s_from = cfg.get_param_value("from");
+        std::string s_to = cfg.get_param_value("to");
+
+        if (s_from != "")
+        {
+            from = std::stoi(s_from);
+
+            if (from < 0)
+            {
+                std::cerr << "Argument --from [node id] cannot be negative."
+                          << std::endl;
+                return EXIT_FAILURE;
+            }
+        }
+
+        if (s_to != "")
+        {
+            to = std::stoi(s_to);
+        }
+
+        if (to <= 0 || node_count < (uint32_t) to)
+        {
+            to = node_count;
+        }
+    }
+
     std::string s_seed = cfg.get_param_value("seed");
     uint32_t seed;
 
@@ -317,7 +438,7 @@ main(int argc, char *argv[])
             names.push_back(part);
         }
 
-        return join_cpds(g, cpd_filename, names, seed, verbose);
+        return join_cpds(g, cpd_filename, names, seed, verbose, mod);
     }
     else
     {
@@ -329,107 +450,12 @@ main(int argc, char *argv[])
         std::vector<warthog::cpd::oracle_listener*> listeners(nthreads);
         std::vector<warthog::sn_id_t> nodes;
 
-        // TODO Message to inform that only one can be used?
-        if (cfg.get_num_values("mod") > 0)
+        if (mod > 1)
         {
-            std::string s_mod = cfg.get_param_value("mod");
-            std::string s_num = cfg.get_param_value("num");
-            int mod = 0;
-            int num = 0;
-
-            // TODO this should be a try/catch block
-            if (s_mod != "")
-            {
-                mod = std::stoi(s_mod);
-
-                if (mod < 1)
-                {
-                    std::cerr << "The modulo must be >= 1, got: " << s_mod
-                              << std::endl;
-                    return EXIT_FAILURE;
-                }
-            }
-
-            if (s_num != "")
-            {
-                num = std::stoi(s_num);
-
-                if (num < 0)
-                {
-                    std::cerr << "The offset must be >= 0, got: " << s_num
-                              << std::endl;
-                    return EXIT_FAILURE;
-                }
-            }
-
-            nodes = modulo(num, mod, g.get_num_nodes());
-        }
-        else if (cfg.get_num_values("div") > 0)
-        {
-            std::string s_div = cfg.get_param_value("div");
-            std::string s_num = cfg.get_param_value("num");
-            int div = 0;
-            int num = 0;
-
-            // TODO this should be a try/catch block
-            if (s_div != "") {
-                div = std::stoi(s_div);
-
-                if (div < 1) {
-                    std::cerr << "The divisor must be >= 1, got: " << s_div
-                              << std::endl;
-                    return EXIT_FAILURE;
-                }
-            }
-
-            if (s_num != "")
-            {
-                num = std::stoi(s_num);
-
-                if (num < 0)
-                {
-                    std::cerr << "The offset must be >= 0, got: " << s_num
-                              << std::endl;
-                    return EXIT_FAILURE;
-                }
-            }
-
-            size_t node_count = g.get_num_nodes() / div;
-            size_t from = node_count * num;
-            size_t to = std::max<size_t>(from + node_count, g.get_num_nodes());
-
-            nodes = range(from, to, to - from);
+            nodes = modulo(num, mod, node_count);
         }
         else
         {
-            std::string s_from = cfg.get_param_value("from");
-            std::string s_to = cfg.get_param_value("to");
-            size_t node_count = g.get_num_nodes();
-            int from = 0;
-            int to = -1;
-
-            if (s_from != "")
-            {
-                from = std::stoi(s_from);
-
-                if (from < 0)
-                {
-                    std::cerr << "Argument --from [node id] cannot be negative."
-                              << std::endl;
-                    return EXIT_FAILURE;
-                }
-            }
-
-            if (s_to != "")
-            {
-                to = std::stoi(s_to);
-            }
-
-            if (to < 0 || node_count < (uint32_t) to)
-            {
-                to = node_count;
-            }
-
             nodes = range(from, to, node_count);
         }
 
