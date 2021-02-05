@@ -18,36 +18,11 @@
 #include "xy_graph.h"
 
 std::vector<warthog::sn_id_t>
-modulo(warthog::util::cfg &cfg, size_t node_count)
+modulo(size_t num, size_t mod, size_t node_count)
 {
     std::vector<warthog::sn_id_t> nodes;
-    std::string s_mod = cfg.get_param_value("mod");
-    std::string s_num = cfg.get_param_value("num");
-    int mod = 0;
-    int num = 0;
-
-    // TODO this should be a try/catch block
-    if (s_mod != "")
-    {
-        mod = std::stoi(s_mod);
-
-        if (mod < 1)
-        {
-            std::cerr << "The modulo must be >= 1, got: " << s_mod << std::endl;
-            return nodes;
-        }
-    }
-
-    if (s_num != "")
-    {
-        num = std::stoi(s_num);
-
-        if (num < 0)
-        {
-            std::cerr << "The offset must be >= 0, got: " << s_num << std::endl;
-            return nodes;
-        }
-    }
+    assert(num > 0);
+    assert(mod > 1);
 
     for (warthog::sn_id_t i = num; i < node_count; i += mod)
     {
@@ -58,36 +33,9 @@ modulo(warthog::util::cfg &cfg, size_t node_count)
 }
 
 std::vector<warthog::sn_id_t>
-range(warthog::util::cfg &cfg, size_t node_count)
+range(size_t from, size_t to, size_t node_count)
 {
     std::vector<warthog::sn_id_t> nodes;
-    std::string s_from = cfg.get_param_value("from");
-    std::string s_to = cfg.get_param_value("to");
-    int from = 0;
-    int to = -1;
-
-    if (s_from != "")
-    {
-        from = std::stoi(s_from);
-
-        if (from < 0)
-        {
-            std::cerr << "Argument --from [node id] cannot be negative."
-                      << std::endl;
-            return nodes;
-        }
-    }
-
-    if (s_to != "")
-    {
-        to = std::stoi(s_to);
-    }
-
-    if (to < 0 || node_count < (uint32_t) to)
-    {
-        to = node_count;
-    }
-
     assert(to > 0);
     assert(from < to);
     assert((unsigned int)from < node_count);
@@ -250,6 +198,7 @@ main(int argc, char *argv[])
         {"from", required_argument, 0, 1},
         {"to", required_argument, 0, 1},
         {"mod", required_argument, 0, 1},
+        {"div", required_argument, 0, 1},
         {"num", required_argument, 0, 1},
         {"input", required_argument, 0, 1},
         {"output", required_argument, 0, 1},
@@ -383,11 +332,69 @@ main(int argc, char *argv[])
         // TODO Message to inform that only one can be used?
         if (cfg.get_num_values("mod") > 0)
         {
-            nodes = modulo(cfg, g.get_num_nodes());
+            std::string s_mod = cfg.get_param_value("mod");
+            std::string s_num = cfg.get_param_value("num");
+            int mod = 0;
+            int num = 0;
+
+            // TODO this should be a try/catch block
+            if (s_mod != "")
+            {
+                mod = std::stoi(s_mod);
+
+                if (mod < 1)
+                {
+                    std::cerr << "The modulo must be >= 1, got: " << s_mod
+                              << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+
+            if (s_num != "")
+            {
+                num = std::stoi(s_num);
+
+                if (num < 0)
+                {
+                    std::cerr << "The offset must be >= 0, got: " << s_num
+                              << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+
+            nodes = modulo(num, mod, g.get_num_nodes());
         }
         else
         {
-            nodes = range(cfg, g.get_num_nodes());
+            std::string s_from = cfg.get_param_value("from");
+            std::string s_to = cfg.get_param_value("to");
+            size_t node_count = g.get_num_nodes();
+            int from = 0;
+            int to = -1;
+
+            if (s_from != "")
+            {
+                from = std::stoi(s_from);
+
+                if (from < 0)
+                {
+                    std::cerr << "Argument --from [node id] cannot be negative."
+                              << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+
+            if (s_to != "")
+            {
+                to = std::stoi(s_to);
+            }
+
+            if (to < 0 || node_count < (uint32_t) to)
+            {
+                to = node_count;
+            }
+
+            nodes = range(from, to, node_count);
         }
 
         // We have to explicitly create and pass the different (sub-) types of
