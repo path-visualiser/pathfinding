@@ -364,6 +364,42 @@ main(int argc, char *argv[])
 
             nodes = modulo(num, mod, g.get_num_nodes());
         }
+        else if (cfg.get_num_values("div") > 0)
+        {
+            std::string s_div = cfg.get_param_value("div");
+            std::string s_num = cfg.get_param_value("num");
+            int div = 0;
+            int num = 0;
+
+            // TODO this should be a try/catch block
+            if (s_div != "") {
+                div = std::stoi(s_div);
+
+                if (div < 1) {
+                    std::cerr << "The divisor must be >= 1, got: " << s_div
+                              << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+
+            if (s_num != "")
+            {
+                num = std::stoi(s_num);
+
+                if (num < 0)
+                {
+                    std::cerr << "The offset must be >= 0, got: " << s_num
+                              << std::endl;
+                    return EXIT_FAILURE;
+                }
+            }
+
+            size_t node_count = g.get_num_nodes() / div;
+            size_t from = node_count * num;
+            size_t to = std::max<size_t>(from + node_count, g.get_num_nodes());
+
+            nodes = range(from, to, to - from);
+        }
         else
         {
             std::string s_from = cfg.get_param_value("from");
