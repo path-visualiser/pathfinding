@@ -806,6 +806,7 @@ load_diff(std::string diff_file, warthog::graph::xy_graph& g)
   return edges;
 }
 
+template<warthog::cpd::symbol SYM>
 void
 run_cpd_search(warthog::util::cfg& cfg,
     warthog::dimacs_parser& parser, std::string alg_name)
@@ -851,7 +852,7 @@ run_cpd_search(warthog::util::cfg& cfg,
     ifs.close();
 
     // read the cpd
-    warthog::cpd::graph_oracle oracle(&g);
+    warthog::cpd::graph_oracle_base<SYM> oracle(&g);
     std::string cpd_filename = cfg.get_param_value("input");
     if(cpd_filename == "")
     {
@@ -871,11 +872,11 @@ run_cpd_search(warthog::util::cfg& cfg,
     }
 
     warthog::simple_graph_expansion_policy expander(&g);
-    warthog::cpd_heuristic h(&oracle, 1.0);
+    warthog::cpd_heuristic_base<SYM> h(&oracle, 1.0);
     warthog::pqueue_min open;
 
     warthog::cpd_search<
-        warthog::cpd_heuristic,
+        warthog::cpd_heuristic_base<SYM>,
         warthog::simple_graph_expansion_policy,
         warthog::pqueue_min>
             alg(&h, &expander, &open);
@@ -1124,7 +1125,11 @@ run_dimacs(warthog::util::cfg& cfg)
     }
     else if(alg_name == "cpd-search")
     {
-        run_cpd_search(cfg, parser, alg_name);
+        run_cpd_search<warthog::cpd::FORWARD>(cfg, parser, alg_name);
+    }
+    else if(alg_name == "table-search")
+    {
+        run_cpd_search<warthog::cpd::TABLE>(cfg, parser, alg_name);
     }
     else if(alg_name == "cpd")
     {
