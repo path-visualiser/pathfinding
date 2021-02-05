@@ -944,7 +944,7 @@ run_cpd(warthog::util::cfg& cfg,
     ifs.close();
 
     warthog::cpd::graph_oracle_base<SYM> oracle(&g);
-    std::string cpd_filename = cfg.get_param_value("cpd");
+    std::string cpd_filename = cfg.get_param_value("input");
     if(cpd_filename == "")
     {
         cpd_filename = xy_filename + ".cpd";
@@ -1015,7 +1015,7 @@ run_cpd_dfs(warthog::util::cfg& cfg,
     ifs.close();
 
     warthog::cpd::graph_oracle oracle(&g);
-    std::string cpd_filename = cfg.get_param_value("cpd");
+    std::string cpd_filename = cfg.get_param_value("input");
     if(cpd_filename == "")
     {
         cpd_filename = xy_filename + ".cpd";
