@@ -660,7 +660,7 @@ main(int argc, char *argv[])
     {
         run_cpd_search(g);
     }
-    else if (alg_name == "table-oracle")
+    else if (alg_name == "table-search")
     {
         // CPD Search with reverse move table
         run_table_search(g);
