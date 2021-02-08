@@ -34,6 +34,7 @@
 #include "json.hpp"
 #include "json_config.h"
 #include "log.h"
+#include "noop_search.h"
 #include "solution.h"
 #include "timer.h"
 #include "xy_graph.h"
@@ -588,6 +589,23 @@ run_bch()
     reader(apply_conf);
 }
 
+void
+run_noop()
+{
+    for (auto& alg: algos)
+    {
+        alg = new warthog::noop_search();
+    }
+
+    user(VERBOSE, "Loaded", algos.size(), "search.");
+
+    conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
+    {};
+
+    reader(apply_conf);
+}
+
+
 /**
  * The main takes care of loading the data and spawning the reader thread.
  */
@@ -676,6 +694,10 @@ main(int argc, char *argv[])
     else if (alg_name == "bch")
     {
         run_bch();
+    }
+    else if (alg_name == "noop")
+    {
+        run_noop();
     }
     else
     {
