@@ -258,6 +258,11 @@ main(int argc, char *argv[])
     else if (type == "table")
     {
         cpd_type = warthog::cpd::TABLE;
+        reverse = false;
+    }
+    else if (type == "rev-table")
+    {
+        cpd_type = warthog::cpd::REV_TABLE;
         reverse = true;
     }
     else
@@ -303,6 +308,9 @@ main(int argc, char *argv[])
                 break;
             case warthog::cpd::TABLE:
                 cpd_filename += "-table";
+                break;
+            case warthog::cpd::REV_TABLE:
+                cpd_filename += "-rev-table";
                 break;
             default: // noop
                 break;
@@ -361,7 +369,8 @@ main(int argc, char *argv[])
         if (s_div != "") {
             div = std::stoi(s_div);
 
-            if (div < 1) {
+            if (div < 1)
+            {
                 std::cerr << "The divisor must be >= 1, got: " << s_div
                           << std::endl;
                 return EXIT_FAILURE;
@@ -469,8 +478,8 @@ main(int argc, char *argv[])
 
                 for (size_t t = 0; t < nthreads; t++)
                 {
-                    listeners.at(t) =
-                        new warthog::cpd::reverse_oracle_listener(&cpd);
+                    listeners.at(t) = new warthog::cpd::reverse_oracle_listener<
+                            warthog::cpd::REVERSE>(&cpd);
                 }
 
                 return make_cpd<warthog::cpd::REVERSE>(
@@ -499,11 +508,26 @@ main(int argc, char *argv[])
 
                 for (size_t t = 0; t < nthreads; t++)
                 {
-                    listeners.at(t) =
-                        new warthog::cpd::table_oracle_listener(&cpd);
+                    listeners.at(t) = new warthog::cpd::graph_oracle_listener<
+                        warthog::cpd::TABLE>(&cpd);
                 }
 
                 return make_cpd<warthog::cpd::TABLE>(
+                    g, cpd, listeners, cpd_filename, nodes, reverse, seed,
+                    verbose);
+            }
+
+            case warthog::cpd::REV_TABLE:
+            {
+                warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE> cpd(&g);
+
+                for (size_t t = 0; t < nthreads; t++)
+                {
+                    listeners.at(t) = new warthog::cpd::reverse_oracle_listener<
+                        warthog::cpd::REV_TABLE>(&cpd);
+                }
+
+                return make_cpd<warthog::cpd::REV_TABLE>(
                     g, cpd, listeners, cpd_filename, nodes, reverse, seed,
                     verbose);
             }
@@ -515,8 +539,8 @@ main(int argc, char *argv[])
 
                 for (size_t t = 0; t < nthreads; t++)
                 {
-                    listeners.at(t) =
-                        new warthog::cpd::graph_oracle_listener(&cpd);
+                    listeners.at(t) = new warthog::cpd::graph_oracle_listener<
+                        warthog::cpd::FORWARD>(&cpd);
                 }
 
                 return make_cpd<warthog::cpd::FORWARD>(

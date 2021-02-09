@@ -1131,6 +1131,10 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_cpd_search<warthog::cpd::TABLE>(cfg, parser, alg_name);
     }
+    else if(alg_name == "rev-table-search")
+    {
+        run_cpd_search<warthog::cpd::REV_TABLE>(cfg, parser, alg_name);
+    }
     else if(alg_name == "cpd")
     {
         run_cpd<warthog::cpd::FORWARD>(cfg, parser, alg_name);
@@ -1138,6 +1142,10 @@ run_dimacs(warthog::util::cfg& cfg)
     else if(alg_name == "table")
     {
         run_cpd<warthog::cpd::TABLE>(cfg, parser, alg_name);
+    }
+    else if(alg_name == "rev-table")
+    {
+        run_cpd<warthog::cpd::REV_TABLE>(cfg, parser, alg_name);
     }
     else if(alg_name == "dfs")
     {

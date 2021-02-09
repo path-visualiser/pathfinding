@@ -28,7 +28,6 @@
 #include "graph.h"
 #include "graph_expansion_policy.h"
 #include "xy_graph.h"
-#include <bits/stdint-uintn.h>
 
 namespace warthog
 {
@@ -36,7 +35,7 @@ namespace warthog
 namespace cpd
 {
 
-enum symbol {FORWARD, REVERSE, BEARING, TABLE};
+enum symbol {FORWARD, REVERSE, BEARING, TABLE, REV_TABLE};
 
 template<symbol T>
 class graph_oracle_base
@@ -553,15 +552,11 @@ graph_oracle_base<warthog::cpd::BEARING>::get_move(
 }
 
 // Finding a first move is a lookup, a mask and a shift
-template<>
 inline uint32_t
-warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>::get_move(
-    warthog::sn_id_t source_id, warthog::sn_id_t target_id)
+get_table_move(std::vector<warthog::cpd::rle_run32>& row, uint32_t index)
 {
-    std::vector<warthog::cpd::rle_run32>& row = get_row(target_id);
     if(row.size() == 0) { return warthog::cpd::CPD_FM_NONE; }
 
-    uint32_t index = order_.at(source_id);
     uint32_t entry = index / 8; // Which 32bit int contains the information
     uint8_t shift = (index % 8) * 4; // Where in the 32bit int is the fm
     uint32_t mask = 0xF << shift;
@@ -570,13 +565,36 @@ warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>::get_move(
     return (row.at(entry).data_ & mask) >> shift;
 }
 
+template<>
+inline uint32_t
+warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE>::get_move(
+    warthog::sn_id_t source_id, warthog::sn_id_t target_id)
+{
+    return get_table_move(get_row(target_id), order_.at(source_id));
+}
+
+template<>
+inline uint32_t
+warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>::get_move(
+    warthog::sn_id_t source_id, warthog::sn_id_t target_id)
+{
+    return get_table_move(get_row(source_id), order_.at(target_id));
+}
+
 // For some reason, this needs to be defined in the .cpp. But we cannot do the
 // same for `get_move()`...
+//
+// NOTE We *need* the header declaration otherwise the template resolution will
+//      always use the default.
 template<>
 void
 warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>::add_row(
     uint32_t target_id, std::vector<warthog::cpd::fm_coll>& row);
 
+template<>
+void
+warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE>::add_row(
+    uint32_t target_id, std::vector<warthog::cpd::fm_coll>& row);
 }
 
 }

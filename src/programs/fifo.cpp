@@ -395,8 +395,8 @@ run_table_search(warthog::graph::xy_graph &g)
     // TODO Have better control flow
     if (xy_filename == "") { return; }
 
-    warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
-    read_oracle<warthog::cpd::TABLE>(xy_filename, oracle);
+    warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE> oracle(&g);
+    read_oracle<warthog::cpd::REV_TABLE>(xy_filename, oracle);
 
     std::string s_div = cfg.get_param_value("div");
     std::string s_mod = cfg.get_param_value("mod");
@@ -413,12 +413,12 @@ run_table_search(warthog::graph::xy_graph &g)
     {
         warthog::simple_graph_expansion_policy* expander =
             new warthog::simple_graph_expansion_policy(&g);
-        warthog::cpd_heuristic_base<warthog::cpd::TABLE>* h =
-            new warthog::cpd_heuristic_base<warthog::cpd::TABLE>(&oracle, 1.0);
+        warthog::cpd_heuristic_base<warthog::cpd::REV_TABLE>* h =
+            new warthog::cpd_heuristic_base<warthog::cpd::REV_TABLE>(&oracle, 1.0);
         warthog::pqueue_min* open = new warthog::pqueue_min();
 
         alg = new warthog::cpd_search<
-            warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+            warthog::cpd_heuristic_base<warthog::cpd::REV_TABLE>,
             warthog::simple_graph_expansion_policy,
             warthog::pqueue_min>(h, expander, open);
     }
@@ -428,11 +428,11 @@ run_table_search(warthog::graph::xy_graph &g)
     conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
     {
         warthog::cpd_search<
-            warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+            warthog::cpd_heuristic_base<warthog::cpd::REV_TABLE>,
             warthog::simple_graph_expansion_policy,
             warthog::pqueue_min>* alg = static_cast<
                 warthog::cpd_search<
-                    warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+                    warthog::cpd_heuristic_base<warthog::cpd::REV_TABLE>,
                     warthog::simple_graph_expansion_policy,
                     warthog::pqueue_min>*>(base);
 
@@ -461,8 +461,8 @@ run_table(warthog::graph::xy_graph &g)
     ifs >> g;
     ifs.close();
 
-    warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
-    read_oracle<warthog::cpd::TABLE>(xy_filename, oracle);
+    warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE> oracle(&g);
+    read_oracle<warthog::cpd::REV_TABLE>(xy_filename, oracle);
 
     std::string s_div = cfg.get_param_value("div");
     std::string s_mod = cfg.get_param_value("mod");
@@ -478,7 +478,7 @@ run_table(warthog::graph::xy_graph &g)
 
     for (auto& alg: algos)
     {
-        alg = new warthog::cpd_extractions_base<warthog::cpd::TABLE>(
+        alg = new warthog::cpd_extractions_base<warthog::cpd::REV_TABLE>(
             &g, &oracle);
     }
 
@@ -486,8 +486,8 @@ run_table(warthog::graph::xy_graph &g)
 
     conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
     {
-        warthog::cpd_extractions_base<warthog::cpd::TABLE>* alg =
-            static_cast<warthog::cpd_extractions_base<warthog::cpd::TABLE>*>(
+        warthog::cpd_extractions_base<warthog::cpd::REV_TABLE>* alg =
+            static_cast<warthog::cpd_extractions_base<warthog::cpd::REV_TABLE>*>(
                 base);
 
         alg->set_max_k_moves(conf.k_moves);

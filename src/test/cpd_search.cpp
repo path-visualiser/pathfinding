@@ -339,7 +339,7 @@ SCENARIO("Test table lookup A* on a square matrix", "[table][square][astar]")
     warthog::gridmap d(map_name.c_str());
     warthog::graph::gridmap_to_xy_graph(&d, &g, false);
     warthog::simple_graph_expansion_policy expander(&g);
-    warthog::cpd::graph_oracle_base<warthog::cpd::TABLE> oracle(&g);
+    warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE> oracle(&g);
     // Needs to be created by hand
     std::string cpd_filename = "square01.xy-table.cpd";
     std::ifstream ifs(cpd_filename);
@@ -367,7 +367,7 @@ SCENARIO("Test table lookup A* on a square matrix", "[table][square][astar]")
     {
         THEN("We can perform extractions")
         {
-            warthog::cpd_extractions_base<warthog::cpd::TABLE> cpd(
+            warthog::cpd_extractions_base<warthog::cpd::REV_TABLE> cpd(
                 &g, &oracle);
             warthog::solution sol;
 
@@ -379,9 +379,9 @@ SCENARIO("Test table lookup A* on a square matrix", "[table][square][astar]")
         {
             warthog::solution sol;
             warthog::pqueue_min open;
-            warthog::cpd_heuristic_base<warthog::cpd::TABLE> h(&oracle);
+            warthog::cpd_heuristic_base<warthog::cpd::REV_TABLE> h(&oracle);
             warthog::cpd_search<
-                warthog::cpd_heuristic_base<warthog::cpd::TABLE>,
+                warthog::cpd_heuristic_base<warthog::cpd::REV_TABLE>,
                 warthog::simple_graph_expansion_policy>
                     astar(&h, &expander, &open);
 

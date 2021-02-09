@@ -40,10 +40,11 @@ class oracle_listener
 };
 
 // helps to precompute first-move data
+template<warthog::cpd::symbol SYM>
 class graph_oracle_listener final : public oracle_listener
 {
   public:
-    graph_oracle_listener(warthog::cpd::graph_oracle* oracle)
+    graph_oracle_listener(warthog::cpd::graph_oracle_base<SYM>* oracle)
         : oracle_(oracle) {}
 
     inline void
@@ -96,15 +97,16 @@ class graph_oracle_listener final : public oracle_listener
     }
 
   private:
-    warthog::cpd::graph_oracle* oracle_;
+    warthog::cpd::graph_oracle_base<SYM>* oracle_;
 };
 
 // helps to precompute first-move data, this time we build the rows in reverse.
+template<warthog::cpd::symbol SYM>
 class reverse_oracle_listener final : public oracle_listener
 {
   public:
     reverse_oracle_listener(
-        warthog::cpd::graph_oracle_base<warthog::cpd::REVERSE>* oracle)
+        warthog::cpd::graph_oracle_base<SYM>* oracle)
         : oracle_(oracle) {}
 
     inline void
@@ -148,7 +150,7 @@ class reverse_oracle_listener final : public oracle_listener
     }
 
   private:
-    warthog::cpd::graph_oracle_base<warthog::cpd::REVERSE>* oracle_;
+    warthog::cpd::graph_oracle_base<SYM>* oracle_;
 };
 
 // helps to precompute first-move data, this one does bearing compression on
@@ -231,51 +233,6 @@ class reverse_bearing_oracle_listener final : public oracle_listener
 
   private:
     warthog::cpd::graph_oracle_base<warthog::cpd::BEARING>* oracle_;
-};
-
-// helps to precompute the first-move data table (no compression), it is only in
-// reverse, the listener is the same as 'reverse_oracle_listener'.
-class table_oracle_listener final : public oracle_listener
-{
-  public:
-    table_oracle_listener(
-        warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>* oracle)
-        : oracle_(oracle) {}
-
-    inline void
-    generate_node(warthog::search_node *from, warthog::search_node *succ,
-                  warthog::cost_t edge_cost, uint32_t edge_id)
-    {
-        if(from == nullptr) { return; } // start node has no predecessor
-
-        double alt_g = from->get_g() + edge_cost;
-        double g_val =
-            succ->get_search_number() == from->get_search_number() ?
-            succ->get_g() : DBL_MAX;
-        // We record the optimal move towards a node which is the id of the
-        // predecessor's edge
-        graph::node* pred = oracle_->get_graph()->get_node(succ->get_id());
-        graph::edge_iter eit = pred->find_edge(from->get_id());
-        warthog::cpd::fm_coll fm = 1 << (eit - pred->outgoing_begin());
-
-        assert(eit != pred->outgoing_end());
-
-        //  update first move
-        if(alt_g < g_val)
-        {
-            s_row_->at(succ->get_id()) = fm;
-            assert(s_row_->at(succ->get_id()));
-        }
-
-        // add to the list of optimal first moves
-        if(alt_g == g_val)
-        {
-            s_row_->at(succ->get_id()) |= fm;
-        }
-    }
-
-  private:
-    warthog::cpd::graph_oracle_base<warthog::cpd::TABLE>* oracle_;
 };
 
 }
