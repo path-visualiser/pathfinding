@@ -55,19 +55,21 @@ class graph_oracle_listener final : public oracle_listener
 
         if(from->get_id() == *source_id_) // start node successors
         {
-            assert(edge_id < 8);
-            if (edge_id >= 8) {
-              std::cerr << "edge_id >= 8, exit" << std::endl;
-              exit(1);
-            }
+            // assert(edge_id < 8);
+            // if (edge_id >= 8) {
+            //   std::cerr << "edge_id >= 8, exit" << std::endl;
+            //   exit(1);
+            // }
             //assert(s_row_.at(succ->get_id()) == 0);
             assert(edge_id <
                         oracle_->get_graph()->get_node(
                         (uint32_t)*source_id_)->out_degree());
-            fm_coll redundant_mask = oracle_->get_edge_label(from, edge_id);
-            if (oracle_->get_graph()->get_node(from->get_id())->out_degree() == 1)
-              redundant_mask |= warthog::cpd::CPD_ALL_MOVE;
-            s_row_->at(succ->get_id()) = (1 << edge_id) | redundant_mask;
+            // TODO Cleanup
+            // fm_coll redundant_mask = oracle_->get_edge_label(from, edge_id);
+            // if (oracle_->get_graph()->get_node(from->get_id())->out_degree() == 1)
+            //   redundant_mask |= warthog::cpd::CPD_ALL_MOVE;
+            // s_row_->at(succ->get_id()) = (1 << edge_id) | redundant_mask;
+            s_row_->at(succ->get_id()) = 1 << edge_id;
             assert(s_row_->at(succ->get_id()));
         }
         else // all other nodes
@@ -126,11 +128,11 @@ class reverse_oracle_listener final : public oracle_listener
         warthog::cpd::fm_coll fm = 1 << (eit - pred->outgoing_begin());
         edge_id = (uint32_t)(eit - pred->outgoing_begin());
 
-        fm_coll redundant_mask = oracle_->get_edge_label(from, edge_id);
-        if (oracle_->get_graph()->get_node(succ->get_id())->out_degree() == 1)
-          redundant_mask |= warthog::cpd::CPD_ALL_MOVE;
+        // fm_coll redundant_mask = oracle_->get_edge_label(from, edge_id);
+        // if (oracle_->get_graph()->get_node(succ->get_id())->out_degree() == 1)
+        //   redundant_mask |= warthog::cpd::CPD_ALL_MOVE;
 
-        fm |= redundant_mask;
+        // fm |= redundant_mask;
 
         assert(eit != pred->outgoing_end());
 

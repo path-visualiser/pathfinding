@@ -46,8 +46,8 @@ class graph_oracle_base
         {
             order_.resize(g_->get_num_nodes());
             fm_.resize(g_->get_num_nodes());
-            elabels.resize(g_->get_num_nodes());
-            init_edge_labels();
+            // elabels.resize(g_->get_num_nodes());
+            // init_edge_labels();
         }
 
         graph_oracle_base() : g_(nullptr) { }
