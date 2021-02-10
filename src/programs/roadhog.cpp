@@ -1139,6 +1139,10 @@ run_dimacs(warthog::util::cfg& cfg)
     {
         run_cpd<warthog::cpd::FORWARD>(cfg, parser, alg_name);
     }
+    else if(alg_name == "rev-cpd")
+    {
+        run_cpd<warthog::cpd::REVERSE>(cfg, parser, alg_name);
+    }
     else if(alg_name == "table")
     {
         run_cpd<warthog::cpd::TABLE>(cfg, parser, alg_name);
