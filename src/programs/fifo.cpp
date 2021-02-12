@@ -271,6 +271,7 @@ reader(conf_fn& apply_conf)
     std::ifstream fd;
     config conf;
     std::string fifo_out;
+    std::string queries;
     std::vector<t_query> lines;
     warthog::timer t;
 
@@ -299,27 +300,41 @@ reader(conf_fn& apply_conf)
 
         trace(conf.verbose, conf);
 
-        // Read output pipe and size of input
-        size_t s = 0;
-        fd >> fifo_out >> s;
-        debug(conf.verbose, "Preparing to read", s, "items.");
+        // Read input query file and output pipe
+        fd >> queries >> fifo_out;
+        debug(conf.verbose, "Read queries from", queries);
         debug(conf.verbose, "Output to", fifo_out);
 
-        warthog::sn_id_t o, d;
-        size_t i = 0;
+        fd.close();
+        fd.open(queries);
 
-        lines.resize(s * 2);
-        while (fd >> o >> d)
+        if (!fd.good())
         {
-            lines.at(i) = o;
-            lines.at(i + 1) = d;
-            i += 2;
+            warning("Could not open", queries);
+            lines.clear();
+        }
+        else
+        {
+            warthog::sn_id_t o, d;
+            size_t s = 0;
+            size_t i = 0;
+
+            fd >> s;
+            lines.resize(s * 2);
+            debug(conf.verbose, "Preparing to read", s, "queries");
+            while (fd >> o >> d)
+            {
+                lines.at(i) = o;
+                lines.at(i + 1) = d;
+                i += 2;
+            }
+            assert(lines.size() == s * 2);
         }
         fd.close();                 // TODO check if we need to keep this open
         t.stop();
 
-        trace(conf.verbose, "Read", int(lines.size() / 2), "queries.");
-        assert(lines.size() == s * 2);
+        trace(conf.verbose, "Read", int(lines.size() / 2), "queries in ",
+              t.elapsed_time_micro(), "us");
 
         DO_ON_DEBUG_IF(conf.debug)
         {
