@@ -42,7 +42,7 @@ class graph_oracle_base
 {
     public: 
         graph_oracle_base(warthog::graph::xy_graph* g)
-             : g_(g), div_(1), mod_(0)
+             : g_(g), div_(1), mod_(0), offset_(0)
         {
             order_.resize(g_->get_num_nodes());
             fm_.resize(g_->get_num_nodes());
@@ -368,10 +368,17 @@ class graph_oracle_base
             {
                 row_id = target_id % mod_;
             }
+            else if(offset_ > 0)
+            {
+                row_id = target_id - offset_;
+            }
             else
             {
                 row_id = target_id;
             }
+
+            assert(row_id >= 0);
+            assert(row_id < fm_.size());
 
             return fm_.at(row_id);
         }
@@ -390,6 +397,10 @@ class graph_oracle_base
         set_mod(uint32_t mod)
         { mod_ = mod; }
 
+        void
+        set_offset(uint32_t offset)
+        { offset_ = offset; }
+
     private:
         std::vector<std::vector<warthog::cpd::rle_run32>> fm_;
         std::vector<std::vector<warthog::cpd::fm_coll>> elabels;
@@ -397,6 +408,7 @@ class graph_oracle_base
         warthog::graph::xy_graph* g_;
         uint32_t div_;
         uint32_t mod_;
+        uint32_t offset_;
 
         void init_edge_labels() {
           for (uint32_t i=0; i<g_->get_num_nodes(); i++) {

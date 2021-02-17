@@ -127,6 +127,28 @@ read_oracle(std::string xy_filename, warthog::cpd::graph_oracle_base<S>& oracle)
     }
 }
 
+template<warthog::cpd::symbol S>
+void
+conf_oracle(warthog::cpd::graph_oracle_base<S>& oracle)
+{
+    std::string s_div = cfg.get_param_value("div");
+    std::string s_mod = cfg.get_param_value("mod");
+    std::string s_offset = cfg.get_param_value("offset");
+
+    if (s_div != "")
+    {
+        oracle.set_div(std::stoi(s_div));
+    }
+    else if (s_mod != "")       // can only have one
+    {
+        oracle.set_mod(std::stoi(s_mod));
+    }
+    else if (s_offset != "")
+    {
+        oracle.set_offset(std::stoi(s_offset));
+    }
+}
+
 /**
  * The search function does a bunch of statistics out of the search. It takes a
  * configration object, an output pipe and a list of queries and processes them.
@@ -412,17 +434,7 @@ run_table_search(warthog::graph::xy_graph &g)
 
     warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE> oracle(&g);
     read_oracle<warthog::cpd::REV_TABLE>(xy_filename, oracle);
-
-    std::string s_div = cfg.get_param_value("div");
-    std::string s_mod = cfg.get_param_value("mod");
-    if (s_div != "")
-    {
-        oracle.set_div(std::stoi(s_div));
-    }
-    if (s_mod != "")
-    {
-        oracle.set_mod(std::stoi(s_mod));
-    }
+    conf_oracle<warthog::cpd::REV_TABLE>(oracle);
 
     for (auto& alg: algos)
     {
@@ -478,18 +490,7 @@ run_table(warthog::graph::xy_graph &g)
 
     warthog::cpd::graph_oracle_base<warthog::cpd::REV_TABLE> oracle(&g);
     read_oracle<warthog::cpd::REV_TABLE>(xy_filename, oracle);
-
-    std::string s_div = cfg.get_param_value("div");
-    std::string s_mod = cfg.get_param_value("mod");
-
-    if (s_div != "")
-    {
-        oracle.set_div(std::atoi(s_div.c_str()));
-    }
-    else if (s_mod != "")       // can only have one
-    {
-        oracle.set_mod(std::atoi(s_mod.c_str()));
-    }
+    conf_oracle<warthog::cpd::REV_TABLE>(oracle);
 
     for (auto& alg: algos)
     {
@@ -639,6 +640,7 @@ main(int argc, char *argv[])
             {"alg",   required_argument, 0, 1},
             {"div",   required_argument, 0, 1},
             {"mod",   required_argument, 0, 1},
+            {"offset", required_argument, 0, 1},
             {"num",   required_argument, 0, 1},
             // {"problem",  required_argument, 0, 1},
             {0,  0, 0, 0}
