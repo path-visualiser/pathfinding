@@ -65,7 +65,7 @@ warthog::cpd::compute_dfs_preorder(
     std::cerr << "graph has " << unreachable << " unreachable nodes\n";
 
     // sort the columns by their dfs labels (smallest to largest)
-    column_order->reserve(g->get_num_nodes());
+    column_order->resize(g->get_num_nodes());
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {
         column_order->at(dfs_labeling.at(i)) = i;
