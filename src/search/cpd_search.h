@@ -111,6 +111,7 @@ class cpd_search : public warthog::search
                 }
             }
         }
+        std::reverse(sol.path_.begin(), sol.path_.end());
     }
 
     // return a list of the nodes expanded during the last search
