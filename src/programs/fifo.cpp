@@ -155,7 +155,8 @@ conf_oracle(warthog::cpd::graph_oracle_base<S>& oracle)
  */
 void
 run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
-           const std::vector<t_query> &reqs, double t_read)
+           const std::vector<t_query> &reqs, double t_read,
+           warthog::graph::xy_graph* g)
 {
     assert(reqs.size() % 2 == 0);
     size_t n_results = reqs.size() / 2;
@@ -206,6 +207,14 @@ run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
             size_t step = n_results * thread_id;
             from = step / thread_count;
             to = (step + n_results) / thread_count;
+        }
+
+        if (conf.no_cache && g != nullptr)
+        {
+            // Mini-hack: perturbing no edges will still increment the graph
+            // counter
+            std::vector<std::pair<uint32_t, warthog::graph::edge>> v;
+            g->perturb(v);
         }
 
         t_thread.start();
@@ -402,7 +411,7 @@ reader(conf_fn& apply_conf, warthog::graph::xy_graph* g)
         if (lines.size() > 0)
         {
             run_search(apply_conf, conf, fifo_out, lines,
-                       t.elapsed_time_nano());
+                       t.elapsed_time_nano(), g);
         }
     }
 }
