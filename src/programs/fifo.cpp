@@ -288,14 +288,16 @@ run_search(conf_fn& apply_conf, config& conf, const std::string& fifo_out,
  * It then passes the data to the search function before calling itself again.
  */
 void
-reader(conf_fn& apply_conf)
+reader(conf_fn& apply_conf, warthog::graph::xy_graph* g)
 {
     std::ifstream fd;
     config conf;
     std::string fifo_out;
     std::string queries;
+    std::string diff;
     std::vector<t_query> lines;
     warthog::timer t;
+    std::vector<std::pair<uint32_t, warthog::graph::edge>> edges;
 
     while (true)
     {
@@ -322,8 +324,8 @@ reader(conf_fn& apply_conf)
 
         trace(conf.verbose, conf);
 
-        // Read input query file and output pipe
-        fd >> queries >> fifo_out;
+        // Read input query file, output pipe and diff file
+        fd >> queries >> fifo_out >> diff;
         debug(conf.verbose, "Read queries from", queries);
         debug(conf.verbose, "Output to", fifo_out);
 
@@ -353,6 +355,36 @@ reader(conf_fn& apply_conf)
             assert(lines.size() == s * 2);
         }
         fd.close();                 // TODO check if we need to keep this open
+
+        if (diff != "-" && g != nullptr)
+        {
+            fd.open(queries);
+            if (!fd.good())
+            {
+                warning("Could not open", diff);
+                edges.clear();
+            }
+            else
+            {
+                uint32_t h, t;
+                warthog::cost_t w;
+                size_t s = 0;
+                size_t i = 0;
+
+                fd >> s;
+                edges.resize(s);
+                debug(conf.verbose, "Preparing to read", s, "perturbations");
+                while (fd >> h >> t >> w)
+                {
+                    edges.at(i) = {h, warthog::graph::edge(t, w)};
+                    i += 1;
+                }
+                assert(edges.size() == s);
+            }
+            fd.close();
+
+            g->perturb(edges);
+        }
         t.stop();
 
         trace(conf.verbose, "Read", int(lines.size() / 2), "queries in ",
@@ -421,7 +453,7 @@ run_cpd_search(warthog::graph::xy_graph &g)
         alg->set_quality_cutoff(conf.fscale);
     };
 
-    reader(apply_conf);
+    reader(apply_conf, &g);
 }
 
 void
@@ -471,7 +503,7 @@ run_table_search(warthog::graph::xy_graph &g)
         alg->set_quality_cutoff(conf.fscale);
     };
 
-    reader(apply_conf);
+    reader(apply_conf, &g);
 }
 
 void
@@ -509,7 +541,7 @@ run_table(warthog::graph::xy_graph &g)
         alg->set_max_k_moves(conf.k_moves);
     };
 
-    reader(apply_conf);
+    reader(apply_conf, &g);
 }
 
 void
@@ -560,7 +592,7 @@ run_cpd(warthog::graph::xy_graph &g)
         alg->set_max_k_moves(conf.k_moves);
     };
 
-    reader(apply_conf);
+    reader(apply_conf, &g);
 }
 
 void
@@ -602,7 +634,7 @@ run_bch()
     conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
     {};
 
-    reader(apply_conf);
+    reader(apply_conf, nullptr);
 }
 
 void
@@ -618,7 +650,7 @@ run_noop()
     conf_fn apply_conf = [] (warthog::search* base, config &conf) -> void
     {};
 
-    reader(apply_conf);
+    reader(apply_conf, nullptr);
 }
 
 
