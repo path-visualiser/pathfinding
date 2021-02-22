@@ -446,7 +446,11 @@ class xy_graph_base
                 if (eit != from->outgoing_end())
                 {
                     // Save the original value as the label
-                    eit->label_ = cpd::wt_to_label(eit->wt_);
+                    if (eit->label_ == 0)
+                    {
+                        eit->label_ = cpd::wt_to_label(eit->wt_);
+                    }
+
                     if (eit->wt_ != e.second.wt_)
                     {
                         num_modif++;
