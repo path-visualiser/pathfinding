@@ -1,17 +1,13 @@
-WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
-			  $(wildcard search/*.cpp) $(wildcard experimental/*.cpp) \
-			  $(wildcard heuristics/*.cpp) $(wildcard jps/*.cpp) \
-			  $(wildcard contraction/*.cpp) $(wildcard label/*.cpp) \
-			  $(wildcard memory/*.cpp) $(wildcard mapf/*.cpp) $(wildcard sys/*.cpp) \
-			  $(wildcard sipp/*.cpp) $(wildcard cpd/*.cpp)
+WARTHOG_SRC = $(wildcard src/*/*.cpp)
 
 WARTHOG_EXE = $(wildcard programs/*.cpp)
 WARTHOG_TEST = $(wildcard test/*.cpp)
 WARTHOG_OBJ = $(WARTHOG_SRC:%.cpp=build/%.o)
 
-D_WARTHOG_INCLUDES = -I../ -I../domains -I../util -I../search -I../experimental \
-					 -I../heuristics -I../jps -I../contraction -I../label \
-					 -I../memory -I../mapf -I../sys -I../sipp -I../cpd -I../third_party
+D_WARTHOG_INCLUDES = -I../src/ -I../src/domains -I../src/util -I../src/search	\
+	-I../src/experimental -I../src/heuristics -I../src/jps -I../src/contraction \
+	-I../src/label -I../src/memory -I../src/mapf -I../src/sys -I../src/sipp \
+	-I../src/cpd -I../third_party
 
 D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include
 D_LIBS = -L./lib -L/usr/local/lib
