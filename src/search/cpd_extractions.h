@@ -17,20 +17,20 @@
 namespace warthog
 {
 
-class cpd_extractions : public warthog::search
+template<warthog::cpd::symbol T>
+class cpd_extractions_base : public warthog::search
 {
     public:
-        cpd_extractions(warthog::graph::xy_graph *g,
-                        warthog::cpd::graph_oracle *oracle)
+        cpd_extractions_base(warthog::graph::xy_graph *g,
+                             warthog::cpd::graph_oracle_base<T> *oracle)
             : g_(g), oracle_(oracle)
         {
             assert(oracle->get_graph() == g);
             max_k_moves_ = UINT_MAX;
             time_cutoff_ = DBL_MAX;
-            pi_.instance_id_ = UINT32_MAX;
         }
 
-        virtual ~cpd_extractions() { }
+        virtual ~cpd_extractions_base() { }
 
         virtual void
         get_path(warthog::problem_instance& pi, warthog::solution& sol)
@@ -124,11 +124,12 @@ class cpd_extractions : public warthog::search
 
     private:
         warthog::graph::xy_graph* g_;
-        warthog::cpd::graph_oracle* oracle_;
-        warthog::problem_instance pi_;
+        warthog::cpd::graph_oracle_base<T>* oracle_;
         double time_cutoff_;            // Time limit in nanoseconds
         uint32_t max_k_moves_;          // Max "distance" from target
 };
+
+typedef cpd_extractions_base<warthog::cpd::FORWARD> cpd_extractions;
 
 }
 

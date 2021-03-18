@@ -1,5 +1,6 @@
 *.d
 *.o
+**/.*
 ./.*/*.d
 ./.*/*.o
 ./.gdb_history
@@ -45,3 +46,6 @@ src/tags
 src/testdata
 src/*log
 src/*results*
+src/compile_commands.json
+*/.cache
+**/__pycache__/

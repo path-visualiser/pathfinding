@@ -17,7 +17,7 @@ D_LIBS = -L./lib -L/usr/local/lib
 
 CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion -Wno-unused-result -Wno-unused-but-set-variable
 FAST_CFLAGS = -O3 -DNDEBUG -Wno-unused-variable
-DEV_CFLAGS = -ggdb -O0 -gdwarf-4 -DSINGLE_THREADED -DQUICK_LOG=1
+DEV_CFLAGS = -ggdb -O0 -gdwarf-4 -DSINGLE_THREADED -DQUICK_LOG=1 -no-pie
 #DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
 PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG
 

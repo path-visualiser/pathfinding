@@ -25,6 +25,8 @@ namespace warthog
 namespace cpd
 {
 
+enum clock_direction {CW, CCW};
+
 // defines a 32bit run in a run-length encoding
 // the first 4 bits tell the symbol.
 // the next 28 bits tell the index where the run begins
@@ -77,7 +79,8 @@ typedef uint16_t fm_coll;
 void
 compute_dfs_preorder(
         warthog::graph::xy_graph* g,
-        std::vector<uint32_t>* column_order);
+        std::vector<uint32_t>* column_order,
+        uint32_t seed=0);
 
 }
 

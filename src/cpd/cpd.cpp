@@ -5,7 +5,8 @@
 void
 warthog::cpd::compute_dfs_preorder(
         warthog::graph::xy_graph* g,
-        std::vector<uint32_t>* column_order)
+        std::vector<uint32_t>* column_order,
+        uint32_t dfs_seed)
 {
     assert(g->get_num_nodes() < UINT32_MAX);
 
@@ -15,7 +16,6 @@ warthog::cpd::compute_dfs_preorder(
     std::vector<dfs_pair> dfs_stack;
 
     uint32_t preorder_id = 0;
-    uint32_t dfs_seed = ((uint32_t)rand() % (uint32_t)g->get_num_nodes());
     dfs_stack.push_back(dfs_pair(dfs_seed, 0));
     dfs_stack.reserve(g->get_num_nodes());
     while(dfs_stack.size())
@@ -65,7 +65,7 @@ warthog::cpd::compute_dfs_preorder(
     std::cerr << "graph has " << unreachable << " unreachable nodes\n";
 
     // sort the columns by their dfs labels (smallest to largest)
-    column_order->reserve(g->get_num_nodes());
+    column_order->resize(g->get_num_nodes());
     for(uint32_t i = 0; i < g->get_num_nodes(); i++)
     {
         column_order->at(dfs_labeling.at(i)) = i;

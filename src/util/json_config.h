@@ -13,8 +13,6 @@
 //
 // - Definitions
 //
-typedef warthog::sn_id_t t_query;
-
 typedef std::tuple<unsigned int, // Nodes expanded
                    unsigned int, // Nodes inserted
                    unsigned int, // Nodes touched
@@ -30,20 +28,16 @@ typedef std::tuple<unsigned int, // Nodes expanded
 
 typedef struct config
 {
-    // Default config
-    config() : hscale(1.0), fscale(1.0), time(DBL_MAX), itrs(warthog::INF32),
-               k_moves(warthog::INF32), prefix(0), threads(0), verbose(VERBOSE)
-    {};
-
-    double hscale;                // Modifier for heuristic's value
-    double fscale;                // Quality tolerance
-    double time;
-    uint32_t itrs;
-    uint32_t k_moves;
-    uint32_t prefix;
-    unsigned char threads;
-    bool verbose;
-    bool debug;
+    double hscale = 1.0;                // Modifier for heuristic's value
+    double fscale = 0.0;                // Quality tolerance
+    double time = DBL_MAX;
+    uint32_t itrs = warthog::INF32;
+    uint32_t k_moves = warthog::INF32;
+    unsigned char threads = 0;
+    bool verbose = VERBOSE;
+    bool debug = false;
+    bool thread_alloc = false;
+    bool no_cache = false;
 } config;
 
 void
@@ -51,9 +45,9 @@ to_json(nlohmann::json& j, const config& c)
 {
     j = {
         {"hscale", c.hscale}, {"fscale", c.fscale}, {"time", c.time},
-        {"itrs", c.itrs}, {"k_moves", c.k_moves}, {"prefix", c.prefix},
-        {"threads", c.threads}, {"verbose", c.verbose},
-        {"debug", c.debug}
+        {"itrs", c.itrs}, {"k_moves", c.k_moves}, {"threads", c.threads},
+        {"verbose", c.verbose}, {"debug", c.debug},
+        {"thread_alloc", c.thread_alloc}, {"no_cache", c.no_cache}
     };
 }
 
@@ -65,10 +59,11 @@ from_json(const nlohmann::json& j, config &c)
     j.at("time").get_to(c.time);
     j.at("itrs").get_to(c.itrs);
     j.at("k_moves").get_to(c.k_moves);
-    j.at("prefix").get_to(c.prefix);
     j.at("threads").get_to(c.threads);
     j.at("verbose").get_to(c.verbose);
     j.at("debug").get_to(c.debug);
+    j.at("thread_alloc").get_to(c.thread_alloc);
+    j.at("no_cache").get_to(c.no_cache);
 }
 
 std::ostream&
@@ -112,8 +107,6 @@ sanitise_conf(config& conf)
 
     if (conf.time == 0)
     { conf.time = DBL_MAX; }
-
-    // Do not touch conf.prefix
 
     // Enforce single threaded or use max threads
 #ifdef SINGLE_THREADED
