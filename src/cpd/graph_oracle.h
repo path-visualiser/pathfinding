@@ -18,11 +18,8 @@
 #ifndef WARTHOG_CPD_GRAPH_ORACLE_H
 #define WARTHOG_CPD_GRAPH_ORACLE_H
 
-#include <map>
-
 #include "binary.h"
 #include "constants.h"
-#include "geography.h"
 #include "cpd.h"
 #include "geography.h"
 #include "graph.h"
@@ -46,8 +43,6 @@ class graph_oracle_base
         {
             order_.resize(g_->get_num_nodes());
             fm_.resize(g_->get_num_nodes());
-            // elabels.resize(g_->get_num_nodes());
-            // init_edge_labels();
         }
 
         graph_oracle_base() : g_(nullptr) { }
@@ -152,19 +147,6 @@ class graph_oracle_base
 
         //    std::cerr << "compressed source row " << source_id << " with "
         //        << fm_.at(source_id).size() << std::endl;
-        }
-
-        void summary() {
-          std::map<fm_coll, int> sum;
-          for (auto& row: fm_) {
-            for (auto& run: row) {
-              fm_coll mv = run.get_move();
-              sum[mv]++;
-            }
-          }
-          for (auto& it: sum) {
-            std::cerr << "move: " << it.first << ", num: " << it.second << std::endl;
-          }
         }
 
         inline warthog::graph::xy_graph* 
@@ -349,12 +331,6 @@ class graph_oracle_base
             add_row(source_id, s_row);
         }
 
-        inline fm_coll
-        get_edge_label(warthog::search_node* from, uint32_t edge_id)
-        {
-            return elabels[from->get_id()][edge_id];
-        }
-
         // TODO should only be used with reverse schemes
         std::vector<warthog::cpd::rle_run32>&
         get_row(warthog::sn_id_t target_id)
@@ -403,38 +379,11 @@ class graph_oracle_base
 
     private:
         std::vector<std::vector<warthog::cpd::rle_run32>> fm_;
-        std::vector<std::vector<warthog::cpd::fm_coll>> elabels;
         std::vector<uint32_t> order_;
         warthog::graph::xy_graph* g_;
         uint32_t div_;
         uint32_t mod_;
         uint32_t offset_;
-
-        void init_edge_labels() {
-          for (uint32_t i=0; i<g_->get_num_nodes(); i++) {
-            warthog::graph::node* n = g_->get_node(i);
-            elabels[i].resize(n->out_degree());
-            std::fill(elabels[i].begin(), elabels[i].end(), 0);
-            warthog::graph::edge_iter e0 = n->outgoing_begin();
-            int nx, ny, x0, y0, xj, yj;
-            g_->get_xy(i, nx, ny);
-            g_->get_xy(e0->node_id_, x0, y0);
-            for (int d=0; d<8; d++) {
-              double bestDeg = 0;
-              int bestIdx = -1;
-              for (int j=0; j<n->out_degree(); j++) {
-                warthog::graph::edge_iter ej = (e0 + j);
-                g_->get_xy(ej->node_id_, xj, yj);
-                double deg = warthog::geo::get_angle(nx, ny, x0, y0, xj, yj);
-                if (bestIdx == -1 || fabs(deg - d*45) < fabs(bestDeg - d*45)) {
-                  bestIdx = j;
-                  bestDeg = deg;
-                }
-              }
-              elabels[i][bestIdx] |= 1 << (d + 8);
-            }
-          }
-        }
 };
 
 typedef warthog::cpd::graph_oracle_base<FORWARD> graph_oracle;

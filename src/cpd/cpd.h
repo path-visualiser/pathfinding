@@ -66,8 +66,6 @@ static const uint32_t CPD_FM_MAX = 16;
 // special value to denote that no first move exists.
 static const uint32_t CPD_FM_NONE=0xF;
 
-static const uint16_t CPD_ALL_MOVE = 0x7fff;
-
 // a collection of optimal first moves. 
 // we keep one bit for each optimal move. the maximum
 // degree of any node is determined by CPD_FM_MAX
