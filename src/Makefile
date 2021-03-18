@@ -5,21 +5,26 @@ WARTHOG_SRC = $(wildcard domains/*.cpp) $(wildcard util/*.cpp) \
 			  $(wildcard memory/*.cpp) $(wildcard mapf/*.cpp) $(wildcard sys/*.cpp) \
 			  $(wildcard sipp/*.cpp) $(wildcard cpd/*.cpp)
 
+WARTHOG_EXE = $(wildcard programs/*.cpp)
+WARTHOG_TEST = $(wildcard test/*.cpp)
+WARTHOG_OBJ = $(WARTHOG_SRC:%.cpp=build/%.o)
 
-WARTHOG_OBJ = $(WARTHOG_SRC:.cpp=.o)
-
-D_WARTHOG_INCLUDES = -I./ -I./domains -I./util -I./search -I./experimental \
-					 -I./heuristics -I./jps -I./contraction -I./label \
-					 -I./memory -I./mapf -I./sys -I./sipp -I./cpd -I./third_party
+D_WARTHOG_INCLUDES = -I../ -I../domains -I../util -I../search -I../experimental \
+					 -I../heuristics -I../jps -I../contraction -I../label \
+					 -I../memory -I../mapf -I../sys -I../sipp -I../cpd -I../third_party
 
 D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include
 D_LIBS = -L./lib -L/usr/local/lib
 
-CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion -Wno-unused-result -Wno-unused-but-set-variable
-FAST_CFLAGS = -O3 -DNDEBUG -Wno-unused-variable
-DEV_CFLAGS = -ggdb -O0 -gdwarf-4 -DSINGLE_THREADED -DQUICK_LOG=1 -no-pie
-#DEV_CFLAGS = -g -ggdb -O0 -gdwarf-4 -fvar-tracking-assignments
-PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG
+warthog = ./lib/libwarthog.a
+
+CFLAGS = -std=c++11 -pedantic -pthread -Wall -Werror -Wno-conversion \
+	-Wno-unused-result -Wno-unused-but-set-variable -fopenmp
+# PROFILE_CFLAGS = $(DEV_CFLAGS) -pg -DNDEBUG
+
+FLAVOURS = fast dev debug
+PROGRAMS = $(WARTHOG_EXE:programs/%.cpp=bin/%)
+PROGRAMS += $(WARTHOG_TEST:.cpp=)
 
 ifeq ("$(findstring Darwin, "$(shell uname -s)")", "Darwin")
   CC = g++
@@ -31,82 +36,70 @@ else
   endif
 endif
 
+.EXPORT_ALL_VARIABLES:
 
-.PHONY: all
-all: dev
+.PHONY: all help default clean cleaner $(FLAVOURS)
 
-.PHONY: fast
-fast: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES)
-fast: main extras__
+.SILENT: all clean cleaner
 
-.PHONY: dev
-dev: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES)
-dev: main extras__
-    @echo "COMPILE FINISHED: DEBUG MODE. RUN MAKE FAST FOR PERFORMANCE"
+default:
+	+$(MAKE) fast main
 
-.PHONY: profile
-profile: CFLAGS += $(PROFILE_CFLAGS) $(D_INCLUDES)
-profile: main extras__
+##@ Options
 
-.PHONY: extras
-extras: CFLAGS += $(DEV_CFLAGS) $(D_INCLUDES)
-extras: extras__
+# These need to be explicitly split
+all:														## Build all flavours
+	for dir in $(FLAVOURS); do \
+		$(MAKE) $$dir; \
+	done
 
-.PHONY: release
-release: CFLAGS += $(FAST_CFLAGS) $(D_INCLUDES)
-release: fast extras__
+help:														## Print this message
+	@echo "Compile warthog in different flavours, the executables will be built"
+	@echo "in their respective directory."
+	@echo ""
+	@echo "Usage: make [cmd | flavour [target]]"
+	@awk 'BEGIN {FS = ":.*##";} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+	@echo "$(PROGRAMS)"
 
-.PHONY: x
-x: extras
+##@ Cleaning
 
-.PHONY: tags
-tags:
-	ctags -R .
-	#find . | grep -E "\.((h(pp)*\$$)|(c(pp)+\$$))"	> cscope.in
-	#cscope -b -i cscope.in
+clean:													## Clean build artifacts, can be run as a flavour
+ifeq ($(firstword $(MAKECMDGOALS)), clean) # Only run if invoked directly
+	for dir in $(FLAVOURS); do \
+		if [ -d $$dir ]; then $(MAKE) -C $$dir clean; fi \
+	done
+endif
 
-.PHONY: clean
-clean:
-	@rm -rf ./bin/*
-	@-$(RM) ./lib/*
-	@-$(RM) $(WARTHOG_OBJ:.o=.d)
-	@-$(RM) $(WARTHOG_OBJ)
+cleaner:												## Remove sub-directories
+	for dir in $(FLAVOURS); do \
+		if [ -d $$dir ]; then $(RM) -rf $$dir; fi \
+	done
 
-.PHONY: main
-main: makedirs warthog
-	@echo "linking..."
-	$(CC) programs/warthog.cpp -o ./bin/warthog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/roadhog.cpp -o ./bin/roadhog -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/mapf.cpp -o ./bin/mapf -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+##@ Flavours
 
-.PHONY: extras__
-extras__: makedirs warthog
-	@echo "linking..."
-	$(CC) programs/ch.cpp -o ./bin/ch -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/dimacs2metis.cpp -o ./bin/dimacs2metis -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/dimacs2xy.cpp -o ./bin/dimacs2xy -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/grid2graph.cpp -o ./bin/grid2graph -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/tests.cpp -o ./bin/tests -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/make_cpd.cpp -o ./bin/make_cpd -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) -fopenmp
-	$(CC) test/cpd_search.cpp -o ./bin/test_cpd_search -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
-	$(CC) programs/fifo.cpp -o ./bin/fifo -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) -fopenmp
+# We need to call make explicitly on the subdirs as they are the ones deciding
+# what needs to run.
+fast: CFLAGS += -O3 -DNDEBUG -Wno-unused-variable
+fast: fast/Makefile							## Compile with opti flags
+# Little hack: the first argument is read as the subdir
+	+$(MAKE) -C $(MAKECMDGOALS)
 
-.PHONY: makedirs
-makedirs:
-	@echo "### Creating output directories ###"
-	@$(shell mkdir ./bin)
-	@$(shell mkdir ./lib)
+dev: CFLAGS += -ggdb -O0 -gdwarf-4 -no-pie -DSINGLE_THREADED -DQUICK_LOG=1
+dev: dev/Makefile								## Compile with debug symbols
+	+$(MAKE) -C $(MAKECMDGOALS)
 
-.PHONY: warthog
-warthog: $(WARTHOG_OBJ)
-	@echo "###  Archiving object files ###"
-	@echo "sources "$(WARTHOG_SRC)
-	ar -crs lib/lib$(@).a $(WARTHOG_OBJ)
-	#rm lib/lib$(@).a
+debug: CFLAGS += -ggdb -O3 -gdwarf-4 -no-pie -DQUICK_LOG=3
+debug: debug/Makefile						## Opti flags with debug symbols
+	+$(MAKE) -C $(MAKECMDGOALS)
 
--include $(WARTHOG_OBJ:.o=.d)
+# Generate the Makefile of the appropriate flavour
+%/Makefile: make.file
+	@$(shell mkdir -p $(@D))
+	@$(shell cp $< $@)
 
-$(WARTHOG_OBJ):
-	@echo "compiling..."
-	$(CC) -c $(@:.o=.cpp) $(CFLAGS) -MM -MP -MT $(dir $(@))$(notdir $(@)) -MF $(@:.o=.d)
-	$(CC) -c $(@:.o=.cpp) -o $(@) $(CFLAGS)
+# Gobble extra targets
+%:
+	@true
+
+# Used for help
+##@ Targets

@@ -49,3 +49,6 @@ src/*results*
 src/compile_commands.json
 */.cache
 **/__pycache__/
+src/dev
+src/fast
+src/debug
