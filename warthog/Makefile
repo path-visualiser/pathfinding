@@ -2,12 +2,13 @@ WARTHOG_SRC = $(wildcard src/*/*.cpp)
 
 WARTHOG_EXE = $(wildcard programs/*.cpp)
 WARTHOG_TEST = $(wildcard test/*.cpp)
-WARTHOG_OBJ = $(WARTHOG_SRC:%.cpp=build/%.o)
+WARTHOG_OBJ = $(WARTHOG_SRC:%.cpp=obj/%.o)
 
-D_WARTHOG_INCLUDES = -I../src/ -I../src/domains -I../src/util -I../src/search	\
-	-I../src/experimental -I../src/heuristics -I../src/jps -I../src/contraction \
-	-I../src/label -I../src/memory -I../src/mapf -I../src/sys -I../src/sipp \
-	-I../src/cpd -I../third_party
+D_WARTHOG_INCLUDES = -I../../src/ -I../../src/domains -I../../src/util			\
+	-I../../src/search -I../../src/experimental -I../../src/heuristics			\
+	-I../../src/jps -I../../src/contraction -I../../src/label -I../../src/memory\
+	-I../../src/mapf -I../../src/sys -I../../src/sipp -I../../src/cpd			\
+	-I../../third_party
 
 D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include
 D_LIBS = -L./lib -L/usr/local/lib
@@ -62,31 +63,28 @@ help:														## Print this message
 clean:													## Clean build artifacts, can be run as a flavour
 ifeq ($(firstword $(MAKECMDGOALS)), clean) # Only run if invoked directly
 	for dir in $(FLAVOURS); do \
-		if [ -d $$dir ]; then $(MAKE) -C $$dir clean; fi \
+		if [ -d "build/$$dir" ]; then $(MAKE) -C "build/$$dir" clean; fi \
 	done
 endif
 
-cleaner:												## Remove sub-directories
-	for dir in $(FLAVOURS); do \
-		if [ -d $$dir ]; then $(RM) -rf $$dir; fi \
-	done
+cleaner:												## Remove build directory
+	if [ -d build ]; then $(RM) -rf build; fi
 
 ##@ Flavours
 
 # We need to call make explicitly on the subdirs as they are the ones deciding
 # what needs to run.
 fast: CFLAGS += -O3 -DNDEBUG -Wno-unused-variable
-fast: fast/Makefile							## Compile with opti flags
-# Little hack: the first argument is read as the subdir
-	+$(MAKE) -C $(MAKECMDGOALS)
+fast: build/fast/Makefile		## Compile with opti flags
+	+$(MAKE) -C $(<D) $(wordlist 2, 3, $(words $(MAKECMDGOALS)))
 
 dev: CFLAGS += -ggdb -O0 -gdwarf-4 -no-pie -DSINGLE_THREADED -DQUICK_LOG=1
-dev: dev/Makefile								## Compile with debug symbols
-	+$(MAKE) -C $(MAKECMDGOALS)
+dev: build/dev/Makefile			## Compile with debug symbols
+	+$(MAKE) -C $(<D) $(wordlist 2, 3, $(words $(MAKECMDGOALS)))
 
 debug: CFLAGS += -ggdb -O3 -gdwarf-4 -no-pie -DQUICK_LOG=3
-debug: debug/Makefile						## Opti flags with debug symbols
-	+$(MAKE) -C $(MAKECMDGOALS)
+debug: build/debug/Makefile		## Opti flags with debug symbols
+	+$(MAKE) -C $(<D) $(wordlist 2, 3, $(words $(MAKECMDGOALS)))
 
 # Generate the Makefile of the appropriate flavour
 %/Makefile: make.file
