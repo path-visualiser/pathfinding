@@ -49,6 +49,4 @@ warthog/*results*
 warthog/compile_commands.json
 */.cache
 **/__pycache__/
-warthog/dev
-warthog/fast
-warthog/debug
+warthog/build
