@@ -4,7 +4,7 @@ all: main convert extras test
 
 .PHONY: clean
 clean:
-	@-$(RM) -rf ./build/*
+	@-$(RM) -rf ./obj/*
 
 main: bin/warthog bin/roadhog bin/mapf
 

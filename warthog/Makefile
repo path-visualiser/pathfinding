@@ -71,20 +71,22 @@ cleaner:												## Remove build directory
 	if [ -d build ]; then $(RM) -rf build; fi
 
 ##@ Flavours
+# List of *actions* to run for the chose flavour
+ACTIONS = $(wordlist 2, $(words $(MAKECMDGOALS)), $(MAKECMDGOALS))
 
 # We need to call make explicitly on the subdirs as they are the ones deciding
 # what needs to run.
 fast: CFLAGS += -O3 -DNDEBUG -Wno-unused-variable
 fast: build/fast/Makefile		## Compile with opti flags
-	+$(MAKE) -C $(<D) $(wordlist 2, 3, $(words $(MAKECMDGOALS)))
+	+$(MAKE) -C $(<D) $(ACTIONS)
 
 dev: CFLAGS += -ggdb -O0 -gdwarf-4 -no-pie -DSINGLE_THREADED -DQUICK_LOG=1
 dev: build/dev/Makefile			## Compile with debug symbols
-	+$(MAKE) -C $(<D) $(wordlist 2, 3, $(words $(MAKECMDGOALS)))
+	+$(MAKE) -C $(<D) $(ACTIONS)
 
 debug: CFLAGS += -ggdb -O3 -gdwarf-4 -no-pie -DQUICK_LOG=3
 debug: build/debug/Makefile		## Opti flags with debug symbols
-	+$(MAKE) -C $(<D) $(wordlist 2, 3, $(words $(MAKECMDGOALS)))
+	+$(MAKE) -C $(<D) $(ACTIONS)
 
 # Generate the Makefile of the appropriate flavour
 %/Makefile: make.file
