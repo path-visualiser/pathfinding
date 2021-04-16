@@ -87,7 +87,7 @@ class cpd_heuristic_base
         inline warthog::cost_t
         h(warthog::sn_id_t start_id, warthog::sn_id_t target_id)
         {
-            stack_.empty();
+            stack_.clear();
             warthog::cost_t lb = 0;
             warthog::cost_t ub = 0;
 
