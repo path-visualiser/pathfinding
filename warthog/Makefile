@@ -7,8 +7,7 @@ WARTHOG_OBJ = $(WARTHOG_SRC:%.cpp=obj/%.o)
 D_WARTHOG_INCLUDES = -I../../src/ -I../../src/domains -I../../src/util			\
 	-I../../src/search -I../../src/experimental -I../../src/heuristics			\
 	-I../../src/jps -I../../src/contraction -I../../src/label -I../../src/memory\
-	-I../../src/mapf -I../../src/sys -I../../src/sipp -I../../src/cpd			\
-	-I../../third_party
+	-I../../src/mapf -I../../src/sys -I../../src/sipp -I../../src/cpd
 
 D_INCLUDES = $(D_WARTHOG_INCLUDES) -I/usr/include -I/usr/local/include
 D_LIBS = -L./lib -L/usr/local/lib
