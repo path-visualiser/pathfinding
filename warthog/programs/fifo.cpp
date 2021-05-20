@@ -21,6 +21,7 @@
 #include <fstream>
 #include <vector>
 #include <omp.h>
+#include <json.hpp>
 
 #include "bch_expansion_policy.h"
 #include "bch_search.h"
@@ -31,7 +32,6 @@
 #include "cpd_heuristic.h"
 #include "cpd_search.h"
 #include "graph_oracle.h"
-#include "json.hpp"
 #include "json_config.h"
 #include "log.h"
 #include "noop_search.h"
