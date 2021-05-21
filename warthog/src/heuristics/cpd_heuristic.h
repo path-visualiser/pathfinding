@@ -12,12 +12,12 @@
 // @created: 27/02/2020
 //
 
+#include "cast.h"
 #include "constants.h"
 #include "forward.h"
 #include "graph_oracle.h"
 #include "helpers.h"
 #include "xy_graph.h"
-#include "cast.h"
 
 #include <climits>
 #include <stack>
@@ -30,7 +30,7 @@ namespace warthog
 // by ::target_id.
 struct cpd_heuristic_cache_entry
 {
-    cpd_heuristic_cache_entry() { }
+    cpd_heuristic_cache_entry() = default;
 
     warthog::cost_t lb_ = warthog::COST_MAX;
     warthog::cost_t ub_ = warthog::COST_MAX;
@@ -44,9 +44,10 @@ template<warthog::cpd::symbol T>
 class cpd_heuristic_base
 {
     typedef std::pair<warthog::sn_id_t, warthog::graph::edge*> stack_pair;
+
     public:
-        cpd_heuristic_base(warthog::cpd::graph_oracle_base<T>* cpd,
-                           double hscale=1.0)
+        explicit cpd_heuristic_base(
+            warthog::cpd::graph_oracle_base<T>* cpd, double hscale = 1.0)
             : cpd_(cpd), hscale_(hscale)
         {
             graph::xy_graph* g = cpd_->get_graph();
@@ -60,7 +61,7 @@ class cpd_heuristic_base
             }
         }
 
-        ~cpd_heuristic_base() { }
+        ~cpd_heuristic_base() = default;
 
         inline void
         set_hscale(double hscale)
@@ -88,7 +89,7 @@ class cpd_heuristic_base
 
         inline void
         h(warthog::sn_id_t start_id, warthog::sn_id_t target_id,
-          warthog::cost_t &lower, warthog::cost_t &upper)
+          warthog::cost_t& lower, warthog::cost_t& upper)
         {
             warthog::sn_id_t ignore;
 
@@ -103,7 +104,7 @@ class cpd_heuristic_base
         // last perturbed node.
         inline void
         h(warthog::sn_id_t start_id, warthog::sn_id_t target_id,
-          warthog::cost_t &lb, warthog::cost_t &ub, warthog::sn_id_t &last)
+          warthog::cost_t& lb, warthog::cost_t& ub, warthog::sn_id_t& last)
         {
             stack_.clear();
             lb = 0;
@@ -122,7 +123,7 @@ class cpd_heuristic_base
                     break;
                 }
 
-                uint32_t move_id =  cpd_->get_move(c_id, target_id);
+                uint32_t move_id = cpd_->get_move(c_id, target_id);
 
                 warthog::graph::node* cur = cpd_->get_graph()->get_node(c_id);
                 warthog::graph::edge* fm = cur->outgoing_begin() + move_id;
@@ -141,7 +142,7 @@ class cpd_heuristic_base
                 label = warthog::cpd::label_to_wt((sp.second)->label_);
                 lb += label;
 
-                if (sp.second->wt_ < warthog::COST_MAX)
+                if(sp.second->wt_ < warthog::COST_MAX)
                 { ub += (sp.second)->wt_; }
 
                 // Last unperturbed node
@@ -167,7 +168,7 @@ class cpd_heuristic_base
         {
             if(is_cached_(from_id, target_id))
             {
-                cpd_heuristic_cache_entry & entry = cache_.at(from_id);
+                cpd_heuristic_cache_entry& entry = cache_.at(from_id);
                 return entry.fm_->node_id_;
             }
             return warthog::SN_ID_MAX;
@@ -176,18 +177,17 @@ class cpd_heuristic_base
         inline size_t
         mem()
         {
-            return
-                cpd_->mem() +
-                sizeof(warthog::cpd_heuristic_cache_entry)*cache_.capacity() +
-                sizeof(stack_pair) * stack_.size();
+            return cpd_->mem()
+                + sizeof(warthog::cpd_heuristic_cache_entry) * cache_.capacity()
+                + sizeof(stack_pair) * stack_.size();
         }
 
     private:
         inline bool
         is_cached_(uint32_t c_id, warthog::sn_id_t target_id)
         {
-            return cache_.at(c_id).target_id_ == target_id &&
-                   cache_.at(c_id).graph_id_ == cpd_->get_graph()->get_id();
+            return cache_.at(c_id).target_id_ == target_id
+                && cache_.at(c_id).graph_id_ == cpd_->get_graph()->get_id();
         }
 
         warthog::cpd::graph_oracle_base<T>* cpd_;
