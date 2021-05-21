@@ -30,19 +30,14 @@ namespace warthog
 // by ::target_id.
 struct cpd_heuristic_cache_entry
 {
-    cpd_heuristic_cache_entry()
-    {
-        lb_ = warthog::COST_MAX;
-        ub_ = warthog::COST_MAX;
-        target_id_ = warthog::SN_ID_MAX;
-        graph_id_ = UINT_MAX;
-    }
+    cpd_heuristic_cache_entry() { }
 
-    warthog::cost_t lb_;
-    warthog::cost_t ub_;
-    warthog::graph::edge* fm_;
-    warthog::sn_id_t target_id_;
-    uint32_t graph_id_;
+    warthog::cost_t lb_ = warthog::COST_MAX;
+    warthog::cost_t ub_ = warthog::COST_MAX;
+    warthog::graph::edge* fm_ = nullptr;
+    warthog::sn_id_t target_id_ = warthog::SN_ID_MAX;
+    warthog::sn_id_t perturbed_id_ = warthog::SN_ID_MAX;
+    uint32_t graph_id_ = UINT_MAX;
 };
 
 template<warthog::cpd::symbol T>
@@ -79,17 +74,41 @@ class cpd_heuristic_base
         get_oracle()
         { return cpd_; }
 
-        // @return a lowerbound cost from node @param start_id to
-        // node @param target_id. If no such bound has been established
-        // compute one using the CPD in time O(n log(k)) where n is
-        // the number of steps to the target and k is the max length of
-        // any run-length encoded row in the CPD.
         inline warthog::cost_t
         h(warthog::sn_id_t start_id, warthog::sn_id_t target_id)
         {
+            warthog::cost_t lb;
+            warthog::cost_t inf;
+            warthog::sn_id_t ignore;
+
+            h(start_id, target_id, lb, inf, ignore);
+
+            return lb;
+        }
+
+        inline void
+        h(warthog::sn_id_t start_id, warthog::sn_id_t target_id,
+          warthog::cost_t &lower, warthog::cost_t &upper)
+        {
+            warthog::sn_id_t ignore;
+
+            h(start_id, target_id, lower, upper, ignore);
+        }
+
+        // @return a lowerbound cost from node @param start_id to node @param
+        // target_id. If no such bound has been established compute one using
+        // the CPD in time O(n log(k)) where n is the number of steps to the
+        // target and k is the max length of any run-length encoded row in the
+        // CPD. We also store the upperbound (actual) cost of the path and the
+        // last perturbed node.
+        inline void
+        h(warthog::sn_id_t start_id, warthog::sn_id_t target_id,
+          warthog::cost_t &lb, warthog::cost_t &ub, warthog::sn_id_t &last)
+        {
             stack_.clear();
-            warthog::cost_t lb = 0;
-            warthog::cost_t ub = 0;
+            lb = 0;
+            ub = 0;
+            last = warthog::SN_ID_MAX;
 
             // extract
             uint32_t c_id = start_id;
@@ -115,43 +134,28 @@ class cpd_heuristic_base
             // update the cache
             while(stack_.size())
             {
+                warthog::cost_t label;
                 stack_pair sp = stack_.back();
                 stack_.pop_back();
 
-                lb += warthog::cpd::label_to_wt((sp.second)->label_);
-                ub += (sp.second)->wt_;
+                label = warthog::cpd::label_to_wt((sp.second)->label_);
+                lb += label;
+
+                if (sp.second->wt_ < warthog::COST_MAX)
+                { ub += (sp.second)->wt_; }
+
+                // Last unperturbed node
+                if(label != sp.second->wt_) { last = sp.first; }
 
                 cache_.at(sp.first).lb_ = lb;
                 cache_.at(sp.first).ub_ = ub;
                 cache_.at(sp.first).fm_ = sp.second;
                 cache_.at(sp.first).target_id_ = target_id;
                 cache_.at(sp.first).graph_id_ = cpd_->get_graph()->get_id();
+                cache_.at(sp.first).perturbed_id_ = last;
             }
 
-            // Only apply `hscale` to the return value
-            return lb * hscale_;
-        }
-
-        inline void
-        h(warthog::sn_id_t start_id, warthog::sn_id_t target_id,
-          warthog::cost_t &lower, warthog::cost_t &upper)
-        {
-            lower = h(start_id, target_id);
-            upper = ub(start_id, target_id);
-        }
-
-        // @return an upperbound cost from node @param start_id to
-        // node @param target_id. if no such bound has been established
-        // return instead warthog::COST_MAX
-        inline warthog::cost_t
-        ub(warthog::sn_id_t start_id, warthog::sn_id_t target_id)
-        {
-            if(start_id == target_id) { return 0; }
-            if(!is_cached_(start_id, target_id))
-            {
-                h(start_id, target_id);
-            }
-            return cache_.at(start_id).ub_;
+            lb *= hscale_;
         }
 
         // return the cached first move for the node specified by

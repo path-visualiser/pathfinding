@@ -97,6 +97,24 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
             REQUIRE(sol.nodes_expanded_ == 0);
         }
     }
+
+    GIVEN("A perturbation")
+    {
+        warthog::cpd_heuristic h(&oracle);
+        warthog::graph::xy_graph p;
+        warthog::graph::gridmap_to_xy_graph(&d, &p, false);
+        REQUIRE(perturb_edge(&p, 6, 10));
+        g.perturb(p);
+
+        THEN("The last unperturbed node is before the perturbation")
+        {
+            warthog::sn_id_t last;
+            warthog::cost_t lb;
+            warthog::cost_t ub;
+            h.h(start, goal, lb, ub, last);
+            REQUIRE(last == 6);
+        }
+    }
 }
 
 SCENARIO("Test CPD search on a modified cross.", "[cpd][astar][cross]")
