@@ -101,9 +101,10 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
     GIVEN("A perturbation")
     {
         warthog::cpd_heuristic h(&oracle);
+        warthog::sn_id_t hit = 6;
         warthog::graph::xy_graph p;
         warthog::graph::gridmap_to_xy_graph(&d, &p, false);
-        REQUIRE(perturb_edge(&p, 6, 10));
+        REQUIRE(perturb_edge(&p, hit, 10));
         g.perturb(p);
 
         THEN("The last unperturbed node is before the perturbation")
@@ -112,7 +113,20 @@ SCENARIO("Test CPD A* on a square matrix", "[cpd][square][astar]")
             warthog::cost_t lb;
             warthog::cost_t ub;
             h.h(start, goal, lb, ub, last);
-            REQUIRE(last == 6);
+            REQUIRE(last == hit);
+        }
+
+        THEN("The node is cached and other paths have the same")
+        {
+            warthog::sn_id_t last;
+            warthog::cost_t lb;
+            warthog::cost_t ub;
+
+            h.h(start, goal, lb, ub, last);
+            REQUIRE(last == hit);
+
+            h.h(2, goal, lb, ub, last);
+            REQUIRE(last == hit);
         }
     }
 }

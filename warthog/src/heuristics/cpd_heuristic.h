@@ -120,6 +120,7 @@ class cpd_heuristic_base
                     // stop when the rest of the path is in cache
                     lb = cache_.at(c_id).lb_;
                     ub = cache_.at(c_id).ub_;
+                    last = cache_.at(c_id).perturbed_id_;
                     break;
                 }
 
