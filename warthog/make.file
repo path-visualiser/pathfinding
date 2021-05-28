@@ -27,14 +27,12 @@ obj/%.o: ../../%.cpp
 	$(CXX) -c $< -o $@ $(CFLAGS) $(D_INCLUDES) -MMD -MP -MT $@ -MF $(@:.o=.d)
 
 # Warthog executables as single targets
-bin/%: D_INCLUDES += -I../../third_party -I../../extra
-bin/%: ../../programs/%.cpp $(warthog)
+bin/%: ../../programs/%.cpp $(warthog) $(EXTRA_OBJ)
 	@echo "linking..."
 	@$(shell mkdir -p $(@D))
-	$(CXX) $< -o $@ -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CXX) $< -o $@ -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) $(EXTRA_OBJ)
 
-test/%: D_INCLUDES += -I../../third_party -I../../extra
-test/%: ../../test/%.cpp $(warthog)
+test/%: ../../test/%.cpp $(warthog) $(EXTRA_OBJ)
 	@echo "linking..."
 	@$(shell mkdir -p $(@D))
-	$(CXX) $< -o $@ -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
+	$(CXX) $< -o $@ -lwarthog $(CFLAGS) $(D_LIBS) $(D_INCLUDES) $(EXTRA_OBJ)
