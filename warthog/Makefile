@@ -38,9 +38,9 @@ endif
 
 .EXPORT_ALL_VARIABLES:
 
-.PHONY: all help default clean cleaner $(FLAVOURS)
+.PHONY: all help default clean clobber $(FLAVOURS)
 
-.SILENT: all clean cleaner
+.SILENT: all clean clobber
 
 default:
 	+$(MAKE) fast main
@@ -70,7 +70,7 @@ ifeq ($(firstword $(MAKECMDGOALS)), clean) # Only run if invoked directly
 	done
 endif
 
-cleaner:												## Remove build directory
+clobber:												## Remove build directory
 	if [ -d build ]; then $(RM) -rf build; fi
 
 ##@ Flavours
