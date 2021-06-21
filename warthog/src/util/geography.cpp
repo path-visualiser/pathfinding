@@ -13,6 +13,81 @@ rad_to_deg(double rad)
     return fmod(rad * 180 / M_PI + 360, 360);
 }
 
+// Project the Earth onto a plane and into account the variation between
+// meridians with latitude.
+//
+// https://en.wikipedia.org/wiki/Geographical_distance
+double
+warthog::geo::spherical_distance(
+    double lat_a, double lng_a, double lat_b, double lng_b)
+{
+    double p1 = deg_to_rad(lat_a);
+    double l1 = deg_to_rad(lng_a);
+    double p2 = deg_to_rad(lat_b);
+    double l2 = deg_to_rad(lng_b);
+
+    // (\Delta \phi) ^ 2
+    double D_p_2 = pow(fabs(p1 - p2), 2);
+
+    double cos_pm = cos((p1 + p2) / 2);
+    double x = cos_pm * fabs(l1 - l2);
+
+    return warthog::geo::EARTH_RADIUS * sqrt(D_p_2 + pow(x, 2));
+}
+
+// Compute the distance between two points on a sphere by using the Haversine
+// formula. The Great-Circle distance is only accurate up to 0.5% and is less so
+// for short distances.
+//
+// https://en.wikipedia.org/wiki/Great-circle_distance
+double
+warthog::geo::great_circle_distance(
+    double lat_a, double lng_a, double lat_b, double lng_b)
+{
+    double p1 = deg_to_rad(lat_a);
+    double l1 = deg_to_rad(lng_a);
+    double p2 = deg_to_rad(lat_b);
+    double l2 = deg_to_rad(lng_b);
+
+    double D_l = fabs(l1 - l2);
+    double D_p = fabs(p1 - p2);
+
+    double hav_p = pow(sin(D_p / 2), 2);
+    double hav_l = pow(sin(D_l / 2), 2);
+    double cos_p = cos(p1) * cos(p2);
+
+    return 2 * asin(hav_p + cos_p * hav_l);
+}
+
+// The Vincenty formula is an iterative procedure which is accurate up to 0.5
+// mm. We use the special case where the ellipsoid is a sphere.
+//
+// https://en.wikipedia.org/wiki/Vincenty%27s_formulae
+double
+warthog::geo::vincenty_distance(
+    double lat_a, double lng_a, double lat_b, double lng_b)
+{
+    double p1 = deg_to_rad(lat_a);
+    double l1 = deg_to_rad(lng_a);
+    double p2 = deg_to_rad(lat_b);
+    double l2 = deg_to_rad(lng_b);
+
+    double D_l = fabs(l1 - l2);
+
+    double cos_p1 = cos(p1);
+    double cos_p2 = cos(p2);
+    double sin_p1 = sin(p1);
+    double sin_p2 = sin(p2);
+
+    double x_a = cos_p2 * sin(D_l);
+    double x_b = cos_p1 * sin_p2 - sin_p1 * cos_p2 * cos(D_l);
+    double num = pow(x_a, 2) + pow(x_b, 2);
+
+    double den = sin_p1 * sin_p2 + cos_p1 * cos_p2 * cos(D_l);
+
+    return atan(sqrt(num) / den);
+}
+
 // We calculate bearing with the following formula:
 // θ = atan2( sin Δλ ⋅ cos φ2 , cos φ1 ⋅ sin φ2 − sin φ1 ⋅ cos φ2 ⋅ cos Δλ )
 // where:
@@ -20,12 +95,12 @@ rad_to_deg(double rad)
 //   φ2,λ2 the end point
 //   Δλ is the difference in longitude
 double
-warthog::geo::get_bearing(double lat1, double lng1, double lat2, double lng2)
+warthog::geo::get_bearing(double lat_a, double lng_a, double lat_b, double lng_b)
 {
-   double l1 = deg_to_rad(lng1);
-   double l2 = deg_to_rad(lng2);
-   double p1 = deg_to_rad(lat1);
-   double p2 = deg_to_rad(lat2);
+   double l1 = deg_to_rad(lng_a);
+   double l2 = deg_to_rad(lng_b);
+   double p1 = deg_to_rad(lat_a);
+   double p2 = deg_to_rad(lat_b);
    double y = sin(l2 - l1) * cos(p2);
    double x = cos(p1) * sin(p2) - sin(p1) * cos(p2) * cos(l2 - l1);
 

@@ -5,7 +5,7 @@
 #ifndef __GEOGRAPHY_H_
 #define __GEOGRAPHY_H_
 
-#include <bits/stdint-uintn.h>
+#include <cstdint>
 
 namespace warthog
 {
@@ -14,10 +14,27 @@ namespace geo
 {
 
 static const double DIMACS_RATIO = 1e6;
+static const double EARTH_RADIUS = 6371.0009; // km
+
+// Distance functions ordered by precision
+enum distance{SPHERICAL, GREAT_CIRLE, VINCENTY};
+
+// Compute distance using a Spherical Earth projected to a plane
+double
+spherical_distance(double lat_a, double lng_a, double lat_b, double lng_b);
+
+// Compute the distance between two points on a sphere.
+double
+great_circle_distance(double lat_a, double lng_a, double lat_b, double lng_b);
+
+// Compute the distance between two points using (a special case of) the
+// Vincenty formula.
+double
+vincenty_distance(double lat_a, double lng_a, double lat_b, double lng_b);
 
 // Get the bearing from pos1 to pos2
 double
-get_bearing(double lat1, double lng1, double lat2, double lng2);
+get_bearing(double lat_a, double lng_a, double lat_b, double lng_b);
 
 // Get the bearing of a location wrt North
 double
