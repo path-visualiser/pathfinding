@@ -10,7 +10,7 @@ warthog::road_heuristic_base<warthog::geo::SPHERICAL>::distance_(
 
 template<>
 warthog::cost_t
-warthog::road_heuristic_base<warthog::geo::GREAT_CIRLE>::distance_(
+warthog::road_heuristic_base<warthog::geo::GREAT_CIRCLE>::distance_(
     double lat_s, double lon_s, double lat_t, double lon_t)
 {
     return warthog::geo::great_circle_distance(lat_s, lon_s, lat_t, lon_t);
