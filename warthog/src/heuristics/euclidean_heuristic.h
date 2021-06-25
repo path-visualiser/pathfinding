@@ -26,8 +26,8 @@ class euclidean_heuristic
         double
         h(sn_id_t id, sn_id_t id2);
 
-		double
-		h(int32_t x, int32_t y, int32_t x2, int32_t y2);
+        static double
+        h(double x, double y, double x2, double y2);
 
         void
         set_hscale(double hscale);
@@ -38,7 +38,7 @@ class euclidean_heuristic
         size_t
         mem(); 
 
-	private:
+        private:
         warthog::graph::xy_graph* g_;
         double hscale_;
 
