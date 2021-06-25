@@ -57,11 +57,13 @@ warthog::geo::great_circle_distance(
     double hav_l = pow(sin(D_l / 2), 2);
     double cos_p = cos(p1) * cos(p2);
 
-    return 2 * asin(hav_p + cos_p * hav_l);
+    double sigma = 2 * asin(sqrt(hav_p + cos_p * hav_l));
+
+    return warthog::geo::EARTH_RADIUS * sigma;
 }
 
-// The Vincenty formula is an iterative procedure which is accurate up to 0.5
-// mm. We use the special case where the ellipsoid is a sphere.
+// The Vincenty formula is an iterative procedure which can be accurate up to
+// 0.5 mm. We use the special case where the ellipsoid is a sphere.
 //
 // https://en.wikipedia.org/wiki/Vincenty%27s_formulae
 double
@@ -86,7 +88,7 @@ warthog::geo::vincenty_distance(
 
     double den = sin_p1 * sin_p2 + cos_p1 * cos_p2 * cos(D_l);
 
-    return atan(sqrt(num) / den);
+    return warthog::geo::EARTH_RADIUS * atan(sqrt(num) / den);
 }
 
 // We calculate bearing with the following formula:
