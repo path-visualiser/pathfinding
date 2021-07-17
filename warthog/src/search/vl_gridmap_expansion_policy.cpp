@@ -22,22 +22,22 @@ warthog::vl_gridmap_expansion_policy::expand(warthog::search_node* current,
     uint32_t id_node = (uint32_t)current->get_id();
     uint32_t id_N = id_node - map_->width();
     uint32_t id_S = id_node + map_->width();
-    uint32_t id_E = id_node++;
-    uint32_t id_W = id_node--;
-    uint32_t id_NE = id_N++;
-    uint32_t id_NW = id_N--;
-    uint32_t id_SE = id_S++;
-    uint32_t id_SW = id_S--;
+    uint32_t id_E = id_node + 1;
+    uint32_t id_W = id_node - 1;
+    uint32_t id_NE = id_N + 1;
+    uint32_t id_NW = id_N - 1;
+    uint32_t id_SE = id_S + 1;
+    uint32_t id_SW = id_S - 1;
 
     warthog::dbword* label = &map_->get_label(id_node);
     warthog::dbword* label_N = &map_->get_label(id_N);
     warthog::dbword* label_S = &map_->get_label(id_S);
-    warthog::dbword* label_E = label++;
-    warthog::dbword* label_W = label--;
-    warthog::dbword* label_NE = label_N++;
-    warthog::dbword* label_NW = label_N--;
-    warthog::dbword* label_SE = label_S++;
-    warthog::dbword* label_SW = label_S--;
+    warthog::dbword* label_E = label + 1;
+    warthog::dbword* label_W = label - 1;
+    warthog::dbword* label_NE = label_N + 1;
+    warthog::dbword* label_NW = label_N - 1;
+    warthog::dbword* label_SE = label_S + 1;
+    warthog::dbword* label_SW = label_S - 1;
     
     // generate neighbours to the north
     if(*label_N) 
@@ -46,7 +46,7 @@ warthog::vl_gridmap_expansion_policy::expand(warthog::search_node* current,
         double cost = (*label + *label_N) * 0.5;
         add_neighbour(n, cost);
 
-        if(*label_NE & *label_E)
+        if(*label_NE && *label_E)
         {
             warthog::search_node* n =  generate(id_NE);
             double cost = 
@@ -55,7 +55,7 @@ warthog::vl_gridmap_expansion_policy::expand(warthog::search_node* current,
                  * warthog::DBL_ROOT_TWO * 0.25;
             add_neighbour(n, cost);
         }
-        if(*label_NW & *label_W)
+        if(*label_NW && *label_W)
         {
             warthog::search_node* n =  generate(id_NW);
             double cost = 
@@ -73,7 +73,7 @@ warthog::vl_gridmap_expansion_policy::expand(warthog::search_node* current,
         double cost = (*label + *label_S) * 0.5;
         add_neighbour(n, cost);
 
-        if(*label_SE & *label_E)
+        if(*label_SE && *label_E)
         {
             warthog::search_node* n =  generate(id_SE);
             double cost = 
@@ -82,7 +82,7 @@ warthog::vl_gridmap_expansion_policy::expand(warthog::search_node* current,
                  * warthog::DBL_ROOT_TWO * 0.25;
             add_neighbour(n, cost);
         }
-        if(*label_SW & *label_W)
+        if(*label_SW && *label_W)
         {
             warthog::search_node* n =  generate(id_SW);
             double cost = 
