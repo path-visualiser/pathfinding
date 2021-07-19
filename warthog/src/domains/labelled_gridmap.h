@@ -178,7 +178,9 @@ class labelled_gridmap
             this->db_ = new CELL[db_size_];
 
 			for(uint32_t i = 0; i < this->db_size_; i++)
+			{
 				this->db_[i] = 0;
+			}
         }
 };
 
