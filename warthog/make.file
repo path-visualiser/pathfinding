@@ -38,7 +38,7 @@ bin/%: ../../programs/%.cpp $(warthog) $(extra) $(EXTRA_OBJ)
 	@$(shell mkdir -p $(@D))
 	$(CXX) $< -o $@ -lwarthog -lwarthog-extra $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
 
-test/%: ../../test/%.cpp $(warthog) $(EXTRA_OBJ)
+test/%: ../../test/%.cpp $(warthog) $(extra) $(EXTRA_OBJ)
 	@echo "linking..."
 	@$(shell mkdir -p $(@D))
 	$(CXX) $< -o $@ -lwarthog -lwarthog-extra $(CFLAGS) $(D_LIBS) $(D_INCLUDES)
