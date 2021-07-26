@@ -87,7 +87,7 @@ dev: CFLAGS += -ggdb -O0 -gdwarf-4 -no-pie -DSINGLE_THREADED -DQUICK_LOG=1
 dev: build/dev/Makefile			## Compile with debug symbols
 	+$(MAKE) -C $(<D) $(ACTIONS)
 
-debug: CFLAGS += -ggdb -O3 -gdwarf-4 -no-pie -DQUICK_LOG=3
+debug: CFLAGS += -ggdb -O3 -gdwarf-4 -no-pie -DQUICK_LOG=3 -fno-omit-frame-pointer
 debug: build/debug/Makefile		## Opti flags with debug symbols
 	+$(MAKE) -C $(<D) $(ACTIONS)
 
