@@ -1,8 +1,10 @@
 {
-  "name": "pathfinding",
+  "name": "pathfinding-binaries",
   "description": "",
   "version": "1.0.0",
-  "devDependencies": {},
+  "devDependencies": {
+    "@types/node": "^16.9.6"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },

@@ -3,3 +3,4 @@
 *.class
 # src/bin/
 lib/
+node_modules/
