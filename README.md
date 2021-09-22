@@ -1,8 +1,8 @@
 ## About ##
 
-In this repository you will find implementations of various algorithms I have studied as part of my doctoral research into path-finding. This includes Jump Point Search and Rectangular Symmetry Reduction.
+You have reached Daniel Harabor's Code Repository. If you would like to know about me or my work (or are simply looking for copies of published papers) please visit my [homepage](http://harabor.net/daniel).
 
-If you would like more information about my work, or are looking for copies of published papers, please visit my [ANU homepage](http://users.rsise.anu.edu.au/~dharabor).
+Some things that are hosted in this repository:
 
 | Path | Description |
 | :--- | :---------- |
