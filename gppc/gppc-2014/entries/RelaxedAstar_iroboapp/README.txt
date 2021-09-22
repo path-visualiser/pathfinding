@@ -1,2 +1,0 @@
-To compile run
-$ make

@@ -1,1 +1,0 @@
-./main -full Aftershock.map Aftershock.map.scen | awk '{sum +=$3} END{print sum}'
