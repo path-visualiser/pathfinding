@@ -1,5 +1,5 @@
 *.d
 *.o
 *.class
-src/bin/
-src/lib/
+# src/bin/
+lib/
