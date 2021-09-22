@@ -6,7 +6,9 @@
     "@types/node": "^16.9.6"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "postinstall": "npm run build"
   },
   "repository": {
     "type": "git",
@@ -17,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/Pathfinding-Project/pathfinding/issues"
   },
-  "homepage": "https://github.com/Pathfinding-Project/pathfinding#readme"
+  "homepage": "https://github.com/Pathfinding-Project/pathfinding#readme",
+  "dependencies": {
+    "typescript": "^4.4.3"
+  }
 }

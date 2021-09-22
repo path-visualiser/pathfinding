@@ -4,3 +4,5 @@
 # src/bin/
 lib/
 node_modules/
+*.js
+*.d.ts
