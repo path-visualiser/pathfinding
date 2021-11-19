@@ -101,7 +101,7 @@ class greedy_depth_first_search : public warthog::search
                 if(pi_.verbose_)
                 {
                     for(auto& state : sol.path_)
-                    {
+                    { /*
                         int32_t x, y;
                         expander_->get_xy(state, x, y);
                         std::cerr 
@@ -109,7 +109,8 @@ class greedy_depth_first_search : public warthog::search
                         warthog::search_node* n = expander_->generate(state);
                         assert(n->get_search_number() == pi_.instance_id_);
                         n->print(std::cerr);
-                        std::cerr << std::endl;
+                        std::cerr << std::endl; */
+                        logger_->log(FINAL,state);
                     }
                 }
                 #endif
@@ -197,6 +198,7 @@ class greedy_depth_first_search : public warthog::search
 		warthog::search_node*
 		search(warthog::solution& sol)
 		{
+            logger_->log(PRELUDE, -1);
 			warthog::timer mytimer;
 			mytimer.start();
 			stack_.clear();
@@ -213,6 +215,13 @@ class greedy_depth_first_search : public warthog::search
                 pi_.target_id_ = target->get_id();
 
             }
+
+            #ifndef NDEBUG
+                if(pi_.verbose_){
+                    logger_->log(SOURCE, start->get_id());
+                    logger_->log(DESTINATION, pi_.target_id_);
+                }
+            #endif
 
             // initialise and push the start node
             if(pi_.start_id_ == warthog::SN_ID_MAX) { return 0; }
@@ -232,7 +241,7 @@ class greedy_depth_first_search : public warthog::search
 
 
 			#ifndef NDEBUG
-			if(pi_.verbose_) { pi_.print(std::cerr); std:: cerr << "\n";}
+			if(pi_.verbose_) {/* pi_.print(std::cerr); std:: cerr << "\n"; */}
 			#endif
 
             // begin expanding
@@ -257,14 +266,15 @@ class greedy_depth_first_search : public warthog::search
                     
 				#ifndef NDEBUG
 				if(pi_.verbose_)
-				{
+				{/*
 					int32_t x, y;
                     expander_->get_xy(current->get_id(), x, y);
 					std::cerr 
                         << sol.nodes_expanded_
                         << ". expanding ("<<x<<", "<<y<<")...";
 					current->print(std::cerr);
-					std::cerr << std::endl;
+					std::cerr << std::endl; */
+                    logger_->log(EXPANDING, current->get_id());
 				}
 				#endif
 
@@ -288,9 +298,10 @@ class greedy_depth_first_search : public warthog::search
                     {
                         #ifndef NDEBUG
                         if(pi_.verbose_)
-                        {
+                        { /*
                             std::cerr <<
-                                "pruned (cycle) ";
+                                "pruned (cycle) "; */
+                            logger_->log(CLOSING, current->get_id());
                         }
                         #endif
                         continue;
@@ -305,9 +316,10 @@ class greedy_depth_first_search : public warthog::search
                     { 
                         #ifndef NDEBUG
                         if(pi_.verbose_)
-                        {
+                        { /*
                             std::cerr <<
-                                "pruned (bound) ";
+                                "pruned (bound) "; */
+                            logger_->log(CLOSING, n->get_id());
                         }
                         #endif
                     }
@@ -315,21 +327,22 @@ class greedy_depth_first_search : public warthog::search
                     else
                     {
                         if(pi_.verbose_)
-                        {
+                        { /*
                             std::cerr <<
-                                "candidate  ";
+                                "candidate  "; */
+                            logger_->log(EXPANDING, n->get_id());
                         }
                     }
 
                     if(pi_.verbose_)
-                    {
+                    { /*
                         int32_t nx, ny;
                         expander_->get_xy(n->get_id(), nx, ny);
                         std::cerr 
                             << " (edgecost=" 
                             << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
                         n->print(std::cerr);
-                        std::cerr << std::endl;
+                        std::cerr << std::endl; */
                     }
                     #endif
 
@@ -352,14 +365,15 @@ class greedy_depth_first_search : public warthog::search
 
                 #ifndef NDEBUG
                 if(pi_.verbose_)
-                {
+                { /*
                     int32_t nx, ny;
                     expander_->get_xy(n->get_id(), nx, ny);
                     std::cerr 
                         << "  generating (edgecost=" 
                         << cost_to_n<<") ("<< nx <<", "<< ny <<")...";
                     n->print(std::cerr);
-                    std::cerr << std::endl;
+                    std::cerr << std::endl; */
+                    logger_->log(GENERATING, n->get_id());
                 }
                 #endif
 			}
@@ -371,17 +385,18 @@ class greedy_depth_first_search : public warthog::search
             if(pi_.verbose_)
             {
                 if(target == 0) 
-                {
+                { /*
                     std::cerr 
-                        << "search failed; no solution exists " << std::endl;
+                        << "search failed; no solution exists " << std::endl; */
                 }
                 else
-                {
+                { /*
                     int32_t x, y;
                     expander_->get_xy(target->get_id(), x, y);
                     std::cerr << "target found ("<<x<<", "<<y<<")...";
                     target->print(std::cerr);
-                    std::cerr << std::endl;
+                    std::cerr << std::endl; */
+                    logger_->log(END, target->get_id());
                 }
             }
             #endif
