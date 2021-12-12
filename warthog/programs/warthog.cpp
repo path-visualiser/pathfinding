@@ -127,6 +127,11 @@ run_experiments(warthog::search* algo, std::string alg_name,
         warthog::solution sol;
 
         algo->get_path(pi, sol);
+        #ifndef NDEBUG
+        if(pi.verbose_){
+            std::cout << "\n]}" << std::endl;
+        }
+        #endif
 
 		out
             << i<<"\t" 

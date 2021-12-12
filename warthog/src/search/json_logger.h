@@ -55,18 +55,14 @@ class json_logger {
                     std::cout << "{\"type\":\"" << event_strings[event_type] << "\",\"id\":" << node_id << ",\"variables\":{\"x\":"
                         << x << ",\"y\":" << y << "},\"g\":" << node->get_g() << ",\"f\":" << node->get_f()
                         << ",\"pId\":" << node->get_parent() << "}";
-                    if(event_type == END){
-                        std::cout << "\n]}" << std::endl;
-                    } else {
+                    if(event_type != END){
                         std::cout << "," << std::endl;
                     }
                     break;
                 case FINAL:
                     //final path logging can be implemented here if required.
                     break;
-                default:
-                    std::cout << "UNHANDLED" << std::endl;
-                    break;
+
 
             }
         }

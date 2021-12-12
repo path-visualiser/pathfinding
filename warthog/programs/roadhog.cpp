@@ -166,7 +166,12 @@ run_experiments( warthog::search* algo, std::string alg_name,
         {
             sol.reset();
             algo->get_path(pi, sol);
-
+            #ifndef NDEBUG
+            if(pi.verbose_){
+                std::cout << "\n]}" << std::endl;
+            }
+            #endif
+// HERE -----------------------------------------------------------------------------------------
             expanded += sol.nodes_expanded_;
             inserted += sol.nodes_inserted_;
             touched += sol.nodes_touched_;
